@@ -47,7 +47,7 @@ link,^R/lnk_points_snap\.R$,crossings,"builds, matches and snaps the group's cro
 link,^R/lnk_override\.R$,crossings,"builds, matches and snaps the group's crossings"
 link,^R/lnk_wsg_downstream_check\.R$,dams,tests each dam below the group's outlet
 link,^R/lnk_wsg_resolve\.R$,dams,tests each dam below the group's outlet
-link,^R/lnk_access\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_access\.R$,unexercised,"the recompute's access merge (wsg_recompute_one.R), not run by the gate"
 link,^R/lnk_aggregate\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^R/lnk_baseline_append\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^R/lnk_baseline_current\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
@@ -135,3 +135,13 @@ fresh,^R/frs_watershed_split\.R$,none,"not reached from link's modelling path at
 fresh,^R/frs_wetland_fetch\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
 fresh,^R/frs_wsg_species\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
 fresh,^R/zzz\.R$,none,"not reached from link's modelling path at fresh v0.44.0 (call graph, data-raw/logs/pretest_372/reach.md)"
+link,^R/lnk_habitat_gate\.R$,unexercised,"a run models with LNK_HABITAT_GATE=0 and settles in the recompute, which the gate does not run"
+link,^DESCRIPTION$,none,the fresh pin reaches the gate as fresh's own changed files; the rest is metadata
+link,^data-raw/wsg_run_one\.R$,any,the per-group entry point every pick runs
+link,^data-raw/wsg_recompute_one\.R$,unexercised,the post-consolidate recompute
+link,^data-raw/schema_consolidate\.R$,unexercised,copies cloud hosts' groups into the dispatcher's persist
+link,^inst/extdata/wsg_regions\.csv$,observations,species pooling regions (lnk_species_pooling)
+link,^inst/extdata/configs/dictionary_[a-z_]+\.csv$,none,data dictionaries; no run reads them
+link,^inst/extdata/(thresholds_default|crossings_example|overrides_example|parameters_habitat_dimensions)\.csv$,none,"package examples and lnk_thresholds() defaults, off the modelling path"
+link,^inst/extdata/parameters_habitat_rules\.yaml$,none,sample rules for fresh's fallback; a run reads its bundle's rules.yaml
+link,^inst/extdata/schemas/,none,the export schema (lnk_scenario_export)

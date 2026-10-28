@@ -152,9 +152,9 @@ test_that("the bound is k times history with a floor, and the statement bound fo
 
 test_that("verdicts: a failed exit, a missing row and a breach each fail the gate", {
   e <- pt_env()
-  v <- e$pretest_verdict(exit = c(0L, 1L, 0L, 0L, NA), run_minutes = c(3, 3, NA, 7, 3),
-                         bound = c(5, 5, 5, 5, 5))
-  expect_identical(v, c("pass", "failed", "no_row", "bound", "failed"))
+  v <- e$pretest_verdict(exit = c(0L, 1L, 0L, 0L, NA, 124L), run_minutes = c(3, 3, NA, 7, 3, NA),
+                         bound = c(5, 5, 5, 5, 5, 5))
+  expect_identical(v, c("pass", "failed", "no_row", "bound", "failed", "bound"))
   expect_identical(e$pretest_overall(v), "fail")
   expect_identical(e$pretest_overall(c("pass", "pass")), "pass")
   expect_identical(e$pretest_overall(character()), "fail")
@@ -210,4 +210,110 @@ test_that("the config chain follows extends", {
   expect_identical(e$pretest_config_chain(d, "default_tuned"), c("default_tuned", "default"))
   expect_identical(e$pretest_config_chain(d, "default"), "default")
   expect_error(e$pretest_config_chain(d, "nope"), "no config bundle")
+})
+
+test_that("every file under inst/extdata, DESCRIPTION and the run's data-raw scripts matches a row", {
+  e <- pt_env()
+  map <- e$pretest_map_read(pt_map_path())
+  root <- testthat::test_path("..", "..")
+  skip_if_not(dir.exists(file.path(root, "inst", "extdata")), "inst/extdata absent")
+  f <- list.files(file.path(root, "inst", "extdata"), recursive = TRUE)
+  f <- c(file.path("inst/extdata", f), "DESCRIPTION",
+         grep("^data-raw/", e$PRETEST_LINK_PATHS, value = TRUE))
+  bundle <- ifelse(grepl("^inst/extdata/configs/[^/]+/", f),
+                   sub("^inst/extdata/configs/([^/]+)/.*$", "\\1", f), "")
+  unmapped <- character()
+  for (b in unique(bundle)) {
+    x <- f[bundle == b]
+    m <- e$pretest_match(data.frame(repo = "link", path = x, stringsAsFactors = FALSE), map,
+                         chain = if (nzchar(b)) b else character())
+    unmapped <- c(unmapped, m$unmapped$path)
+  }
+  expect_identical(unmapped, character())
+})
+
+pt_git_repo <- function(e) {
+  skip_if(!nzchar(Sys.which("git")), "git absent")
+  d <- withr::local_tempdir(.local_envir = parent.frame())
+  g <- function(...) system2("git", c("-C", d, ...), stdout = TRUE, stderr = TRUE)
+  g("init", "-q")
+  g("config", "user.email", "t@t")
+  g("config", "user.name", "t")
+  dir.create(file.path(d, "R"))
+  dir.create(file.path(d, "inst/extdata/configs/default"), recursive = TRUE)
+  dir.create(file.path(d, "inst/extdata/configs/bcfishpass"), recursive = TRUE)
+  commit <- function(files, msg) {
+    for (nm in names(files)) writeLines(files[[nm]], file.path(d, nm))
+    g("add", "-A")
+    g("commit", "-qm", shQuote(msg))
+    g("rev-parse", "HEAD")
+  }
+  list(dir = d, commit = commit)
+}
+
+test_that("a gate record holds across commits that touch only none files", {
+  e <- pt_env()
+  r <- pt_git_repo(e)
+  run <- r$commit(list("R/a.R" = "a", "R/v.R" = "v", DESCRIPTION = "1"), "last run")
+  gated <- r$commit(list("R/a.R" = "a2"), "gated")
+  bump <- r$commit(list(DESCRIPTION = "2", "R/v.R" = "v2",
+                        "inst/extdata/configs/bcfishpass/rules.yaml" = "x"), "bump")
+  map <- data.frame(repo = "link",
+                    pattern = c("^R/a\\.R$", "^R/v\\.R$", "^DESCRIPTION$",
+                                "^inst/extdata/configs/{config}/rules\\.yaml$"),
+                    input = c("segments", "none", "none", "segments"), why = "w",
+                    stringsAsFactors = FALSE)
+  rec <- function(...) {
+    x <- list(run_at = as.POSIXct("2026-10-28 12:00", tz = "UTC"), config_name = "default",
+              link_sha = gated, link_dirty = FALSE, fresh_sha = "f1", since_sha = run,
+              until_sha = gated, verdict = "pass", notes = NA_character_)
+    x[names(list(...))] <- list(...)
+    as.data.frame(x, stringsAsFactors = FALSE)
+  }
+  chk <- function(records, head = bump, fresh = "f1", hist = run) {
+    e$pretest_record_check(records, "default", head, fresh, hist, r$dir, map, "default")
+  }
+  expect_true(chk(rec())$ok)
+  expect_match(chk(rec()[0, ])$why, "no gate record")
+  expect_match(chk(rec(verdict = "fail", notes = "QUES bound"))$why, "failed: QUES bound")
+  expect_match(chk(rec(link_dirty = TRUE))$why, "dirty")
+  expect_match(chk(rec(), fresh = "f2")$why, "installed is")
+  expect_match(chk(rec(since_sha = gated))$why, "range starts")
+  expect_match(chk(rec(config_name = "bcfishpass"))$why, "no gate record for config default")
+  # a newer fail overrides an older pass
+  both <- rbind(rec(), rec(run_at = as.POSIXct("2026-10-28 13:00", tz = "UTC"), verdict = "fail",
+                           notes = "x"))
+  expect_false(chk(both)$ok)
+  # override rows are the run's, not the gate's
+  ovr <- rbind(rec(), rec(run_at = as.POSIXct("2026-10-28 13:00", tz = "UTC"), verdict = "override"))
+  expect_true(chk(ovr)$ok)
+  # a modelling-path change after the gate voids it
+  moved <- r$commit(list("R/a.R" = "a3"), "moved")
+  expect_match(chk(rec(), head = moved)$why, "on the modelling path: R/a.R")
+  unm <- r$commit(list("R/new.R" = "n"), "new file")
+  expect_match(chk(rec(), head = unm)$why, "unmapped: R/new.R")
+  expect_error(chk(rec(link_sha = "0000000000000000000000000000000000000000")), "failed")
+})
+
+test_that("the default --since is the earliest newest build, and dirty history refuses", {
+  e <- pt_env()
+  h <- data.frame(wsg = c("OKAN", "ADMS", "BULK"), link_sha = c("b", "a", "a"),
+                  link_dirty = FALSE,
+                  date_start = as.POSIXct(c("2026-10-24", "2026-10-23 08:00", "2026-10-23 09:00"),
+                                          tz = "UTC"), stringsAsFactors = FALSE)
+  expect_identical(e$pretest_since_default(h), "a")
+  h$link_dirty[1] <- TRUE
+  expect_error(e$pretest_since_default(h), "dirty tree \\(OKAN\\)")
+  expect_error(e$pretest_since_default(h[0, ]), "no history row")
+})
+
+test_that("changed link files leave out bundles outside the chain", {
+  e <- pt_env()
+  r <- pt_git_repo(e)
+  a <- r$commit(list("R/a.R" = "a", DESCRIPTION = "1"), "one")
+  b <- r$commit(list("inst/extdata/configs/bcfishpass/rules.yaml" = "x",
+                     "inst/extdata/configs/default/rules.yaml" = "y", DESCRIPTION = "2",
+                     "NEWS.md" = "n"), "two")
+  ch <- e$pretest_changed_link(r$dir, a, b, chain = "default")
+  expect_identical(sort(ch$path), c("DESCRIPTION", "inst/extdata/configs/default/rules.yaml"))
 })

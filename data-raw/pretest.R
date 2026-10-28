@@ -24,8 +24,17 @@
 #   none  the file is off the modelling path (validator, compare, export).
 #         For link, test-pretest.R checks every `none` row against the static
 #         call graph from wsg_run_one.R's entry points (pretest_reach()).
+#   unexercised  on the run's path but not on what the gate runs: the
+#         recompute, the consolidate, the habitat gate (a run models with
+#         LNK_HABITAT_GATE=0 and settles in the recompute). It refuses
+#         nothing, and the gate names it in pretest.md and in its record.
+#
+# A pass is recorded in <persist schema>.log_pretest, and study_area_run.sh's
+# pre-flight reads it through pretest_record_check(): a record holds while
+# every file changed since the SHA it modelled maps to none, so a version
+# bump or a CITATION commit does not need a new gate.
 
-PRETEST_SPECIAL <- c("any", "none")
+PRETEST_SPECIAL <- c("any", "none", "unexercised")
 PRETEST_MAP_COLS <- c("repo", "pattern", "input", "why")
 PRETEST_VERDICTS <- c("pass", "failed", "bound", "no_row")
 
@@ -84,12 +93,20 @@ pretest_git <- function(dir, args) {
   out
 }
 
-# Files changed in link between two commits: R/ and the config bundles in
-# `chain`. `git diff a b` compares the two trees, which is the question: what
-# code differs between the last run and this one.
+# What a run reads from link besides R/: the package data, DESCRIPTION, and
+# the data-raw scripts a run executes.
+PRETEST_LINK_PATHS <- c("R/", "inst/extdata/", "DESCRIPTION", "data-raw/wsg_run_one.R",
+                        "data-raw/wsg_recompute_one.R", "data-raw/schema_consolidate.R")
+
+# Files changed in link between two commits, under PRETEST_LINK_PATHS, less
+# the config bundles outside `chain` (another bundle's change cannot reach
+# this run). `git diff a b` compares the two trees, which is the question:
+# what differs between the code that last ran and this code.
 pretest_changed_link <- function(repo, since, until, chain) {
-  paths <- c("R/", file.path("inst/extdata/configs", chain, ""))
-  f <- pretest_git(repo, c("diff", "--name-only", since, until, "--", paths))
+  f <- pretest_git(repo, c("diff", "--name-only", since, until, "--", PRETEST_LINK_PATHS))
+  bundle <- ifelse(grepl("^inst/extdata/configs/[^/]+/", f),
+                   sub("^inst/extdata/configs/([^/]+)/.*$", "\\1", f), NA_character_)
+  f <- f[is.na(bundle) | bundle %in% chain]
   data.frame(repo = rep("link", length(f)), path = f, stringsAsFactors = FALSE)
 }
 
@@ -212,13 +229,15 @@ pretest_statement_min <- function(bound, cap = 30) {
   as.integer(pmax(1, pmin(cap, ceiling(bound))))
 }
 
-# One verdict per group. `exit` is the group's wsg_run_one.R exit status;
-# `run_minutes` is its finished row in the scratch log (NA when none).
+# One verdict per group. `exit` is the group's wsg_run_one.R exit status
+# (124: pretest_run.sh killed it at its wall-clock bound); `run_minutes` is
+# its finished row in the scratch log (NA when none).
 pretest_verdict <- function(exit, run_minutes, bound) {
   stopifnot(length(exit) == length(run_minutes), length(exit) == length(bound))
+  ifelse(!is.na(exit) & exit == 124L, "bound",
   ifelse(is.na(exit) | exit != 0L, "failed",
          ifelse(is.na(run_minutes), "no_row",
-                ifelse(run_minutes > bound, "bound", "pass")))
+                ifelse(run_minutes > bound, "bound", "pass"))))
 }
 
 # The gate passes only when every group passed. No group is not a pass.
@@ -256,4 +275,82 @@ pretest_reach <- function(ns, entries) {
     if (is.null(s)) NA_character_ else basename(attr(s, "srcfile")$filename)
   }, "")
   sort(unique(stats::na.omit(files)))
+}
+
+# The SQL for each group's newest finished build in a persist schema's log:
+# the history a pick is bounded against, and the link SHAs it was built at.
+pretest_history_sql <- function(schema) {
+  sprintf(
+    "SELECT DISTINCT ON (watershed_group_code)
+            watershed_group_code AS wsg, host, link_sha, link_dirty, date_start,
+            extract(epoch FROM (date_end - date_start)) / 60 AS minutes
+       FROM %s.log
+      WHERE date_end IS NOT NULL AND date_start IS NOT NULL
+      ORDER BY watershed_group_code, date_start DESC", schema)
+}
+
+# The default --since: the link SHA of the earliest of the groups' newest
+# finished builds. A group re-modelled by hand after a run keeps the run's
+# SHA as the oldest, so the range covers every group's history.
+pretest_since_default <- function(history) {
+  h <- history[!is.na(history$link_sha), , drop = FALSE]
+  if (!nrow(h)) stop("no history row carries a link_sha; pass --since=", call. = FALSE)
+  if (any(is.na(h$link_dirty) | h$link_dirty)) {
+    stop("history rows built from a dirty tree (", paste(h$wsg[is.na(h$link_dirty) | h$link_dirty],
+         collapse = ", "), "): their code is not a commit; pass --since=", call. = FALSE)
+  }
+  h$link_sha[order(h$date_start)][1]
+}
+
+# Is `a` an ancestor of, or equal to, `b`? FALSE also when either is unknown
+# to the repo; only exit 1 means "not an ancestor", anything else is an error.
+pretest_is_ancestor <- function(repo, a, b) {
+  st <- suppressWarnings(system2("git", c("-C", shQuote(repo), "merge-base", "--is-ancestor", a, b),
+                                 stdout = FALSE, stderr = FALSE))
+  if (identical(as.integer(st), 0L)) return(TRUE)
+  if (identical(as.integer(st), 1L)) return(FALSE)
+  stop("git merge-base --is-ancestor ", a, " ", b, " failed (", st, ")", call. = FALSE)
+}
+
+# Does a gate record clear a run? `records` is <schema>.log_pretest; the
+# newest pass or fail row for the config decides (a later fail overrides an
+# earlier pass; override rows are the run's, not the gate's). It holds when:
+#   - it passed, on a clean tree;
+#   - its fresh is the installed fresh (when it modelled anything);
+#   - its range starts at or before every link SHA the history was built at,
+#     so the picks were chosen from everything since the last run;
+#   - every file changed between the SHA it modelled and HEAD maps to none.
+# Returns list(ok, why, record).
+pretest_record_check <- function(records, config, head_sha, fresh_sha, history_shas,
+                                 repo, map, chain) {
+  no <- function(...) list(ok = FALSE, why = paste0(...), record = rec)
+  rec <- NULL
+  r <- records[records$config_name == config & records$verdict %in% c("pass", "fail"), , drop = FALSE]
+  if (!nrow(r)) return(no("no gate record for config ", config))
+  rec <- r[order(r$run_at, decreasing = TRUE), , drop = FALSE][1, ]
+  if (rec$verdict != "pass") return(no("the newest gate record failed: ", rec$notes))
+  if (isTRUE(rec$link_dirty) || is.na(rec$link_dirty)) return(no("the gate ran on a dirty tree"))
+  if (!is.na(rec$fresh_sha) && !identical(rec$fresh_sha, fresh_sha)) {
+    return(no("the gate modelled fresh ", substr(rec$fresh_sha, 1, 12), ", installed is ",
+              substr(fresh_sha, 1, 12)))
+  }
+  for (h in unique(stats::na.omit(history_shas))) {
+    if (!pretest_is_ancestor(repo, rec$since_sha, h)) {
+      return(no("the gate's range starts at ", substr(rec$since_sha, 1, 12),
+                ", after history built at ", substr(h, 1, 12)))
+    }
+  }
+  if (!pretest_is_ancestor(repo, rec$link_sha, head_sha)) {
+    return(no("the gate modelled ", substr(rec$link_sha, 1, 12), ", not an ancestor of HEAD"))
+  }
+  ch <- pretest_changed_link(repo, rec$link_sha, head_sha, chain)
+  m <- pretest_match(ch, map, chain)
+  if (nrow(m$unmapped)) {
+    return(no("changed since the gate and unmapped: ", paste(m$unmapped$path, collapse = ", ")))
+  }
+  moved <- unique(m$hits$path[m$hits$input != "none"])
+  if (length(moved)) {
+    return(no("changed since the gate, on the modelling path: ", paste(moved, collapse = ", ")))
+  }
+  list(ok = TRUE, why = "", record = rec)
 }
