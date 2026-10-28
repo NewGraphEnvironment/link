@@ -2237,11 +2237,13 @@ records: the target is the operator’s infrastructure, and
 - **Held, it is kept and reported** like a cypher, with no droplet,
   address or burn command, also on a run with no cyphers (`WORKERS_UP`).
   `--keep-cyphers` keeps cloud hosts only.
-- **Speed.** A worker’s `--host-speeds` value is measured: its minutes
-  per group against the dispatcher’s on the same mid-size groups, by
-  host (read `<schema>.log` by `host`; `--minutes-schema`’s newest row
-  per group mixes hosts, and small groups are dominated by per-group
-  overhead).
+- **Speed.** A worker’s speed is learned like any host’s once it has run
+  under a name passed in `--host-names` (“Learned host speeds”, below);
+  until then it takes the median of the learned state. To set one by
+  hand, measure its minutes per group against the dispatcher’s on the
+  same mid-size groups, by host (read `<schema>.log` by `host`;
+  `--minutes-schema`’s newest row per group mixes hosts, and small
+  groups are dominated by per-group overhead), and pass `--host-speeds`.
 
 ### A remote status is what the remote shell prints (link#376)
 
@@ -2303,6 +2305,116 @@ one wherever a group holds lines coded to another basin or with barriers
 below it in a group outside the subset (NATR’s two Fraser-coded
 segments; TOOD’s two with barriers below them in FROG, LKEC, UKEC and
 ULRD).
+
+### Learned host speeds (link#259, folding in \#163)
+
+`study_area_buckets.R` predicts each host’s model leg as the sum of its
+groups’ weights over its speed. Measured minutes (`--minutes-schema=`)
+are the weight a provincial run packs on: scored out of sample on
+2026-10-23, they set each leg’s share of the mean leg within 3.6 points,
+segments 28.9, with KTSU’s and OKAN’s stalls left out (16.4 against 28.5
+as logged) (`research/study_area_run.md`, “How hosts are packed”).
+
+**Where a host’s speed comes from, in order:**
+
+1.  `--host-speeds=` on the packer, typed for this run.
+2.  The learned state, `data-raw/logs/host_speeds.tsv`
+    (`--speeds-state=`; empty for none). A host it does not hold takes
+    the median of the hosts it does, and the report labels it
+    `median (no learned speed)`.
+3.  Equal.
+
+**Speeds are keyed by name, not by the driver’s role key.**
+`--host-names=` gives each host’s alias in the driver’s order (default:
+this machine’s short name, `worker1..N`, `cloud` for every cloud host).
+The dispatcher moved from m1 to m4, so a factor keyed `dispatcher` would
+carry m1’s speed onto m4. Every cloud host is one class, `cloud`: one
+droplet size, so three legs of evidence a run. A worker gets a learned
+speed only under a name passed in `--host-names`. The names reach a
+committed file, so the packer and the calibrator refuse anything with
+`@`, `:`, `/`, a dot or an address shape. Give an alias, never an ssh
+target.
+
+**After a run.** The summary prints the command, and the operator runs
+it:
+
+    Rscript data-raw/host_speeds_calibrate.R --plan=<the packer's --plan-out> \
+      --phases=<log dir>/<TS>_phases.tsv [--skip=<name>:<reason>] [--dry-run]
+
+- **What it reads.** Each leg’s actual time is its `model` row, the
+  whole leg, never a mean over its groups (#163’s feedback loop; a
+  simulation in `test-study_area_packing.R` shows per-group means
+  running away from the true ratio while whole legs converge). When a
+  killed driver leaves two rows, the later end is the leg’s.
+- **What it projects.** Each leg’s projection is the sum of its plan
+  rows’ weight over the speed the plan packed at, less groups the host
+  SKIPped and groups with no rows from this run (`<TS>_coverage.tsv`
+  class other than `recompute`). A host whose `account` row is not `ok`
+  is left out. So is a leg named by `--skip`, for a stall or another job
+  on the machine: by name (every leg of it) or by the run’s host key
+  (`job2`, one cloud host, as the legs table shows it). The legs and
+  their reasons print before anything is learned, so a run in which
+  every leg is left out still says why. The history records why.
+- **The arithmetic.** Per name,
+  `correction = (Σ actual / Σ projected) / run_ratio`, where `run_ratio`
+  is the same ratio over every leg not left out. Each leg is first
+  re-projected at the stored factor `old` (the state’s, its median for a
+  name it lacks, 1 with no state), so `projected` above is taken at
+  `old`, not at the speed the plan packed it at, from weights
+  re-normalized at the calibrating state (the plan carries each group’s
+  raw minutes and the class that measured them, so a plan packed on an
+  older state or another `--speeds-state` is projected as if packed on
+  this one). Then `observed = old / correction` and
+  `new = 0.7 · old + 0.3 · observed`, clamped to `[0.5, 2] × old`; at
+  this damping only the upper bound can bind. So the speed a run was
+  packed at (`--host-speeds`, an older state) decides only which groups
+  a host got, never what is learned. Dividing by `run_ratio` takes out
+  drift every leg shares: the same groups on the same class took 13 to
+  16 % longer, summed per class, on 2026-10-23 than on 2026-10-17, and
+  without the division that drift would be booked as host slowness. The
+  run-wide ratio goes in the history beside each row.
+- **Role keys are never learned.** A leg whose name is `dispatcher`,
+  `workerN` or `jobN` counts toward `run_ratio` and is recorded
+  `not learned` in the history; `workerN` is the packer’s default name
+  for an unnamed worker.
+- **A group measured by a host the state does not know** (a worker never
+  learned under its alias, say) was weighted at the state’s median,
+  which says nothing of its work. So a leg holding one is left out,
+  unless the leg is that host itself; otherwise its error would land in
+  the hosts that are learned. Name each worker in `--host-names` by the
+  alias its log rows carry (`LNK_HOST_ALIAS`), and the next calibration
+  learns it.
+- **A group whose newest minutes are a stall** would weigh the plan
+  wrong and then teach the calibrator a leg as fast as the stall was
+  long (KTSU: 65.4 min on 2026-10-23, 1.3 the week before). Pack with
+  `--minutes-exclude=KTSU,OKAN` until a run re-measures them: an
+  excluded group takes the median weight and carries no minutes into the
+  plan.
+- **Cloud hosts are matched to the run’s by their groups,** not their
+  keys: the packer keys them `job1..N` by position, and the driver by
+  the `--cy-workspaces` names, which a kept host can leave out of order.
+  The dispatcher and each worker keep their key, so a run that gave one
+  role another role’s list is refused rather than learned under the
+  wrong name. `--plan-out` needs `--host-names`, since the packer need
+  not run on the dispatcher.
+- **What it refuses.** A plan weighted in segments: a run must pack on
+  `--minutes-schema` to be calibrated. A plan whose groups for a host
+  differ from `<TS>_run_wsgs.tsv`. A phases file with no model row,
+  which is what a `--recompute-only` pass writes. A run the history
+  already holds.
+- **What it writes.** It rewrites `host_speeds.tsv` and appends to
+  `host_speeds_history.tsv`
+  (`run_uid, date_utc, name, packed, old, correction, observed, damped, clamped, new, run_ratio, action`).
+  Commit both with the run’s evidence.
+
+**Why it learns slowly, and why that is right.** A host packed on
+minutes it measured itself predicts its own leg whatever its speed. Only
+groups that move host between runs carry evidence. Measured minutes are
+normalized by the current learned speed of the host that measured them,
+so a group that moves is predicted at the estimated ratio, and the
+estimate’s error drives the damped correction. On 2026-10-23 only 10 of
+239 groups had moved class since 2026-10-17. That is why the state was
+seeded equal (m1 1, cloud 1) and not from a fit.
 
 ------------------------------------------------------------------------
 
