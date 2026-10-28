@@ -217,3 +217,16 @@ speeds_calibrate <- function(legs, state = NULL, run_uid, date_utc) {
   list(state = state_new, history = do.call(rbind, hist)[, PACK_HISTORY_COLS],
        run_ratio = run_ratio)
 }
+
+# A plan's weights at a given state: each measured group's raw minutes times
+# the speed `state` gives the class that measured them; a group with no
+# measurement (it took the median) keeps its packed weight. The calibrator
+# calls this at the state it reads, so a plan packed on an older state, or with
+# another --speeds-state, is projected as if packed on this one (code-check
+# round 3, link#259).
+plan_weights_at <- function(weight, minutes, measured_by, state = NULL) {
+  hit <- !is.na(minutes)
+  out <- weight
+  if (any(hit)) out[hit] <- weights_normalize(minutes[hit], measured_by[hit], state)
+  out
+}

@@ -2066,7 +2066,10 @@ Rscript data-raw/host_speeds_calibrate.R --plan=<the packer's --plan-out> \
   run_ratio`, where `run_ratio` is the same ratio over every leg not left out.
   Each leg is first re-projected at the stored factor `old` (the state's, its
   median for a name it lacks, 1 with no state), so `projected` above is taken
-  at `old`, not at the speed the plan packed it at. Then `observed = old /
+  at `old`, not at the speed the plan packed it at, from weights re-normalized
+  at the calibrating state (the plan carries each group's raw minutes and the
+  class that measured them, so a plan packed on an older state or another
+  `--speeds-state` is projected as if packed on this one). Then `observed = old /
   correction` and `new = 0.7 · old + 0.3 · observed`, clamped to `[0.5, 2] ×
   old`; at this damping only the upper bound can bind. So the speed a run was
   packed at (`--host-speeds`, an older state) decides only which groups a host

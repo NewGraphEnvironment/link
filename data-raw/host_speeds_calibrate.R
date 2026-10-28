@@ -22,15 +22,17 @@
 #   - Each leg's actual time is its `model` row: the whole leg, as #163 asks,
 #     never a mean over its groups. A killed driver can leave two rows for one
 #     leg; the later end is the leg's.
+#   - Each group's weight is re-normalized at the state this script reads:
+#     the plan carries its raw minutes and the class that measured them.
 #   - Each leg's projected time is the sum of its groups' plan weights over the
 #     speed it was packed at, less groups the host SKIPped (run_wsgs `skip`
 #     yes) and groups with no rows from this run (coverage class other than
 #     `recompute`).
 #   - A host whose `account` row is not `ok` did not finish its bucket, so its
 #     leg is left out.
-#   - Each update is damped toward the factor the state holds, not the speed
-#     the run was packed at (a --host-speeds run informs the state without
-#     replacing it), and a driver role key (dispatcher, workerN, jobN) is
+#   - Each leg is re-projected at the factor the state holds, so the speed the
+#     run was packed at (--host-speeds, an older state) decides only which
+#     groups a host got, never what is learned; and a driver role key (dispatcher, workerN, jobN) is
 #     never learned: name a worker in the packer's --host-names.
 #   - It refuses a plan whose groups for a host differ from what the run gave
 #     that host, a plan weighted in segments (no minutes to compare), a
@@ -73,7 +75,8 @@ need_cols <- function(d, cols, what) {
 
 # --- the plan ---------------------------------------------------------------
 plan <- read_tsv(plan_path, "plan")
-need_cols(plan, c("wsg", "host_key", "name", "speed", "weight_unit", "weight"), "plan")
+need_cols(plan, c("wsg", "host_key", "name", "speed", "weight_unit", "weight", "minutes", "measured_by"),
+          "plan")
 if (!nrow(plan)) stop("plan has no rows", call. = FALSE)
 if (any(plan$weight_unit != "min")) {
   stop("the plan is weighted in ", paste(unique(plan$weight_unit), collapse = ", "),
@@ -83,6 +86,8 @@ if (any(plan$weight_unit != "min")) {
 host_names_check(unique(plan$name))
 plan$speed <- as.numeric(plan$speed)
 plan$weight <- as.numeric(plan$weight)
+plan$minutes <- suppressWarnings(as.numeric(plan$minutes))
+plan$measured_by[!nzchar(plan$measured_by)] <- NA
 if (anyNA(plan$speed) || anyNA(plan$weight) || anyDuplicated(plan$wsg)) {
   stop("plan: every row needs a numeric speed and weight, one row per group", call. = FALSE)
 }
@@ -137,6 +142,13 @@ for (k in union(unique(plan$host_key), unique(rw$host))) {
   }
 }
 
+# The state the update starts from, and the plan's weights re-normalized at it:
+# the packer normalized each group's minutes at the state it read, which need
+# not be this one (a run packed before the last calibration, or with another
+# --speeds-state).
+state <- speeds_state_read(state_path)
+plan$weight <- plan_weights_at(plan$weight, plan$minutes, plan$measured_by, state)
+
 # --- legs -------------------------------------------------------------------
 modelled <- rw$wsg[rw$skip == "no"]
 finished <- cov$wsg[cov$class == "recompute"]
@@ -165,7 +177,6 @@ if (length(unknown_skip)) {
   stop("--skip names no host in the plan: ", paste(unknown_skip, collapse = ", "), call. = FALSE)
 }
 
-state <- speeds_state_read(state_path)
 date_utc <- format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
 out <- speeds_calibrate(legs, state, run_uid = run_uid, date_utc = date_utc)
 

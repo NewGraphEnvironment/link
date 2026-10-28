@@ -40,9 +40,9 @@ cal_world <- function(model_rows = NULL, account = c(dispatcher = "ok", job1 = "
   writeLines(c("wsg\tclass", sprintf("%s\t%s", names(coverage), coverage)),
              file.path(d, paste0(ts, "_coverage.tsv")))
   name <- ifelse(plan_host == "dispatcher", "m4", "cloud")
-  writeLines(c("wsg\thost_key\tname\tspeed\tspeed_source\tweight_unit\tweight",
-               sprintf("%s\t%s\t%s\t1\tequal (no learned state)\t%s\t50", names(plan_host), plan_host,
-                       name, unit)),
+  writeLines(c("wsg\thost_key\tname\tspeed\tspeed_source\tweight_unit\tweight\tminutes\tmeasured_by",
+               sprintf("%s\t%s\t%s\t1\tequal (no learned state)\t%s\t50\t50\t%s", names(plan_host),
+                       plan_host, name, unit, name)),
              file.path(d, "plan.tsv"))
   list(dir = d, phases = file.path(d, paste0(ts, "_phases.tsv")), plan = file.path(d, "plan.tsv"),
        state = file.path(d, "host_speeds.tsv"), history = file.path(d, "host_speeds_history.tsv"))
@@ -167,4 +167,27 @@ test_that("--skip by host key leaves out one cloud host's leg", {
   out <- paste(r$out, collapse = "\n")
   expect_match(out, "| job2 | cloud | 1.000 | 1 |  |  | stall |", fixed = TRUE)
   expect_match(out, "\\| job1 \\| cloud \\| 1\\.000 \\| 1 \\| 50\\.0 \\|")
+})
+
+test_that("a plan packed on another state is re-normalized at the calibrating one", {
+  # Packed when the state said cloud 0.5, so the cloud groups' 50 measured
+  # minutes went into the plan as 25. Calibrated with no state, they count 50
+  # again, and job1's leg projects at 100 as if packed on this state.
+  w <- cal_world()
+  p <- readLines(w$plan)
+  cloud <- grepl("\tcloud\t", p)
+  p[cloud] <- sub("\t50\t50\tcloud$", "\t25\t50\tcloud", p[cloud])
+  writeLines(p, w$plan)
+  r <- cal_run(w, "--dry-run")
+  expect_equal(r$status, 0L, info = paste(r$out, collapse = "\n"))
+  expect_match(paste(r$out, collapse = "\n"), "\\| job1 \\| cloud \\| 1\\.000 \\| 2 \\| 100\\.0 \\| 125\\.0 \\|")
+})
+
+test_that("a plan without raw minutes is refused", {
+  w <- cal_world()
+  p <- readLines(w$plan)
+  writeLines(sub("\t[^\t]*\t[^\t]*$", "", p), w$plan)
+  r <- cal_run(w)
+  expect_false(r$status == 0L)
+  expect_match(paste(r$out, collapse = "\n"), "lacks columns: minutes, measured_by")
 })

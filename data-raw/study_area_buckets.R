@@ -136,13 +136,16 @@ host_key <- function(h) {
   if (h <= n_workers + 1L) return(sprintf("worker%d", h - 1L))
   sprintf("job%d", h - 1L - n_workers)
 }
+# The name this machine's own log rows carry (LNK_HOST_ALIAS, else its node
+# name, as .lnk_host() decides: an empty alias falls back too), so its measured
+# minutes and its learned speed meet.
+own_host <- Sys.getenv("LNK_HOST_ALIAS")
+if (!nzchar(own_host)) own_host <- Sys.info()[["nodename"]]
 names_arg <- arg_val("--host-names", "")
 host_names <- if (nzchar(names_arg)) {
   trimws(strsplit(names_arg, ",")[[1]])
 } else {
-  # The name this machine's own log rows carry (LNK_HOST_ALIAS, else its node
-  # name, .lnk_host()), so its measured minutes and its learned speed meet.
-  c(host_class(Sys.getenv("LNK_HOST_ALIAS", Sys.info()[["nodename"]])),
+  c(host_class(own_host),
     if (n_workers > 0L) sprintf("worker%d", seq_len(n_workers)),
     rep("cloud", n_hosts - 1L - n_workers))
 }
@@ -323,6 +326,10 @@ if (nzchar(minutes_schema)) {
     stop("--minutes-schema=", minutes_schema, ": no finished log rows",
          call. = FALSE)
   }
+  # Raw minutes and who measured them go into the plan, so the calibrator can
+  # re-normalize at whatever state it reads (code-check round 3, link#259).
+  raw_min <- stats::setNames(as.numeric(w$n), w$wsg)
+  raw_cls <- stats::setNames(host_class(w$host), w$wsg)
   # Dispatcher-equivalent: each group's minutes times the learned speed of the
   # class that measured them (link#259; equal state, no change).
   w$n <- weights_normalize(as.numeric(w$n), w$host, speed_state)
@@ -342,6 +349,8 @@ if (nzchar(minutes_schema)) {
   w <- DBI::dbGetQuery(conn,
     "SELECT watershed_group_code AS wsg, count(*)::numeric AS n
        FROM whse_basemapping.fwa_stream_networks_sp GROUP BY 1")
+  raw_min <- NULL
+  raw_cls <- NULL
   weight_unit <- "segments"
   weight_desc <- "stream-segment count (fwa_stream_networks_sp)"
 }
@@ -582,7 +591,9 @@ if (nzchar(plan_out)) {
                      speed = host_speeds[g_host],
                      speed_source = speeds$source[g_host],
                      weight_unit = weight_unit,
-                     weight = vapply(g_wsg, weight_of, numeric(1)))
+                     weight = vapply(g_wsg, weight_of, numeric(1)),
+                     minutes = if (is.null(raw_min)) NA_real_ else unname(raw_min[g_wsg]),
+                     measured_by = if (is.null(raw_cls)) NA_character_ else unname(raw_cls[g_wsg]))
   utils::write.table(plan, plan_out, sep = "\t", quote = FALSE, row.names = FALSE, na = "")
   message(sprintf("wrote the plan (%d groups, %s) to %s", nrow(plan), weight_unit, plan_out))
 }

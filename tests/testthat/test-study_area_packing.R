@@ -287,3 +287,13 @@ test_that("the speed a run was packed at decides routing, never what is learned"
   out2 <- e$speeds_calibrate(l2, st, run_uid = "u2", date_utc = "d")
   expect_equal(out2$state$factor[out2$state$name == "m4"], 1)
 })
+
+test_that("plan weights are re-normalized at a given state; unmeasured groups keep theirs", {
+  e <- pk_env()
+  st <- data.frame(name = c("m1", "cloud"), factor = c(1, 0.5), last_updated = "d", n_runs = 1L,
+                   source_run_uid = "u")
+  expect_equal(e$plan_weights_at(c(25, 10, 7), c(50, 10, NA), c("cloud", "m1", NA), st),
+               c(25, 10, 7))
+  expect_equal(e$plan_weights_at(c(25, 10, 7), c(50, 10, NA), c("cloud", "m1", NA)),
+               c(50, 10, 7))
+})
