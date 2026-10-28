@@ -246,6 +246,14 @@ if (length(dup)) {
 # note), and it is what packed the 2026-10-17 run at 165 / 205 / 272 / 231
 # host-minutes against an even 218.
 #
+# Measured minutes win out of sample (link#259, data-raw/logs/packing_259/):
+# fitted on 2026-10-17 and scored on 2026-10-23's legs, segments set a leg's
+# share of the mean leg up to 28.9 points wrong, minutes 3.6. Every leg ran 11
+# to 20 % over the minutes estimate because every group was slower on 10-23
+# (drift between builds), which costs the estimate, not the balance. Pack a
+# provincial run on --minutes-schema; research/study_area_run.md, "How hosts
+# are packed", has the table.
+#
 # Segment count otherwise: one query, no prior run needed. Either way a group
 # with no value takes the median rather than zero, so an unknown never packs
 # as free, and the count of such groups is printed.
