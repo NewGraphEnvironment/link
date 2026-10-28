@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.69.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.69.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,9 +32,20 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.69.3/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.69.4" id="link-0694">link 0.69.4<a class="anchor" aria-label="anchor" href="#link-0694"></a></h2>
+<p><strong>The variants harness runs a variant’s groups in parallel</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/406" class="external-link">#406</a>). <code>data-raw/habitat_variants_build.R --jobs=N</code> (1 to 16, default 1, which keeps the serial loop) runs each group’s pass on a PSOCK cluster, one connection per worker, longest groups first. Variants still run one after another, and only the build process writes <code>built.csv</code> and <code>variant_timing.csv</code>.</p>
+<ul><li>
+<strong>Measured on <a href="https://github.com/NewGraphEnvironment/link/issues/331" class="external-link">#331</a>’s nine groups on m4</strong>, from <a href="https://github.com/NewGraphEnvironment/link/issues/404" class="external-link">#404</a>’s base: at <code>--jobs=4</code> a variant’s pass takes 2.10 min against 6.23 serial and the <code>default</code> pass 3.02 against 8.06, so <a href="https://github.com/NewGraphEnvironment/link/issues/331" class="external-link">#331</a>’s 12-rung ladder drops from about 83 min to 28. All 45 digests are identical across widths 1, 2, 4 and 8. Eight jobs add only 10 to 13 %, because classify and connect contend in the database, as <a href="https://github.com/NewGraphEnvironment/link/issues/374" class="external-link">#374</a> found for the recompute.</li>
+<li>
+<strong><code>variant_timing.csv</code></strong> gains a <code>jobs</code> column (older rows read 1) and a <code>pass_wall</code> row per variant, the wall minutes a width is judged on.</li>
+<li>
+<strong>A build at <code>--jobs</code> above 1 that is killed, or loses a worker, leaves the other workers and their database backends writing.</strong> The log names their R and backend pids to stop before relaunching. <code>--wsgs</code> is now de-duplicated, so no two workers share a group.</li>
+<li>Record: <code>data-raw/logs/variants_parallel_406/</code>.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.69.3" id="link-0693">link 0.69.3<a class="anchor" aria-label="anchor" href="#link-0693"></a></h2>
 <p><strong>Pins fresh at v0.44.0</strong>, so a tuning-cost measurement names one fresh rather than whichever each host resolved (<a href="https://github.com/NewGraphEnvironment/link/issues/404" class="external-link">#404</a>, <a href="https://github.com/NewGraphEnvironment/link/issues/269" class="external-link">#269</a>).</p>
