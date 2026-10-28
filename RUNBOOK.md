@@ -1516,7 +1516,9 @@ bash data-raw/pretest_run.sh --config=default --schema=fresh_default
   `--only=<WSG>,...` models a subset of the picks and its record is never a pass.
 
 **How the driver reads it.** `preflight_local()` runs `data-raw/pretest_check.R`
-(`pretest_record_check()`). The newest `pass` or `fail` row for the config
+(`pretest_record_check()`), which first refuses a checkout with uncommitted
+changes outside `data-raw/logs` (a record speaks for commits, and the
+dispatcher leg models the working tree). The newest `pass` or `fail` row for the config
 decides, so a later fail voids an earlier pass. It clears the run when it
 passed on a clean tree, its fresh SHA is the installed one (a gate that modelled
 nothing records the installed fresh too), its range starts at or before every
@@ -1552,7 +1554,8 @@ nothing). The check applies to every launch, dispatcher-only included;
   the call graph walks functions only (none today).
 - The driver's own environment for a group: `study_area_run.sh` is mapped
   `unexercised`, so a change to it is named and voids a record, but the gate
-  models under its own copy of that environment.
+  models under its own copy of that environment. The remote legs' environment
+  (`study_area_remote.sh`) is outside the gate's paths.
 
 Evidence: `data-raw/logs/pretest_372/` (its README indexes it).
 

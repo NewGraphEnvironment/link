@@ -26,6 +26,9 @@ out <- tryCatch({
   if (!grepl("^[a-z_][a-z0-9_]*$", schema) || !nzchar(config) || !nzchar(head_sha)) {
     stop("needs --config, --schema and --head")
   }
+  # The record speaks for commits; a dispatcher leg models the working tree
+  # (load_all), so uncommitted code is code no gate ran.
+  dirty <- pretest_git(repo, c("status", "--porcelain", "--", ":(top,exclude)data-raw/logs"))
   suppressPackageStartupMessages({
     library(DBI)
     library(RPostgres)
@@ -35,7 +38,10 @@ out <- tryCatch({
   on.exit(DBI::dbDisconnect(conn))
   reg <- function(t) !is.na(DBI::dbGetQuery(conn, sprintf("SELECT to_regclass('%s.%s')::text AS t",
                                                           schema, t))$t)
-  if (!reg("log_pretest")) {
+  if (length(dirty)) {
+    list(ok = FALSE, why = sprintf("the checkout has uncommitted changes (%s), which no gate ran",
+                                   paste(utils::head(sub("^...", "", dirty), 3), collapse = ", ")))
+  } else if (!reg("log_pretest")) {
     list(ok = FALSE, why = sprintf("no gate record (%s.log_pretest does not exist)", schema))
   } else {
     records <- DBI::dbGetQuery(conn, sprintf("SELECT * FROM %s.log_pretest", schema))

@@ -47,10 +47,8 @@ PRETEST_ENTRIES <- c("lnk_db_conn", "lnk_config", "lnk_load_overrides",
 
 # The gate's own rules: what it reads to judge a change. A record is judged
 # by these at HEAD, so a change to any of them since the record voids it.
-PRETEST_RULES <- c("data-raw/pretest.R", "data-raw/pretest_inputs.csv", "data-raw/pretest/",
-                   "data-raw/pretest_pick.R", "data-raw/pretest_run.sh", "data-raw/pretest_verdict.R",
-                   "data-raw/pretest_check.R", "data-raw/pretest_override.sql",
-                   "data-raw/pretest_reach_fresh.R")
+# A pattern, not a list: a new gate script is covered without anyone adding it.
+PRETEST_RULES <- c(":(glob)data-raw/pretest*", ":(glob)data-raw/pretest/**")
 
 
 pretest_map_read <- function(path) {
@@ -261,6 +259,39 @@ pretest_overall <- function(verdicts) {
   if (length(verdicts) && all(verdicts == "pass")) "pass" else "fail"
 }
 
+# The functions of package `pkg` a function names, read from its parsed body
+# and formals (not from deparsed text, which wraps lines): `pkg::x`,
+# `pkg:::x`, and `getFromNamespace("x", "pkg")` (a call with no namespace
+# argument counts for any package, as within a package it names its own).
+pretest_ns_calls <- function(f, pkg) {
+  out <- character()
+  # Elements are read by index and an empty one (`x[, 1]`, a formal with no
+  # default) is skipped before it is bound: binding it is an error.
+  walk_each <- function(x) {
+    for (i in seq_along(x)) if (!identical(x[[i]], quote(expr = ))) walk(x[[i]])
+  }
+  walk <- function(x) {
+    if (is.call(x)) {
+      h <- x[[1]]
+      if ((identical(h, as.name("::")) || identical(h, as.name(":::"))) &&
+          identical(as.character(x[[2]]), pkg)) {
+        out <<- c(out, as.character(x[[3]]))
+      }
+      if (identical(h, as.name("getFromNamespace")) ||
+          (is.call(h) && length(h) == 3L && identical(as.character(h[[3]]), "getFromNamespace"))) {
+        a <- as.list(x)[-1]
+        nm <- if (!is.null(a[["x"]])) a[["x"]] else if (length(a)) a[[1]] else NULL
+        where <- if (!is.null(a[["ns"]])) a[["ns"]] else if (length(a) >= 2L) a[[2]] else NULL
+        if (is.character(nm) && (is.null(where) || identical(where, pkg))) out <<- c(out, nm)
+      }
+      walk_each(x)
+    }
+  }
+  walk(body(f))
+  walk_each(formals(f))
+  unique(out)
+}
+
 # Files a package's modelling path reaches from `entries`, by the static call
 # graph (codetools), following getFromNamespace("<name>", "<pkg>") calls too.
 # `ns` is a loaded namespace with srcrefs (pkgload::load_all). Calls built at
@@ -269,12 +300,11 @@ pretest_overall <- function(verdicts) {
 pretest_reach <- function(ns, entries, what = c("files", "functions")) {
   what <- match.arg(what)
   fns <- Filter(function(n) is.function(get(n, ns)), ls(ns, all.names = TRUE))
+  pkg <- environmentName(ns)
   calls <- lapply(fns, function(n) {
     f <- get(n, ns)
     g <- intersect(codetools::findGlobals(f, merge = TRUE), fns)
-    txt <- deparse(body(f))
-    s <- regmatches(txt, gregexpr("getFromNamespace\\(\"[.A-Za-z0-9_]+\"", txt))
-    s <- sub("getFromNamespace\\(\"([^\"]+)\"", "\\1", unlist(s))
+    s <- pretest_ns_calls(f, pkg)
     unique(c(g, intersect(s, fns)))
   })
   names(calls) <- fns
@@ -376,11 +406,7 @@ pretest_reach_fresh <- function(repo, fresh_dir) {
   ln <- asNamespace("link")
   fns <- pretest_reach(ln, pretest_entries(file.path(repo, "data-raw", "wsg_run_one.R"), ln),
                        what = "functions")
-  txt <- unlist(lapply(fns, function(n) deparse(body(get(n, ln)))))
-  direct <- sub("^fresh:::?", "", unlist(regmatches(txt, gregexpr("fresh:::?[.A-Za-z_][A-Za-z0-9_.]*", txt))))
-  by_name <- unlist(regmatches(txt, gregexpr("getFromNamespace\\(\"[.A-Za-z0-9_]+\", *\"fresh\"", txt)))
-  by_name <- sub("getFromNamespace\\(\"([^\"]+)\".*", "\\1", by_name)
-  calls <- unique(c(direct, by_name))
+  calls <- unique(unlist(lapply(fns, function(n) pretest_ns_calls(get(n, ln), "fresh"))))
   if (!length(calls)) stop("link's modelling path calls no fresh function: the walk saw nothing", call. = FALSE)
   suppressPackageStartupMessages(pkgload::load_all(fresh_dir, quiet = TRUE, export_all = TRUE,
                                                    attach = FALSE))

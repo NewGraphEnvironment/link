@@ -63,6 +63,7 @@ test_that("a file mapped none is not reached from wsg_run_one.R's entry points",
 test_that("pretest_reach follows getFromNamespace calls", {
   e <- pt_env()
   ns <- new.env()
+  attr(ns, "name") <- "x"
   src <- c("a <- function() b()",
            "b <- function() getFromNamespace(\"c\", \"x\")()",
            "c <- function() 1",
@@ -390,6 +391,15 @@ test_that("pretest_check.R clears a run only on a passing record, and an overrid
     list(status = if (is.null(attr(out, "status"))) 0L else attr(out, "status"),
          out = paste(out, collapse = " "))
   }
+  # Uncommitted code is code no gate ran: a dirty checkout never clears.
+  dirty <- system2("git", c("-C", shQuote(root), "status", "--porcelain", "--",
+                            shQuote(":(top,exclude)data-raw/logs")), stdout = TRUE)
+  if (length(dirty)) {
+    r <- check()
+    expect_identical(r$status, 1L)
+    expect_match(r$out, "uncommitted changes")
+    skip("checkout dirty: the rest needs a committed tree")
+  }
   r <- check()
   expect_identical(r$status, 1L)
   expect_match(r$out, "log_pretest does not exist")
@@ -485,4 +495,29 @@ test_that("no fresh file mapped none is reached at the fresh DESCRIPTION pins", 
   hits <- e$pretest_match(data.frame(repo = "fresh", path = file.path("R", reached),
                                      stringsAsFactors = FALSE), map)$hits
   expect_identical(e$pretest_none_reached(hits, reached, repo = "fresh"), character())
+})
+
+test_that("namespace calls are read from the parsed body and formals, however deparse wraps them", {
+  e <- pt_env()
+  f <- function(outlets = fresh::frs_wsg_outlets()) {
+    resolve <- utils::getFromNamespace(".frs_habitat_models",
+                                       "fresh")
+    a_very_long_name_that_pushes_the_line_past_the_deparse_width <- list(1, 2, 3, 4, 5, 6, 7, 8, 9)
+    specs <- getFromNamespace(".frs_near_river_specs", ns = "fresh")
+    other <- getFromNamespace("x", "crate")
+    fresh:::.frs_sql_num(1)
+  }
+  expect_setequal(e$pretest_ns_calls(f, "fresh"),
+                  c("frs_wsg_outlets", ".frs_habitat_models", ".frs_near_river_specs", ".frs_sql_num"))
+})
+
+test_that("a new gate script voids a record without anyone listing it", {
+  e <- pt_env()
+  r <- pt_git_repo(e)
+  desc <- c("Version: 1", "Remotes:", "    NewGraphEnvironment/fresh@v0.44.0")
+  dir.create(file.path(r$dir, "data-raw"), showWarnings = FALSE)
+  a <- r$commit(list("R/a.R" = "a", DESCRIPTION = desc), "run")
+  b <- r$commit(list("data-raw/pretest_newthing.R" = "x"), "new gate script")
+  out <- e$pretest_git(r$dir, c("diff", "--name-only", a, b, "--", e$PRETEST_RULES))
+  expect_identical(out, "data-raw/pretest_newthing.R")
 })
