@@ -76,3 +76,26 @@ Pin the environment in the stamp, because these are comparative numbers:
 
 | Error | Resolution |
 |-------|------------|
+| `--step=bundles` stopped: "re-writing default's thresholds does not reproduce … byte for byte" (on main and the branch) | `write_thresholds()` quoted `species_code` and `*_edge_types` by name; #364 (`1ae0c34f`) added the text column `rear_river_measure`. Now quotes every column holding a non-numeric value; reproduces all three bundles' files |
+| `diff -r` printed a usage text and no verdict | `diff` is shadowed by a wrapper in this shell; `/usr/bin/diff` |
+
+## Plan review (2026-10-28)
+
+`review-plan.md` holds the findings. Disposition: the replace-key blocker and the `t0`-window
+gap were already met by the code as written (key on (variant, group, step); total taken
+before `record_built()`); the `persist_init` row, the commit-before-build ordering, the
+`pg_stat_activity` snapshot, the backend-pid filter and the fresh#275 wording were folded
+into `task_plan.md`; the `write_bundle` self-check assumption was real (table above).
+
+## Environment at Phase 1
+
+- m4, Apple M4 Max, 128 GB; docker `fresh-db` up 4 weeks. Load average 4.4 / 5.1 / 5.3 at
+  11:40 PDT from another session's work, no R process of ours.
+- fresh 0.43.0 (`18d92ceb`) was installed; `DESCRIPTION` pins `>= 0.44.0` /
+  `@v0.44.0`. Installed v0.44.0 at 19:03 UTC: `RemoteSha 22034c1a22f5629edeaa4b6fcf70eb6980208450`
+  = `git rev-parse v0.44.0^{commit}`.
+- `lnk_preflight_vintage()` OK at 19:05 UTC, oldest 3.6 d.
+- No `score*` / `working_score*` schema on m4; `discharge.fwa_v1_segment_monthly` is wet's
+  annual pick built 2026-10-15T02:06:57Z (wet `acb820f`).
+- Two lints on the new script lines are the hanging-indent style the file carries 63 times
+  already; left to match the file.

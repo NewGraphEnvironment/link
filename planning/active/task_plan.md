@@ -58,30 +58,48 @@
    so docs can be committed here while it runs (`load_all()` and `lnk_stamp` read the tree).
 
 ## Phase 1: environment (before any build)
-- [ ] Install fresh v0.44.0 on m4; confirm `packageDescription("fresh")$RemoteSha` equals
+- [x] Install fresh v0.44.0 on m4; confirm `packageDescription("fresh")$RemoteSha` equals
       `git -C ~/Projects/repo/fresh rev-parse v0.44.0^{commit}` and `pkgload::load_all()` loads
-- [ ] `lnk_preflight_vintage()` passes (7-day default) on docker fwapg; record the oldest stamp
-- [ ] Write `data-raw/logs/variant_cost_404/README.md` "Run decision" (host, fresh, link SHA,
+      (installed 2026-10-28 19:03 UTC, `RemoteSha 22034c1a` = the tag commit)
+- [x] `lnk_preflight_vintage()` passes (7-day default) on docker fwapg; record the oldest stamp
+      (OK at 19:05 UTC, oldest 3.6 d, `whse_fish.pscis_assessment_svw`)
+- [x] Write `data-raw/logs/variant_cost_404/README.md` "Run decision" (host, fresh, link SHA,
       closure, variant, load at launch, why the base is rebuilt), before the build, as
       `observation_breaks_396/README.md` does
 
 ## Phase 2: split the timer in `habitat_variants_build.R`
-- [ ] `run_variant()`: a `Sys.time()` around each of the seven steps, named `classify`,
+- [x] `run_variant()`: a `Sys.time()` around each of the seven steps, named `classify`,
       `connect`, `digest_working`, `persist`, `copy_access_analyze`, `gate`, `digest_persist`;
       the `discharge_join` before `t0` timed too, as a row outside the total; keep the
-      existing `say("variant %s %s done in %.1f min ...")` line as the total
-- [ ] `run_base()`: rows `base_model` (around `lnk_pipeline_run()`) and `base_recompute`
+      existing `say("variant %s %s done in %.1f min ...")` line as the total. The total is
+      taken right after step 7, before `record_built()` and the timing row's own queries
+      (plan review), so the seven sum to it with only R overhead as residual
+- [x] `lnk_persist_init()`, once per variant outside `t0`, gets a `persist_init` row with no
+      group (plan review)
+- [x] `run_base()`: rows `base_model` (around `lnk_pipeline_run()`) and `base_recompute`
       (per focal group) in the same file, outside the total
-- [ ] Rows go to `<out>/variant_timing.csv`: `variant, watershed_group_code, species, step,
+- [x] Rows go to `<out>/variant_timing.csv`: `variant, watershed_group_code, species, step,
       seconds, in_total, n_segments, load_1min, built_at, link_head, fresh_version`;
       `n_segments` from `<base schema>.streams` for the group; `load_1min` from `uptime`
-      (NA on failure); rows for the pair just built replace earlier ones, as `built.csv` does
-- [ ] One `say()` per group listing the step minutes, beside the total line
-- [ ] Header comment and `data-raw/habitat_score/README.md` name the file
-- [ ] `--step=bundles` output byte-identical before and after (the instrumentation touches no
-      model path)
+      (NA on failure), taken at the pass's start; a pass writes its rows once, and they
+      replace earlier rows for the same (variant, group, step), not the pair (plan review:
+      the pair key would drop the base rows)
+- [x] One `say()` per group listing the step minutes, beside the total line
+- [x] Header comment and `data-raw/habitat_score/README.md` name the file
+- [x] `--step=bundles` runs at the branch. It stopped on main and the branch alike: the
+      `write_thresholds()` self-check (`default`'s CSV byte for byte) failed because its quote
+      list named `species_code` and `*_edge_types` and #364 added the text column
+      `rear_river_measure` (`"model"`). Fixed by quoting every column holding a non-numeric
+      value, which reproduces `default`, `bcfishpass` and `default_tuned` byte for byte.
+      Byte-identity of the bundles across the instrumentation cannot be shown against main
+      (main stops first); the real build's digest invariants are that check
 
 ## Phase 3: build and measure
+- [ ] Commit Phase 2 and push the branch before any build: the dirty check covers the script,
+      and the worktree checks the branch out (plan review)
+- [ ] At launch and at the end, a `pg_stat_activity` snapshot (other backends and their
+      `application_name`) into the README, beside the load average: the issue's "whether
+      the run shared the database with anything else" (plan review)
 - [ ] `--step=base --variants=data-raw/habitat_score/variants_331.csv
       --roles=data-raw/habitat_score/wsg_roles_331.csv --prefix=score404_
       --out=<abs>/data-raw/logs/variant_cost_404`, detached (`nohup … & disown`), from the
@@ -103,7 +121,9 @@
       against the longest group
 - [ ] Only if one step holds more than half the pass (gate decision 6): re-run that variant
       on one group under `PGOPTIONS='-c log_min_duration_statement=0'`, take the statement
-      durations from `docker logs fresh-db`, record them as `statements_<step>.csv`
+      durations from `docker logs fresh-db` filtered to the session's `pg_backend_pid()`
+      (the log holds every session's statements; plan review), record them as
+      `statements_<step>.csv`
 
 ## Phase 5: record and verdict
 - [ ] README: Measurement (numbers with units, the model / verification / write split, the
@@ -112,7 +132,9 @@
       terms), or a named next change, added to #377's "Iteration speed" list with its
       expected saving (`gh issue edit 377 --body-file`)
 - [ ] fresh#275 gets the classify and cluster minutes per group as a comment (our repo), so
-      its record describes the same calls
+      its record describes the same calls; say that the rows wrap link's entry points
+      (`frs_params()` + `frs_habitat_classify()`; `.frs_run_connectivity`, cluster plus the
+      connected-waterbody pass, not `frs_cluster()` alone) (plan review)
 - [ ] `CLAUDE.md` Status entry (facts not worth re-deriving), `NEWS.md` line; tick #404's
       acceptance boxes
 
@@ -125,7 +147,8 @@
 
 Verification of each change: Phase 2 by the REVL pre-flight (step seconds sum to the total,
 `built.csv` and both digest invariants still pass, bundles byte-identical); Phase 3 by
-`variant_timing.csv` holding 9 groups × (4 `default` + 7 variant + 1 `discharge_join`) rows
-plus 17 `base_model` and 9 `base_recompute` rows; Phase 4 by `analyze.R`'s residual
+`variant_timing.csv` holding 9 groups × (4 `default` + 7 variant + 2 `discharge_join`) rows,
+2 `persist_init` rows, one `base_model` row per group modelled in this run (17 on a clean
+base; a resumed group writes none, plan review) and 9 `base_recompute` rows; Phase 4 by `analyze.R`'s residual
 assertion; Phase 5 by the acceptance boxes on #404.
 
