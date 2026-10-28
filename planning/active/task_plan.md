@@ -107,8 +107,8 @@ What exploration established (read-only):
 
 ## Validation
 
-- [ ] Tests pass (`devtools::test()`; scripts are `data-raw/`, so mainly a no-regression check)
-- [ ] `/code-check` clean (once over the branch with `/code-check branch`)
+- [x] Tests pass (`devtools::test()` at `e4569c3e`: 4,354 passed, 0 failed, 0 errors; later commits touch only prose and `data-raw/`)
+- [x] `/code-check` clean (once over the branch with `/code-check branch`: three rounds, ended on round 3's enumeration of every quantified claim; `review-round{1,2,3}.md`)
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
