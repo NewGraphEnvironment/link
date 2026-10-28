@@ -148,7 +148,7 @@
 
 ## Validation
 
-- [ ] Tests pass (`devtools::test()`; the script has no tests, the pre-flight is its check)
+- [x] Tests pass (`devtools::test()`; the script has no tests, the pre-flight is its check): 4518 pass, 0 fail, 0 skip, 20:40 to 20:51 UTC
 - [ ] `/code-check` clean (once over the branch with `/code-check branch`)
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
