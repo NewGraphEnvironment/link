@@ -76,6 +76,9 @@ SCRATCH="fresh_pretest_${CONFIG}"
 TS="$(date -u +%Y%m%d_%H%M%S)"
 [ -n "$OUT" ] || OUT="$REPO_ROOT/data-raw/logs/pretest/${TS}_${CONFIG}"
 mkdir -p "$OUT"
+# Absolute, so the pick and the verdict (run from the repo root) and this
+# shell read and write the same directory.
+OUT="$(cd "$OUT" && pwd)"
 
 psql_q() { PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d fwapg -X -q -v ON_ERROR_STOP=1 -t -A "$@"; }
 

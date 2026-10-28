@@ -283,16 +283,31 @@ pretest_reach <- function(ns, entries) {
   sort(unique(stats::na.omit(files)))
 }
 
-# The SQL for each group's newest finished build in a persist schema's log:
-# the history a pick is bounded against, and the link SHAs it was built at.
-pretest_history_sql <- function(schema) {
+# Changed link files mapped only `none` that the modelling path reaches at the
+# code being checked (`reached`: basenames from pretest_reach()). The map's
+# `none` is a claim test-pretest.R checks; this checks it where the gate and
+# the driver run, so a call added into a `none` file voids that claim.
+pretest_none_reached <- function(hits, reached) {
+  if (is.null(reached) || !nrow(hits)) return(character())
+  r <- hits[hits$repo == "link" & grepl("^R/", hits$path), , drop = FALSE]
+  only_none <- vapply(split(r$input, r$path), function(x) all(x == "none"), logical(1))
+  p <- names(only_none)[only_none]
+  p[basename(p) %in% reached]
+}
+
+# The SQL for each group's newest finished build under one config in a
+# persist schema's log: the history a pick is bounded against, and the link
+# SHAs it was built at. A schema can hold another config's builds (`default`'s
+# YAML schema is `fresh`, which the bcfishpass bundle writes).
+pretest_history_sql <- function(schema, config) {
+  stopifnot(grepl("^[a-z_][a-z0-9_]*$", schema), grepl("^[a-z][a-z0-9_]*$", config))
   sprintf(
     "SELECT DISTINCT ON (watershed_group_code)
             watershed_group_code AS wsg, host, link_sha, link_dirty, date_start,
             extract(epoch FROM (date_end - date_start)) / 60 AS minutes
        FROM %s.log
-      WHERE date_end IS NOT NULL AND date_start IS NOT NULL
-      ORDER BY watershed_group_code, date_start DESC", schema)
+      WHERE date_end IS NOT NULL AND date_start IS NOT NULL AND config_name = '%s'
+      ORDER BY watershed_group_code, date_start DESC", schema, config)
 }
 
 # The default --since: the link SHA of the earliest of the groups' newest
@@ -309,6 +324,12 @@ pretest_since_default <- function(history) {
   h$link_sha[order(h$date_start)][1]
 }
 
+# The link files the modelling path reaches, loading the source tree at `repo`.
+pretest_reach_repo <- function(repo) {
+  suppressPackageStartupMessages(pkgload::load_all(repo, quiet = TRUE, export_all = FALSE))
+  pretest_reach(asNamespace("link"), PRETEST_ENTRIES)
+}
+
 # Is `a` an ancestor of, or equal to, `b`? FALSE also when either is unknown
 # to the repo; only exit 1 means "not an ancestor", anything else is an error.
 pretest_is_ancestor <- function(repo, a, b) {
@@ -322,7 +343,10 @@ pretest_is_ancestor <- function(repo, a, b) {
 # The history SHAs a gate's range must start at or before: refuses with the
 # first one `since` does not reach.
 pretest_since_covers <- function(repo, since, history_shas) {
-  for (h in unique(stats::na.omit(history_shas))) {
+  if (anyNA(history_shas)) {
+    return("history holds a build with no link_sha, which no range can be shown to cover")
+  }
+  for (h in unique(history_shas)) {
     if (!pretest_is_ancestor(repo, since, h)) {
       return(sprintf("the range starts at %s, after history built at %s", substr(since, 1, 12),
                      substr(h, 1, 12)))
@@ -343,7 +367,7 @@ pretest_since_covers <- function(repo, since, history_shas) {
 #     change, which only a new gate can pick for).
 # Returns list(ok, why, record).
 pretest_record_check <- function(records, config, head_sha, fresh_sha, history_shas,
-                                 repo, map, chain) {
+                                 repo, map, chain, reached = NULL) {
   no <- function(...) list(ok = FALSE, why = paste0(...), record = rec)
   rec <- NULL
   r <- records[records$config_name == config & records$verdict %in% c("pass", "fail"), , drop = FALSE]
@@ -351,7 +375,8 @@ pretest_record_check <- function(records, config, head_sha, fresh_sha, history_s
   rec <- r[order(r$run_at, decreasing = TRUE), , drop = FALSE][1, ]
   if (rec$verdict != "pass") return(no("the newest gate record failed: ", rec$notes))
   if (isTRUE(rec$link_dirty) || is.na(rec$link_dirty)) return(no("the gate ran on a dirty tree"))
-  if (!is.na(rec$fresh_sha) && !identical(rec$fresh_sha, fresh_sha)) {
+  if (is.na(rec$fresh_sha)) return(no("the gate recorded no fresh SHA"))
+  if (!identical(rec$fresh_sha, fresh_sha)) {
     return(no("the gate modelled fresh ", substr(rec$fresh_sha, 1, 12), ", installed is ",
               substr(fresh_sha, 1, 12)))
   }
@@ -369,7 +394,7 @@ pretest_record_check <- function(records, config, head_sha, fresh_sha, history_s
   if (nrow(m$unmapped)) {
     return(no("changed since the gate and unmapped: ", paste(m$unmapped$path, collapse = ", ")))
   }
-  moved <- unique(m$hits$path[m$hits$input != "none"])
+  moved <- unique(c(m$hits$path[m$hits$input != "none"], pretest_none_reached(m$hits, reached)))
   if (length(moved)) {
     return(no("changed since the gate, on the modelling path: ", paste(moved, collapse = ", ")))
   }

@@ -68,8 +68,8 @@ for (s in unique(c(schema, minutes_schema))) {
     refuse(s, ".log does not exist: no history")
   }
 }
-built <- DBI::dbGetQuery(conn, pretest_history_sql(schema))
-if (!nrow(built)) refuse(schema, ".log has no finished rows")
+built <- DBI::dbGetQuery(conn, pretest_history_sql(schema, config))
+if (!nrow(built)) refuse(schema, ".log has no finished rows under config ", config)
 if (!nzchar(since)) {
   since <- tryCatch(pretest_since_default(built), error = function(e) refuse(conditionMessage(e)))
   message(sprintf("--since from %s.log: the earliest of the groups' newest builds, link %s",
@@ -96,6 +96,12 @@ changed <- tryCatch(rbind(pretest_changed_link(repo, since_sha, until_sha, chain
                     error = function(e) refuse(conditionMessage(e)))
 map <- pretest_map_read(file.path(script_dir, "pretest_inputs.csv"))
 m <- pretest_match(changed, map, chain)
+# A `none` file the modelling path now reaches is no longer off it.
+reached_none <- pretest_none_reached(m$hits, pretest_reach_repo(repo))
+if (length(reached_none)) {
+  refuse("mapped none but reached from wsg_run_one.R's entry points: ",
+         paste(reached_none, collapse = ", "), "; give each the input that drives its cost")
+}
 
 dir.create(out, recursive = TRUE, showWarnings = FALSE)
 md <- file.path(out, "pretest.md")
@@ -141,7 +147,7 @@ if (length(unex)) {
 }
 
 mins <- if (identical(minutes_schema, schema)) built else
-  DBI::dbGetQuery(conn, pretest_history_sql(minutes_schema))
+  DBI::dbGetQuery(conn, pretest_history_sql(minutes_schema, config))
 history <- data.frame(wsg = built$wsg, stringsAsFactors = FALSE)
 i <- match(history$wsg, mins$wsg)
 history$minutes <- mins$minutes[i]

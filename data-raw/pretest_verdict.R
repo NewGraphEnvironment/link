@@ -86,12 +86,21 @@ if (nrow(picks)) {
   }
 } else {
   # Nothing modelled, so nothing logged it: the record carries what the pick
-  # read, and the driver's own pre-flight still checks the tree and fresh.
+  # read and the fresh installed now, read as the run log reads it, so the
+  # driver's check can compare it like any other record.
+  suppressPackageStartupMessages(pkgload::load_all(dirname(script_dir), quiet = TRUE))
+  st <- link:::.lnk_pkg_git_state("fresh")
   link_sha <- range[2]
   dirty <- FALSE
-  fresh_sha <- NA_character_
+  fresh_sha <- st$sha
+  fresh_bad <- is.na(fresh_sha) || !isFALSE(st$dirty)
+  if (fresh_bad) why <- c(why, "installed fresh unresolved or dirty")
 }
-overall <- if (!nrow(picks)) "pass" else pretest_overall(picks$verdict)
+overall <- if (!nrow(picks)) {
+  if (fresh_bad) "fail" else "pass"
+} else {
+  pretest_overall(picks$verdict)
+}
 groups_pass <- overall
 if (overall == "pass" && nrow(picks) && (length(link_sha) != 1L || length(fresh_sha) != 1L ||
                                           dirty || !identical(link_sha, range[2]))) {

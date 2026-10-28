@@ -296,10 +296,16 @@ test_that("a gate record holds across commits that touch only none files", {
   unm <- r$commit(list("R/new.R" = "n"), "new file")
   expect_match(chk(rec(), head = unm)$why, "unmapped: R/new.R")
   expect_error(chk(rec(link_sha = "0000000000000000000000000000000000000000")), "failed")
-  # a fresh pin bump voids a record, even one that modelled nothing (fresh_sha NA)
+  # a record without a fresh SHA never clears a run
+  expect_match(chk(rec(fresh_sha = NA_character_))$why, "recorded no fresh SHA")
+  # a fresh pin bump voids a record
   pin <- r$commit(list(DESCRIPTION = desc("3", fresh = "v0.45.0")), "pin fresh")
-  expect_match(chk(rec(fresh_sha = NA_character_), head = pin)$why, "pins fresh v0.45.0, the gate ran at v0.44.0")
-  expect_match(chk(rec(), head = pin, fresh = "f1")$why, "pins fresh v0.45.0")
+  expect_match(chk(rec(), head = pin, fresh = "f1")$why, "pins fresh v0.45.0, the gate ran at v0.44.0")
+  # a none file the modelling path now reaches counts as moved
+  expect_true(chk(rec())$ok)
+  reach <- e$pretest_record_check(rec(), "default", bump, "f1", run, r$dir, map, "default",
+                                  reached = c("a.R", "v.R"))
+  expect_match(reach$why, "on the modelling path: R/v.R")
 })
 
 test_that("fresh's changed files include inst/extdata, and git warnings never become paths", {
@@ -310,10 +316,13 @@ test_that("fresh's changed files include inst/extdata, and git warnings never be
   fr <- e$pretest_changed_fresh(r$dir, a, b)
   expect_identical(fr$path, "inst/extdata/wsg_outlet.csv")
   expect_identical(e$pretest_git(r$dir, c("rev-parse", "--verify", paste0(b, "^{commit}"))), b)
+  # Without quoting, `touch` would run in R's working directory: run there.
+  withr::local_dir(r$dir)
   expect_error(e$pretest_git(r$dir, c("rev-parse", "--verify", "x; touch pwned")), "failed")
   expect_false(file.exists(file.path(r$dir, "pwned")))
-  expect_identical(e$pretest_since_covers(r$dir, a, c(b, NA)), "")
+  expect_identical(e$pretest_since_covers(r$dir, a, b), "")
   expect_match(e$pretest_since_covers(r$dir, b, a), "after history built at")
+  expect_match(e$pretest_since_covers(r$dir, a, c(b, NA)), "no link_sha")
 })
 
 test_that("the default --since is the earliest newest build, and dirty history refuses", {
@@ -400,4 +409,21 @@ test_that("pretest_check.R clears a run only on a passing record, and an overrid
   r <- check()
   expect_identical(r$status, 1L)
   expect_match(r$out, "newest gate record failed")
+})
+
+test_that("history is read under the run's config only", {
+  e <- pt_env()
+  sql <- e$pretest_history_sql("fresh", "default")
+  expect_match(sql, "config_name = 'default'", fixed = TRUE)
+  expect_error(e$pretest_history_sql("fresh", "x'; drop"), "config")
+})
+
+test_that("pretest_none_reached names a none file the path reaches, and only that", {
+  e <- pt_env()
+  hits <- data.frame(repo = c("link", "link", "link", "fresh"),
+                     path = c("R/a.R", "R/b.R", "R/b.R", "R/c.R"),
+                     input = c("none", "none", "segments", "none"), why = "w",
+                     stringsAsFactors = FALSE)
+  expect_identical(e$pretest_none_reached(hits, c("a.R", "b.R", "c.R")), "R/a.R")
+  expect_identical(e$pretest_none_reached(hits, NULL), character())
 })
