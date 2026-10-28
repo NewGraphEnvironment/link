@@ -46,12 +46,12 @@ Two costs follow from cutting at every observation:
 - [x] `inst/extdata/configs/default/config.yaml`: `observation_breaks: top_per_species` with a comment in the house style (why, what reads code 2, bcfishpass's choice); `bcfishpass/config.yaml` comment names the key and that absent means `all`
 - [x] Roxygen: `lnk_pipeline_break()`'s break-source table row for `observations` says which positions under each value; its "omit an entry to skip both segmentation and access-gating" (`break.R:18-19`) corrected for observations, since omitting `observations` from `break_order` is the issue's "no observation breaks" fallback while code 2 is still computed from `<schema>.observations` (`lnk_pipeline_run.R:284`); no third knob value
 - [x] Tests (in `test-lnk_pipeline_break.R`, beside the builder; each shape and live test proved red against the bug restored): config check refuses a bad value and accepts both (`test-lnk_config.R`, beside `discharge_source`'s); the mocked-SQL test in `test-lnk_pipeline_break.R` (which calls `.lnk_pipeline_break_obs` positionally today) asserts `GROUP BY blue_line_key, species_code` under `top_per_species` and its absence under `all` / omitted; a live test (skipped without a DB) on a three-observation fixture (two species, one lower duplicate) yields exactly the two tops
-- [ ] `/code-check` deferred to `/code-check branch` (operator, at resume); committed
+- [x] `/code-check` deferred to `/code-check branch` (operator, at resume), which covered it; committed
 
 ## Phase 3: The validator reads a mid-segment observation
 - [x] Confirm the attach step's containing-segment branch (`lnk_vd_att`, `R/lnk_habitat_validate.R`; there is no `.lnk_hv_attach()`) covers an observation that no longer starts a segment; add a test with a point inside a segment that asserts `id_segment`, `n_cand` and that `n_unattached` is 0
 - [x] Roxygen "Which segment an observation is on" rewritten: the segment starting within 1 m, else the one containing the point; drop the 99 % claim (lines 43-44) and the "does not depend on segmentation" claim for the buffer (lines 53-55): the buffer enumerates segments by start and the attached segment's flags move with its gradient, so capture shares move with segmentation
-- [ ] `/code-check` deferred to `/code-check branch`; committed
+- [x] `/code-check` deferred to `/code-check branch`, which covered it; committed
 
 ## Phase 4: Build and measure (questions 1, 2, 3, 6)
 - [x] Run decision written first in `data-raw/logs/observation_breaks_396/README.md` (what re-segments, what is built here, primitives vintage, before state), as `segmentation_326/README.md` does
@@ -68,18 +68,19 @@ Two costs follow from cutting at every observation:
 - [x] `research/observation_breaks.md` (new topic file, provenance line, the six answers with numbers and producers) + a row in `research/README.md`; a pointer from `research/bcfp_segmentation_parity.md`'s break history
 - [x] RUNBOOK §2 (new §2c): observation breaks under each config, what reads code 2, the knob
 - [x] `inst/extdata/configs/default/README.md` lists no pipeline keys, so no row; `lnk_config()`'s roxygen, which does, names the knob
-- [ ] `/code-check branch` (rounds 1 to 5 run, a sixth on the written record), PWF archive, PR
+- [x] `/code-check branch` (six rounds, each round's fixes committed; `review-round{1..6}.md`) and PWF archive; the PR follows the archive
 
 ## Owed at the end (reported, done after merge)
 - [ ] Every persisted `default` group re-segments again at the next provincial run (stacks on #326's owed re-model, #377's runs row); the `bcfishpass` schema does not
-- [ ] If question 3's bias is still material, the two options in the issue go back to the operator as a new issue
-- [ ] Question 5's tributary redundancy removal, only if Phase 1's count is material
-- [ ] CLAUDE.md status entry (at archive / compact)
+- [x] If question 3's bias is still material, the two options in the issue go back to the operator as a new issue (not material: at UPCE's FISS sites the fish / no-fish median segment went from 98 / 195 m to 411 / 385 m; no issue)
+- [x] Question 5's tributary redundancy removal, only if Phase 1's count is material (not built: its premise does not hold, since a species' own top never changes its own code; the smaller near-exact set replaces it as the open choice)
+- [x] CLAUDE.md status entry (at archive / compact)
+- [ ] The operator's call: keep `top_per_species` or move `default` to the near-exact set (per species, the lowest record of any species more than 1 m above its raw top; `exact_set.csv`)
 
 ## Validation
 - [x] Tests pass (`devtools::test()`: 4,382 at `71ccc2ce` with the validator file's 19 collision errors, that file 433 / 433 alone at `a4d2247f`)
-- [ ] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] `/code-check` over the branch with `/code-check branch`: six rounds, ended on round 5's proof of the acceptance rule and round 6's check of every recorded figure, then a sweep for the flagged phrases
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
 
 **How each change is proved:** the knob by its negative test at manifest load; the builder by the mocked-SQL shape test and the live three-row fixture; code 2 by Phase 4's BEFORE → AFTER overlap join on four groups (no 0 ↔ {1, 2}, no 2 → 1, 1 → 2 only on segments starting at a kept top, count matching Phase 1); the `bcfishpass` config by identical segment counts and breaks against the #326 round-2 build of BULK and PARS; the validator by identical `n_obs` / `n_unattached` before and after; speed and bias by the measured minutes and segment lengths in the evidence directory, each with the SQL or script that produced it.
