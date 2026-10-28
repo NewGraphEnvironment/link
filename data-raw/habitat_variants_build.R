@@ -71,8 +71,9 @@
 # group that fails stops the build after the others return; every group whose
 # checks passed is recorded first. A build killed mid-variant has recorded
 # none of that variant's groups, though the schema may hold some of them, so
-# re-run the variant before scoring it. Workers outlive a killed build: stop
-# them with `pkill -f workRSOCK` before relaunching.
+# re-run the variant before scoring it. Workers outlive a killed build: the
+# log names their pids ("variants: workers <pids>"), so stop those before
+# relaunching. `pkill -f workRSOCK` would also stop other sessions' workers.
 #
 # Resumable: a base WSG whose streams_access is already in the base schema
 # (and, if focal, whose working schema survives) is not re-run. Variant passes
@@ -317,7 +318,9 @@ if (length(only) > 0L) {
   if (length(bad) > 0L) stop("--only names no variant: ", paste(bad, collapse = ", "),
                              call. = FALSE)
 }
-focal <- toupper(split_csv(opt("wsgs")))
+# Once each: two workers given one group would rebuild one working schema at
+# once (link#406).
+focal <- unique(toupper(split_csv(opt("wsgs"))))
 if (length(focal) == 0L) focal <- unique(roles$watershed_group_code)
 if (length(setdiff(focal, roles$watershed_group_code)) > 0L) {
   stop("--wsgs outside --roles: ",
@@ -989,6 +992,8 @@ start_cluster <- function(n) {
     conn <- do.call(lnk_db_conn, conn_args)
     NULL
   })
+  say("variants: workers %s", paste(unlist(parallel::clusterCall(cl, Sys.getpid)),
+                                     collapse = " "))
   ok <- TRUE
   cl
 }
