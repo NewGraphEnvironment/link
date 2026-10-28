@@ -21,6 +21,12 @@
 args <- commandArgs(trailingOnly = TRUE)
 dir <- if (length(args) >= 1L) args[1] else
   file.path("data-raw", "logs", "variant_cost_404")
+secs_of_day <- function(hms) {   # "HH:MM:SS" (a vector) to seconds since midnight
+  vapply(strsplit(hms, ":", fixed = TRUE), function(p) {
+    p <- as.numeric(p)
+    p[1] * 3600 + p[2] * 60 + p[3]
+  }, 1)
+}
 tm <- utils::read.csv(file.path(dir, "variant_timing.csv"),
                       stringsAsFactors = FALSE)
 tm$in_total <- as.logical(tm$in_total)
@@ -37,29 +43,37 @@ steps$pass_minutes <- ave(steps$minutes, key, FUN = sum)
 steps$share <- steps$minutes / steps$pass_minutes
 
 # -- the sum of the steps is the total the build printed ------------------------------
+# A pass's rows and its "done in" line are written in the same second (record_timing()
+# stamps built_at, then the line prints), so the line is matched on (variant, group,
+# time of day), within 2 s. That key survives a clone or a copy, which file order and
+# mtime do not, and it picks the latest run's line when a pass is in two logs (REVL:
+# the pre-flight, then the full pass), because the rows are the latest run's.
 logs <- list.files(dir, pattern = "^build_.*\\.log$", full.names = TRUE)
-logs <- logs[order(file.info(logs)$mtime)]   # oldest first, whatever the names sort to
-done <- unlist(lapply(logs, function(f) {
+done <- do.call(rbind, lapply(logs, function(f) {
   l <- grep("variant [^ ]+ [A-Z]{4} done in [0-9.]+ min", readLines(f, warn = FALSE),
             value = TRUE)
-  m <- regmatches(l, regexec("variant ([^ ]+) ([A-Z]{4}) done in ([0-9.]+) min", l))
-  stats::setNames(vapply(m, function(x) as.numeric(x[4]), 1),
-                  vapply(m, function(x) paste(x[2], x[3]), ""))
+  m <- regmatches(l, regexec(
+    "^([0-9]{2}:[0-9]{2}:[0-9]{2}) variant ([^ ]+) ([A-Z]{4}) done in ([0-9.]+) min", l))
+  data.frame(key = vapply(m, function(x) paste(x[3], x[4]), ""),
+             secs = vapply(m, function(x) secs_of_day(x[2]), 1),
+             logged = vapply(m, function(x) as.numeric(x[5]), 1))
 }))
+stamp <- tm$built_at[tm$in_total]
 passes <- unique(data.frame(key = key, variant = steps$variant,
                             wsg = steps$watershed_group_code,
-                            minutes = steps$pass_minutes))
-# The last line for a pass wins (REVL is re-run by the full pass after the pre-flight,
-# and its timing rows are replaced): logs are read oldest first, so drop earlier
-# duplicates by name.
-done <- done[!duplicated(names(done), fromLast = TRUE)]
-passes$logged <- done[passes$key]
+                            minutes = steps$pass_minutes,
+                            secs = secs_of_day(sub("^\\S+ (\\S+) .*$", "\\1", stamp))))
+passes$logged <- vapply(seq_len(nrow(passes)), function(i) {
+  hit <- done[done$key == passes$key[i] & abs(done$secs - passes$secs[i]) <= 2, ]
+  if (nrow(hit) != 1L) NA_real_ else hit$logged
+}, 1)
 passes$residual <- passes$minutes - passes$logged
 bad <- passes[is.na(passes$logged) |
                 abs(passes$residual) > pmax(0.02 * passes$logged, 0.05), ]  # 0.05: half the log's 0.1 min
 if (nrow(bad) > 0L) {
   print(bad)
-  stop("steps do not sum to the logged total (2 %, or the log's 0.1 min rounding)")
+  stop("a pass has no \"done in\" line at its built_at, or its steps do not sum to it ",
+       "(2 %, or the log's 0.1 min rounding)")
 }
 
 # -- steps.csv ------------------------------------------------------------------------

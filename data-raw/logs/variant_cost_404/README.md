@@ -53,15 +53,15 @@
 the worktree at `45b12b2e`, with no other backend on the database at any boundary
 (`pg_stat_activity`, client backends other than the build's own).
 
-| build | launched (UTC) | exited (UTC) | the script's own "done in" | host load (1 min) at launch |
+| build | launched (UTC) | last log line (UTC) | the script's own "done in" | host load (1 min) at launch |
 |---|---|---|---|---|
-| `--step=base` (17 groups, then 9 recomputes) | 19:09:47 | 20:19:54 | 69.6 min | 2.4 |
-| pre-flight `--step=variants --only=bt_rear_wet_p10 --wsgs=REVL` | 20:20:36 | 20:21:46 | 0.8 min | 2.2 |
-| `--step=variants --only=bt_rear_wet_p10` (9 groups, `default` pass first) | 20:22:17 | 20:36:26 | 13.8 min | 2.1 |
+| `--step=base` (17 groups, then 9 recomputes) | 19:09:47 | 20:19:23 | 69.6 min | 2.4 |
+| pre-flight `--step=variants --only=bt_rear_wet_p10 --wsgs=REVL` | 20:20:36 | 20:21:24 | 0.8 min | 2.2 (the base-end reading, 42 s before) |
+| `--step=variants --only=bt_rear_wet_p10` (9 groups, `default` pass first) | 20:22:17 | 20:36:09 | 13.8 min | 2.1 |
 
-Exit times are a waiter's first reading after the process was gone (within 30 s); the
-script's total excludes R start-up and `load_all()`. The end-of-run snapshot in
-`launch_state.txt` was taken at 20:36:35.
+The last log line is the script's own clock (PDT in the logs, UTC here); its total excludes
+R start-up and `load_all()`. `launch_state.txt`'s "exited" lines are a waiter's first reading
+after the process was gone (within 30 s), and its end-of-run snapshot was taken at 20:36:35.
 
 Another process loaded the host during the variant builds: the 1-minute load average each
 pass started at (`load_1min`) runs 2.1 to 6.3, highest at LHAF (6.3) and UBTN (6.3) in the
@@ -101,8 +101,9 @@ pass costs 0.6 min per variant over the nine groups (0.8 for `default`), and
 **Steps scale with the group** (`steps_vs_segments.png`, 25,044 to 46,004 persisted segments):
 classify and connect rise about linearly with segment count in both passes, with the
 all-species pass about twice the one-species pass per segment; persist rises more slowly from
-a floor of about 0.1 min. The two points above the connect fit (LHAF, UBTN) are the two
-passes that started at a load of 6.3 from another process.
+a floor of about 0.1 min. The point furthest above the connect fit (UBTN, 0.17 min where
+REVL and UARL, of about its size, take 0.06 and 0.07) is a pass that started at a load of
+6.3 from another process.
 
 **Beside the base.** The base run modelled the 17-group closure in 67.1 min (`base_model`
 rows: 1.7 min for LPCE to 7.0 for KOTR; 2.9 to 7.0 for the nine focal groups) and recomputed
