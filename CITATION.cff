@@ -9,7 +9,7 @@ type: software
 license: MIT
 title: 'link: Develop, Test and Communicate Intrinsic Habitat and Connectivity Models
   for the BC Freshwater Atlas Stream Network'
-version: 0.69.2
+version: 0.69.3
 doi: 10.5281/zenodo.23264990
 abstract: 'Tools for developing, testing and communicating intrinsic habitat models
   on stream networks: where each fish species could spawn and rear, and which of that
@@ -34,7 +34,7 @@ preferred-citation:
     email: al@newgraphenvironment.com
     orcid: https://orcid.org/0000-0002-3495-2128
     affiliation: New Graph Environment Ltd.
-  version: 0.69.2
+  version: 0.69.3
   date-released: '2026-10-28'
   url: https://newgraphenvironment.github.io/link/
   repository-code: https://github.com/NewGraphEnvironment/link
