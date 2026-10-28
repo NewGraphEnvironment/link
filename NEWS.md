@@ -1,3 +1,10 @@
+# link 0.69.3
+
+**Pins fresh at v0.44.0**, so a tuning-cost measurement names one fresh rather than whichever each host resolved ([#404](https://github.com/NewGraphEnvironment/link/issues/404), [#269](https://github.com/NewGraphEnvironment/link/issues/269)).
+
+- **Output-neutral.** fresh v0.44.0 changes `R/frs_point_snap.R` (an exact distance tie now breaks on the higher `downstream_route_measure`, not the lowest `linear_feature_id`) and adds `R/frs_migration_trial.R`. link calls neither: snapping goes through its own `lnk_points_snap()`, and nothing in `R/` calls `fresh::frs_point_snap()`. Verified against the `v0.43.0..v0.44.0` diff, which touches no other file in `R/`.
+- **Adopting fresh's tie rule in link is still owed** and is [#383](https://github.com/NewGraphEnvironment/link/issues/383), with its own sweep and live tests; this bump does not start it.
+
 # link 0.69.2
 
 **`default` breaks streams at each species' highest fish observation on each line, not at every observation** ([#396](https://github.com/NewGraphEnvironment/link/issues/396)). Measured on LKEL, BULK, UPCE, PARS and ELKR built both ways: segments fall 0.7 to 3.6 % and minutes do not move, so the change buys accuracy, not speed. The bias in segment length at fish sites closes: at UPCE's FISS sites, the median segment at sites with fish against sites without was 98 m against 195 m, and is now 411 m against 385 m.
