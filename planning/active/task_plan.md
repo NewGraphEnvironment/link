@@ -55,8 +55,8 @@ Operator, 2026-10-23: "Provincial runs should prob be pretended with scoped test
 
 ## Phase 2: input queries and the pick
 
-- [ ] One query per input under `data-raw/pretest/<input>.sql`, each returning `(watershed_group_code, value)` for every group. Each is checked against the DB (top rows printed); `near_river_conn` reproduces fresh's `conn_max` SQL
-- [ ] `data-raw/pretest_pick.R`: changed files, then inputs, then the top `--per-input` groups (default 2) among groups with history, then the union. It writes `<out>/picks.tsv` and the pick section of `<out>/pretest.md` (changed files, input per file, each query's text and top rows, the picks, the estimated minutes). It exits 2 on an unmapped file
+- [x] One query per input under `data-raw/pretest/<input>.sql`, each returning `(watershed_group_code, value)` for every group. Each is checked against the DB (top rows printed); `near_river_conn` reproduces fresh's `conn_max` SQL
+- [x] `data-raw/pretest_pick.R`: changed files, then inputs, then the top `--per-input` groups (default 2) among groups with history, then the union. It writes `<out>/picks.tsv` and the pick section of `<out>/pretest.md` (changed files, input per file, each query's text and top rows, the picks, the estimated minutes). It exits 2 on an unmapped file
 
 ## Phase 3: the gate driver
 
