@@ -21,10 +21,10 @@
 | `build_obs.R` | builds `default`'s observation set per group and province-wide into `zz396_cuts`, with the pipeline's own prep helper |
 | `cuts.sql`, `cuts.csv` | question 1 before building: positions today against tops, and which positions cut a segment (1 m rule) |
 | `province.sql`, `province.csv` | the same ratio province-wide |
-| `code2_class.sql`, `code2_class.csv` | the one access change expected: pieces that go from code 1 to 2 |
+| `code2_class.sql`, `code2_class.csv` | a pre-build estimate of the main access change: pieces that go from code 1 to 2 at a species' top (not a bound; `pre_post_diff.R` measures it) |
 | `redundancy.sql`, `redundancy.csv` | question 5 as the issue posed it: tops with the species also recorded up a tributary above (a moot premise, see the header) |
-| `exact_set.sql`, `exact_set.csv` | the break set that would keep code 2 exactly: per species, the lowest record more than 1 m above its top; not built |
-| `pre_post_diff.R`, `pre_post_diff.csv` | question 6: BEFORE against AFTER on measure-overlap pieces |
+| `exact_set.sql`, `exact_set.csv` | a smaller break set that would keep code 2 nearly as `all` gives it: per species, the lowest record more than 1 m above its raw top; not built |
+| `pre_post_diff.R`, `pre_post_diff.csv` | question 6: BEFORE against AFTER on measure-overlap pieces; every change must follow the direction its segment start moved |
 | `bias.R`, `bias.csv`, `bias_fiss_note.txt` | question 3: segment length and gradient at sites with and without fish (aggregates only) |
 | `readers_code2.md` | question 4: who reads code 2 against 1 |
 | `run.sh`, `status.tsv`, `driver.log`, `<step>_<WSG>.log` | the builds |

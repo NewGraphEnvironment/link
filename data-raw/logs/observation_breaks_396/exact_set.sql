@@ -9,9 +9,9 @@
 -- later break within 1 m releases it (RUNBOOK §2c); a kept position within 1 m
 -- of an FWA end does not cut; and where an FWA end or another source's cut lies
 -- between the top and the kept position, the turn happens there and the
--- position is not needed. So the count is an upper bound on what the rule needs,
--- and the rule is near-exact, not exact. Counted against `all` and
--- `top_per_species`.
+-- position is not needed. The first two make the rule keep too few positions,
+-- the third too many, so the count is the rule's own size, not a bound, and the
+-- rule is near-exact, not exact. Counted against `all` and `top_per_species`.
 --
 --   psql -X -A -F, -v wsg=PARS -v obs=obs_pars \
 --     -f data-raw/logs/observation_breaks_396/exact_set.sql
