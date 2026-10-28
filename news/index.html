@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.69.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.69.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,9 +32,23 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.69.2/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.69.2" id="link-0692">link 0.69.2<a class="anchor" aria-label="anchor" href="#link-0692"></a></h2>
+<p><strong><code>default</code> breaks streams at each species’ highest fish observation on each line, not at every observation</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/396" class="external-link">#396</a>). Measured on LKEL, BULK, UPCE, PARS and ELKR built both ways: segments fall 0.7 to 3.6 % and minutes do not move, so the change buys accuracy, not speed. The bias in segment length at fish sites closes: at UPCE’s FISS sites, the median segment at sites with fish against sites without was 98 m against 195 m, and is now 411 m against 385 m.</p>
+<ul><li>
+<strong><code>pipeline: observation_breaks:</code></strong> (new bundle key, checked at manifest load). <code>all</code> breaks at every observation, as bcfishpass does, and is the value when absent; the <code>bcfishpass</code> bundle keeps it. <code>top_per_species</code> breaks at each species’ farthest-upstream record per <code>blue_line_key</code>; <code>default</code> sets it, and <code>default_tuned</code> inherits it.</li>
+<li>
+<strong>Access moves only the way a segment’s start moved.</strong> Checked on every piece in all five groups: 1 → 2 on 6.1 km, all at species’ tops, and no change between blocked and open. <code>bcfishpass</code> builds of BULK and PARS are unchanged, and <code><a href="../reference/lnk_habitat_validate.html">lnk_habitat_validate()</a></code> scores the same records.</li>
+<li>
+<strong><code><a href="../reference/lnk_habitat_validate.html">lnk_habitat_validate()</a></code>’s docs</strong> now say an observation attaches to the segment starting within 1 m of it, else the one holding it, and a test pins the mid-segment case.</li>
+<li>
+<strong>A species’ own top break never moves its own “observed upstream” boundary:</strong> the access walk counts a record at a segment’s start as upstream of it. Putting each boundary at the highest fish is <a href="https://github.com/NewGraphEnvironment/link/issues/399" class="external-link">#399</a>; known-vs-suspected fish is <a href="https://github.com/NewGraphEnvironment/link/issues/398" class="external-link">#398</a> to <a href="https://github.com/NewGraphEnvironment/link/issues/403" class="external-link">#403</a>.</li>
+<li>
+<strong>Owed:</strong> every persisted <code>default</code> group re-segments at the next provincial run, stacked on <a href="https://github.com/NewGraphEnvironment/link/issues/326" class="external-link">#326</a>’s owed re-model. Mechanics: RUNBOOK §2c. Record: <code>research/observation_breaks.md</code>. Evidence: <code>data-raw/logs/observation_breaks_396/</code>.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.69.1" id="link-0691">link 0.69.1<a class="anchor" aria-label="anchor" href="#link-0691"></a></h2>
 <p><strong>Hosts are packed on measured minutes, and host speeds are learned from each run’s legs</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/259" class="external-link">#259</a>, folding in <a href="https://github.com/NewGraphEnvironment/link/issues/163" class="external-link">#163</a>). Scored out of sample, fitted on 2026-10-17 and tested on 2026-10-23’s buckets with KTSU’s and OKAN’s stalls left out: measured minutes put each leg’s share of the mean leg within 3.6 points, and FWA segments 28.9. Equal speeds did as well as fitted ones, so the learned state starts equal.</p>
