@@ -46,7 +46,7 @@ Consumers: knowledge#119 (archive layout `tune/CH_rear/<setup tokens>/`), knowle
 
 ## Phase 4: Docs and release
 - [x] RUNBOOK: a short "Output vocabulary" section (the axes, the rules, how to add a row, why a run refuses).
-- [ ] NEWS, the CLAUDE.md status, and a version bump as the final commit.
+- [x] NEWS, the CLAUDE.md status, and a version bump as the final commit.
 
 ## Owed at the end (reported, done after merge)
 - [ ] Before the next provincial run, the pre-run gate (#372) re-runs, because `R/` changed.
@@ -54,8 +54,8 @@ Consumers: knowledge#119 (archive layout `tune/CH_rear/<setup tokens>/`), knowle
 - [ ] #415 adds `cut-access` (or whatever name it settles on) when its minimal network is built.
 
 ## Validation
-- [ ] Tests pass
-- [ ] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
+- [x] Tests pass
+- [x] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 

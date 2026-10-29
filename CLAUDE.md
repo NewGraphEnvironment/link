@@ -11,6 +11,19 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-29, late night) — every build is named in an output vocabulary (#414)
+
+**`inst/extdata/vocabulary.csv` names what an output is on four axes, and every `lnk_pipeline_run()` writes its tokens to `<schema>.log` (`token_cut`, `token_acc`, `token_grad`, `token_flow`).** `lnk_vocabulary_resolve(cfg, loaded)` derives each axis's spec from what the run reads and matches one live row; a config with none is refused before the log row opens, and `study_area_run.sh`'s local pre-flight asks once before spend. `default` is `cut-full-top acc-v1 grad-seg q-fwapg`, `default_tuned` the same with `q-wet-fill`, `bcfishpass` `cut-full-ssf-all acc-bcfp grad-seg q-fwapg`; `default_extrabreaks` / `default_rearbreaks` have no rows and refuse (operator). Mechanics: RUNBOOK §6b, "Output vocabulary". Write-up: `research/output_vocabulary.md`.
+
+**Owed:** the next provincial run's pre-run gate (`R/` changed) and its builds are the first to carry tokens (older rows are NULL; knowledge#119 reads them). Variant schemas from `habitat_variants_build.R` carry no tokens of their own (follow-up drafted, not filed). #415 adds the minimal network's cut token.
+
+**Facts not worth re-deriving:**
+- **Access is its own axis because #326 cuts only where a modelled species' access changes.** Access gradients, `observation_*` lifts, `cfg$species`, presence, the code-held access-class map and `lnk_presence()`'s groups all move segments. A network is `cut` + `acc`.
+- **The spec folds nothing a reader distinguishes.** Code-check rounds 1 and 2 each found folds (locale sort, `t`/`TRUE`, NA/"", upper-cased species, dropped class names, 15-digit doubles, duplicate keys hidden by row sorting); round 3 verified a 17-step enumeration (`planning/archive/2026-10-issue-414-output-vocabulary/review-enumeration.md`). A spurious new token is the accepted direction.
+- **Data vintage gets no token:** observation records, the bcfishpass CSVs' rows, `observation_exclusions.csv` (operator: a correction list), FWA. Species pooling is validator-only. Whether the definite-barrier, control and habitat-classification files are present is in the cut spec; their rows are vintage.
+- **The append-only test against `origin/main` runs only in a checkout** (CI's shallow clone and `R CMD check` skip it). The recompute is not checked against the build's tokens.
+- **A code change in link or fresh that moves cuts needs a new token by hand**, and so does any change to `.lnk_vocabulary_canonical()` (it re-specs every `acc` row).
+
 ## Status (2026-10-29, night) — the recompute walks each barrier set once and builds arrays only where it reads them (#394)
 
 **link pins fresh v0.47.0 (0.69.6 pinned 0.46.0 for the prefilter, #409), and `lnk_pipeline_access()` asks each walk only for what it reads.** The per-species views and `pscis` take `frs_network_features(result = "exists")` (fresh#281); `anthropogenic` + `dams`, `remediations` (with a crossings table) and the observation walk keep arrays. Species views whose rows `fwa_downstream()` could admit from the group are identical share one walk (`.lnk_walk_keys()`). The access step on SALR, CHWK, LFRA and SETN (access step only, the dispatcher's 2026-10-23 build) went from 3.9 / 21.5 / 89.5 / 347.3 s at the prefilter to 4.0 / 9.3 / 35.3 / 136.5 s (26.9 / 535.0 / 1,145.7 / 763.6 at fresh 0.44.0), every output digest identical; scratch models of ADMS and ELKR digest identical in every persisted table at each step. Mechanics: RUNBOOK §3, "How the walks run". Verdict: `research/recompute_cost.md`. Evidence: `data-raw/logs/recompute_access_394/` (its README indexes it).

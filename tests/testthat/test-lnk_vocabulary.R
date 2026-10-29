@@ -233,6 +233,12 @@ test_that("what the pipeline reads exactly, the specs keep exactly", {
   nudged$parameters_fresh$access_gradient_max[i] <- 0.15000000000000002
   expect_false(identical(link:::.lnk_vocabulary_spec_acc(cfg, nudged), acc))
 
+  # A date column (a classed double) is written as a date, not a number.
+  dated <- loaded
+  dated$parameters_fresh$observation_date_min <-
+    as.Date(dated$parameters_fresh$observation_date_min)
+  expect_identical(link:::.lnk_vocabulary_spec_acc(cfg, dated), acc)
+
   # Rows are sorted before hashing, so a duplicate key, whose first row the
   # pipeline reads, is refused.
   dup <- loaded

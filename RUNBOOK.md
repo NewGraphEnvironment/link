@@ -814,6 +814,12 @@ spec change. Retire and re-add the affected tokens in the same PR. Changing
 `.lnk_vocabulary_canonical()` or the digest inputs re-specs every `acc` token the same
 way.
 
+**The recompute is not checked.** `wsg_recompute_one.R` rewrites `streams_access` from
+the config at the commit it runs, and `log_recompute` carries `config_hash` but no tokens.
+A `--recompute-only` at a later commit whose presence table or lifts changed ships access
+decided under rules other than the build's `token_acc`. Within one run the repo is frozen,
+so this only bites a recompute run later: compare its `config_hash` with the build's.
+
 **Rows from before.** Builds logged before link 0.70.0 have NULL tokens. The
 consolidate copies the columns both sides share after bringing the destination's log
 tables up to the dispatcher's link (`schema_consolidate.R`), so the dispatcher must run

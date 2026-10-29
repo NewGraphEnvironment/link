@@ -48,7 +48,7 @@ So access is its own axis, and the cut axis keeps naming the method:
 
 | Axis | Prefix | Covers | Spec |
 |---|---|---|---|
-| cut | `cut-` | break sources in order; `observation_breaks` when observations are a source; gradient classes | canonical string |
+| cut | `cut-` | break sources in order; `observation_breaks` when observations are a source; gradient classes (name and value); whether the run has the definite-barrier, control and habitat-classification files | canonical string |
 | acc | `acc-` | species the rules model; each species' access gradient and observation lifts (`parameters_fresh.csv`); the presence table | sha256 of the parsed values |
 | grad | `grad-` | how a segment's gradient is measured | `gradient=segment` |
 | flow | `q-` | `discharge_source` and `discharge_fill` | canonical string |

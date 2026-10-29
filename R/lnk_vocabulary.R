@@ -236,7 +236,8 @@ lnk_vocabulary_resolve <- function(cfg, loaded = NULL) {
   df <- as.data.frame(df, stringsAsFactors = FALSE)
   cols <- sort(names(df), method = "radix")
   enc <- function(v) {
-    out <- if (is.double(v)) .lnk_vocabulary_num(v) else as.character(v)
+    num <- is.double(v) && !inherits(v, c("Date", "POSIXt", "difftime"))
+    out <- if (num) .lnk_vocabulary_num(v) else as.character(v)
     out <- gsub("\\", "\\\\", out, fixed = TRUE)
     out <- gsub("\t", "\\t", out, fixed = TRUE)
     out <- gsub("\n", "\\n", out, fixed = TRUE)
