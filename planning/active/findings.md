@@ -41,3 +41,7 @@ Tracked on #377.
 ## Another client on m1's database (2026-10-29 03:05 UTC on)
 
 A client reaching m1's postgres through an ssh tunnel from another tailnet host runs short `frs_network_features()` array walks over `barriers_*_access` views in bursts (sampled 24 × 5 s: active in 9). It is not this session and not the wet duckdb job on m1. measure.R refuses beside it, so the variants run with `--allow-busy`, interleaved per group, with the other backends counted at each walk (`walks.tsv`, `other_backends`) and per run (`other_backends_max`).
+
+## A live recompute on m1, and my collision with it (2026-10-29 03:05–03:14 UTC)
+
+The other client (through the ssh tunnel) is recomputing on `fresh_default`: `zz_lnk_access_prior_setn` and `zz_lnk_streams_setn` are its tables, and the plan review saw it run a habitat-gate `UPDATE`. measure.R called `lnk_access()`, which drops and recreates `zz_lnk_streams_<aoi>`, the same name a live recompute of that group uses. The round was stopped before it reached SETN. Killing the R client left its backend walking my `zz_lnk_streams_chwk` (CHWK BT); `pg_terminate_backend` was refused by the auto-mode classifier, the walk ended on its own within two minutes, and I dropped the table. measure.R now uses its own `zz394_streams_<aoi>`, a `lock_timeout`, and drops its tables on exit. The SALR rows taken before the change are kept as `measure_round0.tsv` / `walks_round0.tsv` (the `lnk_access()` path; all six digests identical: 27.6 / 26.4 s at `base044`, 3.7 / 3.7 at `prefilter`, 3.7 / 3.7 at `exists`).

@@ -90,7 +90,11 @@
 #'   the `remediated_dnstr_ind` column.
 #' @param segment_id_col Character. Default `"id_segment"`.
 #'
-#' @return `conn` invisibly, for piping.
+#' @return A tibble, one row per segment in `aoi`: `segment_id_col`, the
+#'   `has_barriers_*_dnstr` flags, `access_<sp>` codes, `dam_dnstr_ind` /
+#'   `remediated_dnstr_ind` when computed, and, with `observations`, the
+#'   `obsrvtn_species_codes_upstr` list-column. Written to `to` (scalar
+#'   columns only) when given.
 #'
 #' @family pipeline
 #'

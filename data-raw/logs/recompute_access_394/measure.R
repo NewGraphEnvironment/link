@@ -2,17 +2,20 @@
 # measure.R — the recompute's access step, timed walk by walk, on one variant
 # of link and fresh (link#394, folding in #409).
 #
-# For each group, runs lnk_access(merge = FALSE, build_views = FALSE) the way
-# wsg_recompute_one.R does (same species, presence and views), into a scratch
-# table, and records:
+# For each group, runs the recompute's access step the way lnk_access(merge =
+# FALSE, build_views = FALSE) does (same species, presence, views and scoped
+# segments table), into a scratch table, and records:
 #   - the step's wall time and each frs_network_features() walk (table,
 #     result mode, direction, seconds, rows, and the other active client
 #     backends when it returned): walks.tsv
 #   - an md5 of the output over every column, ordered by id_segment, so two
 #     variants can be compared for identical output: measure.tsv
-# The scratch table is dropped afterwards. lnk_access() also builds and drops
+# It calls lnk_pipeline_access() itself, with its own scoped segments table
+# (`zz394_streams_<aoi>`), because lnk_access() builds and drops
 # `<schema>.zz_lnk_streams_<aoi>`, the name a live recompute of the same group
-# uses, which is one more reason the script refuses beside another session.
+# uses: a run beside one would drop the other's table. Its scratch tables are
+# dropped on exit. Each row records the write counters of the tables the walks
+# read (`inputs`), so rows taken while something wrote them can be told apart.
 #
 # Variants are code and installed fresh, not flags: load_all() runs from
 # LNK_SRC (a worktree of the commit to measure), and the installed fresh is
@@ -50,6 +53,7 @@ fresh_sha <- substr(utils::packageDescription("fresh")$RemoteSha %||% "", 1, 8)
 conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
                     user = "postgres", password = "postgres")
 invisible(DBI::dbExecute(conn, "SET statement_timeout = '1800000'"))
+invisible(DBI::dbExecute(conn, "SET lock_timeout = '60s'"))
 
 others <- function() DBI::dbGetQuery(conn,
   "SELECT count(*)::int AS n FROM pg_stat_activity
@@ -64,6 +68,17 @@ sch <- "fresh_default"
 cfg <- lnk_config("default")
 cfg$pipeline$schema <- sch
 loaded <- lnk_load_overrides(cfg)
+
+# Write counters of what the walks read: barriers, overrides, streams.
+inputs <- function() {
+  x <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT relname, n_tup_ins + n_tup_upd + n_tup_del AS n
+     FROM pg_stat_user_tables WHERE schemaname = %s
+       AND relname IN ('barriers', 'barrier_overrides', 'streams')
+     ORDER BY relname", DBI::dbQuoteString(conn, sch)))
+  paste(sprintf("%s:%s", x$relname, format(x$n, scientific = FALSE)),
+        collapse = ",")
+}
 
 orig <- fresh::frs_network_features
 walks <- NULL
@@ -82,33 +97,64 @@ for (wsg in wsgs) {
   active <- lnk_pipeline_species(cfg, loaded, wsg)
   pres <- lnk_presence(loaded$wsg_species_presence, wsg)
   to <- paste0(sch, ".zz394_", tolower(wsg), "_out")
+  streams_scoped <- paste0(sch, ".zz394_streams_", tolower(wsg))
+  drop_scratch <- function() {
+    for (t in c(to, streams_scoped)) {
+      try(DBI::dbExecute(conn, sprintf("DROP TABLE IF EXISTS %s", t)),
+          silent = TRUE)
+    }
+  }
+  drop_scratch()
   walks <- NULL
   load_start <- load1()
+  inputs_start <- inputs()
+  sp_set <- tolower(active)
 
   t0 <- Sys.time()
-  testthat::with_mocked_bindings(
-    lnk_access(conn, cfg, aoi = wsg,
-               table_streams  = paste0(sch, ".streams"),
-               table_barriers = paste0(sch, ".barriers"),
-               table_to       = to,
-               merge = FALSE, presence = pres, species = active,
-               build_views = FALSE),
-    frs_network_features = function(conn, segments, features, ...) {
-      dots <- list(...)
-      s <- Sys.time()
-      res <- orig(conn, segments, features, ...)
-      walks <<- rbind(walks, data.frame(
-        features = features,
-        result = if (is.null(dots$result)) "ids" else dots$result,
-        direction = dots$direction,
-        seconds = round(as.numeric(difftime(Sys.time(), s, units = "secs")), 3),
-        rows = nrow(res),
-        other_backends = others(),
-        segments_md5 = digest::digest(sort(as.character(res[[1]])), algo = "md5")))
-      res
-    },
-    .package = "fresh"
-  )
+  tryCatch({
+    # lnk_access()'s scoped segments table (R/lnk_access.R), under our own name.
+    for (sql in c(
+      sprintf("CREATE TABLE %s AS SELECT * FROM %s.streams
+               WHERE watershed_group_code = %s",
+              streams_scoped, sch, DBI::dbQuoteLiteral(conn, wsg)),
+      sprintf("CREATE INDEX ON %s (id_segment)", streams_scoped),
+      sprintf("CREATE INDEX ON %s USING GIST (wscode_ltree)", streams_scoped),
+      sprintf("CREATE INDEX ON %s USING GIST (localcode_ltree)", streams_scoped),
+      sprintf("CREATE INDEX ON %s (blue_line_key)", streams_scoped),
+      sprintf("ANALYZE %s", streams_scoped))) {
+      DBI::dbExecute(conn, sql)
+    }
+    testthat::with_mocked_bindings(
+      lnk_pipeline_access(conn,
+        segments = streams_scoped, aoi = wsg, to = to,
+        barriers_per_sp = stats::setNames(
+          as.list(paste0(sch, ".barriers_", sp_set, "_access")), sp_set),
+        observations = NULL, presence = pres,
+        barrier_sources = list(
+          anthropogenic = paste0(sch, ".barriers_anthropogenic_unified"),
+          pscis         = paste0(sch, ".barriers_pscis_unified"),
+          dams          = paste0(sch, ".barriers_dams_unified")),
+        crossings_table = NULL),
+      frs_network_features = function(conn, segments, features, ...) {
+        dots <- list(...)
+        s <- Sys.time()
+        res <- orig(conn, segments, features, ...)
+        walks <<- rbind(walks, data.frame(
+          features = features,
+          result = if (is.null(dots$result)) "ids" else dots$result,
+          direction = dots$direction,
+          seconds = round(as.numeric(difftime(Sys.time(), s, units = "secs")), 3),
+          rows = nrow(res),
+          other_backends = others(),
+          segments_md5 = digest::digest(sort(as.character(res[[1]])), algo = "md5")))
+        res
+      },
+      .package = "fresh"
+    )
+  }, error = function(e) {
+    drop_scratch()
+    stop(e)
+  })
   secs <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
 
   cols <- DBI::dbGetQuery(conn, sprintf(
@@ -122,7 +168,8 @@ for (wsg in wsgs) {
             md5(string_agg(t::text, '|' ORDER BY t.id_segment)) AS md5
      FROM (SELECT %s FROM %s) t",
     paste(cols, collapse = ", "), to))
-  invisible(DBI::dbExecute(conn, sprintf("DROP TABLE IF EXISTS %s", to)))
+  inputs_end <- inputs()
+  drop_scratch()
 
   stamp <- data.frame(
     variant = variant, wsg = wsg, date_utc = format(t0, tz = "UTC", usetz = FALSE),
@@ -135,7 +182,8 @@ for (wsg in wsgs) {
     n_columns = length(cols), output_md5 = dig$md5,
     other_backends = n_others,
     other_backends_max = max(c(n_others, walks$other_backends)),
-    load1_start = load_start, load1_end = load1()),
+    load1_start = load_start, load1_end = load1(),
+    inputs_start = inputs_start, inputs_end = inputs_end),
     file.path(out_dir, "measure.tsv"))
   append_tsv(cbind(stamp[rep(1L, nrow(walks)), ], walks),
              file.path(out_dir, "walks.tsv"))

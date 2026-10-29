@@ -15,7 +15,8 @@ still pins fresh v0.44.0, so neither reaches the recompute (#409 is open for the
 In `R/lnk_pipeline_access.R`, the natural per-species walks (`barriers_<sp>_access`) and the `pscis`
 source are reduced to `has_barriers_*_dnstr` by `id %in% result$id`, so they can take
 `result = "exists"`. The `anthropogenic`, `dams` and `remediations` walks keep arrays (`dam_dnstr_ind`
-and `remediated_dnstr_ind` read their first elements), and so does the upstream observation walk.
+and `remediated_dnstr_ind` read elements: the first anthropogenic and remediation, the whole dams
+array), and so does the upstream observation walk.
 The returned tibble carries no barrier arrays, so nothing downstream changes.
 
 Lever 2: each species has its own view, so the per-table cache never hits, and CHWK walks five
@@ -87,6 +88,14 @@ changes during the run.
 - [ ] Run variant `dedup` on the four groups, with digests equal to `base044`, and record the keys'
   own cost.
 - [ ] If the ceiling is under 10 %: skip the build, record why in the README and on #377.
+
+### Gate and acceptance for lever 2 (after the review, `review-plan.md` #12)
+
+- Gate: at `exists`, the seconds of walks whose segment set repeats an earlier walk in the same group,
+  summed over the four groups, over all walk seconds there: at least 10 %.
+- Keep: per group, `dedup` walks plus the key query below `exists` walks; digests equal to `base044`.
+- The key is the md5 of `row(...)::text` (NULL-safe), subpaths from length 0, and assumes nothing the
+  group's walks read changes during its access step (#374's readiness invariant).
 
 ## Phase 4: record and docs
 
