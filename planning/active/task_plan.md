@@ -34,8 +34,8 @@ Approved by the operator at the plan gate, 2026-10-28 ("Go all phases to pr").
 - [ ] `summary.R`: per group, lnk_access / walks / gate / mapping code, before vs after, and per walk against #261's table (the provincial share is left to the next run, AC1)
 
 ## Phase 3: model-time outputs do not move (m4, scratch schemas)
-- [ ] Build ADMS (SK/KO reach fresh#242's `connected_waterbody` path), NATR (BT, GR, KO, RB) and ELKR with `wsg_run_one.R` + `wsg_recompute_one.R` into `fresh_409b` (0.44.0) and `fresh_409a` (0.46.0), from one worktree at BASE
-- [ ] Per-group per-table digests (streams, barriers, streams_access, streams_mapping_code, every streams_habitat_<sp>) with `provincial_prep_367/compare.R`'s pattern, after asserting each schema's logged fresh: identical, as one host's builds are (#367). On any mismatch, rebuild the 0.44.0 side first (G3)
+- [x] Build ADMS (SK/KO reach fresh#242's `connected_waterbody` path), NATR (BT, GR, KO, RB) and ELKR with `wsg_run_one.R` + `wsg_recompute_one.R` into `fresh_409b` (0.44.0) and `fresh_409a` (0.46.0), from one worktree at BASE
+- [x] Per-group per-table digests (streams, barriers, streams_access, streams_mapping_code, every streams_habitat_<sp>) with `provincial_prep_367/compare.R`'s pattern, after asserting each schema's logged fresh: identical, as one host's builds are (#367). On any mismatch, rebuild the 0.44.0 side first (G3)
 - [ ] Drop the two scratch schemas once the digests are committed
 
 ## Phase 4: the pin
