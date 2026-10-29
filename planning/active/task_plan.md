@@ -44,7 +44,7 @@ Approved by the operator at the plan gate, 2026-10-28 ("Go all phases to pr").
 - [x] Tests: every downstream walk passes `aoi`; the floor equals the `Remotes:` tag; each shown to fail with its guard removed
 - [x] `test-pretest.R` passes at the new pin (24 / 0 failed / 0 skipped); the `none` rows name both tags, the reach being identical; `pretest_run.sh --pick-only` exits 0 over `1d00c04c..HEAD` (fresh v0.42.0..v0.46.0, 31 files)
 - [x] `devtools::test()` (1,180 / 0 failed / 1 skip, the dirty-tree test, which passes on a committed tree) and `lintr` (no new lints in changed files) at fresh 0.46.0
-- [ ] `devtools::check()` at fresh 0.46.0
+- [x] `devtools::check()` at fresh 0.46.0: 0 errors, 3 warnings, 3 notes, every one in files this branch does not touch (non-ASCII in `R/`, Rd cross-references and usage, top-level files, globals, Rd widths)
 
 ## Phase 5: record
 - [x] `data-raw/logs/prefilter_409/README.md` (environment stamps, method, numbers, evidence index)
@@ -60,7 +60,7 @@ Approved by the operator at the plan gate, 2026-10-28 ("Go all phases to pr").
 - [ ] Run the full pre-run gate (`pretest_run.sh --config=default --schema=fresh_default`) at the new pin before the next provincial run; the bump voids the 2026-10-29 record
 - [ ] #394 is unblocked: measure it on top of this release
 - [ ] The next provincial run's `log_recompute` minutes against 2026-10-23's, at `-j8` on the dispatcher (G7)
-- [ ] Follow-up issue: `lnk_access()`'s own scoped streams table is redundant beside fresh's (S1)
+- [x] Follow-up issue: `lnk_access()`'s own scoped streams table is redundant beside fresh's (S1): #411
 
 ## Validation
 

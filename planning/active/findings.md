@@ -32,6 +32,10 @@
 - **S1 (`lnk_access()`'s own scoped streams table is now redundant), deferred:** a follow-up; removing it here would change what is measured.
 - **AS1–AS4, noted.** AS1: the tie counts above make collation moot for these ids.
 
+## Code-check round 1 (`review-round1.md`)
+
+Seven findings, all documentation claims wider than the evidence, plus an uncommitted evidence file; all fixed. The per-call scope cost is 1.0 to 1.3 s only in the three small groups (LSKE 2.0 to 2.4, SETN 3.5 to 4.2); CHWK's anthropogenic walk got faster, not slower; model-time digests cover five table kinds, not `barrier_overrides` or `streams_near_river`; SETN a2 refused once, not twice; `rerun.R` checks for company only at its start; the remediation tie check covers 134 groups of one build; `pick_only.md` was untracked. Nothing in the code or the outputs.
+
 ## Errors Encountered
 
 | Error | Resolution |

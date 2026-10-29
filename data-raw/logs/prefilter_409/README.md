@@ -41,17 +41,20 @@ group-matched connectivity passes) against fresh v0.44.0. The verdict is in
   walk (`recompute/summary_walks.csv`).
 - `model_run.sh` and `compare.R` (Phase 3): ADMS (its SK and KO reach fresh#242's
   connected-waterbody pass), NATR and ELKR built with `wsg_run_one.R` into `fresh_409b` (0.44.0)
-  and `fresh_409a` (0.46.0), then every persisted table digested per group (every column,
-  geometry as EWKB; #367's `compare.R`). The schemas were dropped afterwards.
+  and `fresh_409a` (0.46.0), then `streams`, `barriers`, `streams_access`,
+  `streams_mapping_code` and every `streams_habitat_<sp>` digested per group (every column,
+  geometry as EWKB; #367's `compare.R`). `barrier_overrides` (link's) and `streams_near_river`
+  (from `frs_near_river.R`, unchanged between the pins; `frs_habitat_classify.R`'s only code
+  change is a progress count) were not. The schemas were dropped afterwards.
 - `ties_anthropogenic.sql`, `ties_remediations.sh`: whether fresh 0.45's new tiebreak (each
   array's `ORDER BY` now ends on the feature id) can move the two values link reads from an
   array's first element, `dam_dnstr_ind` and `remediated_dnstr_ind`. Read-only, on the
   dispatcher, before any write.
 - `reach.md`, `pick_only.md`: the pre-run gate at the new pin (below).
 
-**Three restarts, none an output change.** LSKE a2 first refused on autovacuum's lock on
+**Two refusals and one hand stop, none an output change.** LSKE a2 first refused on autovacuum's lock on
 `streams_access` (set off by the runs' own rewrites); the driver then also waited out locks, and
-resumed there (`RESUME=`). SETN a2 refused twice when another session's walks (on #394, in
+resumed there (`RESUME=`). SETN a2 refused once, after 72 minutes of waiting, when another session's walks (on #394, in
 `zz394_*` tables of `fresh_default`) took locks seconds after the driver saw quiet; the driver
 then required five minutes of continuous quiet (`QUIET_S`). With the dispatcher expected
 busy for hours more, the waiting driver was stopped by hand (no run in flight) and relaunched
@@ -74,7 +77,8 @@ v0.46.0. `recompute/status.txt` has every attempt.
   link keeps only membership from those arrays (`has_barriers_<sp>_dnstr`).
 - **The tiebreak cannot move link's first-element reads:** no two features share a position among
   the dispatcher's 502,233 anthropogenic rows (241 groups), nor among the 356,568 rows of the
-  remediation sets of the 134 groups whose working schemas it kept.
+  remediation sets of the 134 groups (of 138 working schemas it kept) that hold rows there. Both
+  counts describe the 2026-10-23 build; the remediation check covers only those groups.
 - **Model builds:** 25 of 25 non-empty group-tables identical (20 empty on both sides), barriers
   included (`model/model_digests.csv`).
 
@@ -95,10 +99,11 @@ client was active on the dispatcher by the end of the 0.46.0 run, so its 891 s m
 - Walks are the whole gain. Gate, mapping code and setup vary as much between runs of one
   version as between versions (LKEL's mapping code 4.4 to 7.3 s under 0.46.0 alone; first
   runs read colder); SETN's mapping code (76 against 47 s) is one pair.
-- **The natural walks gain 4.7× to 17×** (SETN 1.8×). **The anthropogenic, PSCIS and dam walks
-  lose**: each scoped call now pays about 1.1 to 1.4 s before it walks (fresh copies, indexes and
-  analyzes the group's segments into a temp table per call), which is most of a dam or PSCIS
-  walk's time under 0.46.0 (1.3 to 1.6 s against 0.15 to 0.5). A group runs 5 to 11 walks (SALR 5,
+- **The natural walks gain 4.7× to 17×** (SETN 1.8×). **Every PSCIS and dam walk loses, and the
+  anthropogenic walk in four groups of five** (CHWK's went 4.4 → 1.8 s): each scoped call now pays
+  a cost before it walks (fresh copies, indexes and analyzes the group's segments into a temp
+  table per call), larger in larger groups. The PSCIS and dam walks, which return little, rose by
+  about 1.0 to 1.3 s in SALR, LKEL and CHWK, 2.0 to 2.4 in LSKE and 3.5 to 4.2 in SETN (`recompute/summary_walks.csv`). A group runs 5 to 11 walks (SALR 5,
   the others 10 or 11), so that cost is paid 5 to 11 times. Walking each barrier set once (#394, lever 2) or reusing one
   scope across calls would remove most of it.
 - **Against #261's estimate:** its prefiltered walks ran 6.3× (SALR) to 24.6× (CHWK) faster on the
