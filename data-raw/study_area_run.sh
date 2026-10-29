@@ -79,6 +79,14 @@
 #                      run earlier — the hosts do not exist yet. A failure
 #                      burns via the EXIT trap.
 #
+# The pre-run gate (link#372) comes first: data-raw/pretest_run.sh models the
+# groups that stress each input the code changed since the last run drives,
+# and records a verdict in <schema>.log_pretest. preflight_local() refuses a
+# run that no passing record clears (pretest_check.R: the record's range
+# covers the history, its fresh is the installed one, and nothing on the
+# modelling path changed since the SHA it modelled). --pretest-note="<why>"
+# runs without one and records the reason (RUNBOOK §8d, "The pre-run gate").
+#
 # Post-conditions: every host must account for its whole bucket before its
 # consolidate (read from its database, not its log), and every run WSG must
 # have rows from a build this run finished in the persist afterwards. A group
@@ -150,6 +158,10 @@
 #   --preflight-note="why"  downgrade ONLY vintage + parity to warnings,
 #                           and only with a written reason. There is no
 #                           global bypass on purpose.
+#   --pretest-note="why"    run with no passing pre-run gate record
+#                           (link#372), with a written reason; the reason is
+#                           written to <schema>.log_pretest as an `override`
+#                           row under the run_uid (not on --preflight-only).
 #   --recompute-only --run-uid=<uid> [--wsgs=A,B]
 #                           finish an existing run on the dispatcher: coverage
 #                           for that run_uid, the recompute over every group
@@ -203,6 +215,7 @@ REFRESH_PRIMITIVES=0
 AUTO_INSTALL=0
 VINTAGE_MAX_DAYS=7
 PREFLIGHT_NOTE=""
+PRETEST_NOTE=""
 RUN_LABEL=""
 # How long to wait for a fresh droplet to accept a connection as the `cypher`
 # user. 600s, not the old effective ~150s: cypher_up returns early on snapshot
@@ -308,6 +321,11 @@ for arg in "$@"; do
     --preflight-note=*)
                        PREFLIGHT_NOTE="${arg#--preflight-note=}"
                        [ -n "$PREFLIGHT_NOTE" ] || { echo "FATAL: --preflight-note= requires a written justification, not an empty value" >&2; exit 1; } ;;
+    # Runs without a passing pre-run gate record (link#372), on a written
+    # reason that is recorded, as --preflight-note's is required.
+    --pretest-note=*)
+                       PRETEST_NOTE="${arg#--pretest-note=}"
+                       [ -n "$PRETEST_NOTE" ] || { echo "FATAL: --pretest-note= requires a written justification, not an empty value" >&2; exit 1; } ;;
     # Refuse an empty value rather than accepting it. `--run-label=` with
     # nothing after it would export LNK_RUN_LABEL="" — SET BUT EMPTY, which
     # Sys.getenv(x, NA) returns as "" rather than NA. R normalises it back to
@@ -582,6 +600,7 @@ echo "  recompute -j: $RECOMPUTE_JOBS"
 [ "$PREFLIGHT_ONLY" = "0" ] || echo "  MODE:         --preflight-only (no spend, no writes)"
 [ "$RECOMPUTE_ONLY" = "0" ] || echo "  MODE:         --recompute-only (finish run_uid $RUN_UID; no spend)"
 [ -z "$PREFLIGHT_NOTE" ] || echo "  OVERRIDE:     vintage+parity downgraded to warnings — $PREFLIGHT_NOTE"
+[ -z "$PRETEST_NOTE" ] || echo "  OVERRIDE:     no pre-run gate record required — $PRETEST_NOTE"
 
 # --- trap: burn cyphers on exit (safety net; explicit burn after consolidate) ---
 # burn_cyphers, host_account and the hold rules live in study_area_hosts.sh
@@ -1128,6 +1147,27 @@ cat(if (is.na(st$sha)) "" else st$sha, "|",
     echo "  ✓ fresh_sha ${fresh_sha_local:0:12} (clean)"
   fi
 
+  # --- gate: a pre-run gate record clears this code (link#372) -------------
+  # data-raw/pretest_run.sh models the groups that stress what changed since
+  # the last run and records its verdict in $SCHEMA.log_pretest. The record
+  # holds while nothing on the modelling path changed since the SHA it
+  # modelled, so a version bump or a CITATION commit does not void it.
+  local pt_out pt_rc
+  pt_out=$(cd "$REPO_ROOT" && Rscript data-raw/pretest_check.R --config="$CONFIG" \
+             --schema="$SCHEMA" --head="$RUN_SHA" --fresh-sha="$fresh_sha_local" 2>&1) \
+    && pt_rc=0 || pt_rc=$?
+  if [ "$pt_rc" = 0 ]; then
+    echo "  ✓ pre-run gate: $pt_out"
+  elif [ -n "$PRETEST_NOTE" ]; then
+    echo "  WARN: pre-run gate not cleared ($pt_out) — proceeding on --pretest-note"
+  else
+    echo "  ✗ pre-run gate not cleared: $pt_out"
+    [ "$pt_rc" = 1 ] || echo "    (the check itself could not run)"
+    echo "    Run: bash data-raw/pretest_run.sh --config=$CONFIG --schema=$SCHEMA"
+    echo "    or pass --pretest-note=\"<why>\" (recorded)"
+    fail=1
+  fi
+
   # --- gate: bcfp reference pinned, and exported to all hosts (link#262) --
   # The compare reference is the LOCAL snapshot fresh.streams_vw_bcfp, and the
   # build it was loaded from is recorded by snapshot_bcfp.sh in
@@ -1516,6 +1556,17 @@ if [ "$PREFLIGHT_ONLY" = "1" ]; then
   [ "$N_WK" -eq 0 ] || \
     echo "  NOT CHECKED (workers; need the buckets or their prep): prior rows in $SCHEMA, worker prep, parity, vintage."
   exit 0
+fi
+
+# --- record a run made without the pre-run gate (link#372) -----------------
+# After --preflight-only has exited, which promises no writes. The row's
+# verdict is `override`, which pretest_record_check() never reads as a gate.
+if [ -n "$PRETEST_NOTE" ]; then
+  PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d fwapg -X -q -v ON_ERROR_STOP=1 \
+    -v schema="$SCHEMA" -v config="$CONFIG" -v sha="$RUN_SHA" -v note="$PRETEST_NOTE" -v uid="$RUN_UID" \
+    -f "$REPO_ROOT/data-raw/pretest_override.sql" \
+    || { echo "FATAL: could not record --pretest-note in $SCHEMA.log_pretest"; exit 1; }
+  echo "  recorded --pretest-note in $SCHEMA.log_pretest (run_uid $RUN_UID)"
 fi
 
 # --- resolve drainage-closed DS-first buckets ---
