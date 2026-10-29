@@ -16,7 +16,7 @@ group-matched connectivity passes) against fresh v0.44.0. The verdict is in
 - **The two arms differ only in fresh:** v0.44.0 (`RemoteSha 22034c1a`) from the shared
   library, v0.46.0 (`8a5ca763`, equal to `git rev-parse v0.46.0^{commit}`) from a scratch
   library holding fresh alone, put first by `R_LIBS`. RPostgres 1.4.10, DBI 1.3.0, sf 1.1.2 and
-  withr 3.0.3 come from the shared library in both (pak had put copies of 26 dependencies into
+  withr 3.0.3 come from the shared library in both (pak had put copies of 25 dependencies into
   the scratch library; they were removed). Each run prints the fresh it loaded and its path
   (`recompute/rerun_<WSG>_<label>.log`, line 1); each model build's own `log` row names it
   (`model/model_provenance.csv`).

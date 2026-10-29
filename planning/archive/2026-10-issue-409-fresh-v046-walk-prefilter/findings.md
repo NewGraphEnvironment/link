@@ -11,7 +11,7 @@
 
 ## Library isolation
 
-`pak::pkg_install(lib = <scratch>)` installs every dependency it resolves into that library too (26 here: RPostgres, sf, DBI, …), so an `R_LIBS` arm would differ from the shared one in more than fresh. Keep only `fresh/` in the scratch library and check `find.package()` for the others (`data-raw/logs/prefilter_409/model/stamp.txt`, the `[rerun]` header line).
+`pak::pkg_install(lib = <scratch>)` installs the dependencies it resolves into that library too (25 here: RPostgres, sf, DBI, …; sf and s2 at newer versions than the shared library, the rest the same versions; corrected 2026-10-29 after a review of the convention append), so an `R_LIBS` arm would differ from the shared one in more than fresh. Keep only `fresh/` in the scratch library and check `find.package()` for the others (`data-raw/logs/prefilter_409/model/stamp.txt`, the `[rerun]` header line).
 
 ## Plan review (2026-10-29, `review-plan.md`): dispositions
 
