@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.69.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.69.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,9 +32,24 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.69.5/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.69.5" id="link-0695">link 0.69.5<a class="anchor" aria-label="anchor" href="#link-0695"></a></h2>
+<p><strong>A scoped pre-run gate before every provincial run</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/372" class="external-link">#372</a>). On 2026-10-23 the run was the first contact between new code and OKAN and KTSU, and the dispatcher lost about five hours while three cloud hosts idled.</p>
+<ul><li>
+<strong><code>data-raw/pretest_run.sh --config= --schema=</code></strong> reads the files changed since the last provincial run, in link and in fresh (between the two pins). It maps each to the inputs that drive its cost (<code>data-raw/pretest_inputs.csv</code>; one query per input in <code>data-raw/pretest/</code>: the near-river walk’s connector run, segments, steep segments, observations, PSCIS crossings, dams). It models each input’s top two groups into <code>fresh_pretest_&lt;config&gt;</code>, bounded at 3× their newest finished minutes with a wall-clock kill. An unmapped changed file refuses the gate.</li>
+<li>
+<strong><code>study_area_run.sh</code> refuses a run that no passing record clears</strong> (<code>&lt;schema&gt;.log_pretest</code>, <code>data-raw/pretest_check.R</code>). A record holds while nothing on the modelling path, the fresh pin or the gate’s own rules has changed since the SHA it modelled, so a version bump keeps it and an <code>R/</code> edit voids it. <code>--pretest-note="&lt;why&gt;"</code> runs without one and records the reason.</li>
+<li>
+<strong>Measured:</strong>
+<ul><li>The 0.66.6..0.68.0 range picks QUES for the walk and OKAN for dams. No input picks KTSU.</li>
+<li>The first real gate failed: TAKL and SAJR were killed at their bounds while another session ran six modelling workers on the database, so the gate now refuses to start beside other sessions (<code>--allow-busy</code> records an override).</li>
+<li>On a quiet database all eight picks passed at 36 to 75 % of their 0.68.0 minutes.</li>
+</ul></li>
+<li>Mechanics: RUNBOOK §8d, “The pre-run gate”. Evidence: <code>data-raw/logs/pretest_372/</code>.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.69.4" id="link-0694">link 0.69.4<a class="anchor" aria-label="anchor" href="#link-0694"></a></h2>
 <p><strong>The variants harness runs a variant’s groups in parallel</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/406" class="external-link">#406</a>). <code>data-raw/habitat_variants_build.R --jobs=N</code> (1 to 16, default 1, which keeps the serial loop) runs each group’s pass on a PSOCK cluster, one connection per worker, longest groups first. Variants still run one after another, and only the build process writes <code>built.csv</code> and <code>variant_timing.csv</code>.</p>

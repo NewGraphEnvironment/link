@@ -1,5 +1,40 @@
 # Changelog
 
+## link 0.69.5
+
+**A scoped pre-run gate before every provincial run**
+([\#372](https://github.com/NewGraphEnvironment/link/issues/372)). On
+2026-10-23 the run was the first contact between new code and OKAN and
+KTSU, and the dispatcher lost about five hours while three cloud hosts
+idled.
+
+- **`data-raw/pretest_run.sh --config= --schema=`** reads the files
+  changed since the last provincial run, in link and in fresh (between
+  the two pins). It maps each to the inputs that drive its cost
+  (`data-raw/pretest_inputs.csv`; one query per input in
+  `data-raw/pretest/`: the near-river walk’s connector run, segments,
+  steep segments, observations, PSCIS crossings, dams). It models each
+  input’s top two groups into `fresh_pretest_<config>`, bounded at 3×
+  their newest finished minutes with a wall-clock kill. An unmapped
+  changed file refuses the gate.
+- **`study_area_run.sh` refuses a run that no passing record clears**
+  (`<schema>.log_pretest`, `data-raw/pretest_check.R`). A record holds
+  while nothing on the modelling path, the fresh pin or the gate’s own
+  rules has changed since the SHA it modelled, so a version bump keeps
+  it and an `R/` edit voids it. `--pretest-note="<why>"` runs without
+  one and records the reason.
+- **Measured:**
+  - The 0.66.6..0.68.0 range picks QUES for the walk and OKAN for dams.
+    No input picks KTSU.
+  - The first real gate failed: TAKL and SAJR were killed at their
+    bounds while another session ran six modelling workers on the
+    database, so the gate now refuses to start beside other sessions
+    (`--allow-busy` records an override).
+  - On a quiet database all eight picks passed at 36 to 75 % of their
+    0.68.0 minutes.
+- Mechanics: RUNBOOK §8d, “The pre-run gate”. Evidence:
+  `data-raw/logs/pretest_372/`.
+
 ## link 0.69.4
 
 **The variants harness runs a variant’s groups in parallel**
