@@ -1,0 +1,61 @@
+[rerun] SALR a1: fresh 0.46.0 (8a5ca7637ec2ab8a9fb43483ba5b778116181fdf) from /private/tmp/claude-501/-Users-airvine-Projects-repo-link/4221294c-4a27-406d-99eb-272872c34dd8/scratchpad/rlib_fresh046/fresh
+[1] 0
+[1] 0
+NOTICE:  schema "zz409_backup" already exists, skipping
+
+[1] 0
+NOTICE:  table "streams_access_salr" does not exist, skipping
+
+NOTICE:  table "streams_mapping_code_salr" does not exist, skipping
+
+NOTICE:  table "streams_habitat_ch_salr" does not exist, skipping
+
+NOTICE:  table "streams_habitat_rb_salr" does not exist, skipping
+
+NOTICE:  table "zz_lnk_access_prior_salr" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_salr" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[1] 0
+                              step      s load_1min_end  wsg label  fresh
+1                       prior_copy  0.278          7.52 SALR    a1 0.46.0
+2                       lnk_access 14.583          7.52 SALR    a1 0.46.0
+3                     habitat_gate  2.934          7.52 SALR    a1 0.46.0
+4                     mapping_code  4.303          7.52 SALR    a1 0.46.0
+5                 downstream_guard  0.806          7.52 SALR    a1 0.46.0
+6                 lnk_access:walks  9.612          7.52 SALR    a1 0.46.0
+7 lnk_access:pipeline_access_other  2.245          7.52 SALR    a1 0.46.0
+8      lnk_access:setup_and_update  2.726          7.52 SALR    a1 0.46.0
+9                            total 23.203          7.52 SALR    a1 0.46.0
+                                 fresh_sha others_start others_end
+1 8a5ca7637ec2ab8a9fb43483ba5b778116181fdf            0          0
+2 8a5ca7637ec2ab8a9fb43483ba5b778116181fdf            0          0
+3 8a5ca7637ec2ab8a9fb43483ba5b778116181fdf            0          0
+4 8a5ca7637ec2ab8a9fb43483ba5b778116181fdf            0          0
+5 8a5ca7637ec2ab8a9fb43483ba5b778116181fdf            0          0
+6 8a5ca7637ec2ab8a9fb43483ba5b778116181fdf            0          0
+7 8a5ca7637ec2ab8a9fb43483ba5b778116181fdf            0          0
+8 8a5ca7637ec2ab8a9fb43483ba5b778116181fdf            0          0
+9 8a5ca7637ec2ab8a9fb43483ba5b778116181fdf            0          0
+               utc_end
+1 2026-10-29T01:28:00Z
+2 2026-10-29T01:28:00Z
+3 2026-10-29T01:28:00Z
+4 2026-10-29T01:28:00Z
+5 2026-10-29T01:28:00Z
+6 2026-10-29T01:28:00Z
+7 2026-10-29T01:28:00Z
+8 2026-10-29T01:28:00Z
+9 2026-10-29T01:28:00Z
+[rerun] SALR a1 (fresh 0.46.0) digests UNCHANGED across 4 tables; total 23.2 s

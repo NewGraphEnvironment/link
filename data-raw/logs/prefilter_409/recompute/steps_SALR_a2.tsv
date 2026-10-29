@@ -1,0 +1,10 @@
+step	s	load_1min_end	wsg	label	fresh	fresh_sha	others_start	others_end	utc_end
+prior_copy	0.262	6.9	SALR	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T01:28:32Z
+lnk_access	14.49	6.9	SALR	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T01:28:32Z
+habitat_gate	2.857	6.9	SALR	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T01:28:32Z
+mapping_code	4.314	6.9	SALR	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T01:28:32Z
+downstream_guard	1.378	6.9	SALR	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T01:28:32Z
+lnk_access:walks	9.615	6.9	SALR	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T01:28:32Z
+lnk_access:pipeline_access_other	2.015	6.9	SALR	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T01:28:32Z
+lnk_access:setup_and_update	2.86	6.9	SALR	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T01:28:32Z
+total	23.647	6.9	SALR	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T01:28:32Z

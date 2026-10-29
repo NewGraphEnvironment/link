@@ -606,3 +606,40 @@ test_that(".lnk_walk_keys sees the rows a walk can read, NULLs included", {
   expect_false(keys[["pg_temp.ka"]] == keys[["pg_temp.ke"]])
   expect_false(keys[["pg_temp.ka"]] == keys[["pg_temp.kh"]])
 })
+
+test_that("every downstream walk is scoped to the AOI, and the observation walk runs upstream", {
+  # fresh >= 0.45.0 prefilters a downstream walk's features only when it is
+  # given `aoi` (fresh#272); without it each walk drives from every feature in
+  # the province (link#261, link#409).
+  local_mocked_bindings(
+    # Two species views with different keys (link#394), so each is walked.
+    dbGetQuery = mock_keys_db(c("s1", "s2"), c("k1", "k2")),
+    .package = "DBI"
+  )
+  calls <- list()
+  local_mocked_bindings(
+    frs_network_features = function(conn, segments, features, ...) {
+      calls[[length(calls) + 1L]] <<- c(list(features = features), list(...))
+      mock_frs(list(s1 = "X1", s2 = character(0)))
+    },
+    .package = "fresh"
+  )
+  lnk_pipeline_access(
+    conn = structure(list(), class = "DBIConnection"),
+    segments = "s.streams",
+    aoi = "ADMS",
+    barriers_per_sp = list(bt = "s.barriers_bt", ch = "s.barriers_ch"),
+    observations = "s.observations",
+    wsg_presence = list(bt = TRUE, ch = TRUE),
+    barrier_sources = list(anthropogenic = "s.barriers_anthropogenic",
+                           dams = "s.barriers_dams"),
+    segment_id_col = "segmented_stream_id"
+  )
+  dir <- vapply(calls, function(x) x$direction, character(1))
+  aoi <- vapply(calls, function(x) if (is.null(x$aoi)) NA_character_ else x$aoi, character(1))
+  feat <- vapply(calls, function(x) x$features, character(1))
+  expect_setequal(feat[dir == "downstream"],
+                  c("s.barriers_bt", "s.barriers_ch", "s.barriers_anthropogenic", "s.barriers_dams"))
+  expect_identical(unname(aoi[dir == "downstream"]), rep("ADMS", 4L))
+  expect_identical(feat[dir == "upstream"], "s.observations")
+})

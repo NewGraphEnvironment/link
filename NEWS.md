@@ -1,13 +1,22 @@
-# link 0.69.6
+# link 0.69.7
 
-**The recompute's access step is 5.6 to 57 times faster, with the same output** ([#394](https://github.com/NewGraphEnvironment/link/issues/394), [#409](https://github.com/NewGraphEnvironment/link/issues/409)). Pins fresh v0.47.0.
+**The recompute walks each barrier set once and builds arrays only where it reads them** ([#394](https://github.com/NewGraphEnvironment/link/issues/394), on [#377](https://github.com/NewGraphEnvironment/link/issues/377)). Pins fresh v0.47.0. On top of 0.69.6's prefilter, the access step is a further 1.0 to 2.6 times faster, with the same output.
 
-- **fresh's prefilter** (fresh v0.45.0) cuts each `frs_network_features()` walk's feature side to what can lie downstream of the group. link needs no code for it, only the pin.
-- **Existence walks.** `lnk_pipeline_access()` asks for `result = "exists"` (fresh v0.47.0) on every walk it reads only as "is a barrier downstream": the per-species views and `pscis`. `anthropogenic` + `dams`, `remediations` and the observation walk keep their arrays.
+- **Existence walks.** `lnk_pipeline_access()` asks for `result = "exists"` (fresh v0.47.0) on every walk it reads only as "is a barrier downstream": the per-species views and `pscis`. `anthropogenic` + `dams`, `remediations` (with a crossings table) and the observation walk keep their arrays. fresh's existence mode is a `DISTINCT` over the same join, so the pairs are still enumerated and it gains modestly (SETN 1.2×).
 - **One walk per distinct barrier set.** Species views that hold the same rows within the walk's reach of the group share one walk, so CHWK, LFRA and SETN walk 7 tables instead of 11. A `barriers_per_sp` table now needs `watershed_group_code`, which the key reads (`lnk_barriers_views()` provides it).
-- **Measured** on SALR, CHWK, LFRA and SETN: the access step went from 26.9 / 535.0 / 1,145.7 / 763.6 s to 4.0 / 9.3 / 35.3 / 136.5 s, with every output digest identical. Scratch models of ADMS and ELKR digest identical in every persisted table at each step.
+- **Measured** on SALR, CHWK, LFRA and SETN on the dispatcher's 2026-10-23 build, access step only: 3.9 / 21.5 / 89.5 / 347.3 s at the prefilter, 4.0 / 9.3 / 35.3 / 136.5 s now (26.9 / 535.0 / 1,145.7 / 763.6 s at fresh 0.44.0). Every output digest is identical, and scratch models of ADMS and ELKR digest identical in every persisted table at each step.
 - **Hosts need fresh 0.47.0.** `lnk_preflight_fresh()` now asserts `frs_network_features(result)`, so re-prep workers and cloud hosts with `--auto-install`. The pre-run gate ([#372](https://github.com/NewGraphEnvironment/link/issues/372)) has to pass again before the next provincial run.
 - Mechanics: RUNBOOK §3, "How the walks run". Evidence: `data-raw/logs/recompute_access_394/`.
+
+# link 0.69.6
+
+**Pins fresh at v0.46.0, whose downstream walks read only the features on the group's own lines or on its downstream watershed codes** ([#409](https://github.com/NewGraphEnvironment/link/issues/409), from [#261](https://github.com/NewGraphEnvironment/link/issues/261), on [#377](https://github.com/NewGraphEnvironment/link/issues/377)). Since fresh v0.45.0 a downstream walk given `aoi` copies the group's segments into an indexed session temp table and walks only features on one of the group's blue lines or on an ancestor-or-equal watershed code, instead of every feature in the province; v0.46.0 makes fresh's connectivity passes match `watershed_group_code`. link already passes `aoi` on every downstream walk, so no link code changed.
+
+- **Outputs did not move.** Five groups' whole recompute on the dispatcher's 2026-10-23 build (SALR, LKEL, LSKE, CHWK, SETN), run alternately under fresh v0.44.0 and v0.46.0, left every table it writes digest-identical, and every walk returned the same features per segment. ADMS, NATR and ELKR built twice at model time digest identical in the five table kinds compared. fresh 0.45.0 also breaks ties in each array's order on the feature id; no two anthropogenic features share a position on that build, so `dam_dnstr_ind`, which reads an array's first element, cannot move there.
+- **Measured** (each version's fastest run, serial): CHWK 686 → 75 s, LSKE 580 → 178, LKEL 111 → 46, SALR 42 → 23, 77 % less over the four; SETN 1,424 → 804 s; 60 % less over all five. Every PSCIS and dam walk got slower, by about 1 s in SALR, LKEL and CHWK and up to about 4 s in SETN; what costs it is not measured here. Walking each barrier set once ([#394](https://github.com/NewGraphEnvironment/link/issues/394)) makes fewer calls.
+- **A host on fresh below 0.46.0 now fails `lnk_preflight_fresh()`.** Re-prep cloud hosts and workers with `--auto-install` before the next dispatch. A downstream walk needs a session that can create temp tables.
+- Tests: every downstream walk in `lnk_pipeline_access()` passes `aoi`, and the fresh floor equals the `Remotes:` tag. The pre-run gate's map covers fresh v0.42.0..v0.46.0, and fresh's reach from link's path is unchanged; the pin voids the gate's last record.
+- Evidence: `data-raw/logs/prefilter_409/`; write-up `research/recompute_cost.md`, "Measured since fresh#272".
 
 # link 0.69.5
 

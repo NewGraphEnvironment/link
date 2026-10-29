@@ -1,0 +1,25 @@
+01:27:30Z SALR b1 exit 0 59 s waited 510 s
+01:28:01Z SALR a1 exit 0 31 s waited 0 s
+01:28:34Z SALR a2 exit 0 32 s waited 0 s
+01:29:24Z SALR b2 exit 0 50 s waited 0 s
+01:31:44Z LKEL b1 exit 0 140 s waited 0 s
+01:32:53Z LKEL a1 exit 0 68 s waited 0 s
+01:33:52Z LKEL a2 exit 0 59 s waited 0 s
+01:35:56Z LKEL b2 exit 0 123 s waited 0 s
+01:46:13Z LSKE b1 exit 0 616 s waited 0 s
+01:49:27Z LSKE a1 exit 0 193 s waited 0 s
+01:49:30Z LSKE a2 exit 1 3 s waited 0 s
+STOP: LSKE a2 did not end UNCHANGED (exit 1)
+02:02:08Z LSKE a2 exit 0 195 s waited 510 s
+02:12:02Z LSKE b2 exit 0 594 s waited 0 s
+02:29:06Z CHWK b1 exit 0 1024 s waited 0 s
+02:30:35Z CHWK a1 exit 0 89 s waited 0 s
+02:32:05Z CHWK a2 exit 0 89 s waited 0 s
+02:43:45Z CHWK b2 exit 0 700 s waited 0 s
+03:08:42Z SETN b1 exit 0 1497 s waited 0 s
+03:23:49Z SETN a1 exit 0 907 s waited 0 s
+04:36:52Z SETN a2 exit 1 3 s waited 4320 s
+STOP: SETN a2 did not end UNCHANGED (exit 1)
+06:23:50Z SETN a2 exit 0 818 s waited 5025 s
+06:52:59Z SETN b2 exit 0 1441 s waited 300 s
+ALLDONE 2026-10-29T06:52:59Z

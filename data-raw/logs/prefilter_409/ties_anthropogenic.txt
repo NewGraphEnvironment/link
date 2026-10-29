@@ -1,0 +1,5 @@
+# run 2026-10-29 against the dispatcher's database (2026-10-23 build, 241 groups)
+anthro rows | 502233
+tie positions | 0
+tie positions with >1 distinct id | 0
+mixed dam / non-dam ties | 0

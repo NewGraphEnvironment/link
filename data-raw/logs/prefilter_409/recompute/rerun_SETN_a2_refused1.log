@@ -1,0 +1,5 @@
+[rerun] SETN a2: fresh 0.46.0 (8a5ca7637ec2ab8a9fb43483ba5b778116181fdf) from /private/tmp/claude-501/-Users-airvine-Projects-repo-link/4221294c-4a27-406d-99eb-272872c34dd8/scratchpad/rlib_fresh046/fresh
+[1] 0
+[1] 0
+Error: REFUSE: another backend holds 16 lock(s) in fresh_default
+Execution halted

@@ -617,6 +617,18 @@ a falls and a gradient barrier that round to one metre), and each copy joins the
   `id_segment` btree + ltree GiST + blue_line_key + `ANALYZE`. Then the
   planner picks the 26k-row AOI streams as outer and the walk takes ~10s.
   Mirrors the full pipeline's working schema (also a real, indexed table).
+- **Since fresh v0.45.0 a downstream walk scopes itself** (fresh#272, adopted
+  in #409). Given `aoi`, `frs_network_features()` copies the group's segments
+  into an indexed, analyzed session temp table and admits only features on one
+  of the group's blue lines or on an ancestor-or-equal wscode, so the plan no
+  longer depends on the table link hands it, and the walk no longer drives from
+  every feature in the province. Two consequences: the session must be able to
+  create temp tables (a read-only transaction or a hot standby stops the call;
+  so can a transaction pooler), and every PSCIS and dam walk got slower, by
+  about 1 s in SALR, LKEL and CHWK and up to about 4 s in SETN, 5 to 11 walk
+  calls per group (`data-raw/logs/prefilter_409/`; what costs it is not measured). Every
+  downstream walk link makes passes `aoi` (`test-lnk_pipeline_access.R`); one
+  without it gets the old province-wide walk with the same answers.
 - **`id_segment IN (…)` is cartesian against the persist schema** (link#203).
   `id_segment` is unique per WSG, not globally; a query like
   `SELECT * FROM <persist_access> WHERE id_segment IN (SELECT id_segment FROM
@@ -1572,7 +1584,11 @@ nothing). The check applies to every launch, dispatcher-only included;
 **What it does not cover.**
 - Correctness and parity: the variants harness and `habitat_validate.R`.
 - The recompute and the consolidate, whose changed files it names as
-  unexercised; the recompute's cost is fresh's province-wide walk (#261).
+  unexercised. The recompute's cost was its downstream walks (#261). Since
+  fresh v0.45.0 they read only the features on the group's lines or downstream
+  codes, and under v0.46.0 they are 41 to 83 % of five groups' fastest runs
+  (#409); the gate's scratch `barriers` hold only its picks, so it cannot
+  exercise them.
 - Access cost across groups: the scratch `barriers` hold only the picks, where a
   run's hold every group's.
 - An input nobody mapped. The map is a judgement per file, and inputs ignore the

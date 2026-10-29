@@ -1,0 +1,5 @@
+# run 2026-10-29 against the dispatcher's database: 138 working_<wsg>.crossings tables
+working schemas | 134
+rows | 356568
+tie positions | 0
+mixed-status ties | 0

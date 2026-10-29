@@ -5,6 +5,13 @@ Evidence for link#394, folding in #409 (both tracked on #377). Measured 2026-10-
 (PostgreSQL 17.5, R 4.5.2). The verdict is in
 [`research/recompute_cost.md`](../../../research/recompute_cost.md).
 
+#409 itself shipped separately, as v0.69.6 (PR #412, fresh v0.46.0, its record in
+[`prefilter_409/`](../prefilter_409/), measuring each group's whole recompute). This branch
+merged it and pins fresh v0.47.0, which carries the same prefilter, so the `prefilter`
+variant here stands for #409's change on the access step. The scratch library held fresh
+alone (installed with `R CMD INSTALL -l` from a checkout of the tag), so the 0.47.0
+variants differ from `base044` only in fresh.
+
 ## The question
 
 #261 found the recompute is mostly its `fresh::frs_network_features()` walks. Two fixes
