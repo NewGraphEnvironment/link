@@ -60,12 +60,12 @@ changes during the run.
 
 ## Phase 2: lever 1, existence walks
 
-- [ ] Tests first, in `tests/testthat/test-lnk_pipeline_access.R` (mocked `frs_network_features`
+- [x] Tests first, in `tests/testthat/test-lnk_pipeline_access.R` (mocked `frs_network_features`
   recording its `result`): per-species and `pscis` walks ask for `"exists"`; `anthropogenic` and
   `dams` (when both are present) and `remediations` (when `crossings_table` is set) ask for
   `"ids"`; the observation walk asks for `"ids"`; a table in both roles is walked once, in `"ids"`;
   the `has_*` flags and the NA / FALSE zero-row rules are unchanged.
-- [ ] `lnk_pipeline_access()`: choose the mode per table (arrays only where a role reads elements),
+- [x] `lnk_pipeline_access()`: choose the mode per table (arrays only where a role reads elements),
   and key the cache on table and mode. Correct the roxygen that says the arrays stay on the
   returned tibble.
 - [ ] Run variant `exists` on the four groups. Digests must equal `base044`. Record per-walk minutes.

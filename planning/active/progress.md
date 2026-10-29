@@ -6,3 +6,5 @@
 - Created branch `394-recompute-test-existence-instead-of-buil` off main
 - Scaffolded PWF baseline from issue #394 with approved phases
 - Next: start Phase 1
+- Phase 1: pinned fresh v0.47.0, preflight asserts `frs_network_features(result)`, wrote measure.R (`c`ommit below)
+- Phase 2: lever 1 in `lnk_pipeline_access()`, four mocked tests; mutating the mode to all-`ids` fails three of them and to all-`exists` fails three (one shared). Tests run on fresh 0.47.0 from a scratch library.

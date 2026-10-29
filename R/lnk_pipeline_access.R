@@ -1,11 +1,21 @@
-#' Build per-segment access codes + downstream-feature arrays
+#' Build per-segment access codes + downstream-barrier indicators
 #'
 #' Composes [fresh::frs_network_features()] calls across species (and
 #' optionally observations) to produce a `streams_access` wide table
 #' that mirrors `bcfishpass.streams_access`'s shape — one row per
-#' segment, with per-species `barriers_<sp>_dnstr` arrays and per-
+#' segment, with per-species `has_barriers_<sp>_dnstr` booleans and per-
 #' species integer `access_<sp>` codes derived via CASE on
 #' (wsg-presence × dnstr-empty × observed-upstream).
+#'
+#' A walk whose result is read only for membership (every
+#' `barriers_per_sp` table, and each `barrier_sources` table no ordered
+#' indicator reads) asks fresh whether any barrier lies downstream
+#' (`result = "exists"`) rather than for the array of them. Arrays are
+#' built only for the `"anthropogenic"` and `"dams"` sources when both are
+#' given (`dam_dnstr_ind` reads the first element), for `"remediations"`
+#' when `crossings_table` is set (`remediated_dnstr_ind`), and for the
+#' upstream observation walk (species codes). A table given in several
+#' roles is walked once, as an array if any role reads its elements.
 #'
 #' This phase runs after [lnk_pipeline_classify()] returns and before
 #' [lnk_pipeline_persist()] cleanup_working drops the working schema —
@@ -140,6 +150,24 @@ lnk_pipeline_access <- function(
   # tables (`barriers_ch_cm_co_pk_sk` -> `barriers_ch_cm_co_pk_sk_id`).
   # Cache the per-table query so multiple species pointing at the same
   # grouped table only run the SQL once.
+  #
+  # Each walk asks for arrays only where an indicator reads their elements:
+  # `dam_dnstr_ind` (anthropogenic + dams, both present) and
+  # `remediated_dnstr_ind` (remediations, with a crossings table). Every
+  # other walk is read only as `id %in% result$id`, so it takes fresh's
+  # existence walk (fresh#281), the same join without the arrays (#394).
+  # The mode is a function of the table, so the cache stays keyed on it,
+  # and a table also given in an array role is walked once, as arrays.
+  array_roles <- character(0)
+  if (all(c("anthropogenic", "dams") %in% names(barrier_sources))) {
+    array_roles <- c(array_roles, "anthropogenic", "dams")
+  }
+  if ("remediations" %in% names(barrier_sources) && !is.null(crossings_table)) {
+    array_roles <- c(array_roles, "remediations")
+  }
+  array_tables <- unlist(barrier_sources[array_roles], use.names = FALSE)
+  walk_result <- function(tbl) if (tbl %in% array_tables) "ids" else "exists"
+
   dnstr_per_sp <- list()
   dnstr_cache <- list()
   for (sp in names(barriers_per_sp)) {
@@ -161,7 +189,8 @@ lnk_pipeline_access <- function(
         feature_id_col = sp_id_col,
         direction      = "downstream",
         aoi            = aoi,
-        include_equivalents = TRUE
+        include_equivalents = TRUE,
+        result         = walk_result(barriers_tbl)
       )
     }
     df <- dnstr_cache[[barriers_tbl]]
@@ -169,7 +198,7 @@ lnk_pipeline_access <- function(
     dnstr_per_sp[[sp]] <- df
   }
 
-  # 1b. Generic per-source dnstr-barrier arrays (bcfp-shape: anthropogenic,
+  # 1b. Generic per-source dnstr-barrier walks (bcfp-shape: anthropogenic,
   # pscis, dams, remediations, ...). Same INNER-JOIN semantics as the
   # per-species call: a segment with at least one matching source dnstr
   # appears in the tibble; segments without matches are absent. Reuses
@@ -189,7 +218,8 @@ lnk_pipeline_access <- function(
         feature_id_col = src_id_col,
         direction      = "downstream",
         aoi            = aoi,
-        include_equivalents = TRUE
+        include_equivalents = TRUE,
+        result         = walk_result(src_tbl)
       )
     }
     df <- dnstr_cache[[src_tbl]]
@@ -379,9 +409,9 @@ lnk_pipeline_access <- function(
   # 5. Optional persistence. dbWriteTable doesn't natively serialize R
   # list-columns to Postgres arrays for CREATE-TABLE, so the wide
   # `streams_access` write keeps scalar per-species columns only
-  # (`has_barriers_<sp>_dnstr`, `access_<sp>`). The barriers_<sp>_dnstr
-  # / observation arrays themselves stay in-memory on the returned
-  # tibble for callers that want them. Persistent array storage is a
+  # (`has_barriers_<sp>_dnstr`, `access_<sp>`). The observation
+  # list-column stays on the returned tibble; no barrier array reaches it
+  # (most walks return none, #394). Persistent array storage is a
   # downstream improvement (would need a manual pg_array codec via
   # DBI::sqlInterpolate or a SQL `INSERT ... ARRAY[...]` builder).
   if (!is.null(to)) {
