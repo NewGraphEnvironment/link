@@ -86,16 +86,16 @@ client was active on the dispatcher by the end of the 0.46.0 run, so its 891 s m
   `streams_near_river`, written by fresh code unchanged between the pins). Element order
   changed only in per-species natural walks, whose arrays link reduces to membership: a
   barrier on a line several groups share is persisted once per group, so those views hold
-  co-located copies (189 positions in m4's `barriers_ch_access`, 188 across groups). No two
+  co-located copies (189 positions in m4's 30-group `barriers_ch_access`, 188 across groups). No two
   features share a position in the dispatcher's 502,233 anthropogenic rows (241 groups), nor
   in the remediation sets of the 134 groups whose working schemas it kept with rows.
-- **Below #261's estimate, for a reason that is now the next lever.** The natural walks gain
+- **Below #261's estimate.** The natural walks gain
   4.7× to 17× (SETN 1.8×, output-bound as predicted), against 6.3× to 24.6× server-side for
-  the prefiltered walk alone. Each scoped call pays a cost before it walks, larger in larger
-  groups: the PSCIS and dam walks, which return little, rose by about 1.0 to 1.3 s in SALR, LKEL and CHWK, 2.0 to 2.4 in LSKE and 3.5 to 4.2 in SETN, and
+  the prefiltered walk alone. A scoped call costs more than the old walk where the walk
+  returns little, more in larger groups: the PSCIS and dam walks rose by about 1.0 to 1.3 s in SALR, LKEL and CHWK, 2.0 to 2.4 in LSKE and 3.5 to 4.2 in SETN, and
   a group makes 5 to 11 calls. Every PSCIS and dam walk got slower, and the anthropogenic walk
-  in four groups of five (CHWK's went 4.4 → 1.8 s). Walking each barrier set once (#394)
-  removes calls; reusing one scope across a group's calls would remove the rest.
+  in four groups of five (CHWK's went 4.4 → 1.8 s). What inside the call costs it is not measured here: fresh's own timing of its temp-table build is 0.07 to 0.15 s in those three groups and 0.7 s in LSKE (m4, fresh `data-raw/logs/network_features_272/`), less than the rise; the prefilter's ancestor-code array, built per call, is another candidate. Walking each barrier set
+  once (#394) makes fewer calls.
 - **The provincial share is not measured here.** These runs are serial; the pool runs at
   `-j8` on the dispatcher, where the database contends (#374). The next provincial run's
   `log_recompute` against 2026-10-23's gives it.

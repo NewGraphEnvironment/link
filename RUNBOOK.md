@@ -595,8 +595,9 @@ a falls and a gradient barrier that round to one metre), and each copy joins the
   longer depends on the table link hands it, and the walk no longer drives from
   every feature in the province. Two consequences: the session must be able to
   create temp tables (a read-only transaction or a hot standby stops the call;
-  so can a transaction pooler), and each call pays to build its scope, about
-  1 s in small groups and up to about 4 s in SETN, 5 to 11 times per group (`data-raw/logs/prefilter_409/`). Every
+  so can a transaction pooler), and a call that returns little costs about 1 s
+  more than before in small groups and up to about 4 s in SETN, 5 to 11 calls
+  per group (`data-raw/logs/prefilter_409/`; the cause is not measured). Every
   downstream walk link makes passes `aoi` (`test-lnk_pipeline_access.R`); one
   without it gets the old province-wide walk with the same answers.
 - **`id_segment IN (…)` is cartesian against the persist schema** (link#203).

@@ -39,8 +39,8 @@ group-matched connectivity passes) against fresh v0.44.0. The verdict is in
   stops it; it records the input tables' write counters (`recompute/input_counters.tsv`).
 - `summary.R`: each arm's fastest run per group and step (`recompute/summary_steps.csv`), and per
   walk (`recompute/summary_walks.csv`).
-- `model_run.sh` and `compare.R` (Phase 3): ADMS (its SK and KO reach fresh#242's
-  connected-waterbody pass), NATR and ELKR built with `wsg_run_one.R` into `fresh_409b` (0.44.0)
+- `model_run.sh` and `compare.R` (Phase 3): ADMS (its SK reaches fresh#242's
+  connected-waterbody pass), NATR (its KO does) and ELKR built with `wsg_run_one.R` into `fresh_409b` (0.44.0)
   and `fresh_409a` (0.46.0), then `streams`, `barriers`, `streams_access`,
   `streams_mapping_code` and every `streams_habitat_<sp>` digested per group (every column,
   geometry as EWKB; #367's `compare.R`). `barrier_overrides` (link's) and `streams_near_river`
@@ -59,7 +59,10 @@ resumed there (`RESUME=`). SETN a2 refused once, after 72 minutes of waiting, wh
 then required five minutes of continuous quiet (`QUIET_S`). With the dispatcher expected
 busy for hours more, the waiting driver was stopped by hand (no run in flight) and relaunched
 with its own v0.44.0 library (`LIB044`, built the same way), so the shared library could move to
-v0.46.0. `recompute/status.txt` has every attempt.
+v0.46.0. `recompute/status.txt` has every attempt. LSKE a2's refusal log was overwritten by its
+  resumed run (the lock holder was read live from `pg_locks`: `autovacuum: VACUUM
+  fresh_default.streams_access`); SETN a2's is kept as `rerun_SETN_a2_refused1.log`, and the
+  driver now keeps an earlier attempt's log.
 
 ## Measurement
 
@@ -73,7 +76,8 @@ v0.46.0. `recompute/status.txt` has every attempt.
 - **Element order** differs between versions in 9 walks (CHWK's eight per-species natural walks,
   SALR's CH), and is the same within each version. Those are natural-barrier views, where a
   barrier on a line several groups share is persisted once per group: m4's copy of
-  `barriers_ch_access` holds 189 positions with two or more features, 188 of them across groups.
+  `barriers_ch_access` (30 groups) holds 189 positions with two or more features, 188 of them
+  across groups (`ties_natural.*`; the dispatcher's copy, on which the walks ran, was not counted).
   link keeps only membership from those arrays (`has_barriers_<sp>_dnstr`).
 - **The tiebreak cannot move link's first-element reads:** no two features share a position among
   the dispatcher's 502,233 anthropogenic rows (241 groups), nor among the 356,568 rows of the
@@ -100,14 +104,13 @@ client was active on the dispatcher by the end of the 0.46.0 run, so its 891 s m
   version as between versions (LKEL's mapping code 4.4 to 7.3 s under 0.46.0 alone; first
   runs read colder); SETN's mapping code (76 against 47 s) is one pair.
 - **The natural walks gain 4.7× to 17×** (SETN 1.8×). **Every PSCIS and dam walk loses, and the
-  anthropogenic walk in four groups of five** (CHWK's went 4.4 → 1.8 s): each scoped call now pays
-  a cost before it walks (fresh copies, indexes and analyzes the group's segments into a temp
-  table per call), larger in larger groups. The PSCIS and dam walks, which return little, rose by
+  anthropogenic walk in four groups of five** (CHWK's went 4.4 → 1.8 s): a scoped call costs more than the old walk where the walk
+  returns little, more in larger groups. The PSCIS and dam walks rose by
   about 1.0 to 1.3 s in SALR, LKEL and CHWK, 2.0 to 2.4 in LSKE and 3.5 to 4.2 in SETN (`recompute/summary_walks.csv`). A group runs 5 to 11 walks (SALR 5,
-  the others 10 or 11), so that cost is paid 5 to 11 times. Walking each barrier set once (#394, lever 2) or reusing one
-  scope across calls would remove most of it.
+  the others 10 or 11), so that cost is paid 5 to 11 times. What inside the call costs it is not measured here: fresh's own timing of its temp-table build is 0.07 to 0.15 s in those three groups and 0.7 s in LSKE (m4, fresh `data-raw/logs/network_features_272/`), less than the rise; the prefilter's ancestor-code array, built per call, is another candidate. Walking each
+  barrier set once (#394, lever 2) makes fewer calls.
 - **Against #261's estimate:** its prefiltered walks ran 6.3× (SALR) to 24.6× (CHWK) faster on the
-  server; as the recompute runs them, from R with the per-call scope, the natural walks gain 4.7×
+  server; as the recompute runs them, from R, one scoped call each, the natural walks gain 4.7×
   to 17×. SETN is output-bound, as #261 found (1.2× there).
 
 ## Not measured

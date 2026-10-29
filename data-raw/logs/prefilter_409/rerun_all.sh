@@ -51,11 +51,15 @@ for w in "$@"; do
       sleep 15; waited=$((waited + 15))
     done
     lib="${LIB044:-}"; [ "${label:0:1}" = a ] && lib="$LIB046"
+    # Keep an earlier attempt's log (a refusal) rather than overwrite it.
+    log="$OUT/rerun_${w}_${label}.log"
+    n=1; while [ -e "$log" ] && [ -e "$OUT/rerun_${w}_${label}_refused${n}.log" ]; do n=$((n + 1)); done
+    [ -e "$log" ] && mv "$log" "$OUT/rerun_${w}_${label}_refused${n}.log"
     t0=$SECONDS
-    ( cd "$WT" && LNK_MEASURE_HOST="$HOST" R_LIBS="$lib" Rscript "$RERUN" "$w" "$OUT" "$label" ) > "$OUT/rerun_${w}_${label}.log" 2>&1
+    ( cd "$WT" && LNK_MEASURE_HOST="$HOST" R_LIBS="$lib" Rscript "$RERUN" "$w" "$OUT" "$label" ) > "$log" 2>&1
     r=$?
     echo "$(date -u +%TZ) $w $label exit $r $((SECONDS - t0)) s waited ${waited} s" >> "$OUT/status.txt"
-    grep -q "digests UNCHANGED" "$OUT/rerun_${w}_${label}.log" && [ "$r" -eq 0 ] \
+    grep -q "digests UNCHANGED" "$log" && [ "$r" -eq 0 ] \
       || { echo "STOP: $w $label did not end UNCHANGED (exit $r)" >> "$OUT/status.txt"; counters stopped; exit 1; }
   done
 done

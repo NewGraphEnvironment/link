@@ -36,6 +36,10 @@
 
 Seven findings, all documentation claims wider than the evidence, plus an uncommitted evidence file; all fixed. The per-call scope cost is 1.0 to 1.3 s only in the three small groups (LSKE 2.0 to 2.4, SETN 3.5 to 4.2); CHWK's anthropogenic walk got faster, not slower; model-time digests cover five table kinds, not `barrier_overrides` or `streams_near_river`; SETN a2 refused once, not twice; `rerun.R` checks for company only at its start; the remediation tie check covers 134 groups of one build; `pick_only.md` was untracked. Nothing in the code or the outputs.
 
+## Code-check round 2 (`review-round2.md`)
+
+Five findings; the first sits inside round 1's fix (round 1 corrected the per-call numbers and kept an unmeasured cause, the temp-table build, which fresh's own timing puts at 0.07 to 0.7 s). Fixed: the cause is now stated as unmeasured, with fresh's figure beside the rise; CLAUDE.md names SETN's 1.8×; KO reaches fresh#242's pass in NATR, not ADMS; the 189-position count now has its query (`ties_natural.*`, m4's 30-group copy, labelled); the driver no longer overwrites a refused run's log, SETN a2's refusal log is kept, and LSKE a2's loss is recorded with where the cause was read. Because a defect sat inside a fix, round 3 ends on an enumeration of every claim against its producer.
+
 ## Errors Encountered
 
 | Error | Resolution |
