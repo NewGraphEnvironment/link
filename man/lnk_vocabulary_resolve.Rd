@@ -24,11 +24,15 @@ actually read, and matches it against \code{\link[=lnk_vocabulary_read]{lnk_voca
 \item \strong{cut:} the break sources in the order applied (\code{pipeline: break_order}, or its default), the observation breaks (\code{all} or
 \code{top_per_species}; only when \code{observations} is a source) and the
 gradient classes streams are broken at (\code{pipeline: gradient_classes},
-or bcfishpass's 15 / 20 / 25 / 30 \%).
+or bcfishpass's 15 / 20 / 25 / 30 \%), and which of the definite
+barrier, barrier control and habitat classification files the bundle
+declares (their rows are data, which the build record carries).
 \item \strong{acc:} a sha256 digest of the access rules, which decide where
 gradient barriers cut streams as well as what is accessible: the
 species the rules model, each species' \code{access_gradient_max} and
-\verb{observation_*} lift parameters, and the species presence table. The
+\verb{observation_*} lift parameters, the species presence table, and the
+two access rules held in code (the gradient class each access label
+maps to, and \code{\link[=lnk_presence]{lnk_presence()}}'s species groups). The
 digest is over the parsed values, so a change in quoting or column
 order is not a new rule set.
 \item \strong{grad:} \code{gradient=segment}, the only measure link builds today.

@@ -68,11 +68,15 @@ lnk_vocabulary_read <- function() {
 #'   break_order`, or its default), the observation breaks (`all` or
 #'   `top_per_species`; only when `observations` is a source) and the
 #'   gradient classes streams are broken at (`pipeline: gradient_classes`,
-#'   or bcfishpass's 15 / 20 / 25 / 30 %).
+#'   or bcfishpass's 15 / 20 / 25 / 30 %), and which of the definite
+#'   barrier, barrier control and habitat classification files the bundle
+#'   declares (their rows are data, which the build record carries).
 #' - **acc:** a sha256 digest of the access rules, which decide where
 #'   gradient barriers cut streams as well as what is accessible: the
 #'   species the rules model, each species' `access_gradient_max` and
-#'   `observation_*` lift parameters, and the species presence table. The
+#'   `observation_*` lift parameters, the species presence table, and the
+#'   two access rules held in code (the gradient class each access label
+#'   maps to, and [lnk_presence()]'s species groups). The
 #'   digest is over the parsed values, so a change in quoting or column
 #'   order is not a new rule set.
 #' - **grad:** `gradient=segment`, the only measure link builds today.
@@ -120,9 +124,22 @@ lnk_vocabulary_resolve <- function(cfg, loaded = NULL) {
     },
     paste0("gradient_classes=",
            paste(vapply(classes, as.character, character(1)),
+                 collapse = ",")),
+    paste0("barrier_inputs=",
+           paste(intersect(.lnk_vocabulary_barrier_inputs, names(cfg$files)),
                  collapse = ",")))
   paste(parts, collapse = ";")
 }
+
+# Bundle files whose presence, not just their rows, switches a cut or a lift
+# on: definite barriers join every species' barrier set and cut streams, the
+# control table prunes gradient barriers and lifts, and the habitat
+# classification adds habitat lifts and the habitat end points cuts. Their
+# rows are data vintage (the build record); whether a bundle declares them is
+# method.
+.lnk_vocabulary_barrier_inputs <- c(
+  "user_barriers_definite", "user_barriers_definite_control",
+  "user_habitat_classification")
 
 .lnk_vocabulary_spec_flow <- function(cfg) {
   sprintf("discharge_source=%s;discharge_fill=%s",
@@ -152,8 +169,19 @@ lnk_vocabulary_resolve <- function(cfg, loaded = NULL) {
   }
   pres <- pres[, c("watershed_group_code",
                    .lnk_presence_species_cols(pres)), drop = FALSE]
+  # Two rules held in code also decide access: the gradient classes a
+  # species' access label maps to, and which present species make another
+  # present (lnk_presence()'s groups). A change to either is a new rule set.
+  groups <- eval(formals(lnk_presence)$groups)
   payload <- paste(
     paste0("species=", paste(sort(toupper(cfg$species)), collapse = ",")),
+    paste0("access_classes=",
+           paste(names(.lnk_classes_bcfp), .lnk_classes_bcfp, sep = ":",
+                 collapse = ",")),
+    paste0("presence_groups=",
+           paste(names(groups),
+                 vapply(groups, paste, character(1), collapse = ","),
+                 sep = ":", collapse = ";")),
     .lnk_vocabulary_canonical(pf[, .lnk_vocabulary_acc_cols, drop = FALSE]),
     .lnk_vocabulary_canonical(pres),
     sep = "\n--\n")

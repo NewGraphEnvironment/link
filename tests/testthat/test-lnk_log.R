@@ -783,6 +783,21 @@ test_that(".lnk_log_run_start writes run_uid into the INSERT", {
   expect_match(ins, "field-scope")
 })
 
+test_that(".lnk_log_run_start writes the output's vocabulary tokens", {
+  cfg <- lnk_config("default_tuned")
+  sql <- capture_write(
+    .lnk_log_run_start(fake_conn(), cfg, "PINE", "working_pine"))
+  ins <- grep("INSERT INTO .*\\.log \\(", sql, value = TRUE)
+  expect_length(ins, 1L)
+  cols <- trimws(strsplit(sub("^.*\\.log \\(([^)]*)\\).*$", "\\1", ins),
+                          ",")[[1]])
+  vals <- regmatches(ins, gregexpr("'(cut|acc|grad|q)-[a-z0-9-]+'", ins))[[1]]
+  expect_identical(cols[startsWith(cols, "token_")],
+                   c("token_cut", "token_acc", "token_grad", "token_flow"))
+  expect_identical(vals, c("'cut-full-top'", "'acc-v1'", "'grad-seg'",
+                           "'q-wet-fill'"))
+})
+
 test_that(".lnk_log_run_start records a blank run_uid as NULL, not ''", {
   cfg <- lnk_config("default")
   sql <- capture_write(

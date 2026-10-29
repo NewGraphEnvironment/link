@@ -102,6 +102,11 @@ independently; an orchestrator loop's resume check can probe PG
 state via \code{link:::.lnk_wsg_persisted()} rather than the comparison
 RDS artifact.
 \subsection{Phase order}{
+
+Before any phase, \code{\link[=lnk_vocabulary_resolve]{lnk_vocabulary_resolve()}} names the output on its four
+axes (cut, access, gradient, flow). A config the vocabulary has no live
+token for is refused before anything is written, and the tokens go in the
+run's \verb{<persist_schema>.log} row.
 \enumerate{
 \item \code{\link[=lnk_pipeline_setup]{lnk_pipeline_setup()}} — create per-WSG working schema.
 \item \code{\link[=lnk_pipeline_load]{lnk_pipeline_load()}} — crossings + modelled fixes + PSCIS status.

@@ -12,6 +12,7 @@ link,^R/lnk_stamp\.R$,any,"runs once per group whatever the group holds (config,
 link,^R/utils\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
 link,^R/lnk_pipeline_run\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
 link,^R/lnk_pipeline_setup\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
+link,^R/lnk_vocabulary\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
 link,^R/lnk_pipeline_species\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
 link,^R/lnk_presence\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
 link,^R/lnk_species_pooling\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
@@ -141,6 +142,7 @@ link,^data-raw/wsg_run_one\.R$,any,the per-group entry point every pick runs
 link,^data-raw/wsg_recompute_one\.R$,unexercised,the post-consolidate recompute
 link,^data-raw/schema_consolidate\.R$,unexercised,copies cloud hosts' groups into the dispatcher's persist
 link,^inst/extdata/wsg_regions\.csv$,observations,species pooling regions (lnk_species_pooling)
+link,^inst/extdata/vocabulary\.csv$,any,"output vocabulary; every run resolves its tokens before it opens (lnk_vocabulary_resolve), and a row it cannot match refuses the run"
 link,^inst/extdata/configs/dictionary_[a-z_]+\.csv$,none,data dictionaries; no run reads them
 link,^inst/extdata/(thresholds_default|crossings_example|overrides_example|parameters_habitat_dimensions)\.csv$,none,"package examples and lnk_thresholds() defaults, off the modelling path"
 link,^inst/extdata/parameters_habitat_rules\.yaml$,none,sample rules for fresh's fallback; a run reads its bundle's rules.yaml

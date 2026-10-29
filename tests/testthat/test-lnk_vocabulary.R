@@ -128,6 +128,11 @@ test_that("an edited break order or access gradient needs a new token", {
   expect_error(lnk_vocabulary_resolve(cfg, steeper),
                "no acc token .* has the spec\n  sha256:")
 
+  no_control <- cfg
+  no_control$files$user_barriers_definite_control <- NULL
+  expect_error(lnk_vocabulary_resolve(no_control, loaded),
+               "no cut token .*barrier_inputs=user_barriers_definite,user_habitat")
+
   fewer <- cfg
   fewer$species <- setdiff(cfg$species, "GR")
   expect_error(lnk_vocabulary_resolve(fewer, loaded), "no acc token")

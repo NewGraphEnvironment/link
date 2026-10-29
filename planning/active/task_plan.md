@@ -8,13 +8,14 @@ Consumers: knowledge#119 (archive layout `tune/CH_rear/<setup tokens>/`), knowle
 
 - **Four axes, not three.** The first test (findings.md) found that `break_order` + `observation_breaks` don't fix where streams are cut. `gradient_classes` moves cuts, and so does access: since #326, gradient positions cut only where a present species' access changes, so access gradients, lift rules, presence and pooling move segments. The operator's example: a species moving from 30 % to 18 % adds cuts.
   - `cut` (method): effective `break_order`, `observation_breaks` (only when `observations` is a source) and `gradient_classes`.
-  - `acc` (access rules): digest of `parameters_fresh` (`species_code`, `access_gradient_max`, `observation_*`), `wsg_species_presence`, `observation_exclusions`, species pooling and groups. The digest is over the parsed values sorted by key, not the file bytes, so a quoting change mints nothing.
+  - `acc` (access rules): digest of `parameters_fresh` (`species_code`, `access_gradient_max`, `observation_*`), `wsg_species_presence`, `observation_exclusions`, the modelled species (`cfg$species`), and two rules held in code (the access-class map, `lnk_presence()`'s groups). Species pooling (validator-only) and `observation_exclusions` (data vintage; operator, 2026-10-29) stay out. The digest is over the parsed values sorted by key, not the file bytes, so a quoting change mints nothing.
   - `grad`: `segment` (no knob exists yet).
   - `flow`: `discharge_source` + `discharge_fill`.
 
   Data vintage (observation records, the weekly bcfishpass CSVs, FWA) gets no token: it identifies a build and is in `log` / `log_input`. Habitat thresholds and rules are tuning results and get no token either.
 - **Derived, not declared.** The table gains a sixth column, `spec`, which `lnk_vocabulary_resolve(cfg)` matches per axis. Configs declare nothing.
 - **Names:** `inst/extdata/vocabulary.csv`, `lnk_vocabulary_read()` (the table) and `lnk_vocabulary_resolve(cfg)` (returns `c(cut=, acc=, grad=, flow=)`). Log columns: `token_cut`, `token_acc`, `token_grad`, `token_flow`. The operator chose these over `lnk_vocab_table` / `lnk_vocab_tokens`: accurate verbs, the noun in full, like `lnk_wsg_resolve()`.
+- **A bundle loaded by path is refused like any unnamed config** (operator, 2026-10-29): a new kind of output gets a name in link's one table first.
 - **No tokens for `default_extrabreaks` / `default_rearbreaks`** (operator): they are stale `extends: ~` copies, and running them refuses until someone adds rows.
 - **First rows (permanent once merged):**
   - `cut-full-top`: default, default_tuned.
@@ -36,11 +37,12 @@ Consumers: knowledge#119 (archive layout `tune/CH_rear/<setup tokens>/`), knowle
 - [x] Tests: the first test as unit tests. bcfishpass gives `cut-full-ssf-all / acc-bcfp / grad-seg / q-fwapg`; default gives `cut-full-top / acc-v1 / grad-seg / q-fwapg`; default_tuned gives `cut-full-top / acc-v1 / grad-seg / q-wet-fill`; extrabreaks and rearbreaks refuse. Negative cases: an edited break_order, an edited access gradient, a retired match, and a quoting-only CSV change that still resolves.
 
 ## Phase 3: Build record and refusal
-- [ ] `R/lnk_log.R`: add the four `token_*` columns to `cols_log` and write them in `.lnk_log_run_start()`.
-- [ ] `R/lnk_pipeline_run.R`: resolve before `.lnk_log_run_start()` (line 163), so a refused build writes no log row and touches no schema. Pass the tokens through.
-- [ ] Check that `schema_consolidate.R` copies `log` by column name, so a host without the new columns still consolidates. The habitat export's `provenance/.../log.parquet` copies whole rows, so the tokens reach the manifest without a change.
-- [ ] `data-raw/pretest_inputs.csv`: map `R/lnk_vocabulary.R` and `inst/extdata/vocabulary.csv` (`any`, the orchestration class) so the gate does not refuse an unmapped file.
-- [ ] Update the tests in `test-lnk_log.R` / `test-lnk_pipeline_run.R` for the new columns and the refusal.
+- [x] `R/lnk_log.R`: add the four `token_*` columns to `cols_log` and write them in `.lnk_log_run_start()`.
+- [x] `R/lnk_pipeline_run.R`: resolve before `.lnk_log_run_start()` (line 163), so a refused build writes no log row and touches no schema. Pass the tokens through.
+- [x] Check that `schema_consolidate.R` copies `log` by column name, so a host without the new columns still consolidates. The habitat export's `provenance/.../log.parquet` copies whole rows, so the tokens reach the manifest without a change.
+- [x] `data-raw/pretest_inputs.csv`: map `R/lnk_vocabulary.R` and `inst/extdata/vocabulary.csv` (`any`, the orchestration class) so the gate does not refuse an unmapped file.
+- [x] Update the tests in `test-lnk_log.R` / `test-lnk_pipeline_run.R` for the new columns and the refusal.
+- [x] Plan review fixes (`review-plan.md`): the cut spec records which barrier input files the bundle declares; the acc digest adds the code-held access-class map and `lnk_presence()` groups; `study_area_run.sh`'s local pre-flight resolves the config's tokens before any spend; the `q-wet-fill` definition says the fill applies where discharge is read.
 
 ## Phase 4: Docs and release
 - [ ] RUNBOOK: a short "Output vocabulary" section (the axes, the rules, how to add a row, why a run refuses).
