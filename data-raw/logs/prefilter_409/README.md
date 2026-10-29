@@ -61,8 +61,9 @@ busy for hours more, the waiting driver was stopped by hand (no run in flight) a
 with its own v0.44.0 library (`LIB044`, built the same way), so the shared library could move to
 v0.46.0. `recompute/status.txt` has every attempt. LSKE a2's refusal log was overwritten by its
   resumed run (the lock holder was read live from `pg_locks`: `autovacuum: VACUUM
-  fresh_default.streams_access`); SETN a2's is kept as `rerun_SETN_a2_refused1.log`, and the
-  driver now keeps an earlier attempt's log.
+  fresh_default.streams_access`); SETN a2's is kept as `rerun_SETN_a2_refused1.log`. The committed
+  `rerun_all.sh` now keeps an earlier attempt's log and exits 2 on a `RESUME` that matches no
+  run; the copy waiting to run SETN's second pair was frozen before both changes.
 
 ## Measurement
 
@@ -103,14 +104,15 @@ v0.46.0. `recompute/status.txt` has every attempt. LSKE a2's refusal log was ove
 client was active on the dispatcher by the end of the 0.46.0 run, so its 891 s may be high.
 
 - Walks are the whole gain. Gate, mapping code and setup vary as much between runs of one
-  version as between versions (LKEL's mapping code 4.4 to 7.3 s under 0.46.0 alone; first
-  runs read colder); SETN's mapping code (76 against 47 s) is one pair.
+  version as between versions (LKEL's mapping code 4.4 to 7.3 s under 0.46.0 alone; b1 is the
+  slowest total in each of the four complete groups); SETN's mapping code (76 against 47 s) is one pair.
 - **The natural walks, summed per group, gain 4.7× to 17×** (SETN 1.8×; per walk 1.45× to 18.5×,
   `recompute/summary_walks.csv`). **Every PSCIS and dam walk got slower, and the anthropogenic walk
   in four groups of five** (CHWK's went 4.4 → 1.8 s): the PSCIS and dam walks by 1.0 to 1.3 s in
   SALR, LKEL and CHWK, 2.0 to 2.4 in LSKE and 3.5 to 4.2 in SETN. A group makes 5 to 11 walk calls
   (SALR 5, the others 10 or 11). What costs it is not measured here: fresh's own timing of its
-  temp-table build is 0.07 to 0.15 s in SALR, LKEL and CHWK and 0.7 s in LSKE (m4, fresh
+  temp-table build is 0.07 to 0.15 s in SALR, LKEL and CHWK and 0.7 s in LSKE, on a
+  province-wide `fresh_default` with no other client active (fresh
   `data-raw/logs/network_features_272/`), less than the rise. Walking each barrier set once
   (#394, lever 2) makes fewer calls.
 - **Walks are no longer nearly all of a recompute:** under 0.46.0 they are 41 % (SALR) to 87 %

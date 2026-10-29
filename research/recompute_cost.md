@@ -97,7 +97,8 @@ client was active on the dispatcher by the end of the 0.46.0 run, so its 891 s m
   alone. Every PSCIS and dam walk got slower, by 1.0 to 1.3 s in SALR, LKEL and CHWK, 2.0 to
   2.4 in LSKE and 3.5 to 4.2 in SETN, and a group makes 5 to 11 walk calls; the anthropogenic
   walk got slower in four groups of five (CHWK's went 4.4 → 1.8 s). What costs it is not
-  measured here: fresh's own timing of its temp-table build is 0.07 to 0.7 s on m4 (fresh
+  measured here: fresh's own timing of its temp-table build is 0.07 to 0.7 s on a
+  province-wide `fresh_default` with no other client active (fresh
   `data-raw/logs/network_features_272/`), less than the rise. Walking each barrier set once
   (#394) makes fewer calls.
 - **The walks are no longer nearly all of a recompute:** under 0.46.0 they are 41 % (SALR) to

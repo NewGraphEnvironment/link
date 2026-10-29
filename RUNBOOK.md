@@ -1548,10 +1548,11 @@ nothing). The check applies to every launch, dispatcher-only included;
 **What it does not cover.**
 - Correctness and parity: the variants harness and `habitat_validate.R`.
 - The recompute and the consolidate, whose changed files it names as
-  unexercised. Most of the recompute's cost is its downstream walks (#261; 41
-  to 87 % of five groups' runs under fresh v0.46.0, #409), which since fresh
-  v0.45.0 read only the features on the group's lines or downstream codes; the
-  gate's scratch `barriers` hold only its picks, so it cannot exercise them.
+  unexercised. The recompute's cost was its downstream walks (#261). Since
+  fresh v0.45.0 they read only the features on the group's lines or downstream
+  codes, and under v0.46.0 they are 41 to 87 % of five groups' fastest runs
+  (#409); the gate's scratch `barriers` hold only its picks, so it cannot
+  exercise them.
 - Access cost across groups: the scratch `barriers` hold only the picks, where a
   run's hold every group's.
 - An input nobody mapped. The map is a judgement per file, and inputs ignore the
