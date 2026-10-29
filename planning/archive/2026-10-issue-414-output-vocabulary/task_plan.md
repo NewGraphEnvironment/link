@@ -56,7 +56,7 @@ Consumers: knowledge#119 (archive layout `tune/CH_rear/<setup tokens>/`), knowle
 ## Validation
 - [x] Tests pass
 - [x] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
 
 Verification: `devtools::test()`, `devtools::check()` and `lintr::lint_package()`. Then a live single-group build of ADMS under `default` into a scratch schema, whose `log` row should carry `cut-full-top / acc-v1 / grad-seg / q-fwapg`. A `default_extrabreaks` run against the same scratch schema should refuse with no log row written. Each guard's mutation (rename a row, edit a spec) should fail its test.
