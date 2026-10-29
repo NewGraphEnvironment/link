@@ -56,6 +56,15 @@ lnk_vocabulary_read <- function() {
     stop("vocabulary.csv columns must be ", paste(cols, collapse = ", "),
          "; found ", paste(names(v), collapse = ", "), call. = FALSE)
   }
+  # A blank key cell would match nothing and everything (NA comparisons), so
+  # the table refuses it here rather than letting a resolve return NA.
+  for (col in c("token", "axis", "spec", "introduced")) {
+    bad <- which(is.na(v[[col]]) | !nzchar(trimws(v[[col]])))
+    if (length(bad) > 0L) {
+      stop("vocabulary.csv: blank ", col, " in row(s) ",
+           paste(bad, collapse = ", "), call. = FALSE)
+    }
+  }
   v
 }
 
@@ -174,7 +183,8 @@ lnk_vocabulary_resolve <- function(cfg, loaded = NULL) {
   # present (lnk_presence()'s groups). A change to either is a new rule set.
   groups <- eval(formals(lnk_presence)$groups)
   payload <- paste(
-    paste0("species=", paste(sort(toupper(cfg$species)), collapse = ",")),
+    paste0("species=", paste(sort(toupper(cfg$species), method = "radix"),
+                            collapse = ",")),
     paste0("access_classes=",
            paste(names(.lnk_classes_bcfp), .lnk_classes_bcfp, sep = ":",
                  collapse = ",")),
@@ -190,32 +200,36 @@ lnk_vocabulary_resolve <- function(cfg, loaded = NULL) {
 }
 
 # A data frame as text that does not depend on how its file was written:
-# columns by name, every value as trimmed text (NA and "" both empty, TRUE
-# and "t" both "true"), rows sorted. C-locale sorts, so the digest does not
-# depend on the session's collation.
+# columns by name, rows sorted, each value as R reads it (as.character), with
+# NA kept apart from "" and the delimiters escaped. Values are never folded
+# (no trimming, no "t" = "TRUE"): readers of these tables test values
+# exactly (`.lnk_wsg_species_present()` counts only "t"), so two spellings
+# can model different species and must digest differently. Radix sorts are
+# C-locale, so the digest does not depend on the session's collation.
 .lnk_vocabulary_canonical <- function(df) {
   df <- as.data.frame(df, stringsAsFactors = FALSE)
   cols <- sort(names(df), method = "radix")
-  txt <- vapply(cols, function(c) {
-    v <- df[[c]]
-    v <- if (is.logical(v)) tolower(as.character(v)) else trimws(as.character(v))
-    v[is.na(v)] <- ""
-    v[v %in% c("t", "TRUE", "True")] <- "true"
-    v[v %in% c("f", "FALSE", "False")] <- "false"
-    v
-  }, character(nrow(df)))
-  if (nrow(df) == 0L) return(paste(cols, collapse = "\t"))
-  txt <- matrix(txt, nrow = nrow(df))
+  enc <- function(v) {
+    out <- as.character(v)
+    out <- gsub("\\", "\\\\", out, fixed = TRUE)
+    out <- gsub("\t", "\\t", out, fixed = TRUE)
+    out <- gsub("\n", "\\n", out, fixed = TRUE)
+    out[is.na(v)] <- "\\N"
+    out
+  }
+  header <- paste(enc(cols), collapse = "\t")
+  if (nrow(df) == 0L) return(header)
+  txt <- matrix(vapply(cols, function(c) enc(df[[c]]), character(nrow(df))),
+                nrow = nrow(df))
   rows <- apply(txt, 1L, paste, collapse = "\t")
-  paste(c(paste(cols, collapse = "\t"), sort(rows, method = "radix")),
-        collapse = "\n")
+  paste(c(header, sort(rows, method = "radix")), collapse = "\n")
 }
 
 # Match each axis's spec to one live token, or refuse with the spec that
 # needs a row.
 .lnk_vocabulary_match <- function(specs, vocab, name = "") {
   out <- vapply(names(specs), function(axis) {
-    hit <- vocab[vocab$axis == axis & vocab$spec == specs[[axis]], ,
+    hit <- vocab[which(vocab$axis == axis & vocab$spec == specs[[axis]]), ,
                  drop = FALSE]
     live <- hit[is.na(hit$retired), , drop = FALSE]
     if (nrow(live) == 1L) return(live$token)

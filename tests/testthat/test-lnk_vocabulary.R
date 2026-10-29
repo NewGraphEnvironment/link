@@ -162,8 +162,6 @@ test_that("the acc digest ignores how the files were written", {
   shuffled <- loaded
   pf <- shuffled$parameters_fresh
   pf <- pf[rev(seq_len(nrow(pf))), rev(names(pf))]
-  pf$observation_control_apply <- ifelse(pf$observation_control_apply, "t",
-                                         "f")
   pf$access_gradient_max <- as.character(pf$access_gradient_max)
   shuffled$parameters_fresh <- pf
   pres <- shuffled$wsg_species_presence
@@ -175,6 +173,46 @@ test_that("the acc digest ignores how the files were written", {
   clustered <- loaded
   clustered$parameters_fresh$cluster_bridge_distance <- 1
   expect_identical(link:::.lnk_vocabulary_spec_acc(cfg, clustered), ref)
+})
+
+test_that("a spelling the pipeline reads differently digests differently", {
+  # .lnk_wsg_species_present() counts only "t": "TRUE" or " t" drops the
+  # species from the model, so the rule set has changed.
+  cfg <- lnk_config("default")
+  loaded <- lnk_load_overrides(cfg)
+  ref <- link:::.lnk_vocabulary_spec_acc(cfg, loaded)
+  i <- which(loaded$wsg_species_presence$bt == "t")[1]
+  for (v in c("TRUE", " t", "t ")) {
+    l2 <- loaded
+    l2$wsg_species_presence$bt[i] <- v
+    expect_false(identical(link:::.lnk_vocabulary_spec_acc(cfg, l2), ref),
+                 info = v)
+  }
+  na_vs_blank <- loaded
+  j <- which(loaded$parameters_fresh$observation_species %in% NA)[1]
+  na_vs_blank$parameters_fresh$observation_species[j] <- ""
+  expect_false(identical(link:::.lnk_vocabulary_spec_acc(cfg, na_vs_blank),
+                         ref))
+})
+
+test_that("the acc digest does not depend on the session's collation", {
+  cfg <- lnk_config("default")
+  loaded <- lnk_load_overrides(cfg)
+  ref <- link:::.lnk_vocabulary_spec_acc(cfg, loaded)
+  # Under a Czech collation "CH" sorts after "H", so after "GR".
+  ok <- suppressWarnings(Sys.setlocale("LC_COLLATE", "cs_CZ.UTF-8"))
+  skip_if(!nzchar(ok), "cs_CZ.UTF-8 collation not installed")
+  withr::defer(Sys.setlocale("LC_COLLATE", "C"))
+  skip_if(identical(sort(c("CH", "GR")), c("CH", "GR")),
+          "this platform's cs_CZ collation does not reorder CH")
+  expect_identical(link:::.lnk_vocabulary_spec_acc(cfg, loaded), ref)
+})
+
+test_that("a blank key cell in the table is refused, not matched", {
+  f <- withr::local_tempfile(fileext = ".csv")
+  writeLines(c("token,axis,definition,spec,introduced,retired",
+               "cut-a,cut,d,,0.1.0,"), f)
+  expect_error(link:::.lnk_vocabulary_read_path(f), "blank spec in row")
 })
 
 test_that("a retired match or two live matches refuse", {

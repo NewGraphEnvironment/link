@@ -787,7 +787,7 @@ not necessarily from the same data.
 
 **A config with no live token is refused** before the run opens. That covers a
 changed break source, a new access gradient, an edited presence table, a bundle loaded
-by path, or `default_extrabreaks` and `default_rearbreaks`, which have no rows. The error
+by path that differs from every named one, or `default_extrabreaks` and `default_rearbreaks`, which have no rows. The error
 prints the spec. `study_area_run.sh`'s local pre-flight asks the same question once,
 before any spend.
 

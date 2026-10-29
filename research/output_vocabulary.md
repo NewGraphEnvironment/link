@@ -87,9 +87,16 @@ after the company (operator, 2026-10-29).
 ## How the acc digest is built
 
 `.lnk_vocabulary_spec_acc()` hashes the modelled species, the seven access columns of
-`parameters_fresh` and the presence table's species columns. Before hashing, it makes
-every value trimmed text, treats `NA` and an empty cell as one, reads `t`/`TRUE` as
-`true`, and sorts columns by name and rows in C order. So `bcfishpass`'s quoted CSV and
-`default`'s unquoted one would digest the same at the same values, and so would a
-reordered file or an edited `notes` column. The tests in `tests/testthat/test-lnk_vocabulary.R` hold
-each of those.
+`parameters_fresh`, the presence table's species columns, and the two access rules held
+in code. Before hashing, it writes each value as R reads it from the CSV, keeps `NA` apart
+from an empty cell, and sorts columns by name and rows in C order. So a reordered file, a
+change of quoting, or an edited `notes` column digests the same.
+
+It never folds values: no trimming, and `t` is not `TRUE`. The readers of these tables
+test values exactly. `.lnk_wsg_species_present()` counts a species present only on `t`,
+so a cell spelled `TRUE` drops the species from the model, and the digest has to change
+with it (code-check round 1 found the folding version letting that through). The sorts
+are radix, so a host's collation cannot move the digest: under a Czech collation `CH`
+sorts after `GR`.
+
+The tests in `tests/testthat/test-lnk_vocabulary.R` hold each of those.
