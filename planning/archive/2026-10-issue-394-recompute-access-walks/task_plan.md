@@ -103,9 +103,9 @@ changes during the run.
   `exists` → `dedup`, per group, walk and phase minutes), the digests, the load at each run, and the
   wrong turns.
 - [x] `research/recompute_cost.md`: revise the verdict with what the levers bought (Verified line).
-- [ ] RUNBOOK (§8d, hosts need fresh 0.47.0, re-prep with `--auto-install`), and the CLAUDE.md
+- [x] RUNBOOK (§8d, hosts need fresh 0.47.0, re-prep with `--auto-install`), and the CLAUDE.md
   status entry. Fill #394's and #409's lines on #377 by editing its body.
-- [ ] NEWS entry and version bump as the branch's last commit.
+- [ ] NEWS entry and version bump as the branch's last commit (the commit after this archive; #377's lines are edited once the PR exists).
 
 ## Owed at the end (reported, done after merge)
 
@@ -116,8 +116,8 @@ changes during the run.
 
 - [x] Tests pass (`devtools::test()`: 4,654 pass; 2 tunnel-dependent tests error, environmental), `lintr` no new lints in package code (measurement scripts kept as they ran), `devtools::check()` with no warning or note the branch introduced (see progress.md)
 - [x] `/code-check` clean (once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
 
 How each change is proved:
 - The bump: `base044` and `prefilter` digests are identical on four groups, and the per-table model
