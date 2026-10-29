@@ -172,6 +172,32 @@ lnk_pipeline_access <- function(
   array_tables <- unlist(barrier_sources[array_roles], use.names = FALSE)
   walk_result <- function(tbl) if (tbl %in% array_tables) "ids" else "exists"
 
+  # One walk per distinct barrier set (#394). The per-species views over one
+  # barriers table differ only by `blocks_species` and each species'
+  # overrides, so several often hold the same rows: CHWK walked five
+  # CH-shaped views that returned the same segments. An existence walk reads
+  # only the rows `fwa_downstream()` can admit from this AOI, so two tables
+  # whose admissible rows are identical give the same answer, and they share
+  # one cache entry keyed on those rows (`.lnk_walk_keys()`). Array walks keep
+  # the table as their key: the ids they return are the view's own.
+  walked_sp <- names(barriers_per_sp)
+  if (!is.null(presence)) {
+    walked_sp <- walked_sp[vapply(walked_sp,
+                                  function(s) isTRUE(presence$is_present(s)),
+                                  logical(1))]
+  }
+  key_tables <- unique(unlist(barriers_per_sp[walked_sp], use.names = FALSE))
+  key_tables <- key_tables[!key_tables %in% array_tables]
+  cache_key <- stats::setNames(as.list(key_tables), key_tables)
+  if (length(key_tables) > 1L) {
+    keys <- .lnk_walk_keys(conn, segments = segments, aoi = aoi,
+                           tables = key_tables)
+    cache_key[key_tables] <- as.list(paste0("rows:", keys[key_tables]))
+  }
+  walk_cache_key <- function(tbl) {
+    if (is.null(cache_key[[tbl]])) tbl else cache_key[[tbl]]
+  }
+
   dnstr_per_sp <- list()
   dnstr_cache <- list()
   for (sp in names(barriers_per_sp)) {
@@ -184,8 +210,9 @@ lnk_pipeline_access <- function(
     table_only <- sub("^[^.]+\\.", "", barriers_tbl)
     sp_id_col <- paste0(table_only, "_id")
 
-    if (is.null(dnstr_cache[[barriers_tbl]])) {
-      dnstr_cache[[barriers_tbl]] <- fresh::frs_network_features(
+    key <- walk_cache_key(barriers_tbl)
+    if (is.null(dnstr_cache[[key]])) {
+      dnstr_cache[[key]] <- fresh::frs_network_features(
         conn,
         segments       = segments,
         features       = barriers_tbl,
@@ -197,7 +224,7 @@ lnk_pipeline_access <- function(
         result         = walk_result(barriers_tbl)
       )
     }
-    df <- dnstr_cache[[barriers_tbl]]
+    df <- dnstr_cache[[key]]
     names(df)[2] <- paste0("barriers_", sp, "_dnstr")
     dnstr_per_sp[[sp]] <- df
   }
@@ -430,4 +457,61 @@ lnk_pipeline_access <- function(
   }
 
   tibble::as_tibble(out)
+}
+
+#' Fingerprint the rows each walk could read from an AOI
+#'
+#' For each features table, the md5 of every row `fwa_downstream()` could
+#' admit from a segment of `aoi`: rows on one of the AOI's blue lines, or
+#' whose `wscode_ltree` is an ancestor of, or equal to, an AOI segment's
+#' (fwa_downstream's two criteria; subpaths from length 0, so an empty code
+#' is included). That is a superset of what the walk reads, so two tables
+#' with equal keys give the same downstream walk from this AOI. The key
+#' covers every column the walk reads plus `watershed_group_code`, as record
+#' text (NULL-safe: `concat_ws()` would skip a NULL and `||` would drop the
+#' row), in a total text order.
+#'
+#' @param conn A DBI connection.
+#' @param segments Schema-qualified segments table with `watershed_group_code`,
+#'   `blue_line_key` and `wscode_ltree`.
+#' @param aoi Watershed group code (validated by the caller).
+#' @param tables Schema-qualified features tables; each exposes the bcfp-shape
+#'   `<table>_id` column and the standard FWA keys.
+#' @return Named character vector of md5 keys, one per table.
+#' @noRd
+.lnk_walk_keys <- function(conn, segments, aoi, tables) {
+  stopifnot(is.character(tables), length(tables) > 0L,
+            grepl("^[A-Z]{3,5}$", aoi))
+  branch_sql <- "SELECT %d AS i,
+         md5(coalesce(string_agg(r, '|' ORDER BY r COLLATE \"C\"), '')) AS key
+       FROM (
+         SELECT row(f.%s, f.watershed_group_code, f.blue_line_key,
+                    f.downstream_route_measure, f.wscode_ltree,
+                    f.localcode_ltree)::text AS r
+         FROM %s f
+         WHERE f.wscode_ltree = ANY (ARRAY(SELECT code FROM codes))
+            OR f.blue_line_key = ANY (ARRAY(SELECT blue_line_key FROM lines))
+       ) x"
+  branches <- vapply(seq_along(tables), function(i) {
+    id_col <- paste0(sub("^[^.]+\\.", "", tables[i]), "_id")
+    sprintf(branch_sql, i, id_col, tables[i])
+  }, character(1))
+  scope_sql <- "WITH seg AS (
+       SELECT DISTINCT blue_line_key, wscode_ltree FROM %s
+       WHERE watershed_group_code = '%s'),
+     lines AS (SELECT DISTINCT blue_line_key FROM seg),
+     codes AS (
+       SELECT DISTINCT subpath(wscode_ltree, 0, k) AS code
+       FROM seg, generate_series(0, nlevel(wscode_ltree)) k
+       WHERE wscode_ltree IS NOT NULL)
+     %s"
+  sql <- sprintf(scope_sql, segments, aoi,
+                 paste(branches, collapse = "\n     UNION ALL\n     "))
+  res <- DBI::dbGetQuery(conn, sql)
+  keys <- res$key[match(seq_along(tables), res$i)]
+  if (length(keys) != length(tables) || anyNA(keys)) {
+    stop(".lnk_walk_keys(): expected one key per table, got ", nrow(res),
+         " rows for ", length(tables), " tables", call. = FALSE)
+  }
+  stats::setNames(keys, tables)
 }

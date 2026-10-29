@@ -70,21 +70,21 @@ changes during the run.
   and key the cache on table and mode. Correct the roxygen that says the arrays stay on the
   returned tibble.
 - [ ] Run variant `exists` on the four groups. Digests must equal `base044`. Record per-walk minutes.
-- [ ] Compute lever 2's ceiling from those rows: the time of walks whose segment set repeats an
+- [x] Compute lever 2's ceiling from those rows: the time of walks whose segment set repeats an
   earlier walk in the group, as a share of the walk time. `ceiling.tsv` plus a short note.
 
 ## Phase 3: lever 2, one walk per identical set (only if the ceiling is at least 10 %)
 
-- [ ] Tests first: tables with equal keys are walked once and each species gets the result; unequal
+- [x] Tests first: tables with equal keys are walked once and each species gets the result; unequal
   keys are walked separately. Restore the bug (force equal keys for views that differ) and show
   the test goes red. Add a live test (skipped without a DB): two species views identical except for
   one override inside the group's reach give different keys, and identical views give equal keys.
-- [ ] `.lnk_walk_keys()`: one query over the per-species tables. Each table's admissible rows
+- [x] `.lnk_walk_keys()`: one query over the per-species tables. Each table's admissible rows
   (on the group's blue lines, or with a wscode that is an ancestor of, or equal to, a group
   segment's; the AOI's segments only) are reduced to `md5` over every column the walk reads (id,
   `watershed_group_code`, `blue_line_key`, `downstream_route_measure`, wscode, localcode), in a total
   order. Equal keys then mean identical walk input, whatever the source table.
-- [ ] Wire it into `lnk_pipeline_access()` for the `barriers_per_sp` walks only.
+- [x] Wire it into `lnk_pipeline_access()` for the `barriers_per_sp` walks only.
 - [ ] Run variant `dedup` on the four groups, with digests equal to `base044`, and record the keys'
   own cost.
 - [ ] If the ceiling is under 10 %: skip the build, record why in the README and on #377.

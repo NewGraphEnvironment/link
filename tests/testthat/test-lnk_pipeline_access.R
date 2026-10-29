@@ -286,6 +286,17 @@ test_that("access_<sp> is integer 1 / 2 when a present species has no barrier in
   expect_equal(out_np$access_rb, c(2L, 1L))
 })
 
+# One walk per distinct barrier set (link#394). The key query is mocked here;
+# the live test below checks what the key sees.
+mock_keys_db <- function(segments, keys) {
+  function(conn, sql, ...) {
+    if (grepl("md5(coalesce(string_agg", sql, fixed = TRUE)) {
+      return(data.frame(i = seq_along(keys), key = unname(keys)))
+    }
+    mock_segments_aoi(segments)
+  }
+}
+
 # Each walk asks fresh for arrays only where an indicator reads their elements;
 # the rest take the existence walk (link#394, fresh#281). The mock answers in
 # the shape fresh returns for the mode it was asked for, and records the calls.
@@ -312,7 +323,7 @@ mock_walks <- function(per_table, segment_id_col = "segmented_stream_id") {
 
 test_that("walks read only for membership take the existence walk (#394)", {
   local_mocked_bindings(
-    dbGetQuery = function(conn, sql, ...) mock_segments_aoi(c("s1", "s2", "s3")),
+    dbGetQuery = mock_keys_db(c("s1", "s2", "s3"), c("k1", "k2")),
     .package = "DBI"
   )
   w <- mock_walks(list(
@@ -426,4 +437,131 @@ test_that("a table given in an array role and a membership role is walked once, 
   expect_identical(log$result, c("ids", "ids"))
   expect_identical(out$has_barriers_bt_dnstr, c(TRUE, FALSE))
   expect_identical(out$dam_dnstr_ind, c(TRUE, FALSE))
+})
+
+test_that("species views with equal keys share one existence walk", {
+  local_mocked_bindings(
+    dbGetQuery = mock_keys_db(c("s1", "s2", "s3"), c("k1", "k1", "k2")),
+    .package = "DBI"
+  )
+  w <- mock_walks(list(
+    "s.barriers_ch_access" = list(s1 = "C1"),
+    "s.barriers_co_access" = list(s1 = "C1"),
+    "s.barriers_bt_access" = list(s2 = "B1")))
+  local_mocked_bindings(frs_network_features = w$fn, .package = "fresh")
+
+  out <- lnk_pipeline_access(
+    conn = structure(list(), class = "DBIConnection"),
+    segments = "s.streams", aoi = "CHWK",
+    barriers_per_sp = list(ch = "s.barriers_ch_access",
+                           co = "s.barriers_co_access",
+                           bt = "s.barriers_bt_access"),
+    wsg_presence = list(ch = TRUE, co = TRUE, bt = TRUE),
+    segment_id_col = "segmented_stream_id")
+
+  expect_identical(w$calls$log$features,
+                   c("s.barriers_ch_access", "s.barriers_bt_access"))
+  expect_identical(out$has_barriers_co_dnstr, out$has_barriers_ch_dnstr)
+  expect_identical(out$has_barriers_ch_dnstr, c(TRUE, FALSE, FALSE))
+  expect_identical(out$has_barriers_bt_dnstr, c(FALSE, TRUE, FALSE))
+})
+
+test_that("species views with different keys are walked separately", {
+  local_mocked_bindings(
+    dbGetQuery = mock_keys_db(c("s1", "s2"), c("k1", "k2")),
+    .package = "DBI"
+  )
+  # Same view shape, but CO's override lifted the barrier above s1.
+  w <- mock_walks(list(
+    "s.barriers_ch_access" = list(s1 = "C1", s2 = "C2"),
+    "s.barriers_co_access" = list(s2 = "C2")))
+  local_mocked_bindings(frs_network_features = w$fn, .package = "fresh")
+
+  out <- lnk_pipeline_access(
+    conn = structure(list(), class = "DBIConnection"),
+    segments = "s.streams", aoi = "CHWK",
+    barriers_per_sp = list(ch = "s.barriers_ch_access",
+                           co = "s.barriers_co_access"),
+    wsg_presence = list(ch = TRUE, co = TRUE),
+    segment_id_col = "segmented_stream_id")
+
+  expect_identical(nrow(w$calls$log), 2L)
+  expect_identical(out$has_barriers_ch_dnstr, c(TRUE, TRUE))
+  expect_identical(out$has_barriers_co_dnstr, c(FALSE, TRUE))
+})
+
+test_that("absent species and array-walked tables are not keyed", {
+  key_sql <- character(0)
+  local_mocked_bindings(
+    dbGetQuery = function(conn, sql, ...) {
+      if (grepl("md5(coalesce(string_agg", sql, fixed = TRUE)) {
+        key_sql <<- c(key_sql, sql)
+        return(data.frame(i = 1:2, key = c("k1", "k2")))
+      }
+      mock_segments_aoi(c("s1"))
+    },
+    .package = "DBI"
+  )
+  w <- mock_walks(list("s.anth" = list(s1 = "D1"), "s.dams" = list(s1 = "D1")))
+  local_mocked_bindings(frs_network_features = w$fn, .package = "fresh")
+  pres <- list(is_present = function(sp) sp != "sk")
+
+  lnk_pipeline_access(
+    conn = structure(list(), class = "DBIConnection"),
+    segments = "s.streams", aoi = "CHWK",
+    barriers_per_sp = list(ch = "s.barriers_ch_access",
+                           sk = "s.barriers_sk_access",
+                           bt = "s.anth", co = "s.barriers_co_access"),
+    presence = pres,
+    barrier_sources = list(anthropogenic = "s.anth", dams = "s.dams"),
+    segment_id_col = "segmented_stream_id")
+
+  expect_length(key_sql, 1L)
+  expect_match(key_sql, "s.barriers_ch_access", fixed = TRUE)
+  expect_match(key_sql, "s.barriers_co_access", fixed = TRUE)
+  expect_false(grepl("barriers_sk_access", key_sql, fixed = TRUE))
+  expect_false(grepl("s.anth", key_sql, fixed = TRUE))
+})
+
+test_that(".lnk_walk_keys sees the rows a walk can read, NULLs included", {
+  skip_if_no_db()
+  conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
+                      user = "postgres", password = "postgres")
+  on.exit(DBI::dbDisconnect(conn), add = TRUE)
+  ex <- function(sql) DBI::dbExecute(conn, sql)
+  ex("CREATE TEMP TABLE kseg (watershed_group_code text, blue_line_key int,
+        wscode_ltree ltree)")
+  ex("INSERT INTO kseg VALUES ('AAAA', 10, '100.200'), ('BBBB', 99, '300')")
+  cols <- "(watershed_group_code text, blue_line_key int,
+            downstream_route_measure float8, wscode_ltree ltree, localcode_ltree ltree)"
+  for (t in c("a", "b", "c", "d", "e", "f", "g")) {
+    ex(sprintf("CREATE TEMP TABLE k%s (k%s_id text, %s", t, t, sub("^\\(", "", cols)))
+  }
+  base <- "('G1', 'AAAA', 10, 5, '100.200', '100.200.1'),
+           ('G2', 'AAAA', 20, 0, '100', '100.150')"
+  ex(sprintf("INSERT INTO ka VALUES %s", base))
+  ex(sprintf("INSERT INTO kb VALUES %s", base))
+  # kc: G2's localcode NULL. kd: one more row on an unrelated line and code.
+  ex("INSERT INTO kc VALUES ('G1', 'AAAA', 10, 5, '100.200', '100.200.1'),
+                            ('G2', 'AAAA', 20, 0, '100', NULL)")
+  ex(sprintf("INSERT INTO kd VALUES %s, ('G9', 'CCCC', 77, 0, '400', '400')", base))
+  # ke: the same row set in another group's name.
+  ex("INSERT INTO ke VALUES ('G1', 'ZZZZ', 10, 5, '100.200', '100.200.1'),
+                            ('G2', 'AAAA', 20, 0, '100', '100.150')")
+
+  # kf and kg: a NULL in different places, which text joined while skipping
+  # NULLs (concat_ws) would read as one row.
+  ex("INSERT INTO kf VALUES ('G3', 'AAAA', 10, 1, '100.200', NULL)")
+  ex("INSERT INTO kg VALUES ('G3', 'AAAA', 10, 1, NULL, '100.200')")
+
+  tbls <- paste0("pg_temp.k", c("a", "b", "c", "d", "e", "f", "g"))
+  keys <- .lnk_walk_keys(conn, segments = "pg_temp.kseg", aoi = "AAAA",
+                         tables = tbls)
+  expect_named(keys, tbls)
+  expect_false(keys[["pg_temp.kf"]] == keys[["pg_temp.kg"]])
+  expect_identical(keys[["pg_temp.ka"]], keys[["pg_temp.kb"]])
+  expect_false(keys[["pg_temp.ka"]] == keys[["pg_temp.kc"]])
+  # A row no AOI segment can reach does not change the key.
+  expect_identical(keys[["pg_temp.ka"]], keys[["pg_temp.kd"]])
+  expect_false(keys[["pg_temp.ka"]] == keys[["pg_temp.ke"]])
 })
