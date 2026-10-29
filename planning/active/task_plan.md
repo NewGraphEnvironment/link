@@ -48,15 +48,15 @@ changes during the run.
   - digest the output sorted by `id_segment` over every `has_*`, `access_*` and `dam_dnstr_ind`;
   - append to `measure.tsv` with the variant, link SHA, fresh version and RemoteSha, and the load;
   - drop the scratch table.
-- [ ] Run variant `base044` (main worktree, fresh 0.44.0) on SALR, CHWK, SETN and LFRA.
-- [ ] Model one or two small `default` groups into a scratch schema at main on 0.44.0, and save
+- [x] Run variant `base044` (main worktree, fresh 0.44.0) on SALR, CHWK, SETN and LFRA.
+- [x] Model one or two small `default` groups into a scratch schema at main on 0.44.0, and save
   per-table digests (#409's "outputs should not move").
-- [ ] Install fresh v0.47.0 (`--auto-install` path / pak from the tag; confirm `RemoteSha`).
+- [x] Install fresh v0.47.0 (`--auto-install` path / pak from the tag; confirm `RemoteSha`).
   Bump `DESCRIPTION` (`fresh (>= 0.47.0)`, `Remotes: NewGraphEnvironment/fresh@v0.47.0`). Read
   fresh's NEWS for 0.45 to 0.47 for anything else that could move outputs.
 - [x] `lnk_preflight_fresh()`: assert `frs_network_features()` has a `result` formal, so a host on an
   older fresh fails at preflight. Add a test for it.
-- [ ] Run variant `prefilter` (main code, fresh 0.47.0), with digests equal to `base044`. Rebuild
+- [x] Run variant `prefilter` (main code, fresh 0.47.0), with digests equal to `base044`. Rebuild
   the scratch groups and confirm the per-table digests are identical.
 
 ## Phase 2: lever 1, existence walks
@@ -69,7 +69,7 @@ changes during the run.
 - [x] `lnk_pipeline_access()`: choose the mode per table (arrays only where a role reads elements),
   and key the cache on table and mode. Correct the roxygen that says the arrays stay on the
   returned tibble.
-- [ ] Run variant `exists` on the four groups. Digests must equal `base044`. Record per-walk minutes.
+- [x] Run variant `exists` on the four groups. Digests must equal `base044`. Record per-walk minutes.
 - [x] Compute lever 2's ceiling from those rows: the time of walks whose segment set repeats an
   earlier walk in the group, as a share of the walk time. `ceiling.tsv` plus a short note.
 
@@ -85,9 +85,9 @@ changes during the run.
   `watershed_group_code`, `blue_line_key`, `downstream_route_measure`, wscode, localcode), in a total
   order. Equal keys then mean identical walk input, whatever the source table.
 - [x] Wire it into `lnk_pipeline_access()` for the `barriers_per_sp` walks only.
-- [ ] Run variant `dedup` on the four groups, with digests equal to `base044`, and record the keys'
+- [x] Run variant `dedup` on the four groups, with digests equal to `base044`, and record the keys'
   own cost.
-- [ ] If the ceiling is under 10 %: skip the build, record why in the README and on #377.
+- [x] ~~If the ceiling is under 10 %~~: not taken (57.1 %).
 
 ### Gate and acceptance for lever 2 (after the review, `review-plan.md` #12)
 
@@ -99,10 +99,10 @@ changes during the run.
 
 ## Phase 4: record and docs
 
-- [ ] `data-raw/logs/recompute_access_394/README.md`: the step table (`base044` → `prefilter` →
+- [x] `data-raw/logs/recompute_access_394/README.md`: the step table (`base044` → `prefilter` →
   `exists` → `dedup`, per group, walk and phase minutes), the digests, the load at each run, and the
   wrong turns.
-- [ ] `research/recompute_cost.md`: revise the verdict with what the levers bought (Verified line).
+- [x] `research/recompute_cost.md`: revise the verdict with what the levers bought (Verified line).
 - [ ] RUNBOOK (§8d, hosts need fresh 0.47.0, re-prep with `--auto-install`), and the CLAUDE.md
   status entry. Fill #394's and #409's lines on #377 by editing its body.
 - [ ] NEWS entry and version bump as the branch's last commit.
