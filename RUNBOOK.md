@@ -1479,9 +1479,10 @@ the fresh assertion) and re-checks exactly once.
 **A fresh bump reaches every host only through that assertion.** Since link#394 the pin is
 fresh v0.47.0, and `lnk_preflight_fresh()` asserts `frs_network_features(result)`, the
 existence walk `lnk_pipeline_access()` calls. A worker or cloud host still on 0.44.0 fails
-preflight rather than reaching a walk with an argument it does not take. Re-prep each host
-with `--auto-install` (a worker: `worker_prep.sh`'s `install-fresh` stage) before the next
-run, and confirm its `RemoteSha` equals `git rev-parse v0.47.0^{commit}` in fresh.
+preflight rather than reaching a walk with an argument it does not take. Nothing is done by
+hand: a cloud host installs fresh at prep from the `Remotes:` pin, and a persistent worker
+gets it when the run is launched with `--auto-install` (`worker_prep.sh`'s `install-fresh`
+stage), which re-checks its `RemoteSha` against the dispatcher's.
 
 ### The pre-run gate (link#372)
 

@@ -38,7 +38,7 @@ Wrong turns:
 
 ## Owed
 
-- Re-prep the worker and cloud hosts for fresh v0.47.0 before the next provincial run.
+- Re-prep the worker and cloud hosts for fresh v0.47.0 before the next provincial run. (No separate step: cloud hosts install it at prep from the `Remotes:` pin, and a persistent worker gets it from launching the run with `--auto-install`, which the pre-flight demands.)
 - The provincial recompute minutes at this release (#377's runs row).
 - The pre-run gate (#372) must pass again before the next provincial run: `R/lnk_pipeline_access.R` and fresh's `R/frs_network_features.R` both changed since its record.
 - Possible follow-up: `lnk_access()`'s `zz_lnk_streams_<aoi>` duplicates fresh's per-walk temp table since 0.45.0, and its name collides with a live recompute of the same group.
