@@ -108,9 +108,18 @@ ns_f <- asNamespace("fresh")
 orig_nf <- ns_f$frs_network_features
 timed_nf <- function(conn, segments, features, ...) {
   t <- system.time(r <- orig_nf(conn, segments, features, ...))[["elapsed"]]
+  # The arrays themselves, so a walk that returns different features with the
+  # same counts shows: one digest in the order returned, one with each array
+  # sorted (link#409). Segments are put in id order first.
+  o <- order(r[[1]])
+  ids <- as.character(r[[1]])[o]
+  arr <- lapply(r[[2]][o], as.character)
+  dg <- function(a) digest::digest(paste(ids, vapply(a, paste, "", collapse = ","),
+                                         sep = ":"), algo = "md5")
   walk_t[[length(walk_t) + 1L]] <<- data.frame(
     table = sub("^[^.]+\\.", "", features), s = t, rows = nrow(r),
-    elements = sum(lengths(r[[2]])))
+    elements = sum(lengths(r[[2]])),
+    digest_order = dg(arr), digest_sorted = dg(lapply(arr, sort, method = "radix")))
   r
 }
 utils::assignInNamespace("frs_network_features", timed_nf, "fresh")
@@ -169,7 +178,12 @@ busy_end <- DBI::dbGetQuery(conn,
   "SELECT count(*)::int AS n FROM pg_stat_activity
    WHERE datname = current_database() AND state <> 'idle'
      AND pid <> pg_backend_pid() AND backend_type = 'client backend'")$n
+# This host's load: R here parses the walks' arrays (link#409 review).
+load_1min <- tryCatch(as.numeric(strsplit(system2("sysctl", c("-n", "vm.loadavg"),
+                                                  stdout = TRUE), " ")[[1]][2]),
+                      error = function(e) NA_real_)
 stamp <- function(d) {
+  d$load_1min_end <- load_1min
   d$wsg <- wsg
   d$label <- label
   d$fresh <- fresh_v

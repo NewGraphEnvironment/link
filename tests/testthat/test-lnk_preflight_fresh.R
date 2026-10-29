@@ -152,6 +152,17 @@ test_that("link's real DESCRIPTION declares a fresh floor", {
   expect_true(utils::compareVersion(.lnk_fresh_floor(), "0.33.0") >= 0L)
 })
 
+test_that("the fresh floor is the version the Remotes pin installs", {
+  # A floor below the pin lets a host on an older fresh pass the preflight:
+  # since link#409 the recompute's speed comes from the pinned fresh's scoped
+  # downstream walk, and an older one gives the same answers more slowly.
+  remotes <- utils::packageDescription("link")$Remotes
+  skip_if(is.null(remotes) || is.na(remotes), "no Remotes field in this DESCRIPTION")
+  tag <- regmatches(remotes, regexpr("NewGraphEnvironment/fresh@v[0-9.]+", remotes))
+  expect_length(tag, 1L)
+  expect_identical(sub(".*@v", "", tag), .lnk_fresh_floor())
+})
+
 test_that("lnk_preflight_fresh validates its arguments", {
   expect_error(lnk_preflight_fresh(required = character(0)))
   expect_error(lnk_preflight_fresh(required = ""))
