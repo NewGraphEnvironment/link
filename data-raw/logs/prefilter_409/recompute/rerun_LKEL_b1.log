@@ -1,0 +1,81 @@
+[rerun] LKEL b1: fresh 0.44.0 (22034c1a22f5629edeaa4b6fcf70eb6980208450) from /Users/airvine/Library/R/arm64/4.5/library/fresh
+[1] 0
+[1] 0
+NOTICE:  schema "zz409_backup" already exists, skipping
+
+[1] 0
+NOTICE:  table "streams_access_lkel" does not exist, skipping
+
+NOTICE:  table "streams_mapping_code_lkel" does not exist, skipping
+
+NOTICE:  table "streams_habitat_bt_lkel" does not exist, skipping
+
+NOTICE:  table "streams_habitat_ch_lkel" does not exist, skipping
+
+NOTICE:  table "streams_habitat_cm_lkel" does not exist, skipping
+
+NOTICE:  table "streams_habitat_co_lkel" does not exist, skipping
+
+NOTICE:  table "streams_habitat_pk_lkel" does not exist, skipping
+
+NOTICE:  table "streams_habitat_st_lkel" does not exist, skipping
+
+NOTICE:  table "streams_habitat_rb_lkel" does not exist, skipping
+
+NOTICE:  table "zz_lnk_access_prior_lkel" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_lkel" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+8: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+9: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+10: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[1] 0
+                              step       s load_1min_end  wsg label  fresh
+1                       prior_copy   0.383          4.44 LKEL    b1 0.44.0
+2                       lnk_access  95.789          4.44 LKEL    b1 0.44.0
+3                     habitat_gate  15.665          4.44 LKEL    b1 0.44.0
+4                     mapping_code  11.977          4.44 LKEL    b1 0.44.0
+5                 downstream_guard   1.206          4.44 LKEL    b1 0.44.0
+6                 lnk_access:walks  88.856          4.44 LKEL    b1 0.44.0
+7 lnk_access:pipeline_access_other   3.146          4.44 LKEL    b1 0.44.0
+8      lnk_access:setup_and_update   3.787          4.44 LKEL    b1 0.44.0
+9                            total 125.410          4.44 LKEL    b1 0.44.0
+                                 fresh_sha others_start others_end
+1 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+2 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+3 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+4 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+5 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+6 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+7 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+8 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+9 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+               utc_end
+1 2026-10-29T01:31:40Z
+2 2026-10-29T01:31:40Z
+3 2026-10-29T01:31:40Z
+4 2026-10-29T01:31:40Z
+5 2026-10-29T01:31:40Z
+6 2026-10-29T01:31:40Z
+7 2026-10-29T01:31:40Z
+8 2026-10-29T01:31:40Z
+9 2026-10-29T01:31:40Z
+[rerun] LKEL b1 (fresh 0.44.0) digests UNCHANGED across 9 tables; total 125.4 s

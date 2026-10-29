@@ -1,0 +1,10 @@
+wsg	label	fresh	table	before	after	same
+LKEL	b2	0.44.0	streams_access	c106cd1222db183364305f8ff877ccf2	c106cd1222db183364305f8ff877ccf2	TRUE
+LKEL	b2	0.44.0	streams_mapping_code	04c8b3c5770cab0ebc63ec05766fb9cb	04c8b3c5770cab0ebc63ec05766fb9cb	TRUE
+LKEL	b2	0.44.0	streams_habitat_bt	422a519335d6ea0c07396e93bd11ec5a	422a519335d6ea0c07396e93bd11ec5a	TRUE
+LKEL	b2	0.44.0	streams_habitat_ch	ad710900ee57551f07c1ce6ea09950de	ad710900ee57551f07c1ce6ea09950de	TRUE
+LKEL	b2	0.44.0	streams_habitat_cm	3d6ac8a14a67d9433dc547e3d3eb0ec6	3d6ac8a14a67d9433dc547e3d3eb0ec6	TRUE
+LKEL	b2	0.44.0	streams_habitat_co	a79fbe2f4ab0db50789052fcfa0340c5	a79fbe2f4ab0db50789052fcfa0340c5	TRUE
+LKEL	b2	0.44.0	streams_habitat_pk	951ecf8d919a0aaa2851d07dd9c3c8d1	951ecf8d919a0aaa2851d07dd9c3c8d1	TRUE
+LKEL	b2	0.44.0	streams_habitat_st	2448f05c914d983617882a9b9176fb77	2448f05c914d983617882a9b9176fb77	TRUE
+LKEL	b2	0.44.0	streams_habitat_rb	ac62189a946f2b59b173fcf43424c795	ac62189a946f2b59b173fcf43424c795	TRUE

@@ -28,30 +28,33 @@ Approved by the operator at the plan gate, 2026-10-28 ("Go all phases to pr").
 
 ## Phase 2: the recompute, before and after (dispatcher `fresh_default`)
 - [x] Copy `rerun.R` to `data-raw/logs/prefilter_409/` with the fresh version and `RemoteSha` stamped into each output, and the backup schema renamed `zz409_backup`
-- [ ] After Phase 3 finishes and m1 is quiet: every group (SALR, LKEL, CHWK, LSKE, SETN) runs b1, a1, a2, b2 (review O3, O4). Outputs: `steps_<WSG>_<label>.tsv`, `walks_…` (with array digests), `digest_…`, logs; `fresh_default.streams` / `.barriers` write counters before and after (G6)
-- [ ] Every table digest unchanged, and every walk's arrays identical across runs (if anything moves: stop, keep the restore, record the segments, and bring it back to the operator)
+- [x] After Phase 3 finishes and m1 is quiet: SALR, LKEL, LSKE, CHWK ran b1, a1, a2, b2; SETN b1, a1 (its second pair is owed, below) (review O3, O4). Outputs: `steps_<WSG>_<label>.tsv`, `walks_…` (with array digests), `digest_…`, logs; `fresh_default.streams` / `.barriers` write counters before and after (G6)
+- [x] Every table digest unchanged, and every walk's arrays identical across runs (if anything moves: stop, keep the restore, record the segments, and bring it back to the operator)
 - [x] Tie risk counted before any write (review B1, G1): 0 co-located anthropogenic features in 241 groups, 0 in the remediation sets of 134 groups
-- [ ] `summary.R`: per group, lnk_access / walks / gate / mapping code, before vs after, and per walk against #261's table (the provincial share is left to the next run, AC1)
+- [x] `summary.R`: per group, lnk_access / walks / gate / mapping code, before vs after, and per walk against #261's table (the provincial share is left to the next run, AC1)
 
 ## Phase 3: model-time outputs do not move (m4, scratch schemas)
 - [x] Build ADMS (SK/KO reach fresh#242's `connected_waterbody` path), NATR (BT, GR, KO, RB) and ELKR with `wsg_run_one.R` + `wsg_recompute_one.R` into `fresh_409b` (0.44.0) and `fresh_409a` (0.46.0), from one worktree at BASE
 - [x] Per-group per-table digests (streams, barriers, streams_access, streams_mapping_code, every streams_habitat_<sp>) with `provincial_prep_367/compare.R`'s pattern, after asserting each schema's logged fresh: identical, as one host's builds are (#367). On any mismatch, rebuild the 0.44.0 side first (G3)
-- [ ] Drop the two scratch schemas once the digests are committed
+- [x] Drop the two scratch schemas once the digests are committed
 
 ## Phase 4: the pin
 - [x] `DESCRIPTION`: `fresh (>= 0.46.0)`, `Remotes: NewGraphEnvironment/fresh@v0.46.0`
-- [ ] Install v0.46.0 into the shared library, after every 0.44.0 run (Phase 2's b runs and Phase 3's builds)
+- [x] Install v0.46.0 into the shared library, after every 0.44.0 run (Phase 2's b runs and Phase 3's builds)
 - [x] Tests: every downstream walk passes `aoi`; the floor equals the `Remotes:` tag; each shown to fail with its guard removed
 - [x] `test-pretest.R` passes at the new pin (24 / 0 failed / 0 skipped); the `none` rows name both tags, the reach being identical; `pretest_run.sh --pick-only` exits 0 over `1d00c04c..HEAD` (fresh v0.42.0..v0.46.0, 31 files)
-- [ ] `devtools::test()`, `devtools::check()`, `lintr::lint_package()` at fresh 0.46.0
+- [x] `devtools::test()` (1,180 / 0 failed / 1 skip, the dirty-tree test, which passes on a committed tree) and `lintr` (no new lints in changed files) at fresh 0.46.0
+- [ ] `devtools::check()` at fresh 0.46.0
 
 ## Phase 5: record
-- [ ] `data-raw/logs/prefilter_409/README.md` (environment stamps, method, numbers, evidence index)
-- [ ] `research/recompute_cost.md`: "Measured since fresh#272" with the per-group minutes
-- [ ] CLAUDE.md status entry and its reach line; RUNBOOK: the walk's planner notes and the pre-run gate's "recompute's cost" line (G8)
+- [x] `data-raw/logs/prefilter_409/README.md` (environment stamps, method, numbers, evidence index)
+- [x] `research/recompute_cost.md`: "Measured since fresh#272" with the per-group minutes
+- [x] CLAUDE.md status entry and its reach line; RUNBOOK: the walk's planner notes and the pre-run gate's "recompute's cost" line (G8)
 - [ ] Edit #377's prefilter item with the measurement and tick it; NEWS + version bump (v0.69.6, outputs unchanged) as the last commit
 
 ## Owed at the end (reported, done after merge)
+
+- [ ] SETN's second pair (a2, b2): the driver waits up to 6 h for a quiet dispatcher (`LIB044` arm), then fill it into the README, research table and #377
 
 - [ ] Re-prep the cloud hosts and the persistent worker for fresh v0.46.0 (`--auto-install`, RUNBOOK §8d) before the next dispatch
 - [ ] Run the full pre-run gate (`pretest_run.sh --config=default --schema=fresh_default`) at the new pin before the next provincial run; the bump voids the 2026-10-29 record
@@ -61,7 +64,7 @@ Approved by the operator at the plan gate, 2026-10-28 ("Go all phases to pr").
 
 ## Validation
 
-- [ ] Tests pass
+- [x] Tests pass
 - [ ] `/code-check` clean (once over the branch with `/code-check branch`)
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
