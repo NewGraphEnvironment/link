@@ -285,3 +285,39 @@ test_that("access_<sp> is integer 1 / 2 when a present species has no barrier in
   expect_type(out_np$access_rb, "integer")
   expect_equal(out_np$access_rb, c(2L, 1L))
 })
+
+test_that("every downstream walk is scoped to the AOI, and the observation walk runs upstream", {
+  # fresh >= 0.45.0 prefilters a downstream walk's features only when it is
+  # given `aoi` (fresh#272); without it each walk drives from every feature in
+  # the province (link#261, link#409).
+  local_mocked_bindings(
+    dbGetQuery = function(conn, sql, ...) mock_segments_aoi(c("s1", "s2")),
+    .package = "DBI"
+  )
+  calls <- list()
+  local_mocked_bindings(
+    frs_network_features = function(conn, segments, features, ...) {
+      calls[[length(calls) + 1L]] <<- c(list(features = features), list(...))
+      mock_frs(list(s1 = "X1", s2 = character(0)))
+    },
+    .package = "fresh"
+  )
+  lnk_pipeline_access(
+    conn = structure(list(), class = "DBIConnection"),
+    segments = "s.streams",
+    aoi = "ADMS",
+    barriers_per_sp = list(bt = "s.barriers_bt", ch = "s.barriers_ch"),
+    observations = "s.observations",
+    wsg_presence = list(bt = TRUE, ch = TRUE),
+    barrier_sources = list(anthropogenic = "s.barriers_anthropogenic",
+                           dams = "s.barriers_dams"),
+    segment_id_col = "segmented_stream_id"
+  )
+  dir <- vapply(calls, function(x) x$direction, character(1))
+  aoi <- vapply(calls, function(x) if (is.null(x$aoi)) NA_character_ else x$aoi, character(1))
+  feat <- vapply(calls, function(x) x$features, character(1))
+  expect_setequal(feat[dir == "downstream"],
+                  c("s.barriers_bt", "s.barriers_ch", "s.barriers_anthropogenic", "s.barriers_dams"))
+  expect_identical(unname(aoi[dir == "downstream"]), rep("ADMS", 4L))
+  expect_identical(feat[dir == "upstream"], "s.observations")
+})

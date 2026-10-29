@@ -1,0 +1,5 @@
+wsg	label	fresh	table	before	after	same
+SALR	b2	0.44.0	streams_access	16a0cb81f2cb4be37a68937e1755e3b1	16a0cb81f2cb4be37a68937e1755e3b1	TRUE
+SALR	b2	0.44.0	streams_mapping_code	78d3285651bbad4b2e32f042b80485a0	78d3285651bbad4b2e32f042b80485a0	TRUE
+SALR	b2	0.44.0	streams_habitat_ch	2a11ab1eeb28f6e69cc8a67dadd9a440	2a11ab1eeb28f6e69cc8a67dadd9a440	TRUE
+SALR	b2	0.44.0	streams_habitat_rb	f652aaed095bdf226d5f7903ffa261e8	f652aaed095bdf226d5f7903ffa261e8	TRUE

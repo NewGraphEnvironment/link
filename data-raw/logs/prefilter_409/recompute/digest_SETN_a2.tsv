@@ -1,0 +1,11 @@
+wsg	label	fresh	table	before	after	same
+SETN	a2	0.46.0	streams_access	b837cd6329efacde8f5dd29f4a7b9afd	b837cd6329efacde8f5dd29f4a7b9afd	TRUE
+SETN	a2	0.46.0	streams_mapping_code	175ca05cc50ea47cea4053dcd2e2936a	175ca05cc50ea47cea4053dcd2e2936a	TRUE
+SETN	a2	0.46.0	streams_habitat_bt	e6dbaa88153609f047de981b2efb3e05	e6dbaa88153609f047de981b2efb3e05	TRUE
+SETN	a2	0.46.0	streams_habitat_ch	7bfd7ce3c47e7ab3f2e03f35b172883d	7bfd7ce3c47e7ab3f2e03f35b172883d	TRUE
+SETN	a2	0.46.0	streams_habitat_cm	aeb540f1ecfec2cdd89ca546dfd206fd	aeb540f1ecfec2cdd89ca546dfd206fd	TRUE
+SETN	a2	0.46.0	streams_habitat_co	e06e2bdd6781cbb7b07be90db571b91a	e06e2bdd6781cbb7b07be90db571b91a	TRUE
+SETN	a2	0.46.0	streams_habitat_pk	543a48609237e7983a9b69349ee68982	543a48609237e7983a9b69349ee68982	TRUE
+SETN	a2	0.46.0	streams_habitat_sk	6dea911a1824a0d8232482018cf24b10	6dea911a1824a0d8232482018cf24b10	TRUE
+SETN	a2	0.46.0	streams_habitat_st	cd65aea8c0ed5e467dac15ecf7ecba42	cd65aea8c0ed5e467dac15ecf7ecba42	TRUE
+SETN	a2	0.46.0	streams_habitat_rb	539c86ac66539b122e9a517a4cecd69a	539c86ac66539b122e9a517a4cecd69a	TRUE

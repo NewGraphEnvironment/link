@@ -1,0 +1,63 @@
+[rerun] CHWK b1: fresh 0.44.0 (22034c1a22f5629edeaa4b6fcf70eb6980208450) from /Users/airvine/Library/R/arm64/4.5/library/fresh
+[1] 0
+[1] 0
+NOTICE:  schema "zz409_backup" already exists, skipping
+
+[1] 0
+NOTICE:  table "streams_access_chwk" does not exist, skipping
+
+NOTICE:  table "streams_mapping_code_chwk" does not exist, skipping
+
+NOTICE:  table "streams_habitat_bt_chwk" does not exist, skipping
+
+NOTICE:  table "streams_habitat_ch_chwk" does not exist, skipping
+
+NOTICE:  table "streams_habitat_cm_chwk" does not exist, skipping
+
+NOTICE:  table "streams_habitat_co_chwk" does not exist, skipping
+
+NOTICE:  table "streams_habitat_pk_chwk" does not exist, skipping
+
+NOTICE:  table "streams_habitat_sk_chwk" does not exist, skipping
+
+NOTICE:  table "streams_habitat_st_chwk" does not exist, skipping
+
+NOTICE:  table "streams_habitat_rb_chwk" does not exist, skipping
+
+NOTICE:  table "zz_lnk_access_prior_chwk" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_chwk" does not exist, skipping
+
+There were 11 warnings (use warnings() to see them)
+[1] 0
+                              step        s load_1min_end  wsg label  fresh
+1                       prior_copy    0.306          1.93 CHWK    b1 0.44.0
+2                       lnk_access  991.358          1.93 CHWK    b1 0.44.0
+3                     habitat_gate    9.289          1.93 CHWK    b1 0.44.0
+4                     mapping_code    7.823          1.93 CHWK    b1 0.44.0
+5                 downstream_guard    0.892          1.93 CHWK    b1 0.44.0
+6                 lnk_access:walks  979.166          1.93 CHWK    b1 0.44.0
+7 lnk_access:pipeline_access_other    8.024          1.93 CHWK    b1 0.44.0
+8      lnk_access:setup_and_update    4.168          1.93 CHWK    b1 0.44.0
+9                            total 1010.030          1.93 CHWK    b1 0.44.0
+                                 fresh_sha others_start others_end
+1 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+2 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+3 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+4 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+5 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+6 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+7 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+8 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+9 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+               utc_end
+1 2026-10-29T02:29:02Z
+2 2026-10-29T02:29:02Z
+3 2026-10-29T02:29:02Z
+4 2026-10-29T02:29:02Z
+5 2026-10-29T02:29:02Z
+6 2026-10-29T02:29:02Z
+7 2026-10-29T02:29:02Z
+8 2026-10-29T02:29:02Z
+9 2026-10-29T02:29:02Z
+[rerun] CHWK b1 (fresh 0.44.0) digests UNCHANGED across 10 tables; total 1010.0 s

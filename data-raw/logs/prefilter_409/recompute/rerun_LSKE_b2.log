@@ -1,0 +1,63 @@
+[rerun] LSKE b2: fresh 0.44.0 (22034c1a22f5629edeaa4b6fcf70eb6980208450) from /Users/airvine/Library/R/arm64/4.5/library/fresh
+[1] 0
+[1] 0
+NOTICE:  schema "zz409_backup" already exists, skipping
+
+[1] 0
+NOTICE:  table "streams_access_lske" does not exist, skipping
+
+NOTICE:  table "streams_mapping_code_lske" does not exist, skipping
+
+NOTICE:  table "streams_habitat_bt_lske" does not exist, skipping
+
+NOTICE:  table "streams_habitat_ch_lske" does not exist, skipping
+
+NOTICE:  table "streams_habitat_cm_lske" does not exist, skipping
+
+NOTICE:  table "streams_habitat_co_lske" does not exist, skipping
+
+NOTICE:  table "streams_habitat_pk_lske" does not exist, skipping
+
+NOTICE:  table "streams_habitat_sk_lske" does not exist, skipping
+
+NOTICE:  table "streams_habitat_st_lske" does not exist, skipping
+
+NOTICE:  table "streams_habitat_rb_lske" does not exist, skipping
+
+NOTICE:  table "zz_lnk_access_prior_lske" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_lske" does not exist, skipping
+
+There were 11 warnings (use warnings() to see them)
+[1] 0
+                              step       s load_1min_end  wsg label  fresh
+1                       prior_copy   0.444          2.57 LSKE    b2 0.44.0
+2                       lnk_access 538.609          2.57 LSKE    b2 0.44.0
+3                     habitat_gate  11.576          2.57 LSKE    b2 0.44.0
+4                     mapping_code  27.160          2.57 LSKE    b2 0.44.0
+5                 downstream_guard   1.379          2.57 LSKE    b2 0.44.0
+6                 lnk_access:walks 517.678          2.57 LSKE    b2 0.44.0
+7 lnk_access:pipeline_access_other  15.520          2.57 LSKE    b2 0.44.0
+8      lnk_access:setup_and_update   5.411          2.57 LSKE    b2 0.44.0
+9                            total 579.575          2.57 LSKE    b2 0.44.0
+                                 fresh_sha others_start others_end
+1 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+2 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+3 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+4 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+5 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+6 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+7 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+8 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+9 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+               utc_end
+1 2026-10-29T02:11:58Z
+2 2026-10-29T02:11:58Z
+3 2026-10-29T02:11:58Z
+4 2026-10-29T02:11:58Z
+5 2026-10-29T02:11:58Z
+6 2026-10-29T02:11:58Z
+7 2026-10-29T02:11:58Z
+8 2026-10-29T02:11:58Z
+9 2026-10-29T02:11:58Z
+[rerun] LSKE b2 (fresh 0.44.0) digests UNCHANGED across 10 tables; total 579.6 s

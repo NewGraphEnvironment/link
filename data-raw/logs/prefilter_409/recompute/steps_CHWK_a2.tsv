@@ -1,0 +1,10 @@
+step	s	load_1min_end	wsg	label	fresh	fresh_sha	others_start	others_end	utc_end
+prior_copy	0.398999999999999	2	CHWK	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T02:32:01Z
+lnk_access	53.077	2	CHWK	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T02:32:01Z
+habitat_gate	9.203	2	CHWK	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T02:32:01Z
+mapping_code	11.344	2	CHWK	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T02:32:01Z
+downstream_guard	0.765999999999991	2	CHWK	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T02:32:01Z
+lnk_access:walks	44.78	2	CHWK	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T02:32:01Z
+lnk_access:pipeline_access_other	4.196	2	CHWK	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T02:32:01Z
+lnk_access:setup_and_update	4.101	2	CHWK	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T02:32:01Z
+total	75.184	2	CHWK	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T02:32:01Z

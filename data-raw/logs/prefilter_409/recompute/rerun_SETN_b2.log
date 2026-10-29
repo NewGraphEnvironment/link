@@ -1,0 +1,63 @@
+[rerun] SETN b2: fresh 0.44.0 (22034c1a22f5629edeaa4b6fcf70eb6980208450) from /private/tmp/claude-501/-Users-airvine-Projects-repo-link/4221294c-4a27-406d-99eb-272872c34dd8/scratchpad/rlib_fresh044/fresh
+[1] 0
+[1] 0
+NOTICE:  schema "zz409_backup" already exists, skipping
+
+[1] 0
+NOTICE:  table "streams_access_setn" does not exist, skipping
+
+NOTICE:  table "streams_mapping_code_setn" does not exist, skipping
+
+NOTICE:  table "streams_habitat_bt_setn" does not exist, skipping
+
+NOTICE:  table "streams_habitat_ch_setn" does not exist, skipping
+
+NOTICE:  table "streams_habitat_cm_setn" does not exist, skipping
+
+NOTICE:  table "streams_habitat_co_setn" does not exist, skipping
+
+NOTICE:  table "streams_habitat_pk_setn" does not exist, skipping
+
+NOTICE:  table "streams_habitat_sk_setn" does not exist, skipping
+
+NOTICE:  table "streams_habitat_st_setn" does not exist, skipping
+
+NOTICE:  table "streams_habitat_rb_setn" does not exist, skipping
+
+NOTICE:  table "zz_lnk_access_prior_setn" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_setn" does not exist, skipping
+
+There were 11 warnings (use warnings() to see them)
+[1] 0
+                              step        s load_1min_end  wsg label  fresh
+1                       prior_copy    0.429          1.54 SETN    b2 0.44.0
+2                       lnk_access 1329.808          1.54 SETN    b2 0.44.0
+3                     habitat_gate   12.122          1.54 SETN    b2 0.44.0
+4                     mapping_code   79.899          1.54 SETN    b2 0.44.0
+5                 downstream_guard    0.884          1.54 SETN    b2 0.44.0
+6                 lnk_access:walks 1274.129          1.54 SETN    b2 0.44.0
+7 lnk_access:pipeline_access_other   48.465          1.54 SETN    b2 0.44.0
+8      lnk_access:setup_and_update    7.214          1.54 SETN    b2 0.44.0
+9                            total 1423.781          1.54 SETN    b2 0.44.0
+                                 fresh_sha others_start others_end
+1 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+2 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+3 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+4 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+5 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+6 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+7 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+8 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+9 22034c1a22f5629edeaa4b6fcf70eb6980208450            0          0
+               utc_end
+1 2026-10-29T06:52:54Z
+2 2026-10-29T06:52:54Z
+3 2026-10-29T06:52:54Z
+4 2026-10-29T06:52:54Z
+5 2026-10-29T06:52:54Z
+6 2026-10-29T06:52:54Z
+7 2026-10-29T06:52:54Z
+8 2026-10-29T06:52:54Z
+9 2026-10-29T06:52:54Z
+[rerun] SETN b2 (fresh 0.44.0) digests UNCHANGED across 10 tables; total 1423.8 s

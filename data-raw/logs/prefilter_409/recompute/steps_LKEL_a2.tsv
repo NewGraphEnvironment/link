@@ -1,0 +1,10 @@
+step	s	load_1min_end	wsg	label	fresh	fresh_sha	others_start	others_end	utc_end
+prior_copy	0.356	3.96	LKEL	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T01:33:49Z
+lnk_access	31.608	3.96	LKEL	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T01:33:49Z
+habitat_gate	8.866	3.96	LKEL	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T01:33:49Z
+mapping_code	4.362	3.96	LKEL	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T01:33:49Z
+downstream_guard	0.969000000000001	3.96	LKEL	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T01:33:49Z
+lnk_access:walks	24.584	3.96	LKEL	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T01:33:49Z
+lnk_access:pipeline_access_other	3.32	3.96	LKEL	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T01:33:49Z
+lnk_access:setup_and_update	3.70399999999999	3.96	LKEL	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T01:33:49Z
+total	46.479	3.96	LKEL	a2	0.46.0	8a5ca7637ec2ab8a9fb43483ba5b778116181fdf	0	0	2026-10-29T01:33:49Z

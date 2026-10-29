@@ -1,0 +1,11 @@
+wsg	label	fresh	table	before	after	same
+CHWK	a1	0.46.0	streams_access	5db2181a5564d784c9c0fa02da147ddc	5db2181a5564d784c9c0fa02da147ddc	TRUE
+CHWK	a1	0.46.0	streams_mapping_code	99aa732010b989f117692bf5a9ae13ca	99aa732010b989f117692bf5a9ae13ca	TRUE
+CHWK	a1	0.46.0	streams_habitat_bt	ea93e6b9fc7f7a766f8468340e31ceef	ea93e6b9fc7f7a766f8468340e31ceef	TRUE
+CHWK	a1	0.46.0	streams_habitat_ch	d3bb631013d1a6f513ea3c1ba59263dd	d3bb631013d1a6f513ea3c1ba59263dd	TRUE
+CHWK	a1	0.46.0	streams_habitat_cm	eb3f684bb1d54b7668334f17db0c134a	eb3f684bb1d54b7668334f17db0c134a	TRUE
+CHWK	a1	0.46.0	streams_habitat_co	b35cd1d997188b16ee97506e88d013db	b35cd1d997188b16ee97506e88d013db	TRUE
+CHWK	a1	0.46.0	streams_habitat_pk	a13ddde26d40b4c893efb7770695891b	a13ddde26d40b4c893efb7770695891b	TRUE
+CHWK	a1	0.46.0	streams_habitat_sk	bd2f9c9f4fd1dd499f5da5065170d6cb	bd2f9c9f4fd1dd499f5da5065170d6cb	TRUE
+CHWK	a1	0.46.0	streams_habitat_st	3c4314fce5e762798e554d8fc452d82e	3c4314fce5e762798e554d8fc452d82e	TRUE
+CHWK	a1	0.46.0	streams_habitat_rb	de853194b0ed188f6799b66e2b958e8a	de853194b0ed188f6799b66e2b958e8a	TRUE
