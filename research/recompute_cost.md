@@ -64,7 +64,8 @@ mean of two runs (four for existence walks):
   (SETN's `pscis` walk 0.2 → 3.3 s), a few seconds against hundreds saved.
 - **Existence walks** (fresh#281, fresh v0.47.0; link #394). link reads the per-species
   views and `pscis` only as "is any feature downstream", so those walks take
-  `result = "exists"`: the same join, without the (segment, feature) pairs. SETN's species
+  `result = "exists"`: the same join, reduced to distinct segments instead of
+  arrays. The join still enumerates every (segment, feature) pair, so SETN gains 1.2×. SETN's species
   walks went from 327 to 270 s and LFRA's from 83 to 68 s. The arrays stay where link
   reads elements: `anthropogenic` and `dams` (`dam_dnstr_ind`), `remediations`
   (`remediated_dnstr_ind`) and the upstream observation walk.
@@ -77,9 +78,10 @@ mean of two runs (four for existence walks):
   in CHWK, LFRA and SETN (7 walks instead of 11). The digest query costs 0.7 to 9.2 s
   there, and 0.16 s in SALR, where nothing repeats.
 
-Scratch models of ADMS and ELKR, built at each step, digest identical in every persisted
+Scratch models of ADMS and ELKR, built at each of the four steps, digest identical in every persisted
 table, so none of the three changes moves an output.
 
-The walk's `ORDER BY` has no unique tiebreak, so co-located features come back in plan
-order. link reads only the anthropogenic array's first element, and that order matched
-in all nine groups tried.
+Up to fresh 0.44.0 the walk's `ORDER BY` had no unique tiebreak, so co-located features
+came back in plan order. link reads only the anthropogenic array's first element, and that
+order matched in all nine groups tried. Since fresh 0.45.0 the order ends on the feature
+id (fresh#272).

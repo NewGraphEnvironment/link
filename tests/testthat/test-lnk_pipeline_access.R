@@ -490,6 +490,29 @@ test_that("species views with different keys are walked separately", {
   expect_identical(out$has_barriers_co_dnstr, c(FALSE, TRUE))
 })
 
+test_that("a keyed species view also given as a membership source is walked once", {
+  local_mocked_bindings(
+    dbGetQuery = mock_keys_db(c("s1", "s2"), c("k1", "k2")),
+    .package = "DBI"
+  )
+  w <- mock_walks(list("s.barriers_ch_access" = list(s1 = "C1"),
+                       "s.barriers_co_access" = list(s2 = "C2")))
+  local_mocked_bindings(frs_network_features = w$fn, .package = "fresh")
+
+  out <- lnk_pipeline_access(
+    conn = structure(list(), class = "DBIConnection"),
+    segments = "s.streams", aoi = "CHWK",
+    barriers_per_sp = list(ch = "s.barriers_ch_access",
+                           co = "s.barriers_co_access"),
+    wsg_presence = list(ch = TRUE, co = TRUE),
+    barrier_sources = list(pscis = "s.barriers_ch_access"),
+    segment_id_col = "segmented_stream_id")
+
+  expect_identical(w$calls$log$features,
+                   c("s.barriers_ch_access", "s.barriers_co_access"))
+  expect_identical(out$has_barriers_pscis_dnstr, out$has_barriers_ch_dnstr)
+})
+
 test_that("absent species and array-walked tables are not keyed", {
   key_sql <- character(0)
   local_mocked_bindings(
@@ -531,10 +554,12 @@ test_that(".lnk_walk_keys sees the rows a walk can read, NULLs included", {
   ex <- function(sql) DBI::dbExecute(conn, sql)
   ex("CREATE TEMP TABLE kseg (watershed_group_code text, blue_line_key int,
         wscode_ltree ltree)")
-  ex("INSERT INTO kseg VALUES ('AAAA', 10, '100.200'), ('BBBB', 99, '300')")
+  # An empty wscode on an AOI segment must not fail the key query.
+  ex("INSERT INTO kseg VALUES ('AAAA', 10, '100.200'), ('AAAA', 30, ''),
+                              ('BBBB', 99, '300')")
   cols <- "(watershed_group_code text, blue_line_key int,
             downstream_route_measure float8, wscode_ltree ltree, localcode_ltree ltree)"
-  for (t in c("a", "b", "c", "d", "e", "f", "g")) {
+  for (t in c("a", "b", "c", "d", "e", "f", "g", "h")) {
     ex(sprintf("CREATE TEMP TABLE k%s (k%s_id text, %s", t, t, sub("^\\(", "", cols)))
   }
   base <- "('G1', 'AAAA', 10, 5, '100.200', '100.200.1'),
@@ -553,8 +578,11 @@ test_that(".lnk_walk_keys sees the rows a walk can read, NULLs included", {
   # NULLs (concat_ws) would read as one row.
   ex("INSERT INTO kf VALUES ('G3', 'AAAA', 10, 1, '100.200', NULL)")
   ex("INSERT INTO kg VALUES ('G3', 'AAAA', 10, 1, NULL, '100.200')")
+  # kh: one more row on the AOI's blue line 10 under a code no AOI segment
+  # descends from, so only the blue-line arm admits it.
+  ex(sprintf("INSERT INTO kh VALUES %s, ('G8', 'AAAA', 10, 2, '500', '500')", base))
 
-  tbls <- paste0("pg_temp.k", c("a", "b", "c", "d", "e", "f", "g"))
+  tbls <- paste0("pg_temp.k", c("a", "b", "c", "d", "e", "f", "g", "h"))
   keys <- .lnk_walk_keys(conn, segments = "pg_temp.kseg", aoi = "AAAA",
                          tables = tbls)
   expect_named(keys, tbls)
@@ -564,4 +592,5 @@ test_that(".lnk_walk_keys sees the rows a walk can read, NULLs included", {
   # A row no AOI segment can reach does not change the key.
   expect_identical(keys[["pg_temp.ka"]], keys[["pg_temp.kd"]])
   expect_false(keys[["pg_temp.ka"]] == keys[["pg_temp.ke"]])
+  expect_false(keys[["pg_temp.ka"]] == keys[["pg_temp.kh"]])
 })

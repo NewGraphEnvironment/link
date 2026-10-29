@@ -283,8 +283,9 @@ for what the step reads (fresh ≥ 0.47.0):
   upstream observation walk (species codes). A table given in one of those roles is walked
   as arrays even where it also serves as a species table.
 - **Existence (`result = "exists"`)** for everything else: the per-species views and
-  `pscis`, which are read only as `id %in% result$id`. Same join and answer, no
-  (segment, feature) pairs. That removes SETN's output cost.
+  `pscis`, which are read only as `id %in% result$id`. Same join and answer, reduced
+  to distinct segments instead of arrays. The join still enumerates every pair, so an
+  output-bound group gains little (SETN 1.2×).
 - **One walk per distinct barrier set.** The species views over one barriers table often
   hold the same rows (CHWK's CH, CM, CO, PK and SK views). Before walking,
   `.lnk_walk_keys()` digests each existence table's rows that `fwa_downstream()` could

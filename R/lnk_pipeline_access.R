@@ -240,8 +240,9 @@ lnk_pipeline_access <- function(
     src_tbl <- barrier_sources[[src]]
     table_only <- sub("^[^.]+\\.", "", src_tbl)
     src_id_col <- paste0(table_only, "_id")
-    if (is.null(dnstr_cache[[src_tbl]])) {
-      dnstr_cache[[src_tbl]] <- fresh::frs_network_features(
+    key <- walk_cache_key(src_tbl)
+    if (is.null(dnstr_cache[[key]])) {
+      dnstr_cache[[key]] <- fresh::frs_network_features(
         conn,
         segments       = segments,
         features       = src_tbl,
@@ -253,7 +254,7 @@ lnk_pipeline_access <- function(
         result         = walk_result(src_tbl)
       )
     }
-    df <- dnstr_cache[[src_tbl]]
+    df <- dnstr_cache[[key]]
     names(df)[2] <- paste0("barriers_", src, "_dnstr")
     dnstr_per_source[[src]] <- df
   }
@@ -501,8 +502,10 @@ lnk_pipeline_access <- function(
        WHERE watershed_group_code = '%s'),
      lines AS (SELECT DISTINCT blue_line_key FROM seg),
      codes AS (
-       SELECT DISTINCT subpath(wscode_ltree, 0, k) AS code
-       FROM seg, generate_series(0, nlevel(wscode_ltree)) k
+       SELECT ''::ltree AS code
+       UNION
+       SELECT subpath(wscode_ltree, 0, k)
+       FROM seg, generate_series(1, nlevel(wscode_ltree)) k
        WHERE wscode_ltree IS NOT NULL)
      %s"
   sql <- sprintf(scope_sql, segments, aoi,

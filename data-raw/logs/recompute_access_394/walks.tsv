@@ -1,0 +1,357 @@
+variant	wsg	date_utc	link_sha	link_dirty	fresh_version	fresh_sha	features	result	direction	seconds	rows	other_backends	segments_md5
+base044	SALR	2026-10-29 03:15:26	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_ch_access	ids	downstream	17.284	1343	1	9e506bf3b441afb0969f7eb4589799cc
+base044	SALR	2026-10-29 03:15:26	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_rb_access	ids	downstream	9.303	448	1	1fa82c09926fa671ddf1b43254f482ad
+base044	SALR	2026-10-29 03:15:26	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_anthropogenic_unified	ids	downstream	0.688	6183	1	70b976e63eea2937489bd8d4c95c12ad
+base044	SALR	2026-10-29 03:15:26	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_pscis_unified	ids	downstream	0.043	1598	1	14ceda4def30ba17caf62a4ac49bac48
+base044	SALR	2026-10-29 03:15:26	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_dams_unified	ids	downstream	0.024	0	1	5152ac13bdd09110d9ee9c169a3d9237
+prefilter	SALR	2026-10-29 03:15:55	64f8de0a	FALSE	0.47.0		fresh_default.barriers_ch_access	ids	downstream	1.956	1343	1	9e506bf3b441afb0969f7eb4589799cc
+prefilter	SALR	2026-10-29 03:15:55	64f8de0a	FALSE	0.47.0		fresh_default.barriers_rb_access	ids	downstream	0.847	448	1	1fa82c09926fa671ddf1b43254f482ad
+prefilter	SALR	2026-10-29 03:15:55	64f8de0a	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	0.343	6183	1	70b976e63eea2937489bd8d4c95c12ad
+prefilter	SALR	2026-10-29 03:15:55	64f8de0a	FALSE	0.47.0		fresh_default.barriers_pscis_unified	ids	downstream	0.242	1598	1	14ceda4def30ba17caf62a4ac49bac48
+prefilter	SALR	2026-10-29 03:15:55	64f8de0a	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	0.229	0	1	5152ac13bdd09110d9ee9c169a3d9237
+exists	SALR	2026-10-29 03:16:01	caba1876	FALSE	0.47.0		fresh_default.barriers_ch_access	exists	downstream	1.945	1343	1	9e506bf3b441afb0969f7eb4589799cc
+exists	SALR	2026-10-29 03:16:01	caba1876	FALSE	0.47.0		fresh_default.barriers_rb_access	exists	downstream	0.817	448	1	1fa82c09926fa671ddf1b43254f482ad
+exists	SALR	2026-10-29 03:16:01	caba1876	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	0.358	6183	1	70b976e63eea2937489bd8d4c95c12ad
+exists	SALR	2026-10-29 03:16:01	caba1876	FALSE	0.47.0		fresh_default.barriers_pscis_unified	exists	downstream	0.247	1598	1	14ceda4def30ba17caf62a4ac49bac48
+exists	SALR	2026-10-29 03:16:01	caba1876	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	0.237	0	1	5152ac13bdd09110d9ee9c169a3d9237
+exists	SALR	2026-10-29 03:16:06	caba1876	FALSE	0.47.0		fresh_default.barriers_ch_access	exists	downstream	2.001	1343	1	9e506bf3b441afb0969f7eb4589799cc
+exists	SALR	2026-10-29 03:16:06	caba1876	FALSE	0.47.0		fresh_default.barriers_rb_access	exists	downstream	0.854	448	1	1fa82c09926fa671ddf1b43254f482ad
+exists	SALR	2026-10-29 03:16:06	caba1876	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	0.365	6183	1	70b976e63eea2937489bd8d4c95c12ad
+exists	SALR	2026-10-29 03:16:06	caba1876	FALSE	0.47.0		fresh_default.barriers_pscis_unified	exists	downstream	0.24	1598	1	14ceda4def30ba17caf62a4ac49bac48
+exists	SALR	2026-10-29 03:16:06	caba1876	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	0.241	0	1	5152ac13bdd09110d9ee9c169a3d9237
+prefilter	SALR	2026-10-29 03:16:11	64f8de0a	FALSE	0.47.0		fresh_default.barriers_ch_access	ids	downstream	1.966	1343	1	9e506bf3b441afb0969f7eb4589799cc
+prefilter	SALR	2026-10-29 03:16:11	64f8de0a	FALSE	0.47.0		fresh_default.barriers_rb_access	ids	downstream	0.833	448	1	1fa82c09926fa671ddf1b43254f482ad
+prefilter	SALR	2026-10-29 03:16:11	64f8de0a	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	0.332	6183	1	70b976e63eea2937489bd8d4c95c12ad
+prefilter	SALR	2026-10-29 03:16:11	64f8de0a	FALSE	0.47.0		fresh_default.barriers_pscis_unified	ids	downstream	0.242	1598	1	14ceda4def30ba17caf62a4ac49bac48
+prefilter	SALR	2026-10-29 03:16:11	64f8de0a	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	0.23	0	1	5152ac13bdd09110d9ee9c169a3d9237
+base044	SALR	2026-10-29 03:16:16	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_ch_access	ids	downstream	16.278	1343	1	9e506bf3b441afb0969f7eb4589799cc
+base044	SALR	2026-10-29 03:16:16	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_rb_access	ids	downstream	8.897	448	0	1fa82c09926fa671ddf1b43254f482ad
+base044	SALR	2026-10-29 03:16:16	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_anthropogenic_unified	ids	downstream	0.664	6183	0	70b976e63eea2937489bd8d4c95c12ad
+base044	SALR	2026-10-29 03:16:16	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_pscis_unified	ids	downstream	0.043	1598	0	14ceda4def30ba17caf62a4ac49bac48
+base044	SALR	2026-10-29 03:16:16	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_dams_unified	ids	downstream	0.024	0	0	5152ac13bdd09110d9ee9c169a3d9237
+base044	CHWK	2026-10-29 03:16:44	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_bt_access	ids	downstream	42.727	10092	1	4165669651a58acd99293a550cab1b19
+base044	CHWK	2026-10-29 03:16:44	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_ch_access	ids	downstream	87.274	11301	1	120c55349284a52ca4a26316167803e3
+base044	CHWK	2026-10-29 03:16:44	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_cm_access	ids	downstream	86.856	11301	1	120c55349284a52ca4a26316167803e3
+base044	CHWK	2026-10-29 03:16:44	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_co_access	ids	downstream	86.879	11301	0	120c55349284a52ca4a26316167803e3
+base044	CHWK	2026-10-29 03:16:44	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_pk_access	ids	downstream	87.205	11301	1	120c55349284a52ca4a26316167803e3
+base044	CHWK	2026-10-29 03:16:44	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_sk_access	ids	downstream	86.763	11301	0	120c55349284a52ca4a26316167803e3
+base044	CHWK	2026-10-29 03:16:44	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_st_access	ids	downstream	64.139	10818	0	cd2944e4f269b5a7ea4adb9b6a08c75f
+base044	CHWK	2026-10-29 03:16:44	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_rb_access	ids	downstream	42.357	9580	0	a1dea9df2c98707a9c7464db3e577b3c
+base044	CHWK	2026-10-29 03:16:44	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_anthropogenic_unified	ids	downstream	3.252	10349	0	b2bfde205bba21bc4466e5010c53ab95
+base044	CHWK	2026-10-29 03:16:44	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_pscis_unified	ids	downstream	0.064	94	0	572467be069813d36d23be7693a50f97
+base044	CHWK	2026-10-29 03:16:44	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_dams_unified	ids	downstream	0.048	1960	0	ee340848ae8f1be6d5ed45c24d692df5
+prefilter	CHWK	2026-10-29 03:26:33	64f8de0a	FALSE	0.47.0		fresh_default.barriers_bt_access	ids	downstream	1.326	10092	0	4165669651a58acd99293a550cab1b19
+prefilter	CHWK	2026-10-29 03:26:33	64f8de0a	FALSE	0.47.0		fresh_default.barriers_ch_access	ids	downstream	3.093	11301	0	120c55349284a52ca4a26316167803e3
+prefilter	CHWK	2026-10-29 03:26:33	64f8de0a	FALSE	0.47.0		fresh_default.barriers_cm_access	ids	downstream	3.053	11301	0	120c55349284a52ca4a26316167803e3
+prefilter	CHWK	2026-10-29 03:26:33	64f8de0a	FALSE	0.47.0		fresh_default.barriers_co_access	ids	downstream	2.996	11301	0	120c55349284a52ca4a26316167803e3
+prefilter	CHWK	2026-10-29 03:26:33	64f8de0a	FALSE	0.47.0		fresh_default.barriers_pk_access	ids	downstream	3	11301	0	120c55349284a52ca4a26316167803e3
+prefilter	CHWK	2026-10-29 03:26:33	64f8de0a	FALSE	0.47.0		fresh_default.barriers_sk_access	ids	downstream	3.055	11301	0	120c55349284a52ca4a26316167803e3
+prefilter	CHWK	2026-10-29 03:26:33	64f8de0a	FALSE	0.47.0		fresh_default.barriers_st_access	ids	downstream	2.128	10818	0	cd2944e4f269b5a7ea4adb9b6a08c75f
+prefilter	CHWK	2026-10-29 03:26:33	64f8de0a	FALSE	0.47.0		fresh_default.barriers_rb_access	ids	downstream	1.334	9580	0	a1dea9df2c98707a9c7464db3e577b3c
+prefilter	CHWK	2026-10-29 03:26:33	64f8de0a	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	0.44	10349	0	b2bfde205bba21bc4466e5010c53ab95
+prefilter	CHWK	2026-10-29 03:26:33	64f8de0a	FALSE	0.47.0		fresh_default.barriers_pscis_unified	ids	downstream	0.252	94	0	572467be069813d36d23be7693a50f97
+prefilter	CHWK	2026-10-29 03:26:33	64f8de0a	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	0.279	1960	0	ee340848ae8f1be6d5ed45c24d692df5
+exists	CHWK	2026-10-29 03:26:56	caba1876	FALSE	0.47.0		fresh_default.barriers_bt_access	exists	downstream	1.194	10092	0	4165669651a58acd99293a550cab1b19
+exists	CHWK	2026-10-29 03:26:56	caba1876	FALSE	0.47.0		fresh_default.barriers_ch_access	exists	downstream	2.692	11301	0	120c55349284a52ca4a26316167803e3
+exists	CHWK	2026-10-29 03:26:56	caba1876	FALSE	0.47.0		fresh_default.barriers_cm_access	exists	downstream	2.79	11301	0	120c55349284a52ca4a26316167803e3
+exists	CHWK	2026-10-29 03:26:56	caba1876	FALSE	0.47.0		fresh_default.barriers_co_access	exists	downstream	2.774	11301	0	120c55349284a52ca4a26316167803e3
+exists	CHWK	2026-10-29 03:26:56	caba1876	FALSE	0.47.0		fresh_default.barriers_pk_access	exists	downstream	2.688	11301	0	120c55349284a52ca4a26316167803e3
+exists	CHWK	2026-10-29 03:26:56	caba1876	FALSE	0.47.0		fresh_default.barriers_sk_access	exists	downstream	2.785	11301	0	120c55349284a52ca4a26316167803e3
+exists	CHWK	2026-10-29 03:26:56	caba1876	FALSE	0.47.0		fresh_default.barriers_st_access	exists	downstream	2.006	10818	0	cd2944e4f269b5a7ea4adb9b6a08c75f
+exists	CHWK	2026-10-29 03:26:56	caba1876	FALSE	0.47.0		fresh_default.barriers_rb_access	exists	downstream	1.281	9580	0	a1dea9df2c98707a9c7464db3e577b3c
+exists	CHWK	2026-10-29 03:26:56	caba1876	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	0.409	10349	0	b2bfde205bba21bc4466e5010c53ab95
+exists	CHWK	2026-10-29 03:26:56	caba1876	FALSE	0.47.0		fresh_default.barriers_pscis_unified	exists	downstream	0.252	94	0	572467be069813d36d23be7693a50f97
+exists	CHWK	2026-10-29 03:26:56	caba1876	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	0.282	1960	0	ee340848ae8f1be6d5ed45c24d692df5
+exists	CHWK	2026-10-29 03:27:17	caba1876	FALSE	0.47.0		fresh_default.barriers_bt_access	exists	downstream	1.246	10092	0	4165669651a58acd99293a550cab1b19
+exists	CHWK	2026-10-29 03:27:17	caba1876	FALSE	0.47.0		fresh_default.barriers_ch_access	exists	downstream	2.813	11301	0	120c55349284a52ca4a26316167803e3
+exists	CHWK	2026-10-29 03:27:17	caba1876	FALSE	0.47.0		fresh_default.barriers_cm_access	exists	downstream	2.731	11301	0	120c55349284a52ca4a26316167803e3
+exists	CHWK	2026-10-29 03:27:17	caba1876	FALSE	0.47.0		fresh_default.barriers_co_access	exists	downstream	2.792	11301	0	120c55349284a52ca4a26316167803e3
+exists	CHWK	2026-10-29 03:27:17	caba1876	FALSE	0.47.0		fresh_default.barriers_pk_access	exists	downstream	2.672	11301	0	120c55349284a52ca4a26316167803e3
+exists	CHWK	2026-10-29 03:27:17	caba1876	FALSE	0.47.0		fresh_default.barriers_sk_access	exists	downstream	2.79	11301	0	120c55349284a52ca4a26316167803e3
+exists	CHWK	2026-10-29 03:27:17	caba1876	FALSE	0.47.0		fresh_default.barriers_st_access	exists	downstream	1.898	10818	0	cd2944e4f269b5a7ea4adb9b6a08c75f
+exists	CHWK	2026-10-29 03:27:17	caba1876	FALSE	0.47.0		fresh_default.barriers_rb_access	exists	downstream	1.225	9580	0	a1dea9df2c98707a9c7464db3e577b3c
+exists	CHWK	2026-10-29 03:27:17	caba1876	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	0.424	10349	0	b2bfde205bba21bc4466e5010c53ab95
+exists	CHWK	2026-10-29 03:27:17	caba1876	FALSE	0.47.0		fresh_default.barriers_pscis_unified	exists	downstream	0.265	94	0	572467be069813d36d23be7693a50f97
+exists	CHWK	2026-10-29 03:27:17	caba1876	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	0.277	1960	0	ee340848ae8f1be6d5ed45c24d692df5
+prefilter	CHWK	2026-10-29 03:27:38	64f8de0a	FALSE	0.47.0		fresh_default.barriers_bt_access	ids	downstream	1.295	10092	0	4165669651a58acd99293a550cab1b19
+prefilter	CHWK	2026-10-29 03:27:38	64f8de0a	FALSE	0.47.0		fresh_default.barriers_ch_access	ids	downstream	3.087	11301	0	120c55349284a52ca4a26316167803e3
+prefilter	CHWK	2026-10-29 03:27:38	64f8de0a	FALSE	0.47.0		fresh_default.barriers_cm_access	ids	downstream	2.994	11301	0	120c55349284a52ca4a26316167803e3
+prefilter	CHWK	2026-10-29 03:27:38	64f8de0a	FALSE	0.47.0		fresh_default.barriers_co_access	ids	downstream	3.051	11301	0	120c55349284a52ca4a26316167803e3
+prefilter	CHWK	2026-10-29 03:27:38	64f8de0a	FALSE	0.47.0		fresh_default.barriers_pk_access	ids	downstream	3.034	11301	0	120c55349284a52ca4a26316167803e3
+prefilter	CHWK	2026-10-29 03:27:38	64f8de0a	FALSE	0.47.0		fresh_default.barriers_sk_access	ids	downstream	3.13	11301	0	120c55349284a52ca4a26316167803e3
+prefilter	CHWK	2026-10-29 03:27:38	64f8de0a	FALSE	0.47.0		fresh_default.barriers_st_access	ids	downstream	2.163	10818	0	cd2944e4f269b5a7ea4adb9b6a08c75f
+prefilter	CHWK	2026-10-29 03:27:38	64f8de0a	FALSE	0.47.0		fresh_default.barriers_rb_access	ids	downstream	1.288	9580	0	a1dea9df2c98707a9c7464db3e577b3c
+prefilter	CHWK	2026-10-29 03:27:38	64f8de0a	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	0.428	10349	0	b2bfde205bba21bc4466e5010c53ab95
+prefilter	CHWK	2026-10-29 03:27:38	64f8de0a	FALSE	0.47.0		fresh_default.barriers_pscis_unified	ids	downstream	0.254	94	0	572467be069813d36d23be7693a50f97
+prefilter	CHWK	2026-10-29 03:27:38	64f8de0a	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	0.282	1960	0	ee340848ae8f1be6d5ed45c24d692df5
+base044	CHWK	2026-10-29 03:28:01	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_bt_access	ids	downstream	36.284	10092	0	4165669651a58acd99293a550cab1b19
+base044	CHWK	2026-10-29 03:28:01	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_ch_access	ids	downstream	72.418	11301	0	120c55349284a52ca4a26316167803e3
+base044	CHWK	2026-10-29 03:28:01	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_cm_access	ids	downstream	71.814	11301	0	120c55349284a52ca4a26316167803e3
+base044	CHWK	2026-10-29 03:28:01	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_co_access	ids	downstream	70.827	11301	0	120c55349284a52ca4a26316167803e3
+base044	CHWK	2026-10-29 03:28:01	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_pk_access	ids	downstream	70.002	11301	0	120c55349284a52ca4a26316167803e3
+base044	CHWK	2026-10-29 03:28:01	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_sk_access	ids	downstream	70.187	11301	0	120c55349284a52ca4a26316167803e3
+base044	CHWK	2026-10-29 03:28:01	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_st_access	ids	downstream	52.642	10818	0	cd2944e4f269b5a7ea4adb9b6a08c75f
+base044	CHWK	2026-10-29 03:28:01	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_rb_access	ids	downstream	34.483	9580	0	a1dea9df2c98707a9c7464db3e577b3c
+base044	CHWK	2026-10-29 03:28:01	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_anthropogenic_unified	ids	downstream	2.712	10349	0	b2bfde205bba21bc4466e5010c53ab95
+base044	CHWK	2026-10-29 03:28:01	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_pscis_unified	ids	downstream	0.059	94	0	572467be069813d36d23be7693a50f97
+base044	CHWK	2026-10-29 03:28:01	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_dams_unified	ids	downstream	0.048	1960	0	ee340848ae8f1be6d5ed45c24d692df5
+base044	LFRA	2026-10-29 03:36:04	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_bt_access	ids	downstream	81.953	42292	0	43d36028e8511d27a485335d048a58a9
+base044	LFRA	2026-10-29 03:36:04	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_ch_access	ids	downstream	171.887	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+base044	LFRA	2026-10-29 03:36:04	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_cm_access	ids	downstream	172.57	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+base044	LFRA	2026-10-29 03:36:04	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_co_access	ids	downstream	173.85	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+base044	LFRA	2026-10-29 03:36:04	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_pk_access	ids	downstream	173.385	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+base044	LFRA	2026-10-29 03:36:04	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_sk_access	ids	downstream	173.462	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+base044	LFRA	2026-10-29 03:36:04	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_st_access	ids	downstream	129.891	44538	0	88b0e7819013d136fd96f39100771f2e
+base044	LFRA	2026-10-29 03:36:04	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_rb_access	ids	downstream	83.588	40686	0	3476518e59cb4c142798d818acb83ca7
+base044	LFRA	2026-10-29 03:36:04	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_anthropogenic_unified	ids	downstream	6.305	43529	0	eb1ec6dd422e6807ddc1cdd25825805c
+base044	LFRA	2026-10-29 03:36:04	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_pscis_unified	ids	downstream	0.388	25348	0	1476bbf67db960948773cd6dc5808d15
+base044	LFRA	2026-10-29 03:36:04	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_dams_unified	ids	downstream	0.352	30900	0	0047afe974aff067fbcbddde90056ab0
+prefilter	LFRA	2026-10-29 03:55:35	64f8de0a	FALSE	0.47.0		fresh_default.barriers_bt_access	ids	downstream	5.761	42292	0	43d36028e8511d27a485335d048a58a9
+prefilter	LFRA	2026-10-29 03:55:35	64f8de0a	FALSE	0.47.0		fresh_default.barriers_ch_access	ids	downstream	12.642	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+prefilter	LFRA	2026-10-29 03:55:35	64f8de0a	FALSE	0.47.0		fresh_default.barriers_cm_access	ids	downstream	12.756	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+prefilter	LFRA	2026-10-29 03:55:35	64f8de0a	FALSE	0.47.0		fresh_default.barriers_co_access	ids	downstream	12.725	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+prefilter	LFRA	2026-10-29 03:55:35	64f8de0a	FALSE	0.47.0		fresh_default.barriers_pk_access	ids	downstream	12.728	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+prefilter	LFRA	2026-10-29 03:55:35	64f8de0a	FALSE	0.47.0		fresh_default.barriers_sk_access	ids	downstream	12.556	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+prefilter	LFRA	2026-10-29 03:55:35	64f8de0a	FALSE	0.47.0		fresh_default.barriers_st_access	ids	downstream	8.911	44538	0	88b0e7819013d136fd96f39100771f2e
+prefilter	LFRA	2026-10-29 03:55:35	64f8de0a	FALSE	0.47.0		fresh_default.barriers_rb_access	ids	downstream	5.453	40686	0	3476518e59cb4c142798d818acb83ca7
+prefilter	LFRA	2026-10-29 03:55:35	64f8de0a	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	1.77	43529	0	eb1ec6dd422e6807ddc1cdd25825805c
+prefilter	LFRA	2026-10-29 03:55:35	64f8de0a	FALSE	0.47.0		fresh_default.barriers_pscis_unified	ids	downstream	1.36	25348	0	1476bbf67db960948773cd6dc5808d15
+prefilter	LFRA	2026-10-29 03:55:35	64f8de0a	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	1.378	30900	0	0047afe974aff067fbcbddde90056ab0
+exists	LFRA	2026-10-29 03:57:07	caba1876	FALSE	0.47.0		fresh_default.barriers_bt_access	exists	downstream	4.788	42292	0	43d36028e8511d27a485335d048a58a9
+exists	LFRA	2026-10-29 03:57:07	caba1876	FALSE	0.47.0		fresh_default.barriers_ch_access	exists	downstream	10.159	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+exists	LFRA	2026-10-29 03:57:07	caba1876	FALSE	0.47.0		fresh_default.barriers_cm_access	exists	downstream	10.501	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+exists	LFRA	2026-10-29 03:57:07	caba1876	FALSE	0.47.0		fresh_default.barriers_co_access	exists	downstream	10.979	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+exists	LFRA	2026-10-29 03:57:07	caba1876	FALSE	0.47.0		fresh_default.barriers_pk_access	exists	downstream	10.184	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+exists	LFRA	2026-10-29 03:57:07	caba1876	FALSE	0.47.0		fresh_default.barriers_sk_access	exists	downstream	10.147	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+exists	LFRA	2026-10-29 03:57:07	caba1876	FALSE	0.47.0		fresh_default.barriers_st_access	exists	downstream	7.547	44538	0	88b0e7819013d136fd96f39100771f2e
+exists	LFRA	2026-10-29 03:57:07	caba1876	FALSE	0.47.0		fresh_default.barriers_rb_access	exists	downstream	4.609	40686	0	3476518e59cb4c142798d818acb83ca7
+exists	LFRA	2026-10-29 03:57:07	caba1876	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	1.762	43529	0	eb1ec6dd422e6807ddc1cdd25825805c
+exists	LFRA	2026-10-29 03:57:07	caba1876	FALSE	0.47.0		fresh_default.barriers_pscis_unified	exists	downstream	1.031	25348	0	1476bbf67db960948773cd6dc5808d15
+exists	LFRA	2026-10-29 03:57:07	caba1876	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	1.381	30900	0	0047afe974aff067fbcbddde90056ab0
+exists	LFRA	2026-10-29 03:58:24	caba1876	FALSE	0.47.0		fresh_default.barriers_bt_access	exists	downstream	4.701	42292	0	43d36028e8511d27a485335d048a58a9
+exists	LFRA	2026-10-29 03:58:24	caba1876	FALSE	0.47.0		fresh_default.barriers_ch_access	exists	downstream	10.109	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+exists	LFRA	2026-10-29 03:58:24	caba1876	FALSE	0.47.0		fresh_default.barriers_cm_access	exists	downstream	10.179	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+exists	LFRA	2026-10-29 03:58:24	caba1876	FALSE	0.47.0		fresh_default.barriers_co_access	exists	downstream	10.291	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+exists	LFRA	2026-10-29 03:58:24	caba1876	FALSE	0.47.0		fresh_default.barriers_pk_access	exists	downstream	10.219	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+exists	LFRA	2026-10-29 03:58:24	caba1876	FALSE	0.47.0		fresh_default.barriers_sk_access	exists	downstream	10.269	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+exists	LFRA	2026-10-29 03:58:24	caba1876	FALSE	0.47.0		fresh_default.barriers_st_access	exists	downstream	7.385	44538	0	88b0e7819013d136fd96f39100771f2e
+exists	LFRA	2026-10-29 03:58:24	caba1876	FALSE	0.47.0		fresh_default.barriers_rb_access	exists	downstream	4.582	40686	0	3476518e59cb4c142798d818acb83ca7
+exists	LFRA	2026-10-29 03:58:24	caba1876	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	1.799	43529	0	eb1ec6dd422e6807ddc1cdd25825805c
+exists	LFRA	2026-10-29 03:58:24	caba1876	FALSE	0.47.0		fresh_default.barriers_pscis_unified	exists	downstream	1.035	25348	0	1476bbf67db960948773cd6dc5808d15
+exists	LFRA	2026-10-29 03:58:24	caba1876	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	1.355	30900	0	0047afe974aff067fbcbddde90056ab0
+prefilter	LFRA	2026-10-29 03:59:39	64f8de0a	FALSE	0.47.0		fresh_default.barriers_bt_access	ids	downstream	5.473	42292	0	43d36028e8511d27a485335d048a58a9
+prefilter	LFRA	2026-10-29 03:59:39	64f8de0a	FALSE	0.47.0		fresh_default.barriers_ch_access	ids	downstream	12.44	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+prefilter	LFRA	2026-10-29 03:59:39	64f8de0a	FALSE	0.47.0		fresh_default.barriers_cm_access	ids	downstream	12.419	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+prefilter	LFRA	2026-10-29 03:59:39	64f8de0a	FALSE	0.47.0		fresh_default.barriers_co_access	ids	downstream	12.322	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+prefilter	LFRA	2026-10-29 03:59:39	64f8de0a	FALSE	0.47.0		fresh_default.barriers_pk_access	ids	downstream	13.208	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+prefilter	LFRA	2026-10-29 03:59:39	64f8de0a	FALSE	0.47.0		fresh_default.barriers_sk_access	ids	downstream	12.361	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+prefilter	LFRA	2026-10-29 03:59:39	64f8de0a	FALSE	0.47.0		fresh_default.barriers_st_access	ids	downstream	8.902	44538	0	88b0e7819013d136fd96f39100771f2e
+prefilter	LFRA	2026-10-29 03:59:39	64f8de0a	FALSE	0.47.0		fresh_default.barriers_rb_access	ids	downstream	5.428	40686	0	3476518e59cb4c142798d818acb83ca7
+prefilter	LFRA	2026-10-29 03:59:39	64f8de0a	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	1.747	43529	0	eb1ec6dd422e6807ddc1cdd25825805c
+prefilter	LFRA	2026-10-29 03:59:39	64f8de0a	FALSE	0.47.0		fresh_default.barriers_pscis_unified	ids	downstream	1.354	25348	0	1476bbf67db960948773cd6dc5808d15
+prefilter	LFRA	2026-10-29 03:59:39	64f8de0a	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	1.36	30900	0	0047afe974aff067fbcbddde90056ab0
+base044	LFRA	2026-10-29 04:01:09	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_bt_access	ids	downstream	78.732	42292	0	43d36028e8511d27a485335d048a58a9
+base044	LFRA	2026-10-29 04:01:09	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_ch_access	ids	downstream	168.336	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+base044	LFRA	2026-10-29 04:01:09	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_cm_access	ids	downstream	166.766	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+base044	LFRA	2026-10-29 04:01:09	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_co_access	ids	downstream	168.397	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+base044	LFRA	2026-10-29 04:01:09	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_pk_access	ids	downstream	164.8	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+base044	LFRA	2026-10-29 04:01:09	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_sk_access	ids	downstream	165.294	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+base044	LFRA	2026-10-29 04:01:09	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_st_access	ids	downstream	121.455	44538	0	88b0e7819013d136fd96f39100771f2e
+base044	LFRA	2026-10-29 04:01:09	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_rb_access	ids	downstream	78.904	40686	0	3476518e59cb4c142798d818acb83ca7
+base044	LFRA	2026-10-29 04:01:09	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_anthropogenic_unified	ids	downstream	6.04	43529	0	eb1ec6dd422e6807ddc1cdd25825805c
+base044	LFRA	2026-10-29 04:01:09	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_pscis_unified	ids	downstream	0.379	25348	0	1476bbf67db960948773cd6dc5808d15
+base044	LFRA	2026-10-29 04:01:09	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_dams_unified	ids	downstream	0.35	30900	0	0047afe974aff067fbcbddde90056ab0
+base044	SETN	2026-10-29 04:19:52	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_bt_access	ids	downstream	62.17	163588	0	ab6c25384daa09f9669161152f8255e1
+base044	SETN	2026-10-29 04:19:52	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_ch_access	ids	downstream	140.722	180313	0	923bcb31bf904f672d2e82fed7a63f73
+base044	SETN	2026-10-29 04:19:52	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_cm_access	ids	downstream	139.962	180313	0	923bcb31bf904f672d2e82fed7a63f73
+base044	SETN	2026-10-29 04:19:52	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_co_access	ids	downstream	139.788	180313	0	923bcb31bf904f672d2e82fed7a63f73
+base044	SETN	2026-10-29 04:19:52	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_pk_access	ids	downstream	139.974	180313	0	923bcb31bf904f672d2e82fed7a63f73
+base044	SETN	2026-10-29 04:19:52	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_sk_access	ids	downstream	141.293	180313	0	923bcb31bf904f672d2e82fed7a63f73
+base044	SETN	2026-10-29 04:19:52	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_st_access	ids	downstream	100.698	174987	0	a6fb85c927a9f94e224cabd802cd292c
+base044	SETN	2026-10-29 04:19:52	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_rb_access	ids	downstream	61.917	160146	0	3ef039d0787fdd02c42c69a6fcd1845b
+base044	SETN	2026-10-29 04:19:52	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_anthropogenic_unified	ids	downstream	4.995	152864	0	c4f5161b062fd9c7f3a9b8f90e7d36c7
+base044	SETN	2026-10-29 04:19:52	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_pscis_unified	ids	downstream	0.252	3016	0	0d9bbe95c7b67cba76225bea66f6aa0d
+base044	SETN	2026-10-29 04:19:52	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_dams_unified	ids	downstream	1.158	118755	0	0d7bfaa805f0d1c4440b015c2b291ad4
+prefilter	SETN	2026-10-29 04:35:34	64f8de0a	FALSE	0.47.0		fresh_default.barriers_bt_access	ids	downstream	21.154	163588	0	ab6c25384daa09f9669161152f8255e1
+prefilter	SETN	2026-10-29 04:35:34	64f8de0a	FALSE	0.47.0		fresh_default.barriers_ch_access	ids	downstream	50.575	180313	0	923bcb31bf904f672d2e82fed7a63f73
+prefilter	SETN	2026-10-29 04:35:34	64f8de0a	FALSE	0.47.0		fresh_default.barriers_cm_access	ids	downstream	50.422	180313	0	923bcb31bf904f672d2e82fed7a63f73
+prefilter	SETN	2026-10-29 04:35:34	64f8de0a	FALSE	0.47.0		fresh_default.barriers_co_access	ids	downstream	50.969	180313	0	923bcb31bf904f672d2e82fed7a63f73
+prefilter	SETN	2026-10-29 04:35:34	64f8de0a	FALSE	0.47.0		fresh_default.barriers_pk_access	ids	downstream	49.462	180313	0	923bcb31bf904f672d2e82fed7a63f73
+prefilter	SETN	2026-10-29 04:35:34	64f8de0a	FALSE	0.47.0		fresh_default.barriers_sk_access	ids	downstream	50.92	180313	0	923bcb31bf904f672d2e82fed7a63f73
+prefilter	SETN	2026-10-29 04:35:34	64f8de0a	FALSE	0.47.0		fresh_default.barriers_st_access	ids	downstream	35.094	174987	0	a6fb85c927a9f94e224cabd802cd292c
+prefilter	SETN	2026-10-29 04:35:34	64f8de0a	FALSE	0.47.0		fresh_default.barriers_rb_access	ids	downstream	20.725	160146	0	3ef039d0787fdd02c42c69a6fcd1845b
+prefilter	SETN	2026-10-29 04:35:34	64f8de0a	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	5.899	152864	0	c4f5161b062fd9c7f3a9b8f90e7d36c7
+prefilter	SETN	2026-10-29 04:35:34	64f8de0a	FALSE	0.47.0		fresh_default.barriers_pscis_unified	ids	downstream	3.369	3016	0	0d9bbe95c7b67cba76225bea66f6aa0d
+prefilter	SETN	2026-10-29 04:35:34	64f8de0a	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	4.185	118755	0	0d7bfaa805f0d1c4440b015c2b291ad4
+exists	SETN	2026-10-29 04:41:25	caba1876	FALSE	0.47.0		fresh_default.barriers_bt_access	exists	downstream	17.9	163588	0	ab6c25384daa09f9669161152f8255e1
+exists	SETN	2026-10-29 04:41:25	caba1876	FALSE	0.47.0		fresh_default.barriers_ch_access	exists	downstream	41.975	180313	0	923bcb31bf904f672d2e82fed7a63f73
+exists	SETN	2026-10-29 04:41:25	caba1876	FALSE	0.47.0		fresh_default.barriers_cm_access	exists	downstream	39.831	180313	0	923bcb31bf904f672d2e82fed7a63f73
+exists	SETN	2026-10-29 04:41:25	caba1876	FALSE	0.47.0		fresh_default.barriers_co_access	exists	downstream	41.102	180313	0	923bcb31bf904f672d2e82fed7a63f73
+exists	SETN	2026-10-29 04:41:25	caba1876	FALSE	0.47.0		fresh_default.barriers_pk_access	exists	downstream	41.884	180313	0	923bcb31bf904f672d2e82fed7a63f73
+exists	SETN	2026-10-29 04:41:25	caba1876	FALSE	0.47.0		fresh_default.barriers_sk_access	exists	downstream	40.516	180313	0	923bcb31bf904f672d2e82fed7a63f73
+exists	SETN	2026-10-29 04:41:25	caba1876	FALSE	0.47.0		fresh_default.barriers_st_access	exists	downstream	28.542	174987	0	a6fb85c927a9f94e224cabd802cd292c
+exists	SETN	2026-10-29 04:41:25	caba1876	FALSE	0.47.0		fresh_default.barriers_rb_access	exists	downstream	18.464	160146	0	3ef039d0787fdd02c42c69a6fcd1845b
+exists	SETN	2026-10-29 04:41:25	caba1876	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	5.714	152864	0	c4f5161b062fd9c7f3a9b8f90e7d36c7
+exists	SETN	2026-10-29 04:41:25	caba1876	FALSE	0.47.0		fresh_default.barriers_pscis_unified	exists	downstream	3.338	3016	0	0d9bbe95c7b67cba76225bea66f6aa0d
+exists	SETN	2026-10-29 04:41:25	caba1876	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	4.236	118755	0	0d7bfaa805f0d1c4440b015c2b291ad4
+exists	SETN	2026-10-29 04:46:19	caba1876	FALSE	0.47.0		fresh_default.barriers_bt_access	exists	downstream	17.839	163588	0	ab6c25384daa09f9669161152f8255e1
+exists	SETN	2026-10-29 04:46:19	caba1876	FALSE	0.47.0		fresh_default.barriers_ch_access	exists	downstream	38.994	180313	0	923bcb31bf904f672d2e82fed7a63f73
+exists	SETN	2026-10-29 04:46:19	caba1876	FALSE	0.47.0		fresh_default.barriers_cm_access	exists	downstream	41.306	180313	0	923bcb31bf904f672d2e82fed7a63f73
+exists	SETN	2026-10-29 04:46:19	caba1876	FALSE	0.47.0		fresh_default.barriers_co_access	exists	downstream	38.961	180313	0	923bcb31bf904f672d2e82fed7a63f73
+exists	SETN	2026-10-29 04:46:19	caba1876	FALSE	0.47.0		fresh_default.barriers_pk_access	exists	downstream	39.011	180313	0	923bcb31bf904f672d2e82fed7a63f73
+exists	SETN	2026-10-29 04:46:19	caba1876	FALSE	0.47.0		fresh_default.barriers_sk_access	exists	downstream	39.759	180313	0	923bcb31bf904f672d2e82fed7a63f73
+exists	SETN	2026-10-29 04:46:19	caba1876	FALSE	0.47.0		fresh_default.barriers_st_access	exists	downstream	29.939	174987	0	a6fb85c927a9f94e224cabd802cd292c
+exists	SETN	2026-10-29 04:46:19	caba1876	FALSE	0.47.0		fresh_default.barriers_rb_access	exists	downstream	18.443	160146	0	3ef039d0787fdd02c42c69a6fcd1845b
+exists	SETN	2026-10-29 04:46:19	caba1876	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	5.613	152864	0	c4f5161b062fd9c7f3a9b8f90e7d36c7
+exists	SETN	2026-10-29 04:46:19	caba1876	FALSE	0.47.0		fresh_default.barriers_pscis_unified	exists	downstream	3.299	3016	0	0d9bbe95c7b67cba76225bea66f6aa0d
+exists	SETN	2026-10-29 04:46:19	caba1876	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	4.221	118755	0	0d7bfaa805f0d1c4440b015c2b291ad4
+prefilter	SETN	2026-10-29 04:51:07	64f8de0a	FALSE	0.47.0		fresh_default.barriers_bt_access	ids	downstream	20.722	163588	0	ab6c25384daa09f9669161152f8255e1
+prefilter	SETN	2026-10-29 04:51:07	64f8de0a	FALSE	0.47.0		fresh_default.barriers_ch_access	ids	downstream	50.277	180313	0	923bcb31bf904f672d2e82fed7a63f73
+prefilter	SETN	2026-10-29 04:51:07	64f8de0a	FALSE	0.47.0		fresh_default.barriers_cm_access	ids	downstream	48.047	180313	0	923bcb31bf904f672d2e82fed7a63f73
+prefilter	SETN	2026-10-29 04:51:07	64f8de0a	FALSE	0.47.0		fresh_default.barriers_co_access	ids	downstream	50.269	180313	0	923bcb31bf904f672d2e82fed7a63f73
+prefilter	SETN	2026-10-29 04:51:07	64f8de0a	FALSE	0.47.0		fresh_default.barriers_pk_access	ids	downstream	48.681	180313	0	923bcb31bf904f672d2e82fed7a63f73
+prefilter	SETN	2026-10-29 04:51:07	64f8de0a	FALSE	0.47.0		fresh_default.barriers_sk_access	ids	downstream	49.23	180313	0	923bcb31bf904f672d2e82fed7a63f73
+prefilter	SETN	2026-10-29 04:51:07	64f8de0a	FALSE	0.47.0		fresh_default.barriers_st_access	ids	downstream	35.5	174987	0	a6fb85c927a9f94e224cabd802cd292c
+prefilter	SETN	2026-10-29 04:51:07	64f8de0a	FALSE	0.47.0		fresh_default.barriers_rb_access	ids	downstream	21.468	160146	0	3ef039d0787fdd02c42c69a6fcd1845b
+prefilter	SETN	2026-10-29 04:51:07	64f8de0a	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	6.017	152864	0	c4f5161b062fd9c7f3a9b8f90e7d36c7
+prefilter	SETN	2026-10-29 04:51:07	64f8de0a	FALSE	0.47.0		fresh_default.barriers_pscis_unified	ids	downstream	3.374	3016	0	0d9bbe95c7b67cba76225bea66f6aa0d
+prefilter	SETN	2026-10-29 04:51:07	64f8de0a	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	4.285	118755	0	0d7bfaa805f0d1c4440b015c2b291ad4
+base044	SETN	2026-10-29 04:56:53	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_bt_access	ids	downstream	36.326	163588	0	ab6c25384daa09f9669161152f8255e1
+base044	SETN	2026-10-29 04:56:53	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_ch_access	ids	downstream	88.164	180313	0	923bcb31bf904f672d2e82fed7a63f73
+base044	SETN	2026-10-29 04:56:53	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_cm_access	ids	downstream	88.572	180313	0	923bcb31bf904f672d2e82fed7a63f73
+base044	SETN	2026-10-29 04:56:53	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_co_access	ids	downstream	88.52	180313	0	923bcb31bf904f672d2e82fed7a63f73
+base044	SETN	2026-10-29 04:56:53	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_pk_access	ids	downstream	88.503	180313	0	923bcb31bf904f672d2e82fed7a63f73
+base044	SETN	2026-10-29 04:56:53	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_sk_access	ids	downstream	87.851	180313	0	923bcb31bf904f672d2e82fed7a63f73
+base044	SETN	2026-10-29 04:56:53	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_st_access	ids	downstream	60.961	174987	0	a6fb85c927a9f94e224cabd802cd292c
+base044	SETN	2026-10-29 04:56:53	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_rb_access	ids	downstream	36.289	160146	0	3ef039d0787fdd02c42c69a6fcd1845b
+base044	SETN	2026-10-29 04:56:53	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_anthropogenic_unified	ids	downstream	3.194	152864	0	c4f5161b062fd9c7f3a9b8f90e7d36c7
+base044	SETN	2026-10-29 04:56:53	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_pscis_unified	ids	downstream	0.222	3016	0	0d9bbe95c7b67cba76225bea66f6aa0d
+base044	SETN	2026-10-29 04:56:53	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_dams_unified	ids	downstream	1.169	118755	0	0d7bfaa805f0d1c4440b015c2b291ad4
+exists	SALR	2026-10-29 05:31:26	caba1876	FALSE	0.47.0		fresh_default.barriers_ch_access	exists	downstream	2.139	1343	0	9e506bf3b441afb0969f7eb4589799cc
+exists	SALR	2026-10-29 05:31:26	caba1876	FALSE	0.47.0		fresh_default.barriers_rb_access	exists	downstream	0.814	448	0	1fa82c09926fa671ddf1b43254f482ad
+exists	SALR	2026-10-29 05:31:26	caba1876	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	0.341	6183	0	70b976e63eea2937489bd8d4c95c12ad
+exists	SALR	2026-10-29 05:31:26	caba1876	FALSE	0.47.0		fresh_default.barriers_pscis_unified	exists	downstream	0.233	1598	0	14ceda4def30ba17caf62a4ac49bac48
+exists	SALR	2026-10-29 05:31:26	caba1876	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	0.227	0	0	5152ac13bdd09110d9ee9c169a3d9237
+dedup	SALR	2026-10-29 05:31:31	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_ch_access	exists	downstream	1.933	1343	0	9e506bf3b441afb0969f7eb4589799cc
+dedup	SALR	2026-10-29 05:31:31	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_rb_access	exists	downstream	0.822	448	0	1fa82c09926fa671ddf1b43254f482ad
+dedup	SALR	2026-10-29 05:31:31	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	0.344	6183	0	70b976e63eea2937489bd8d4c95c12ad
+dedup	SALR	2026-10-29 05:31:31	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_pscis_unified	exists	downstream	0.232	1598	0	14ceda4def30ba17caf62a4ac49bac48
+dedup	SALR	2026-10-29 05:31:31	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	0.23	0	0	5152ac13bdd09110d9ee9c169a3d9237
+dedup	SALR	2026-10-29 05:31:37	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_ch_access	exists	downstream	1.934	1343	0	9e506bf3b441afb0969f7eb4589799cc
+dedup	SALR	2026-10-29 05:31:37	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_rb_access	exists	downstream	0.807	448	0	1fa82c09926fa671ddf1b43254f482ad
+dedup	SALR	2026-10-29 05:31:37	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	0.322	6183	0	70b976e63eea2937489bd8d4c95c12ad
+dedup	SALR	2026-10-29 05:31:37	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_pscis_unified	exists	downstream	0.231	1598	0	14ceda4def30ba17caf62a4ac49bac48
+dedup	SALR	2026-10-29 05:31:37	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	0.237	0	0	5152ac13bdd09110d9ee9c169a3d9237
+exists	SALR	2026-10-29 05:31:42	caba1876	FALSE	0.47.0		fresh_default.barriers_ch_access	exists	downstream	1.933	1343	0	9e506bf3b441afb0969f7eb4589799cc
+exists	SALR	2026-10-29 05:31:42	caba1876	FALSE	0.47.0		fresh_default.barriers_rb_access	exists	downstream	0.808	448	0	1fa82c09926fa671ddf1b43254f482ad
+exists	SALR	2026-10-29 05:31:42	caba1876	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	0.351	6183	0	70b976e63eea2937489bd8d4c95c12ad
+exists	SALR	2026-10-29 05:31:42	caba1876	FALSE	0.47.0		fresh_default.barriers_pscis_unified	exists	downstream	0.231	1598	0	14ceda4def30ba17caf62a4ac49bac48
+exists	SALR	2026-10-29 05:31:42	caba1876	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	0.231	0	0	5152ac13bdd09110d9ee9c169a3d9237
+exists	CHWK	2026-10-29 05:31:47	caba1876	FALSE	0.47.0		fresh_default.barriers_bt_access	exists	downstream	1.33	10092	0	4165669651a58acd99293a550cab1b19
+exists	CHWK	2026-10-29 05:31:47	caba1876	FALSE	0.47.0		fresh_default.barriers_ch_access	exists	downstream	2.753	11301	0	120c55349284a52ca4a26316167803e3
+exists	CHWK	2026-10-29 05:31:47	caba1876	FALSE	0.47.0		fresh_default.barriers_cm_access	exists	downstream	2.772	11301	0	120c55349284a52ca4a26316167803e3
+exists	CHWK	2026-10-29 05:31:47	caba1876	FALSE	0.47.0		fresh_default.barriers_co_access	exists	downstream	2.746	11301	0	120c55349284a52ca4a26316167803e3
+exists	CHWK	2026-10-29 05:31:47	caba1876	FALSE	0.47.0		fresh_default.barriers_pk_access	exists	downstream	2.667	11301	0	120c55349284a52ca4a26316167803e3
+exists	CHWK	2026-10-29 05:31:47	caba1876	FALSE	0.47.0		fresh_default.barriers_sk_access	exists	downstream	2.739	11301	0	120c55349284a52ca4a26316167803e3
+exists	CHWK	2026-10-29 05:31:47	caba1876	FALSE	0.47.0		fresh_default.barriers_st_access	exists	downstream	1.946	10818	0	cd2944e4f269b5a7ea4adb9b6a08c75f
+exists	CHWK	2026-10-29 05:31:47	caba1876	FALSE	0.47.0		fresh_default.barriers_rb_access	exists	downstream	1.188	9580	0	a1dea9df2c98707a9c7464db3e577b3c
+exists	CHWK	2026-10-29 05:31:47	caba1876	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	0.421	10349	0	b2bfde205bba21bc4466e5010c53ab95
+exists	CHWK	2026-10-29 05:31:47	caba1876	FALSE	0.47.0		fresh_default.barriers_pscis_unified	exists	downstream	0.25	94	0	572467be069813d36d23be7693a50f97
+exists	CHWK	2026-10-29 05:31:47	caba1876	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	0.282	1960	0	ee340848ae8f1be6d5ed45c24d692df5
+dedup	CHWK	2026-10-29 05:32:08	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_bt_access	exists	downstream	1.198	10092	0	4165669651a58acd99293a550cab1b19
+dedup	CHWK	2026-10-29 05:32:08	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_ch_access	exists	downstream	2.713	11301	0	120c55349284a52ca4a26316167803e3
+dedup	CHWK	2026-10-29 05:32:08	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_st_access	exists	downstream	1.913	10818	0	cd2944e4f269b5a7ea4adb9b6a08c75f
+dedup	CHWK	2026-10-29 05:32:08	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_rb_access	exists	downstream	1.183	9580	0	a1dea9df2c98707a9c7464db3e577b3c
+dedup	CHWK	2026-10-29 05:32:08	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	0.417	10349	0	b2bfde205bba21bc4466e5010c53ab95
+dedup	CHWK	2026-10-29 05:32:08	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_pscis_unified	exists	downstream	0.259	94	0	572467be069813d36d23be7693a50f97
+dedup	CHWK	2026-10-29 05:32:08	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	0.281	1960	0	ee340848ae8f1be6d5ed45c24d692df5
+dedup	CHWK	2026-10-29 05:32:18	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_bt_access	exists	downstream	1.171	10092	0	4165669651a58acd99293a550cab1b19
+dedup	CHWK	2026-10-29 05:32:18	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_ch_access	exists	downstream	2.894	11301	0	120c55349284a52ca4a26316167803e3
+dedup	CHWK	2026-10-29 05:32:18	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_st_access	exists	downstream	1.977	10818	0	cd2944e4f269b5a7ea4adb9b6a08c75f
+dedup	CHWK	2026-10-29 05:32:18	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_rb_access	exists	downstream	1.166	9580	0	a1dea9df2c98707a9c7464db3e577b3c
+dedup	CHWK	2026-10-29 05:32:18	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	0.457	10349	0	b2bfde205bba21bc4466e5010c53ab95
+dedup	CHWK	2026-10-29 05:32:18	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_pscis_unified	exists	downstream	0.249	94	0	572467be069813d36d23be7693a50f97
+dedup	CHWK	2026-10-29 05:32:18	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	0.282	1960	0	ee340848ae8f1be6d5ed45c24d692df5
+exists	CHWK	2026-10-29 05:32:29	caba1876	FALSE	0.47.0		fresh_default.barriers_bt_access	exists	downstream	1.21	10092	0	4165669651a58acd99293a550cab1b19
+exists	CHWK	2026-10-29 05:32:29	caba1876	FALSE	0.47.0		fresh_default.barriers_ch_access	exists	downstream	2.711	11301	0	120c55349284a52ca4a26316167803e3
+exists	CHWK	2026-10-29 05:32:29	caba1876	FALSE	0.47.0		fresh_default.barriers_cm_access	exists	downstream	2.737	11301	0	120c55349284a52ca4a26316167803e3
+exists	CHWK	2026-10-29 05:32:29	caba1876	FALSE	0.47.0		fresh_default.barriers_co_access	exists	downstream	2.728	11301	0	120c55349284a52ca4a26316167803e3
+exists	CHWK	2026-10-29 05:32:29	caba1876	FALSE	0.47.0		fresh_default.barriers_pk_access	exists	downstream	2.741	11301	0	120c55349284a52ca4a26316167803e3
+exists	CHWK	2026-10-29 05:32:29	caba1876	FALSE	0.47.0		fresh_default.barriers_sk_access	exists	downstream	2.772	11301	0	120c55349284a52ca4a26316167803e3
+exists	CHWK	2026-10-29 05:32:29	caba1876	FALSE	0.47.0		fresh_default.barriers_st_access	exists	downstream	1.877	10818	0	cd2944e4f269b5a7ea4adb9b6a08c75f
+exists	CHWK	2026-10-29 05:32:29	caba1876	FALSE	0.47.0		fresh_default.barriers_rb_access	exists	downstream	1.178	9580	0	a1dea9df2c98707a9c7464db3e577b3c
+exists	CHWK	2026-10-29 05:32:29	caba1876	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	0.419	10349	0	b2bfde205bba21bc4466e5010c53ab95
+exists	CHWK	2026-10-29 05:32:29	caba1876	FALSE	0.47.0		fresh_default.barriers_pscis_unified	exists	downstream	0.249	94	0	572467be069813d36d23be7693a50f97
+exists	CHWK	2026-10-29 05:32:29	caba1876	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	0.27	1960	0	ee340848ae8f1be6d5ed45c24d692df5
+exists	LFRA	2026-10-29 05:32:50	caba1876	FALSE	0.47.0		fresh_default.barriers_bt_access	exists	downstream	4.724	42292	0	43d36028e8511d27a485335d048a58a9
+exists	LFRA	2026-10-29 05:32:50	caba1876	FALSE	0.47.0		fresh_default.barriers_ch_access	exists	downstream	10.065	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+exists	LFRA	2026-10-29 05:32:50	caba1876	FALSE	0.47.0		fresh_default.barriers_cm_access	exists	downstream	10.085	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+exists	LFRA	2026-10-29 05:32:50	caba1876	FALSE	0.47.0		fresh_default.barriers_co_access	exists	downstream	10.245	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+exists	LFRA	2026-10-29 05:32:50	caba1876	FALSE	0.47.0		fresh_default.barriers_pk_access	exists	downstream	10.23	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+exists	LFRA	2026-10-29 05:32:50	caba1876	FALSE	0.47.0		fresh_default.barriers_sk_access	exists	downstream	10.186	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+exists	LFRA	2026-10-29 05:32:50	caba1876	FALSE	0.47.0		fresh_default.barriers_st_access	exists	downstream	7.186	44538	0	88b0e7819013d136fd96f39100771f2e
+exists	LFRA	2026-10-29 05:32:50	caba1876	FALSE	0.47.0		fresh_default.barriers_rb_access	exists	downstream	4.61	40686	0	3476518e59cb4c142798d818acb83ca7
+exists	LFRA	2026-10-29 05:32:50	caba1876	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	1.721	43529	0	eb1ec6dd422e6807ddc1cdd25825805c
+exists	LFRA	2026-10-29 05:32:50	caba1876	FALSE	0.47.0		fresh_default.barriers_pscis_unified	exists	downstream	1.027	25348	0	1476bbf67db960948773cd6dc5808d15
+exists	LFRA	2026-10-29 05:32:50	caba1876	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	1.363	30900	0	0047afe974aff067fbcbddde90056ab0
+dedup	LFRA	2026-10-29 05:34:05	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_bt_access	exists	downstream	4.508	42292	0	43d36028e8511d27a485335d048a58a9
+dedup	LFRA	2026-10-29 05:34:05	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_ch_access	exists	downstream	10.22	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+dedup	LFRA	2026-10-29 05:34:05	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_st_access	exists	downstream	7.298	44538	0	88b0e7819013d136fd96f39100771f2e
+dedup	LFRA	2026-10-29 05:34:05	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_rb_access	exists	downstream	4.505	40686	0	3476518e59cb4c142798d818acb83ca7
+dedup	LFRA	2026-10-29 05:34:05	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	1.748	43529	0	eb1ec6dd422e6807ddc1cdd25825805c
+dedup	LFRA	2026-10-29 05:34:05	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_pscis_unified	exists	downstream	1.049	25348	0	1476bbf67db960948773cd6dc5808d15
+dedup	LFRA	2026-10-29 05:34:05	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	1.358	30900	0	0047afe974aff067fbcbddde90056ab0
+dedup	LFRA	2026-10-29 05:34:41	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_bt_access	exists	downstream	4.646	42292	0	43d36028e8511d27a485335d048a58a9
+dedup	LFRA	2026-10-29 05:34:41	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_ch_access	exists	downstream	10.287	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+dedup	LFRA	2026-10-29 05:34:41	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_st_access	exists	downstream	7.175	44538	0	88b0e7819013d136fd96f39100771f2e
+dedup	LFRA	2026-10-29 05:34:41	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_rb_access	exists	downstream	4.536	40686	0	3476518e59cb4c142798d818acb83ca7
+dedup	LFRA	2026-10-29 05:34:41	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	1.733	43529	0	eb1ec6dd422e6807ddc1cdd25825805c
+dedup	LFRA	2026-10-29 05:34:41	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_pscis_unified	exists	downstream	1.031	25348	0	1476bbf67db960948773cd6dc5808d15
+dedup	LFRA	2026-10-29 05:34:41	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	1.346	30900	0	0047afe974aff067fbcbddde90056ab0
+exists	LFRA	2026-10-29 05:35:18	caba1876	FALSE	0.47.0		fresh_default.barriers_bt_access	exists	downstream	4.591	42292	0	43d36028e8511d27a485335d048a58a9
+exists	LFRA	2026-10-29 05:35:18	caba1876	FALSE	0.47.0		fresh_default.barriers_ch_access	exists	downstream	10.216	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+exists	LFRA	2026-10-29 05:35:18	caba1876	FALSE	0.47.0		fresh_default.barriers_cm_access	exists	downstream	10.302	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+exists	LFRA	2026-10-29 05:35:18	caba1876	FALSE	0.47.0		fresh_default.barriers_co_access	exists	downstream	10.133	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+exists	LFRA	2026-10-29 05:35:18	caba1876	FALSE	0.47.0		fresh_default.barriers_pk_access	exists	downstream	10.115	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+exists	LFRA	2026-10-29 05:35:18	caba1876	FALSE	0.47.0		fresh_default.barriers_sk_access	exists	downstream	10.254	45994	0	e6e8414cb3eb5fe6f9e5c8ce48381fe7
+exists	LFRA	2026-10-29 05:35:18	caba1876	FALSE	0.47.0		fresh_default.barriers_st_access	exists	downstream	7.669	44538	0	88b0e7819013d136fd96f39100771f2e
+exists	LFRA	2026-10-29 05:35:18	caba1876	FALSE	0.47.0		fresh_default.barriers_rb_access	exists	downstream	4.631	40686	0	3476518e59cb4c142798d818acb83ca7
+exists	LFRA	2026-10-29 05:35:18	caba1876	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	1.757	43529	0	eb1ec6dd422e6807ddc1cdd25825805c
+exists	LFRA	2026-10-29 05:35:18	caba1876	FALSE	0.47.0		fresh_default.barriers_pscis_unified	exists	downstream	1.054	25348	0	1476bbf67db960948773cd6dc5808d15
+exists	LFRA	2026-10-29 05:35:18	caba1876	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	1.363	30900	0	0047afe974aff067fbcbddde90056ab0
+exists	SETN	2026-10-29 05:36:33	caba1876	FALSE	0.47.0		fresh_default.barriers_bt_access	exists	downstream	18.974	163588	0	ab6c25384daa09f9669161152f8255e1
+exists	SETN	2026-10-29 05:36:33	caba1876	FALSE	0.47.0		fresh_default.barriers_ch_access	exists	downstream	39.393	180313	0	923bcb31bf904f672d2e82fed7a63f73
+exists	SETN	2026-10-29 05:36:33	caba1876	FALSE	0.47.0		fresh_default.barriers_cm_access	exists	downstream	41.376	180313	0	923bcb31bf904f672d2e82fed7a63f73
+exists	SETN	2026-10-29 05:36:33	caba1876	FALSE	0.47.0		fresh_default.barriers_co_access	exists	downstream	40.92	180313	0	923bcb31bf904f672d2e82fed7a63f73
+exists	SETN	2026-10-29 05:36:33	caba1876	FALSE	0.47.0		fresh_default.barriers_pk_access	exists	downstream	42.03	180313	0	923bcb31bf904f672d2e82fed7a63f73
+exists	SETN	2026-10-29 05:36:33	caba1876	FALSE	0.47.0		fresh_default.barriers_sk_access	exists	downstream	41.463	180313	0	923bcb31bf904f672d2e82fed7a63f73
+exists	SETN	2026-10-29 05:36:33	caba1876	FALSE	0.47.0		fresh_default.barriers_st_access	exists	downstream	29.215	174987	0	a6fb85c927a9f94e224cabd802cd292c
+exists	SETN	2026-10-29 05:36:33	caba1876	FALSE	0.47.0		fresh_default.barriers_rb_access	exists	downstream	18.333	160146	0	3ef039d0787fdd02c42c69a6fcd1845b
+exists	SETN	2026-10-29 05:36:33	caba1876	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	5.694	152864	0	c4f5161b062fd9c7f3a9b8f90e7d36c7
+exists	SETN	2026-10-29 05:36:33	caba1876	FALSE	0.47.0		fresh_default.barriers_pscis_unified	exists	downstream	3.298	3016	0	0d9bbe95c7b67cba76225bea66f6aa0d
+exists	SETN	2026-10-29 05:36:33	caba1876	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	4.178	118755	0	0d7bfaa805f0d1c4440b015c2b291ad4
+dedup	SETN	2026-10-29 05:41:29	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_bt_access	exists	downstream	17.714	163588	0	ab6c25384daa09f9669161152f8255e1
+dedup	SETN	2026-10-29 05:41:29	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_ch_access	exists	downstream	38.827	180313	0	923bcb31bf904f672d2e82fed7a63f73
+dedup	SETN	2026-10-29 05:41:29	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_st_access	exists	downstream	29.038	174987	0	a6fb85c927a9f94e224cabd802cd292c
+dedup	SETN	2026-10-29 05:41:29	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_rb_access	exists	downstream	18.483	160146	0	3ef039d0787fdd02c42c69a6fcd1845b
+dedup	SETN	2026-10-29 05:41:29	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	5.689	152864	0	c4f5161b062fd9c7f3a9b8f90e7d36c7
+dedup	SETN	2026-10-29 05:41:29	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_pscis_unified	exists	downstream	3.336	3016	0	0d9bbe95c7b67cba76225bea66f6aa0d
+dedup	SETN	2026-10-29 05:41:29	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	4.232	118755	0	0d7bfaa805f0d1c4440b015c2b291ad4
+dedup	SETN	2026-10-29 05:43:46	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_bt_access	exists	downstream	18.789	163588	0	ab6c25384daa09f9669161152f8255e1
+dedup	SETN	2026-10-29 05:43:46	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_ch_access	exists	downstream	40.34	180313	0	923bcb31bf904f672d2e82fed7a63f73
+dedup	SETN	2026-10-29 05:43:46	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_st_access	exists	downstream	28.342	174987	0	a6fb85c927a9f94e224cabd802cd292c
+dedup	SETN	2026-10-29 05:43:46	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_rb_access	exists	downstream	18.663	160146	0	3ef039d0787fdd02c42c69a6fcd1845b
+dedup	SETN	2026-10-29 05:43:46	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	5.694	152864	0	c4f5161b062fd9c7f3a9b8f90e7d36c7
+dedup	SETN	2026-10-29 05:43:46	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_pscis_unified	exists	downstream	3.354	3016	0	0d9bbe95c7b67cba76225bea66f6aa0d
+dedup	SETN	2026-10-29 05:43:46	4ea2d05b	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	4.29	118755	0	0d7bfaa805f0d1c4440b015c2b291ad4
+exists	SETN	2026-10-29 05:46:05	caba1876	FALSE	0.47.0		fresh_default.barriers_bt_access	exists	downstream	18.437	163588	0	ab6c25384daa09f9669161152f8255e1
+exists	SETN	2026-10-29 05:46:05	caba1876	FALSE	0.47.0		fresh_default.barriers_ch_access	exists	downstream	42.158	180313	0	923bcb31bf904f672d2e82fed7a63f73
+exists	SETN	2026-10-29 05:46:05	caba1876	FALSE	0.47.0		fresh_default.barriers_cm_access	exists	downstream	41.362	180313	0	923bcb31bf904f672d2e82fed7a63f73
+exists	SETN	2026-10-29 05:46:05	caba1876	FALSE	0.47.0		fresh_default.barriers_co_access	exists	downstream	42.723	180313	0	923bcb31bf904f672d2e82fed7a63f73
+exists	SETN	2026-10-29 05:46:05	caba1876	FALSE	0.47.0		fresh_default.barriers_pk_access	exists	downstream	41.392	180313	0	923bcb31bf904f672d2e82fed7a63f73
+exists	SETN	2026-10-29 05:46:05	caba1876	FALSE	0.47.0		fresh_default.barriers_sk_access	exists	downstream	41.066	180313	0	923bcb31bf904f672d2e82fed7a63f73
+exists	SETN	2026-10-29 05:46:05	caba1876	FALSE	0.47.0		fresh_default.barriers_st_access	exists	downstream	28.387	174987	0	a6fb85c927a9f94e224cabd802cd292c
+exists	SETN	2026-10-29 05:46:05	caba1876	FALSE	0.47.0		fresh_default.barriers_rb_access	exists	downstream	17.801	160146	0	3ef039d0787fdd02c42c69a6fcd1845b
+exists	SETN	2026-10-29 05:46:05	caba1876	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	5.743	152864	0	c4f5161b062fd9c7f3a9b8f90e7d36c7
+exists	SETN	2026-10-29 05:46:05	caba1876	FALSE	0.47.0		fresh_default.barriers_pscis_unified	exists	downstream	3.376	3016	0	0d9bbe95c7b67cba76225bea66f6aa0d
+exists	SETN	2026-10-29 05:46:05	caba1876	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	4.32	118755	0	0d7bfaa805f0d1c4440b015c2b291ad4
