@@ -1,0 +1,21 @@
+## Checklist read
+
+- code-check-r.md: read in full "Postgres row order is never fixed unless the query fixes it…", "`$` on a list partial-matches…", "A `function(...)` mock hides arguments the real callee no longer accepts", "`tryCatch()` nests its handlers…", "A value compared as `::text` in SQL has PostgreSQL's spelling, not R's", "An `information_schema` lookup by the literal table name misses what Postgres resolves" (6). Applied from the index lines without opening the section: `on.exit()` at top level, data-raw loads the source tree, `read.delim()` quotes, testthat error vs failed, `expect_gt` info. Not read: the remaining ~150 headings (no tool, shape or pattern in this diff).
+- code-check.md: read the prose of all 14 H3s under `## Mechanisms` (table rows skipped). Not read: the 23 standalone/security/spreadsheet headings (none apply).
+- code-check-shell.md: read "psql does not interpolate `:'var'`…" (1); ~100 not read (the diff adds no shell).
+- code-check-spatial.md: read "FWA `upstream_route_measure` misses the next segment's start" and "A Freshwater Atlas main stem's downstream end…" (2); ~100 not read (no terra/sf/GDAL in the diff).
+
+## What I checked
+
+- Exactness of the walk key against fresh 0.47.0's `.frs_walk_prefilter()`: fresh admits `wscode = ANY(subpaths 1..nlevel of AOI segment codes) OR blue_line_key = ANY(AOI lines)`; the key admits the same plus the `''` code, and digests (id, wsg, blk, drm, wscode, localcode). The exists walk reads only blk/drm/wscode/localcode of prefiltered rows, and the prefilter is a row-wise predicate, so equal keys imply equal prefiltered multisets and the same walk. Superset holds; no way for two tables whose walks differ to share a key (record text of float8 is shortest-exact; NULL vs `''` distinct).
+- Array tables are excluded from keying; the source loop now reuses the same cache key (round-1 fix 3); `[[` (exact) on the cache-key list; empty/one-table paths.
+- Mutation proofs in the review worktree (restored, `git status` clean): dropping the blue-line arm fails the live key test (round-1 fix 1, `kh`); reverting the codes CTE to `generate_series(0, …)` errors the live key test (round-1 fix 2). Reverting fix 3 makes the walk log three calls instead of two, failing its test by construction (read, not run). `test-lnk_pipeline_access.R`: 58 pass, 0 fail, 0 error, 0 skip.
+- Every number in CLAUDE.md, RUNBOOK §3, research/recompute_cost.md and the 394 README against `steps.tsv`, `ceiling.tsv`, `walks.tsv`, `measure.tsv`, `model_digest.tsv`, `model_codes.tsv`; `153` NULL `localcode_ltree` rows in `fresh_default.barriers` confirmed by query. fresh v0.47.0 tag = installed RemoteSha `2c35e3eb`.
+
+## Findings
+
+- **[severity: fragile]** R/lnk_pipeline_access.R:489 (`.lnk_walk_keys`, branch SQL) — the key selects `f.watershed_group_code` from every keyed species table. The walk itself never reads that column on the features side, and `lnk_pipeline_access()`'s documented contract for `barriers_per_sp` (lines 41-46) lists only `<sp>_id` and the four FWA keys. So an exported call with two or more present, non-array species tables that lack `watershed_group_code` now fails with `column f.watershed_group_code does not exist`, where it worked before this branch. Not reachable from link's own callers today (`lnk_barriers_views()` projects the column, lines 182/208/245), so it is a contract break for outside callers, not a run failure. Either drop the column from the key (it is a superset term only) or add it to the `barriers_per_sp` @param. Not inside a round-1 fix (present since 4ea2d05b).
+
+- **[severity: fragile, docs only]** data-raw/logs/recompute_access_394/README.md:91 — "the 1-minute load average was 3.0 to 6.6 at run starts": `measure.tsv` `load1_start` ranges 2.88 to 6.59 (2.9 to 6.6). Same README line 89, "7.7 s against the 484 s": both are computed from round 1's two `exists` SETN runs only (species 750.86 − 267.23 = 483.6; sources 13.21 − 5.50 = 7.7), while the table above and the "327 to 270 s" sentence use all four `exists` runs, which give 7.8 s and 481 s. Defensible if round 1 is meant, but the line does not say so. Not inside a round-1 fix.
+
+Otherwise clean: no correctness defect found in the access code, the key, or round 1's three code fixes.

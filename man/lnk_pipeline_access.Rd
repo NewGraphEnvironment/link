@@ -2,7 +2,7 @@
 % Please edit documentation in R/lnk_pipeline_access.R
 \name{lnk_pipeline_access}
 \alias{lnk_pipeline_access}
-\title{Build per-segment access codes + downstream-feature arrays}
+\title{Build per-segment access codes + downstream-barrier indicators}
 \usage{
 lnk_pipeline_access(
   conn,
@@ -35,7 +35,9 @@ is returned invisibly. Default \code{NULL} returns-only.}
 \code{"bt"}); each value is a schema-qualified barriers table for that
 species (e.g. \code{"working_adms.barriers_bt"}). Each barriers table
 must have a \verb{<sp>_id} column (e.g. \code{barriers_bt_id}) plus the
-standard \verb{(blue_line_key, downstream_route_measure, wscode_ltree, localcode_ltree)} keys.}
+standard \verb{(blue_line_key, downstream_route_measure, wscode_ltree, localcode_ltree)} keys, and \code{watershed_group_code}, which the key
+that lets identical tables share one walk reads (as
+\code{\link[=lnk_barriers_views]{lnk_barriers_views()}} provides).}
 
 \item{observations}{Character or \code{NULL}. Optional schema-qualified
 observations table with \verb{(observation_key, species_code, ...)} +
@@ -87,17 +89,31 @@ the \code{remediated_dnstr_ind} column.}
 \item{segment_id_col}{Character. Default \code{"id_segment"}.}
 }
 \value{
-\code{conn} invisibly, for piping.
+A tibble, one row per segment in \code{aoi}: \code{segment_id_col}, the
+\verb{has_barriers_*_dnstr} flags, \verb{access_<sp>} codes, \code{dam_dnstr_ind} /
+\code{remediated_dnstr_ind} when computed, and, with \code{observations}, the
+\code{obsrvtn_species_codes_upstr} list-column. Written to \code{to} (scalar
+columns only) when given.
 }
 \description{
 Composes \code{\link[fresh:frs_network_features]{fresh::frs_network_features()}} calls across species (and
 optionally observations) to produce a \code{streams_access} wide table
 that mirrors \code{bcfishpass.streams_access}'s shape — one row per
-segment, with per-species \verb{barriers_<sp>_dnstr} arrays and per-
+segment, with per-species \verb{has_barriers_<sp>_dnstr} booleans and per-
 species integer \verb{access_<sp>} codes derived via CASE on
 (wsg-presence × dnstr-empty × observed-upstream).
 }
 \details{
+A walk whose result is read only for membership (every
+\code{barriers_per_sp} table, and each \code{barrier_sources} table no ordered
+indicator reads) asks fresh whether any barrier lies downstream
+(\code{result = "exists"}) rather than for the array of them. Arrays are
+built only for the \code{"anthropogenic"} and \code{"dams"} sources when both are
+given (\code{dam_dnstr_ind} reads the first element), for \code{"remediations"}
+when \code{crossings_table} is set (\code{remediated_dnstr_ind}), and for the
+upstream observation walk (species codes). A table given in several
+roles is walked once, as an array if any role reads its elements.
+
 This phase runs after \code{\link[=lnk_pipeline_classify]{lnk_pipeline_classify()}} returns and before
 \code{\link[=lnk_pipeline_persist]{lnk_pipeline_persist()}} cleanup_working drops the working schema —
 it needs the per-species \verb{barriers_<sp>} tables that prepare/break

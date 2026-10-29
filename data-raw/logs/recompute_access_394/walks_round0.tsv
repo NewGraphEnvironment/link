@@ -1,0 +1,31 @@
+variant	wsg	date_utc	link_sha	link_dirty	fresh_version	fresh_sha	features	result	direction	seconds	rows	other_backends	segments_md5
+base044	SALR	2026-10-29 03:11:18	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_ch_access	ids	downstream	17.301	1343	0	9e506bf3b441afb0969f7eb4589799cc
+base044	SALR	2026-10-29 03:11:18	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_rb_access	ids	downstream	9.435	448	1	1fa82c09926fa671ddf1b43254f482ad
+base044	SALR	2026-10-29 03:11:18	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_anthropogenic_unified	ids	downstream	0.746	6183	1	70b976e63eea2937489bd8d4c95c12ad
+base044	SALR	2026-10-29 03:11:18	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_pscis_unified	ids	downstream	0.043	1598	1	14ceda4def30ba17caf62a4ac49bac48
+base044	SALR	2026-10-29 03:11:18	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_dams_unified	ids	downstream	0.025	0	1	5152ac13bdd09110d9ee9c169a3d9237
+prefilter	SALR	2026-10-29 03:11:48	64f8de0a	FALSE	0.47.0		fresh_default.barriers_ch_access	ids	downstream	2.01	1343	1	9e506bf3b441afb0969f7eb4589799cc
+prefilter	SALR	2026-10-29 03:11:48	64f8de0a	FALSE	0.47.0		fresh_default.barriers_rb_access	ids	downstream	0.849	448	1	1fa82c09926fa671ddf1b43254f482ad
+prefilter	SALR	2026-10-29 03:11:48	64f8de0a	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	0.341	6183	1	70b976e63eea2937489bd8d4c95c12ad
+prefilter	SALR	2026-10-29 03:11:48	64f8de0a	FALSE	0.47.0		fresh_default.barriers_pscis_unified	ids	downstream	0.252	1598	1	14ceda4def30ba17caf62a4ac49bac48
+prefilter	SALR	2026-10-29 03:11:48	64f8de0a	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	0.238	0	1	5152ac13bdd09110d9ee9c169a3d9237
+exists	SALR	2026-10-29 03:11:54	caba1876	FALSE	0.47.0		fresh_default.barriers_ch_access	exists	downstream	1.998	1343	1	9e506bf3b441afb0969f7eb4589799cc
+exists	SALR	2026-10-29 03:11:54	caba1876	FALSE	0.47.0		fresh_default.barriers_rb_access	exists	downstream	0.84	448	1	1fa82c09926fa671ddf1b43254f482ad
+exists	SALR	2026-10-29 03:11:54	caba1876	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	0.339	6183	1	70b976e63eea2937489bd8d4c95c12ad
+exists	SALR	2026-10-29 03:11:54	caba1876	FALSE	0.47.0		fresh_default.barriers_pscis_unified	exists	downstream	0.244	1598	1	14ceda4def30ba17caf62a4ac49bac48
+exists	SALR	2026-10-29 03:11:54	caba1876	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	0.236	0	1	5152ac13bdd09110d9ee9c169a3d9237
+exists	SALR	2026-10-29 03:11:59	caba1876	FALSE	0.47.0		fresh_default.barriers_ch_access	exists	downstream	2.008	1343	1	9e506bf3b441afb0969f7eb4589799cc
+exists	SALR	2026-10-29 03:11:59	caba1876	FALSE	0.47.0		fresh_default.barriers_rb_access	exists	downstream	0.84	448	1	1fa82c09926fa671ddf1b43254f482ad
+exists	SALR	2026-10-29 03:11:59	caba1876	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	0.363	6183	1	70b976e63eea2937489bd8d4c95c12ad
+exists	SALR	2026-10-29 03:11:59	caba1876	FALSE	0.47.0		fresh_default.barriers_pscis_unified	exists	downstream	0.24	1598	1	14ceda4def30ba17caf62a4ac49bac48
+exists	SALR	2026-10-29 03:11:59	caba1876	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	0.241	0	1	5152ac13bdd09110d9ee9c169a3d9237
+prefilter	SALR	2026-10-29 03:12:04	64f8de0a	FALSE	0.47.0		fresh_default.barriers_ch_access	ids	downstream	2.043	1343	1	9e506bf3b441afb0969f7eb4589799cc
+prefilter	SALR	2026-10-29 03:12:04	64f8de0a	FALSE	0.47.0		fresh_default.barriers_rb_access	ids	downstream	0.852	448	1	1fa82c09926fa671ddf1b43254f482ad
+prefilter	SALR	2026-10-29 03:12:04	64f8de0a	FALSE	0.47.0		fresh_default.barriers_anthropogenic_unified	ids	downstream	0.349	6183	1	70b976e63eea2937489bd8d4c95c12ad
+prefilter	SALR	2026-10-29 03:12:04	64f8de0a	FALSE	0.47.0		fresh_default.barriers_pscis_unified	ids	downstream	0.245	1598	1	14ceda4def30ba17caf62a4ac49bac48
+prefilter	SALR	2026-10-29 03:12:04	64f8de0a	FALSE	0.47.0		fresh_default.barriers_dams_unified	ids	downstream	0.24	0	1	5152ac13bdd09110d9ee9c169a3d9237
+base044	SALR	2026-10-29 03:12:10	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_ch_access	ids	downstream	16.612	1343	1	9e506bf3b441afb0969f7eb4589799cc
+base044	SALR	2026-10-29 03:12:10	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_rb_access	ids	downstream	9.048	448	1	1fa82c09926fa671ddf1b43254f482ad
+base044	SALR	2026-10-29 03:12:10	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_anthropogenic_unified	ids	downstream	0.717	6183	1	70b976e63eea2937489bd8d4c95c12ad
+base044	SALR	2026-10-29 03:12:10	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_pscis_unified	ids	downstream	0.044	1598	1	14ceda4def30ba17caf62a4ac49bac48
+base044	SALR	2026-10-29 03:12:10	64f8de0a	FALSE	0.44.0	22034c1a	fresh_default.barriers_dams_unified	ids	downstream	0.026	0	1	5152ac13bdd09110d9ee9c169a3d9237

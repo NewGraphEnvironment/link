@@ -1,8 +1,9 @@
 # What a group's recompute costs, and why
 
-**Verified:** 2026-10-27; "Measured since fresh#272" 2026-10-29 · **Issues:** #261, #409
-(tracked on #377) · **Produced by:** `data-raw/logs/recompute_cost_261/` and
-`data-raw/logs/prefilter_409/` (each README indexes its scripts and outputs), on the
+**Verified:** 2026-10-27; "Measured since fresh#272" and "Measured since #394" 2026-10-29 ·
+**Issues:** #261, #409, #394 (tracked on #377) · **Produced by:**
+`data-raw/logs/recompute_cost_261/`, `data-raw/logs/prefilter_409/` and
+`data-raw/logs/recompute_access_394/` (each README indexes its scripts and outputs), on the
 2026-10-23 `default` build (`20261023_074321-24d85e8c`); #409's model-time builds and one tie
 count ran on m4's local database, as its README says.
 
@@ -16,6 +17,10 @@ minutes at Spearman 0.982, against 0.993 between two provincial runs.
 The cost is **not** the barriers downstream of a group, which was #261's hypothesis.
 Counted with the walk's own predicate, they correlate at −0.08, and seven of nine
 decomposed groups have none. It is the shape of the walk.
+
+That describes the walks up to fresh 0.44.0. "Measured since fresh#272" and "Measured since
+#394" below give what has cut them since: the access step is now 5.6× (SETN) to 57× (CHWK)
+faster than it was then.
 
 ## The mechanism
 
@@ -50,9 +55,9 @@ features per segment in all 32 walks tried, and in eight of them a group's walks
 (50,352 s of summed job time), it would save an estimated 18,221 to 25,534 s (36 to
 51 %). The saving is spread across groups (the ten costliest hold 18 % of walk time), and CHWK is 1.9 % of the pool.
 
-Two further levers, not measured: link keeps only whether a natural array is empty
-(`has_barriers_<sp>_dnstr`), so an existence test would remove SETN's pairs; and CH, CM,
-CO, GR, KO, PK and SK walk barrier sets that are identical before overrides.
+Two further levers, measured since (#394, below): link keeps only whether a natural array is
+empty (`has_barriers_<sp>_dnstr`), so an existence test can skip building the arrays; and CH,
+CM, CO, GR, KO, PK and SK walk barrier sets that are identical before overrides.
 
 Until fresh 0.45.0 the walk's `ORDER BY` had no unique tiebreak, so co-located features
 came back in plan order; since then it ends on the feature id. link reads two arrays'
@@ -103,3 +108,38 @@ serially from m4: four times each (each version's fastest run):
 - **The provincial share is not measured here.** These runs are serial; the pool runs at
   `-j8` on the dispatcher, where the database contends (#374). The next provincial run's
   `log_recompute` against 2026-10-23's gives it.
+
+## Measured since #394
+
+link 0.69.7 pins fresh v0.47.0 and changes how `lnk_pipeline_access()` walks. Measured on
+the access step alone (`lnk_pipeline_access()` as `lnk_access(merge = FALSE)` runs it, under
+its own table names) on the dispatcher's 2026-10-23 build, each variant run twice per group
+in the order A-B-C-C-B-A, then `exists` against `dedup` the same way. Seconds, mean of the
+runs:
+
+| group | fresh 0.44.0 | prefilter (fresh 0.47.0) | existence walks | one walk per set |
+|---|---|---|---|---|
+| SALR | 26.9 | 3.9 | 4.0 | 4.0 |
+| CHWK | 535.0 | 21.5 | 19.6 | 9.3 |
+| LFRA | 1,145.7 | 89.5 | 74.5 | 35.3 |
+| SETN | 763.6 | 347.3 | 292.0 | 136.5 |
+
+- **Existence walks** (fresh#281, fresh v0.47.0). link reads the per-species views and `pscis`
+  only as "is any feature downstream", so those walks take `result = "exists"`: the same
+  join, reduced to distinct segments instead of arrays. The join still enumerates every
+  (segment, feature) pair, so SETN gains 1.2×, not the removal of its pairs predicted above.
+  SETN's species walks went from 327 to 270 s and LFRA's from 83 to 68 s. The arrays stay
+  where link reads elements: `anthropogenic` and `dams` (`dam_dnstr_ind`), `remediations`
+  (`remediated_dnstr_ind`) and the upstream observation walk.
+- **One walk per distinct barrier set.** The species views over one barriers table often hold
+  the same rows: CH, CM, CO, PK and SK are one shape before overrides, and overrides rarely
+  reach a group. At the existence step, walks repeating an earlier walk's segments were 58 %
+  of walk seconds in CHWK, LFRA and SETN, and 0 in SALR. link now digests each view's rows
+  that `fwa_downstream()` could admit from the group, and walks once per distinct digest.
+  That halves the access step in CHWK, LFRA and SETN (7 walks instead of 11). The digest
+  query costs 0.7 to 9.2 s there, and 0.16 s in SALR, where nothing repeats.
+- **Outputs did not move.** Every run's output digest equals the fresh 0.44.0 baseline's, and
+  scratch models of ADMS and ELKR built at each of the four steps digest identical in every
+  persisted table.
+- **The prefilter's per-walk cost** shows here too: SETN's `pscis` walk went from 0.2 to 3.3 s.
+  One walk per set makes four fewer calls in the three groups with repeats.

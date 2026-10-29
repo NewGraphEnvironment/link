@@ -1,0 +1,7 @@
+variant	wsg	date_utc	link_sha	link_dirty	fresh_version	fresh_sha	species	n_walks	walk_seconds	access_seconds	n_segments	n_columns	output_md5	other_backends	other_backends_max	load1_start	load1_end
+base044	SALR	2026-10-29 03:11:18	64f8de0a	FALSE	0.44.0	22034c1a	CH,RB	5	27.55	27.888	11392	9	9af4b8a22be8a0bcd9c0a7018971228a	1	1	6.03	11.03
+prefilter	SALR	2026-10-29 03:11:48	64f8de0a	FALSE	0.47.0		CH,RB	5	3.69	3.993	11392	9	9af4b8a22be8a0bcd9c0a7018971228a	1	1	11.03	10.55
+exists	SALR	2026-10-29 03:11:54	caba1876	FALSE	0.47.0		CH,RB	5	3.657	3.971	11392	9	9af4b8a22be8a0bcd9c0a7018971228a	1	1	10.55	10.1
+exists	SALR	2026-10-29 03:11:59	caba1876	FALSE	0.47.0		CH,RB	5	3.692	3.999	11392	9	9af4b8a22be8a0bcd9c0a7018971228a	1	1	10.1	9.69
+prefilter	SALR	2026-10-29 03:12:04	64f8de0a	FALSE	0.47.0		CH,RB	5	3.729	4.039	11392	9	9af4b8a22be8a0bcd9c0a7018971228a	1	1	9.69	9.16
+base044	SALR	2026-10-29 03:12:10	64f8de0a	FALSE	0.44.0	22034c1a	CH,RB	5	26.447	26.903	11392	9	9af4b8a22be8a0bcd9c0a7018971228a	1	1	9.16	8.19

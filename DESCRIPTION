@@ -1,7 +1,7 @@
 Package: link
 Title: Develop, Test and Communicate Intrinsic Habitat and Connectivity
     Models for the BC Freshwater Atlas Stream Network
-Version: 0.69.6
+Version: 0.69.7
 Date: 2026-10-29
 Authors@R: c(
     person("Allan", "Irvine", , "al@newgraphenvironment.com", role = c("aut", "cre"),
@@ -30,7 +30,7 @@ Imports:
     crate (>= 0.0.2),
     DBI,
     digest,
-    fresh (>= 0.46.0),
+    fresh (>= 0.47.0),
     httr,
     jsonlite,
     RPostgres,
@@ -41,7 +41,7 @@ Imports:
     yaml
 Remotes:
     NewGraphEnvironment/crate,
-    NewGraphEnvironment/fresh@v0.46.0,
+    NewGraphEnvironment/fresh@v0.47.0,
     NewGraphEnvironment/gq,
     NewGraphEnvironment/wet@v0.4.7
 Suggests:
