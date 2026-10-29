@@ -55,6 +55,12 @@ test_that("a pre-0.35.0 frs_habitat_classify signature is caught (#286)", {
     NULL
   }
   ns$frs_habitat_predicates <- function(sp_params) NULL
+  # fresh 0.46.0's frs_network_features, before the existence walk (#394)
+  ns$frs_network_features <- function(conn, segments, features,
+                                      segment_id_col, feature_id_col,
+                                      direction, aoi, include_equivalents) {
+    NULL
+  }
   # fresh 0.42.0's frs_order_child, before the width and gradient bounds (#326)
   ns$frs_order_child <- function(conn, table, habitat, species, label,
                                  parent_order_min, child_order_min,
@@ -62,6 +68,7 @@ test_that("a pre-0.35.0 frs_habitat_classify signature is caught (#286)", {
   expected <- c("frs_habitat_classify(params_method)",
                 "frs_habitat_predicates(model)",
                 "frs_habitat_predicates(near_river_table)",
+                "frs_network_features(result)",
                 "frs_order_child(channel_width_max)",
                 "frs_order_child(gradient_max)")
   expect_identical(

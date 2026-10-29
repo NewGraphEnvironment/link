@@ -38,7 +38,7 @@ changes during the run.
 
 ## Phase 1: baseline on fresh 0.44.0, then the bump (#409)
 
-- [ ] Write `data-raw/logs/recompute_access_394/measure.R <variant> <WSG...>`:
+- [x] Write `data-raw/logs/recompute_access_394/measure.R <variant> <WSG...>`:
   - load_all from `LNK_SRC` (a worktree for main);
   - refuse when another client backend is active, unless `--allow-busy` is passed, which it records;
   - run `lnk_access(merge = FALSE, build_views = FALSE)` on `fresh_default` into `zz394_<wsg>`,
@@ -53,7 +53,7 @@ changes during the run.
 - [ ] Install fresh v0.47.0 (`--auto-install` path / pak from the tag; confirm `RemoteSha`).
   Bump `DESCRIPTION` (`fresh (>= 0.47.0)`, `Remotes: NewGraphEnvironment/fresh@v0.47.0`). Read
   fresh's NEWS for 0.45 to 0.47 for anything else that could move outputs.
-- [ ] `lnk_preflight_fresh()`: assert `frs_network_features()` has a `result` formal, so a host on an
+- [x] `lnk_preflight_fresh()`: assert `frs_network_features()` has a `result` formal, so a host on an
   older fresh fails at preflight. Add a test for it.
 - [ ] Run variant `prefilter` (main code, fresh 0.47.0), with digests equal to `base044`. Rebuild
   the scratch groups and confirm the per-table digests are identical.

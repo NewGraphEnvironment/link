@@ -36,3 +36,8 @@ Tracked on #377.
 
 | Error | Resolution |
 |-------|------------|
+| `load_all()` of the branch refuses while the shared library holds fresh 0.44.0 (the floor is 0.47.0), and the baseline needs 0.44.0 there | fresh v0.47.0 installed into a scratch library (`R CMD INSTALL -l <scratch>/lib047` from a worktree at the tag, `2c35e3eb`); 0.47.0 variants run with `R_LIBS=<scratch>/lib047`, so the shared library stays at 0.44.0 until the end and the variants can be interleaved |
+
+## Another client on m1's database (2026-10-29 03:05 UTC on)
+
+A client reaching m1's postgres through an ssh tunnel from another tailnet host runs short `frs_network_features()` array walks over `barriers_*_access` views in bursts (sampled 24 × 5 s: active in 9). It is not this session and not the wet duckdb job on m1. measure.R refuses beside it, so the variants run with `--allow-busy`, interleaved per group, with the other backends counted at each walk (`walks.tsv`, `other_backends`) and per run (`other_backends_max`).
