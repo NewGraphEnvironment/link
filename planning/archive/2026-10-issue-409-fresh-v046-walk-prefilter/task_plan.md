@@ -54,7 +54,7 @@ Approved by the operator at the plan gate, 2026-10-28 ("Go all phases to pr").
 
 ## Owed at the end (reported, done after merge)
 
-- [ ] SETN's second pair (a2, b2): the driver waits up to 6 h for a quiet dispatcher (`LIB044` arm), then fill it into the README, research table and #377
+- [x] SETN's second pair (a2, b2): the driver waits up to 6 h for a quiet dispatcher (`LIB044` arm), then fill it into the README, research table and #377
 
 - [ ] Re-prep the cloud hosts and the persistent worker for fresh v0.46.0 (`--auto-install`, RUNBOOK §8d) before the next dispatch
 - [ ] Run the full pre-run gate (`pretest_run.sh --config=default --schema=fresh_default`) at the new pin before the next provincial run; the bump voids the 2026-10-29 record

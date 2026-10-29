@@ -10,3 +10,5 @@ before	barriers	9459575	0	1714610
 before	streams	14062860	0	2674592
 before	barriers	9459575	0	1714610
 before	streams	14062860	0	2674592
+after	barriers	9459575	0	1714610
+after	streams	14062860	0	2674592

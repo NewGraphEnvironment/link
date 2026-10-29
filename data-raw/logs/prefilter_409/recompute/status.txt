@@ -20,3 +20,6 @@ STOP: LSKE a2 did not end UNCHANGED (exit 1)
 03:23:49Z SETN a1 exit 0 907 s waited 0 s
 04:36:52Z SETN a2 exit 1 3 s waited 4320 s
 STOP: SETN a2 did not end UNCHANGED (exit 1)
+06:23:50Z SETN a2 exit 0 818 s waited 5025 s
+06:52:59Z SETN b2 exit 0 1441 s waited 300 s
+ALLDONE 2026-10-29T06:52:59Z

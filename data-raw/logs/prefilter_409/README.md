@@ -1,6 +1,6 @@
 # prefilter_409: the recompute under fresh v0.46.0's walk prefilter
 
-Evidence for link#409 (tracked on #377), measured 2026-10-29 00:58 to 05:12 UTC (the recompute runs 01:27 to 03:23; SETN's second pair pending). It
+Evidence for link#409 (tracked on #377), measured 2026-10-29 00:58 to 06:53 UTC (the recompute runs 01:27 to 03:23, and SETN's second pair 06:10 to 06:53). It
 measures fresh#272 (fresh v0.45.0, scoped downstream walks) and fresh#242 (v0.46.0,
 group-matched connectivity passes) against fresh v0.44.0. The verdict is in
 [`research/recompute_cost.md`](../../../research/recompute_cost.md), "Measured since fresh#272".
@@ -63,16 +63,16 @@ v0.46.0. `recompute/status.txt` has every attempt. LSKE a2's refusal log was ove
   resumed run (the lock holder was read live from `pg_locks`: `autovacuum: VACUUM
   fresh_default.streams_access`); SETN a2's is kept as `rerun_SETN_a2_refused1.log`. The committed
   `rerun_all.sh` now keeps an earlier attempt's log and exits 2 on a `RESUME` that matches no
-  run; the copy waiting to run SETN's second pair was frozen before both changes.
+  run; the copy that ran SETN's second pair (06:10 to 06:53 UTC, no other client during either run) was frozen before both changes.
 
 ## Measurement
 
 ### Outputs
 
-- **Recompute:** every one of the 18 runs left every table it writes digest-identical (4 to 10
+- **Recompute:** every one of the 20 runs left every table it writes digest-identical (4 to 10
   tables per group), under both versions. Each walk returns the same features per segment in
   every run of both versions (48 of 48 walks). Summed over the four complete groups the
-  recompute went from 23.6 to 5.4 min (77 % less); over all five, 48.3 to 20.2 (58 %). The `fresh_default.streams` and `.barriers`
+  recompute went from 23.6 to 5.4 min (77 % less); over all five, 47.4 to 18.8 (60 %). The `fresh_default.streams` and `.barriers`
   write counters did not move.
 - **Element order** differs between versions in 9 walks (CHWK's eight per-species natural walks,
   SALR's CH), and is the same within each version. link keeps only membership from those arrays
@@ -97,24 +97,22 @@ v0.46.0. `recompute/status.txt` has every attempt. LSKE a2's refusal log was ove
 | LKEL | 111 | 46 | 2.4× | 88 | 25 | 3.6× |
 | LSKE | 580 | 178 | 3.3× | 518 | 117 | 4.4× |
 | CHWK | 686 | 75 | 9.2× | 658 | 45 | 14.7× |
-| SETN ¹ | 1,481 | 891 | 1.7× | 1,332 | 774 | 1.7× |
-| all five | 2,900 | 1,213 | 2.4× | 2,624 | 970 | 2.7× |
+| SETN | 1,424 | 804 | 1.8× | 1,274 | 666 | 1.9× |
+| all five | 2,843 | 1,126 | 2.5× | 2,566 | 863 | 3.0× |
 
-¹ One run per version so far (b1, a1); the second pair waits for a quiet database. Another
-client was active on the dispatcher by the end of the 0.46.0 run, so its 891 s may be high.
 
 - Walks are the whole gain. Gate, mapping code and setup vary as much between runs of one
-  version as between versions (LKEL's mapping code 4.4 to 7.3 s under 0.46.0 alone); SETN's mapping code (76 against 47 s) is one pair.
-- **The natural walks, summed per group, gain 4.7× to 17×** (SETN 1.8×; per walk 1.45× to 18.5×,
+  version as between versions (LKEL's mapping code 4.4 to 7.3 s under 0.46.0 alone); SETN's mapping code is 47 to 62 s under 0.46.0 and 76 to 80 under 0.44.0.
+- **The natural walks, summed per group, gain 4.7× to 17×** (SETN 2.2×; per walk 1.6× to 18.5×,
   `recompute/summary_walks.csv`). **Every PSCIS and dam walk got slower, and the anthropogenic walk
   in four groups of five** (CHWK's went 4.4 → 1.8 s): the PSCIS and dam walks by 1.0 to 1.3 s in
-  SALR, LKEL and CHWK, 2.0 to 2.4 in LSKE and 3.5 to 4.2 in SETN. A group makes 5 to 11 walk calls
+  SALR, LKEL and CHWK, 2.0 to 2.4 in LSKE and 3.5 to 3.9 in SETN. A group makes 5 to 11 walk calls
   (SALR 5, the others 10 or 11). What costs it is not measured here: fresh's own timing of its
   temp-table build is 0.07 to 0.15 s in SALR, LKEL and CHWK and 0.7 s in LSKE, on a
   province-wide `fresh_default` with no other client active (fresh
   `data-raw/logs/network_features_272/`), less than the rise. Walking each barrier set once
   (#394, lever 2) makes fewer calls.
-- **Walks are no longer nearly all of a recompute:** under 0.46.0 they are 41 % (SALR) to 87 %
+- **Walks are no longer nearly all of a recompute:** under 0.46.0 they are 41 % (SALR) to 83 %
   (SETN) of these runs, against 66 to 96 % under 0.44.0.
 - **Against #261's estimate:** its prefiltered walks ran 6.3× (SALR) to 24.6× (CHWK) faster on the
   server; as the recompute runs them, from R, the natural walks summed per group gain 4.7×
