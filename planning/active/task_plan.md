@@ -45,7 +45,7 @@ Consumers: knowledge#119 (archive layout `tune/CH_rear/<setup tokens>/`), knowle
 - [x] Plan review fixes (`review-plan.md`): the cut spec records which barrier input files the bundle declares; the acc digest adds the code-held access-class map and `lnk_presence()` groups; `study_area_run.sh`'s local pre-flight resolves the config's tokens before any spend; the `q-wet-fill` definition says the fill applies where discharge is read.
 
 ## Phase 4: Docs and release
-- [ ] RUNBOOK: a short "Output vocabulary" section (the axes, the rules, how to add a row, why a run refuses).
+- [x] RUNBOOK: a short "Output vocabulary" section (the axes, the rules, how to add a row, why a run refuses).
 - [ ] NEWS, the CLAUDE.md status, and a version bump as the final commit.
 
 ## Owed at the end (reported, done after merge)
