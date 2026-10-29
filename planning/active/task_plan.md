@@ -23,11 +23,11 @@ Approved by the operator at the plan gate, 2026-10-28 ("Go all phases to pr").
 - Groups: the tracker's four (SALR, LKEL, CHWK, LSKE) plus the issue's SETN (output-bound, 1.2× expected). SETN runs before/after/after/before, since its gain is within cache noise; the rest one pair each.
 
 ## Phase 1: fresh v0.46.0 beside v0.44.0
-- [ ] Install fresh v0.46.0 into a scratch library (`pak` from the tag); confirm `RemoteSha` equals `git rev-parse v0.46.0^{commit}` and that the shared library still reports 0.44.0
-- [ ] Worktree(s) at each group's `log_recompute.link_sha` on the dispatcher (expected `1d00c04c`; `rerun.R` refuses any mismatch)
+- [x] Install fresh v0.46.0 into a scratch library (`pak` from the tag); confirm `RemoteSha` equals `git rev-parse v0.46.0^{commit}` and that the shared library still reports 0.44.0
+- [x] Worktree(s) at each group's `log_recompute.link_sha` on the dispatcher (expected `1d00c04c`; `rerun.R` refuses any mismatch)
 
 ## Phase 2: the recompute, before and after (dispatcher `fresh_default`)
-- [ ] Copy `rerun.R` to `data-raw/logs/prefilter_409/` with the fresh version and `RemoteSha` stamped into each output, and the backup schema renamed `zz409_backup`
+- [x] Copy `rerun.R` to `data-raw/logs/prefilter_409/` with the fresh version and `RemoteSha` stamped into each output, and the backup schema renamed `zz409_backup`
 - [ ] Run SALR, LKEL, CHWK, LSKE before (0.44.0) then after (0.46.0); SETN B/A/A/B. Outputs: `steps_<WSG>_<fresh>.tsv`, `walks_…`, `digest_…`, logs
 - [ ] Every digest unchanged before and after both versions (if `dam_dnstr_ind` moves on a tie: stop, keep the restore, record the segments, and bring it back to the operator before going on)
 - [ ] `summary.R`: per group, lnk_access / walks / gate / mapping code minutes, before vs after, and the summed-work share against #261's 36–51 % estimate

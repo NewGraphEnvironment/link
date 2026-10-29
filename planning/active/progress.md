@@ -6,3 +6,7 @@
 - Created branch `409-adopt-fresh-v0-46-0-the-walk-prefilter-f` off origin/main
 - Scaffolded PWF baseline from issue #409 with approved phases
 - Next: start Phase 1
+
+- Phase 1: fresh v0.46.0 (`8a5ca763`, equals the tag) in a scratch library holding fresh alone; pak's 26 dependency copies were removed so RPostgres, DBI, sf and withr load from the shared library in both arms. Shared library still 0.44.0 (`22034c1a`). Worktree at `1d00c04c`: all five groups' newest `log` and `log_recompute` rows on m1 are at that SHA (run_uid `20261023_074321-24d85e8c`).
+- m1 was busy at 00:57 UTC: another session timing SETN walks against `fresh_default.barriers_*_access` (a `pg_temp.nf281_*` table, fresh#281 work). Phase 2 waits for three quiet minutes; Phase 3 started on m4 meanwhile.
+- Phase 4 early: DESCRIPTION pin bumped; fresh's reach from link's path is identical at v0.44.0 and v0.46.0 (`data-raw/logs/prefilter_409/reach.md`), so the 28 `none` rows hold and name both tags. `test-pretest.R` at fresh 0.46.0: 24 tests, 0 failed, 1 skipped (dirty tree).

@@ -9,7 +9,12 @@
 - **Measure** with `data-raw/logs/recompute_cost_261/` on CHWK, SALR and SETN, and fill #377's line.
 - Hosts need the new fresh, re-prepped with `--auto-install` (RUNBOOK §8d).
 
+## Library isolation
+
+`pak::pkg_install(lib = <scratch>)` installs every dependency it resolves into that library too (26 here: RPostgres, sf, DBI, …), so an `R_LIBS` arm would differ from the shared one in more than fresh. Keep only `fresh/` in the scratch library and check `find.package()` for the others (`data-raw/logs/prefilter_409/model/stamp.txt`, the `[rerun]` header line).
+
 ## Errors Encountered
 
 | Error | Resolution |
 |-------|------------|
+| `diff` reported 0 changed lines for an edited copy | `diff` is a shell function here; use `command diff` |
