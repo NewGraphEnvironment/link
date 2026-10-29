@@ -687,6 +687,20 @@ to one metre), and each copy joins the same records.
   planner picks the 26k-row AOI streams as outer and the walk takes
   ~10s. Mirrors the full pipeline’s working schema (also a real, indexed
   table).
+- **Since fresh v0.45.0 a downstream walk scopes itself** (fresh#272,
+  adopted in \#409). Given `aoi`, `frs_network_features()` copies the
+  group’s segments into an indexed, analyzed session temp table and
+  admits only features on one of the group’s blue lines or on an
+  ancestor-or-equal wscode, so the plan no longer depends on the table
+  link hands it, and the walk no longer drives from every feature in the
+  province. Two consequences: the session must be able to create temp
+  tables (a read-only transaction or a hot standby stops the call; so
+  can a transaction pooler), and every PSCIS and dam walk got slower, by
+  about 1 s in SALR, LKEL and CHWK and up to about 4 s in SETN, 5 to 11
+  walk calls per group (`data-raw/logs/prefilter_409/`; what costs it is
+  not measured). Every downstream walk link makes passes `aoi`
+  (`test-lnk_pipeline_access.R`); one without it gets the old
+  province-wide walk with the same answers.
 - **`id_segment IN (…)` is cartesian against the persist schema**
   (link#203). `id_segment` is unique per WSG, not globally; a query like
   `SELECT * FROM <persist_access> WHERE id_segment IN (SELECT id_segment FROM <streams> WHERE wsg = aoi)`
@@ -1792,26 +1806,29 @@ included; `--recompute-only` runs no pre-flight.
 
 **What it does not cover.** - Correctness and parity: the variants
 harness and `habitat_validate.R`. - The recompute and the consolidate,
-whose changed files it names as unexercised; the recompute’s cost is
-fresh’s province-wide walk (#261). - Access cost across groups: the
-scratch `barriers` hold only the picks, where a run’s hold every
-group’s. - An input nobody mapped. The map is a judgement per file, and
-inputs ignore the config (under `bcfishpass` no rule asks for the
-near-river walk, so its picks are spent). On 2026-10-23’s groups: QUES
-is first on `near_river_conn` and OKAN first on `dams` and third on
-`observations`, but KTSU ranks 119th or lower on every input, so no
-input would have picked it. - A 2x slowdown: k = 3 is for stalls (KTSU
-ran 50x). QUES went 4.9 to 9.3 min between 0.66 and 0.68 with the walk,
-inside its bound. - Primitives refreshed after the gate
-(`--refresh-primitives` runs before `preflight_local()`, after the gate
-was taken). - Dependencies other than fresh: crate, DBI, RPostgres and
-yaml are on the path, and their installed versions are not recorded. - A
-constant (not a function) defined in a `none` file and used on the path:
-the call graph walks functions only (none today). - The driver’s own
-environment for a group: `study_area_run.sh` is mapped `unexercised`, so
-a change to it is named and voids a record, but the gate models under
-its own copy of that environment. The remote legs’ environment
-(`study_area_remote.sh`) is outside the gate’s paths.
+whose changed files it names as unexercised. The recompute’s cost was
+its downstream walks (#261). Since fresh v0.45.0 they read only the
+features on the group’s lines or downstream codes, and under v0.46.0
+they are 41 to 83 % of five groups’ fastest runs (#409); the gate’s
+scratch `barriers` hold only its picks, so it cannot exercise them. -
+Access cost across groups: the scratch `barriers` hold only the picks,
+where a run’s hold every group’s. - An input nobody mapped. The map is a
+judgement per file, and inputs ignore the config (under `bcfishpass` no
+rule asks for the near-river walk, so its picks are spent). On
+2026-10-23’s groups: QUES is first on `near_river_conn` and OKAN first
+on `dams` and third on `observations`, but KTSU ranks 119th or lower on
+every input, so no input would have picked it. - A 2x slowdown: k = 3 is
+for stalls (KTSU ran 50x). QUES went 4.9 to 9.3 min between 0.66 and
+0.68 with the walk, inside its bound. - Primitives refreshed after the
+gate (`--refresh-primitives` runs before `preflight_local()`, after the
+gate was taken). - Dependencies other than fresh: crate, DBI, RPostgres
+and yaml are on the path, and their installed versions are not
+recorded. - A constant (not a function) defined in a `none` file and
+used on the path: the call graph walks functions only (none today). -
+The driver’s own environment for a group: `study_area_run.sh` is mapped
+`unexercised`, so a change to it is named and voids a record, but the
+gate models under its own copy of that environment. The remote legs’
+environment (`study_area_remote.sh`) is outside the gate’s paths.
 
 Evidence: `data-raw/logs/pretest_372/` (its README indexes it).
 

@@ -77,5 +77,5 @@ names(s)
 #>  [5] "fresh_sha"     "repo_sha"      "repo_dirty"    "config_hash"  
 #>  [9] "fwapg_sha"     "r_version"    
 s[["fresh_version"]]
-#> [1] "0.44.0"
+#> [1] "0.46.0"
 ```
