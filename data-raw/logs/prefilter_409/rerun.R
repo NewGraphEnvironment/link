@@ -4,7 +4,9 @@
 # the same recompute run under fresh v0.44.0 and v0.46.0 (fresh#272's walk
 # prefilter). Changes from the original: outputs carry a run label and the
 # loaded fresh's version and RemoteSha, other active client backends are
-# sampled at start and end, and the backup schema is zz409_backup.
+# sampled at start and end, this host's 1-minute load is stamped, each walk's
+# arrays are digested (in the order returned, and each sorted with radix
+# collation), and the backup schema is zz409_backup.
 #
 # Runs what wsg_recompute_one.R runs (prior-access copy, lnk_access(merge =
 # TRUE), lnk_habitat_gate(), the mapping-code persist, the downstream guard),

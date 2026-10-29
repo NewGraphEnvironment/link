@@ -40,6 +40,10 @@ Seven findings, all documentation claims wider than the evidence, plus an uncomm
 
 Five findings; the first sits inside round 1's fix (round 1 corrected the per-call numbers and kept an unmeasured cause, the temp-table build, which fresh's own timing puts at 0.07 to 0.7 s). Fixed: the cause is now stated as unmeasured, with fresh's figure beside the rise; CLAUDE.md names SETN's 1.8×; KO reaches fresh#242's pass in NATR, not ADMS; the 189-position count now has its query (`ties_natural.*`, m4's 30-group copy, labelled); the driver no longer overwrites a refused run's log, SETN a2's refusal log is kept, and LSKE a2's loss is recorded with where the cause was read. Because a defect sat inside a fix, round 3 ends on an enumeration of every claim against its producer.
 
+## Code-check round 3 (`review-round3.md`)
+
+Mechanism, as the reviewer named it: earlier rounds fixed the numbers a review pointed at, but the clauses interpreting them ("which is why …", "describe the 2026-10-23 build", "where the walk returns little", "each run four times") were written from the experiment's design, not re-derived from its outputs. Enumeration: 75 claims, 58 supported, 12 wider, 2 unsupported, 3 wrong. Fixed by cutting interpretation rather than rephrasing it: NEWS's entry and CLAUDE.md's status were rewritten to measured statements; "small groups gain least" removed (SETN, the largest, gains least; the untouched steps explain small groups); the remediation tie check is scoped to working schemas of unrecorded date (the dispatcher modelled 74 groups on 2026-10-23, verified); per-group sums named as such (per walk 1.45× to 18.5×); the walks' share under 0.46.0 (41 to 87 %) replaces "the recompute's cost is its walks"; the prefilter is described by its two conditions, not as "only what can reach"; the CHWK/SALR order change no longer cites m4's copy as its cause; #411's unmeasured saving removed; README window, header and per-group wording; `rerun.R`'s header; an unmatched `RESUME` now exits 2; the duplicate SETN a2 log untracked.
+
 ## Errors Encountered
 
 | Error | Resolution |

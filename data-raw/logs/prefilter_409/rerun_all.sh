@@ -63,5 +63,7 @@ for w in "$@"; do
       || { echo "STOP: $w $label did not end UNCHANGED (exit $r)" >> "$OUT/status.txt"; counters stopped; exit 1; }
   done
 done
+# A RESUME that matched no run skipped everything: say so rather than ALLDONE.
+[ -z "$RESUME" ] || { echo "RESUME=$RESUME matched no run; nothing ran" >> "$OUT/status.txt"; exit 2; }
 counters after
 echo "ALLDONE $(date -u +%FT%TZ)" >> "$OUT/status.txt"

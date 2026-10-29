@@ -595,9 +595,9 @@ a falls and a gradient barrier that round to one metre), and each copy joins the
   longer depends on the table link hands it, and the walk no longer drives from
   every feature in the province. Two consequences: the session must be able to
   create temp tables (a read-only transaction or a hot standby stops the call;
-  so can a transaction pooler), and a call that returns little costs about 1 s
-  more than before in small groups and up to about 4 s in SETN, 5 to 11 calls
-  per group (`data-raw/logs/prefilter_409/`; the cause is not measured). Every
+  so can a transaction pooler), and every PSCIS and dam walk got slower, by
+  about 1 s in SALR, LKEL and CHWK and up to about 4 s in SETN, 5 to 11 walk
+  calls per group (`data-raw/logs/prefilter_409/`; what costs it is not measured). Every
   downstream walk link makes passes `aoi` (`test-lnk_pipeline_access.R`); one
   without it gets the old province-wide walk with the same answers.
 - **`id_segment IN (…)` is cartesian against the persist schema** (link#203).
@@ -1548,8 +1548,9 @@ nothing). The check applies to every launch, dispatcher-only included;
 **What it does not cover.**
 - Correctness and parity: the variants harness and `habitat_validate.R`.
 - The recompute and the consolidate, whose changed files it names as
-  unexercised. The recompute's cost is its downstream walks (#261), which since
-  fresh v0.45.0 admit only the features that can reach the group (#409); the
+  unexercised. Most of the recompute's cost is its downstream walks (#261; 41
+  to 87 % of five groups' runs under fresh v0.46.0, #409), which since fresh
+  v0.45.0 read only the features on the group's lines or downstream codes; the
   gate's scratch `barriers` hold only its picks, so it cannot exercise them.
 - Access cost across groups: the scratch `barriers` hold only the picks, where a
   run's hold every group's.

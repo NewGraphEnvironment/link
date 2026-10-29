@@ -3,7 +3,8 @@
 **Verified:** 2026-10-27; "Measured since fresh#272" 2026-10-29 · **Issues:** #261, #409
 (tracked on #377) · **Produced by:** `data-raw/logs/recompute_cost_261/` and
 `data-raw/logs/prefilter_409/` (each README indexes its scripts and outputs), on the
-2026-10-23 `default` build (`20261023_074321-24d85e8c`).
+2026-10-23 `default` build (`20261023_074321-24d85e8c`); #409's model-time builds and one tie
+count ran on m4's local database, as its README says.
 
 ## The answer
 
@@ -55,17 +56,20 @@ CO, GR, KO, PK and SK walk barrier sets that are identical before overrides.
 
 Until fresh 0.45.0 the walk's `ORDER BY` had no unique tiebreak, so co-located features
 came back in plan order; since then it ends on the feature id. link reads two arrays'
-first element (`dam_dnstr_ind`, `remediated_dnstr_ind`), and neither set has a co-located
-pair on the 2026-10-23 build (below).
+first element. `dam_dnstr_ind`'s set has no co-located pair on the 2026-10-23 build (below).
+`remediated_dnstr_ind` is computed at model time only (the recompute keeps it); its sets in
+the 134 working schemas the dispatcher had kept, from builds of unrecorded date, have none.
 
 ## Measured since fresh#272
 
 fresh v0.45.0 (fresh#272) built the fix above into `frs_network_features()`: a downstream
 walk given `aoi` copies the group's segments into an indexed, analyzed session temp table
-and admits only the features `fwa_downstream()` can return. link passes `aoi` on every
+and walks only the features on one of the group's blue lines or on an ancestor-or-equal
+watershed code, the two conditions `fwa_downstream()` needs. link passes `aoi` on every
 downstream walk, so adopting it was the pin (v0.46.0, which also carries fresh#242). Five
-groups' whole recompute, each run four times alternating fresh v0.44.0 and v0.46.0 on the
-dispatcher, serially from m4 (each version's fastest run):
+groups' whole recompute, run alternately under fresh v0.44.0 and v0.46.0 on the dispatcher,
+serially from m4: four times each for SALR, LKEL, LSKE and CHWK, twice so far for SETN (each
+version's fastest run):
 
 | group | total, 0.44.0 (s) | total, 0.46.0 (s) | | walks, 0.44.0 (s) | walks, 0.46.0 (s) | |
 |---|---|---|---|---|---|---|
@@ -80,22 +84,24 @@ dispatcher, serially from m4 (each version's fastest run):
 client was active on the dispatcher by the end of the 0.46.0 run, so its 891 s may be high.
 
 - **Outputs did not move.** Every run left every table it writes digest-identical, and every
-  walk returned the same features per segment under both versions. Three groups built
-  twice at model time (ADMS, NATR, ELKR) digest identical in every table compared (streams,
+  walk returned the same features per segment under both versions. Three groups built twice at
+  model time (ADMS, NATR, ELKR) digest identical in the five table kinds compared (streams,
   barriers, access, mapping code, habitat; not `barrier_overrides`, which is link's, or
   `streams_near_river`, written by fresh code unchanged between the pins). Element order
-  changed only in per-species natural walks, whose arrays link reduces to membership: a
-  barrier on a line several groups share is persisted once per group, so those views hold
-  co-located copies (189 positions in m4's 30-group `barriers_ch_access`, 188 across groups). No two
-  features share a position in the dispatcher's 502,233 anthropogenic rows (241 groups), nor
-  in the remediation sets of the 134 groups whose working schemas it kept with rows.
-- **Below #261's estimate.** The natural walks gain
-  4.7× to 17× (SETN 1.8×, output-bound as predicted), against 6.3× to 24.6× server-side for
-  the prefiltered walk alone. A scoped call costs more than the old walk where the walk
-  returns little, more in larger groups: the PSCIS and dam walks rose by about 1.0 to 1.3 s in SALR, LKEL and CHWK, 2.0 to 2.4 in LSKE and 3.5 to 4.2 in SETN, and
-  a group makes 5 to 11 calls. Every PSCIS and dam walk got slower, and the anthropogenic walk
-  in four groups of five (CHWK's went 4.4 → 1.8 s). What inside the call costs it is not measured here: fresh's own timing of its temp-table build is 0.07 to 0.15 s in those three groups and 0.7 s in LSKE (m4, fresh `data-raw/logs/network_features_272/`), less than the rise; the prefilter's ancestor-code array, built per call, is another candidate. Walking each barrier set
-  once (#394) makes fewer calls.
+  changed between versions in 9 per-species natural walks, whose arrays link reduces to
+  membership. No two anthropogenic features share a position on the dispatcher's build
+  (502,233 rows, 241 groups), so `dam_dnstr_ind`, which reads an array's first element,
+  cannot move there.
+- **Below #261's estimate.** The natural walks, summed per group, gain 4.7× to 17× (SETN 1.8×,
+  output-bound as predicted), against 6.3× to 24.6× server-side for the prefiltered walk
+  alone. Every PSCIS and dam walk got slower, by 1.0 to 1.3 s in SALR, LKEL and CHWK, 2.0 to
+  2.4 in LSKE and 3.5 to 4.2 in SETN, and a group makes 5 to 11 walk calls; the anthropogenic
+  walk got slower in four groups of five (CHWK's went 4.4 → 1.8 s). What costs it is not
+  measured here: fresh's own timing of its temp-table build is 0.07 to 0.7 s on m4 (fresh
+  `data-raw/logs/network_features_272/`), less than the rise. Walking each barrier set once
+  (#394) makes fewer calls.
+- **The walks are no longer nearly all of a recompute:** under 0.46.0 they are 41 % (SALR) to
+  87 % (SETN) of these runs, against 66 to 96 % under 0.44.0.
 - **The provincial share is not measured here.** These runs are serial; the pool runs at
   `-j8` on the dispatcher, where the database contends (#374). The next provincial run's
   `log_recompute` against 2026-10-23's gives it.

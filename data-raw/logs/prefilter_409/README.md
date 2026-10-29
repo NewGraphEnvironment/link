@@ -1,6 +1,6 @@
 # prefilter_409: the recompute under fresh v0.46.0's walk prefilter
 
-Evidence for link#409 (tracked on #377), measured 2026-10-29 00:58 to 03:23 UTC (SETN's second pair pending). It
+Evidence for link#409 (tracked on #377), measured 2026-10-29 00:58 to 05:12 UTC (the recompute runs 01:27 to 03:23; SETN's second pair pending). It
 measures fresh#272 (fresh v0.45.0, scoped downstream walks) and fresh#242 (v0.46.0,
 group-matched connectivity passes) against fresh v0.44.0. The verdict is in
 [`research/recompute_cost.md`](../../../research/recompute_cost.md), "Measured since fresh#272".
@@ -9,7 +9,7 @@ group-matched connectivity passes) against fresh v0.44.0. The verdict is in
 
 - **Recompute (Phase 2):** the dispatcher's `fresh_default` (PostgreSQL 17.5, `work_mem` 512 MB),
   still the 2026-10-23 provincial build (run_uid `20261023_074321-24d85e8c`, link `1d00c04c`,
-  fresh 0.42.0 `e9793047`). Every group's newest `log` and `log_recompute` row is at
+  fresh 0.42.0 `e9793047`). All five groups' newest `log` and `log_recompute` rows are at
   `1d00c04c`. R 4.5.2 ran on m4 from a worktree at `1d00c04c`, so array transfer and parsing on
   m4 are inside the walk times. Serial, one group at a time.
 - **Model builds (Phase 3):** m4's local fwapg, from a worktree at `64f8de0a` (main at the start).
@@ -33,7 +33,7 @@ group-matched connectivity passes) against fresh v0.44.0. The verdict is in
   `lnk_access(merge = TRUE)`, habitat gate, mapping code, downstream guard), digests every table
   it writes before and after, and stops with the restore statement if one moves. Its lock check
   refuses beside any other lock in `fresh_default`.
-- `rerun_all.sh`: each of SALR, LKEL, LSKE, CHWK and SETN four times, b1 a1 a2 b2 (b = 0.44.0,
+- `rerun_all.sh`: each of SALR, LKEL, LSKE, CHWK and SETN to run four times, b1 a1 a2 b2 (b = 0.44.0,
   a = 0.46.0), so cache warmth favours neither arm. Before each run it waits for the database to
   be quiet (no other active client and no other lock in `fresh_default`), since a refused run
   stops it; it records the input tables' write counters (`recompute/input_counters.tsv`).
@@ -74,15 +74,17 @@ v0.46.0. `recompute/status.txt` has every attempt. LSKE a2's refusal log was ove
   recompute went from 23.6 to 5.4 min (77 % less); over all five, 48.3 to 20.2 (58 %). The `fresh_default.streams` and `.barriers`
   write counters did not move.
 - **Element order** differs between versions in 9 walks (CHWK's eight per-species natural walks,
-  SALR's CH), and is the same within each version. Those are natural-barrier views, where a
-  barrier on a line several groups share is persisted once per group: m4's copy of
-  `barriers_ch_access` (30 groups) holds 189 positions with two or more features, 188 of them
-  across groups (`ties_natural.*`; the dispatcher's copy, on which the walks ran, was not counted).
-  link keeps only membership from those arrays (`has_barriers_<sp>_dnstr`).
-- **The tiebreak cannot move link's first-element reads:** no two features share a position among
-  the dispatcher's 502,233 anthropogenic rows (241 groups), nor among the 356,568 rows of the
-  remediation sets of the 134 groups (of 138 working schemas it kept) that hold rows there. Both
-  counts describe the 2026-10-23 build; the remediation check covers only those groups.
+  SALR's CH), and is the same within each version. link keeps only membership from those arrays
+  (`has_barriers_<sp>_dnstr`). Natural views can hold co-located features, since a barrier on a
+  line several groups share is persisted once per group: m4's 30-group `barriers_ch_access`
+  holds 189 such positions, 188 across groups (`ties_natural.*`). That copy holds neither CHWK
+  nor SALR, and the dispatcher's copy, on which the walks ran, was not counted.
+- **The tiebreak cannot move `dam_dnstr_ind` on the 2026-10-23 build:** no two features share a
+  position among the dispatcher's 502,233 anthropogenic rows (241 groups).
+  `remediated_dnstr_ind` is computed at model time only (`lnk_access()` passes no crossings table,
+  so the recompute keeps it); the 356,568 rows of the remediation sets in the 134 working schemas
+  the dispatcher had kept with rows (of 138) hold no shared position either. Those schemas come
+  from builds of unrecorded date: the dispatcher modelled 74 groups in the 2026-10-23 run.
 - **Model builds:** 25 of 25 non-empty group-tables identical (20 empty on both sides), barriers
   included (`model/model_digests.csv`).
 
@@ -103,14 +105,18 @@ client was active on the dispatcher by the end of the 0.46.0 run, so its 891 s m
 - Walks are the whole gain. Gate, mapping code and setup vary as much between runs of one
   version as between versions (LKEL's mapping code 4.4 to 7.3 s under 0.46.0 alone; first
   runs read colder); SETN's mapping code (76 against 47 s) is one pair.
-- **The natural walks gain 4.7× to 17×** (SETN 1.8×). **Every PSCIS and dam walk loses, and the
-  anthropogenic walk in four groups of five** (CHWK's went 4.4 → 1.8 s): a scoped call costs more than the old walk where the walk
-  returns little, more in larger groups. The PSCIS and dam walks rose by
-  about 1.0 to 1.3 s in SALR, LKEL and CHWK, 2.0 to 2.4 in LSKE and 3.5 to 4.2 in SETN (`recompute/summary_walks.csv`). A group runs 5 to 11 walks (SALR 5,
-  the others 10 or 11), so that cost is paid 5 to 11 times. What inside the call costs it is not measured here: fresh's own timing of its temp-table build is 0.07 to 0.15 s in those three groups and 0.7 s in LSKE (m4, fresh `data-raw/logs/network_features_272/`), less than the rise; the prefilter's ancestor-code array, built per call, is another candidate. Walking each
-  barrier set once (#394, lever 2) makes fewer calls.
+- **The natural walks, summed per group, gain 4.7× to 17×** (SETN 1.8×; per walk 1.45× to 18.5×,
+  `recompute/summary_walks.csv`). **Every PSCIS and dam walk got slower, and the anthropogenic walk
+  in four groups of five** (CHWK's went 4.4 → 1.8 s): the PSCIS and dam walks by 1.0 to 1.3 s in
+  SALR, LKEL and CHWK, 2.0 to 2.4 in LSKE and 3.5 to 4.2 in SETN. A group makes 5 to 11 walk calls
+  (SALR 5, the others 10 or 11). What costs it is not measured here: fresh's own timing of its
+  temp-table build is 0.07 to 0.15 s in SALR, LKEL and CHWK and 0.7 s in LSKE (m4, fresh
+  `data-raw/logs/network_features_272/`), less than the rise. Walking each barrier set once
+  (#394, lever 2) makes fewer calls.
+- **Walks are no longer nearly all of a recompute:** under 0.46.0 they are 41 % (SALR) to 87 %
+  (SETN) of these runs, against 66 to 96 % under 0.44.0.
 - **Against #261's estimate:** its prefiltered walks ran 6.3× (SALR) to 24.6× (CHWK) faster on the
-  server; as the recompute runs them, from R, one scoped call each, the natural walks gain 4.7×
+  server; as the recompute runs them, from R, the natural walks summed per group gain 4.7×
   to 17×. SETN is output-bound, as #261 found (1.2× there).
 
 ## Not measured
