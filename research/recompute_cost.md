@@ -72,7 +72,7 @@ mean of two runs (four for existence walks):
 - **One walk per distinct barrier set** (link #394). The species views over one barriers
   table often hold the same rows: CH, CM, CO, PK and SK are one shape before overrides,
   and overrides rarely reach a group. At the existence step, walks repeating an earlier
-  walk's segments were 57 % of walk seconds in CHWK, LFRA and SETN, and 0 in SALR. link
+  walk's segments were 58 % of walk seconds in CHWK, LFRA and SETN, and 0 in SALR. link
   now digests each view's rows that `fwa_downstream()` could admit from the group, and
   walks once per distinct digest. That halves the access step
   in CHWK, LFRA and SETN (7 walks instead of 11). The digest query costs 0.7 to 9.2 s

@@ -114,8 +114,8 @@ changes during the run.
 
 ## Validation
 
-- [ ] Tests pass (`devtools::test()`), `lintr::lint_package()` clean, `devtools::check()` clean
-- [ ] `/code-check` clean (once over the branch with `/code-check branch`)
+- [x] Tests pass (`devtools::test()`: 4,654 pass; 2 tunnel-dependent tests error, environmental), `lintr` no new lints in package code (measurement scripts kept as they ran), `devtools::check()` with no warning or note the branch introduced (see progress.md)
+- [x] `/code-check` clean (once over the branch with `/code-check branch`)
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 

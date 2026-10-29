@@ -1464,6 +1464,13 @@ the same position `lnk_wsg_downstream_check(override=)` takes. `--auto-install`
 is remediation, not a skip: it re-runs the cyphers' install stage (which re-runs
 the fresh assertion) and re-checks exactly once.
 
+**A fresh bump reaches every host only through that assertion.** Since link#394 the pin is
+fresh v0.47.0, and `lnk_preflight_fresh()` asserts `frs_network_features(result)`, the
+existence walk `lnk_pipeline_access()` calls. A worker or cloud host still on 0.44.0 fails
+preflight rather than reaching a walk with an argument it does not take. Re-prep each host
+with `--auto-install` (a worker: `worker_prep.sh`'s `install-fresh` stage) before the next
+run, and confirm its `RemoteSha` equals `git rev-parse v0.47.0^{commit}` in fresh.
+
 ### The pre-run gate (link#372)
 
 On 2026-10-23 the provincial run was the first contact between new code and
