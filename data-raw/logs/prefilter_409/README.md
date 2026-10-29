@@ -104,8 +104,7 @@ v0.46.0. `recompute/status.txt` has every attempt. LSKE a2's refusal log was ove
 client was active on the dispatcher by the end of the 0.46.0 run, so its 891 s may be high.
 
 - Walks are the whole gain. Gate, mapping code and setup vary as much between runs of one
-  version as between versions (LKEL's mapping code 4.4 to 7.3 s under 0.46.0 alone; b1 is the
-  slowest total in each of the four complete groups); SETN's mapping code (76 against 47 s) is one pair.
+  version as between versions (LKEL's mapping code 4.4 to 7.3 s under 0.46.0 alone); SETN's mapping code (76 against 47 s) is one pair.
 - **The natural walks, summed per group, gain 4.7× to 17×** (SETN 1.8×; per walk 1.45× to 18.5×,
   `recompute/summary_walks.csv`). **Every PSCIS and dam walk got slower, and the anthropogenic walk
   in four groups of five** (CHWK's went 4.4 → 1.8 s): the PSCIS and dam walks by 1.0 to 1.3 s in

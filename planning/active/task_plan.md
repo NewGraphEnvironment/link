@@ -65,7 +65,7 @@ Approved by the operator at the plan gate, 2026-10-28 ("Go all phases to pr").
 ## Validation
 
 - [x] Tests pass
-- [ ] `/code-check` clean (once over the branch with `/code-check branch`)
+- [x] `/code-check` clean (once over the branch with `/code-check branch`): five rounds, ended on round 5's enumeration (28 claims, 27 supported, the 28th fixed verbatim)
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 

@@ -48,6 +48,10 @@ Mechanism, as the reviewer named it: earlier rounds fixed the numbers a review p
 
 Enumeration of 77 claims: 71 supported, 5 wider, 1 wrong. Wrong: fresh's temp-table timing was labelled "on m4" (a label round 2's reviewer supplied); fresh's record says a province-wide `fresh_default` (11.3 M rows), which m4's copy (860 k) is not, so the host is now left unnamed and the population stated. Wider, all fixed: RUNBOOK's "Most of the recompute's cost" beside a 41 % figure (inside round 3's fix); CLAUDE.md's 66 to 96 % range scoped to the fastest runs; "first runs read colder" replaced by what the outputs show (b1 the slowest total in each complete group, re-derived); `rerun.R` "does not look again" corrected (it samples at its end, it does not refuse again); the README's "the driver now keeps" scoped to the committed script, with the waiting frozen copy named. Outside the diff: #410's body still calls the mapping-code walks province-wide; left for the session working #410.
 
+## Code-check round 5 (`review-round5.md`), terminal
+
+Enumeration of the 28 claims in round 4's added lines: 27 supported, 1 wider (CLAUDE.md's bold lead still said `rerun.R` "checks for company only at its start" beside a body saying it also samples at its end). Fixed in the lead's words; the README's `b1` parenthesis, true but not support for its sentence, cut. The loop ends on this enumeration.
+
 ## Errors Encountered
 
 | Error | Resolution |
