@@ -114,7 +114,7 @@ Operator, 2026-10-23: "Provincial runs should prob be pretended with scoped test
 - [x] Tests pass (`devtools::test()` 4618 pass / 0 fail; gate tests 100), lintr clean on the new test file (data-raw style lints match the existing scripts)
 - [x] `/code-check` over the branch: five rounds, ended on round 5's confirmed enumeration (planning/active/review-round{1..5}.md)
 - [x] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] `/planning-archive` on completion
 
 How each part is proved:
 - The pick is proved by the acceptance re-run selecting QUES.
