@@ -322,6 +322,40 @@ The output flag columns
 `dam_dnstr_ind`, `remediated_dnstr_ind`) MUST be persisted — see §6
 gotcha.
 
+### How the walks run (link#394)
+
+Each table is walked once by
+[`fresh::frs_network_features()`](https://newgraphenvironment.github.io/fresh/reference/frs_network_features.html),
+and the walk asks only for what the step reads (fresh ≥ 0.47.0):
+
+- **Arrays (`result = "ids"`)** for `anthropogenic` and `dams` when both
+  are given (`dam_dnstr_ind` reads the first anthropogenic id and looks
+  it up in the dams array), for `remediations` when `crossings_table` is
+  set (`remediated_dnstr_ind`), and for the upstream observation walk
+  (species codes). A table given in one of those roles is walked as
+  arrays even where it also serves as a species table.
+- **Existence (`result = "exists"`)** for everything else: the
+  per-species views and `pscis`, which are read only as
+  `id %in% result$id`. Same join and answer, reduced to distinct
+  segments instead of arrays. The join still enumerates every pair, so
+  an output-bound group gains little (SETN 1.2×).
+- **One walk per distinct barrier set.** The species views over one
+  barriers table often hold the same rows (CHWK’s CH, CM, CO, PK and SK
+  views). Before walking, `.lnk_walk_keys()` digests each existence
+  table’s rows that `fwa_downstream()` could admit from this group: on
+  one of its blue lines, or with a wscode equal to an ancestor of a
+  group segment’s, every column the walk reads, as record text in `C`
+  order. Tables with equal keys share one walk. The key assumes nothing
+  the walks read changes during the group’s access step, which is
+  \#374’s readiness rule: those rows belong to groups that have landed.
+
+Measured on SALR, CHWK, LFRA and SETN
+(`data-raw/logs/recompute_access_394/`): with fresh 0.44.0’s walks the
+access step took 27, 535, 1,146 and 764 s. With the prefilter (fresh
+0.47.0) it took 3.9, 21.5, 89.5 and 347 s. With existence walks it took
+4.0, 19.6, 74.5 and 292 s. With one walk per distinct set it took 4.0,
+9.3, 35.3 and 136.5 s. Every output digest was identical.
+
 ### `accessible` is settled from `streams_access` (link#349)
 
 Two columns answer “is this segment accessible to ”, and they used to
@@ -1694,6 +1728,18 @@ only with a written justification — the same position
 `lnk_wsg_downstream_check(override=)` takes. `--auto-install` is
 remediation, not a skip: it re-runs the cyphers’ install stage (which
 re-runs the fresh assertion) and re-checks exactly once.
+
+**A fresh bump reaches every host only through that assertion.** Since
+link#394 the pin is fresh v0.47.0, and
+[`lnk_preflight_fresh()`](https://newgraphenvironment.github.io/link/reference/lnk_preflight_fresh.md)
+asserts `frs_network_features(result)`, the existence walk
+[`lnk_pipeline_access()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_access.md)
+calls. A worker or cloud host still on 0.44.0 fails preflight rather
+than reaching a walk with an argument it does not take. Nothing is done
+by hand: a cloud host installs fresh at prep from the `Remotes:` pin,
+and a persistent worker gets it when the run is launched with
+`--auto-install` (`worker_prep.sh`’s `install-fresh` stage), which
+re-checks its `RemoteSha` against the dispatcher’s.
 
 ### The pre-run gate (link#372)
 

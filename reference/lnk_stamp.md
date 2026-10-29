@@ -114,12 +114,12 @@ stamp <- lnk_stamp(cfg, aoi = "ADMS")
 stamp
 #> <lnk_stamp> bcfishpass
 #>   aoi:        ADMS
-#>   started:    2026-10-29 13:36:30 UTC
-#>   link:       0.69.6
-#>   fresh:      0.46.0
+#>   started:    2026-10-29 14:09:19 UTC
+#>   link:       0.69.7
+#>   fresh:      0.47.0
 #>   provenance: 14 files (0 byte, 0 shape drifted)
 format(stamp, "markdown")
-#> [1] "## Run stamp — bcfishpass\n\n- AOI: `ADMS`\n- Started: 2026-10-29 13:36:30 UTC\n\n### Software\n- link: 0.69.6 (sha NA)\n- fresh: 0.46.0 (sha 8a5ca7637ec2ab8a9fb43483ba5b778116181fdf)\n- R: R version 4.6.1 (2026-06-24)\n\n### Config provenance (14 files, 0 byte / 0 shape drifted)\n\n| file | byte drift | shape drift |\n|---|---|---|\n| `rules.yaml` | no | no |\n| `dimensions.csv` | no | no |\n| `parameters_fresh.csv` | no | no |\n| `parameters_habitat_thresholds.csv` | no | no |\n| `parameters_habitat_method.csv` | no | no |\n| `overrides/user_habitat_classification.csv` | no | no |\n| `overrides/observation_exclusions.csv` | no | no |\n| `overrides/wsg_species_presence.csv` | no | no |\n| `overrides/user_modelled_crossing_fixes.csv` | no | no |\n| `overrides/user_pscis_barrier_status.csv` | no | no |\n| `overrides/pscis_modelledcrossings_streams_xref.csv` | no | no |\n| `overrides/user_barriers_definite.csv` | no | no |\n| `overrides/user_barriers_definite_control.csv` | no | no |\n| `overrides/user_crossings_misc.csv` | no | no |"
+#> [1] "## Run stamp — bcfishpass\n\n- AOI: `ADMS`\n- Started: 2026-10-29 14:09:19 UTC\n\n### Software\n- link: 0.69.7 (sha NA)\n- fresh: 0.47.0 (sha 2c35e3eb8524b91b9d282ebe93afd17764a21740)\n- R: R version 4.6.1 (2026-06-24)\n\n### Config provenance (14 files, 0 byte / 0 shape drifted)\n\n| file | byte drift | shape drift |\n|---|---|---|\n| `rules.yaml` | no | no |\n| `dimensions.csv` | no | no |\n| `parameters_fresh.csv` | no | no |\n| `parameters_habitat_thresholds.csv` | no | no |\n| `parameters_habitat_method.csv` | no | no |\n| `overrides/user_habitat_classification.csv` | no | no |\n| `overrides/observation_exclusions.csv` | no | no |\n| `overrides/wsg_species_presence.csv` | no | no |\n| `overrides/user_modelled_crossing_fixes.csv` | no | no |\n| `overrides/user_pscis_barrier_status.csv` | no | no |\n| `overrides/pscis_modelledcrossings_streams_xref.csv` | no | no |\n| `overrides/user_barriers_definite.csv` | no | no |\n| `overrides/user_barriers_definite_control.csv` | no | no |\n| `overrides/user_crossings_misc.csv` | no | no |"
 
 if (FALSE) { # \dontrun{
 # Full workflow with DB and a result

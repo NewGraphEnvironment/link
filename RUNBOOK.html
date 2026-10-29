@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.69.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.69.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -184,6 +184,17 @@
 <li>
 <strong><code>barrier_sources</code></strong> — named list of source-typed feature tables (<code>anthropogenic</code>, <code>pscis</code>, <code>dams</code>, <code>remediations</code>). Drives the <code>has_barriers_&lt;source&gt;_dnstr</code> / <code>dam_dnstr_ind</code> / <code>remediated_dnstr_ind</code> flags. This is <strong>classification</strong> (what <em>kind</em> of barrier is downstream), NOT accessibility. Feeds token2 (DAM/MODELLED/ASSESSED/…).</li>
 </ul><p>The output flag columns (<code>has_barriers_{anthropogenic,pscis,dams,remediations}_dnstr</code>, <code>dam_dnstr_ind</code>, <code>remediated_dnstr_ind</code>) MUST be persisted — see §6 gotcha.</p>
+<div class="section level3">
+<h3 id="how-the-walks-run-link394">How the walks run (link#394)<a class="anchor" aria-label="anchor" href="#how-the-walks-run-link394"></a></h3>
+<p>Each table is walked once by <code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_network_features.html" class="external-link">fresh::frs_network_features()</a></code>, and the walk asks only for what the step reads (fresh ≥ 0.47.0):</p>
+<ul><li>
+<strong>Arrays (<code>result = "ids"</code>)</strong> for <code>anthropogenic</code> and <code>dams</code> when both are given (<code>dam_dnstr_ind</code> reads the first anthropogenic id and looks it up in the dams array), for <code>remediations</code> when <code>crossings_table</code> is set (<code>remediated_dnstr_ind</code>), and for the upstream observation walk (species codes). A table given in one of those roles is walked as arrays even where it also serves as a species table.</li>
+<li>
+<strong>Existence (<code>result = "exists"</code>)</strong> for everything else: the per-species views and <code>pscis</code>, which are read only as <code>id %in% result$id</code>. Same join and answer, reduced to distinct segments instead of arrays. The join still enumerates every pair, so an output-bound group gains little (SETN 1.2×).</li>
+<li>
+<strong>One walk per distinct barrier set.</strong> The species views over one barriers table often hold the same rows (CHWK’s CH, CM, CO, PK and SK views). Before walking, <code>.lnk_walk_keys()</code> digests each existence table’s rows that <code>fwa_downstream()</code> could admit from this group: on one of its blue lines, or with a wscode equal to an ancestor of a group segment’s, every column the walk reads, as record text in <code>C</code> order. Tables with equal keys share one walk. The key assumes nothing the walks read changes during the group’s access step, which is #374’s readiness rule: those rows belong to groups that have landed.</li>
+</ul><p>Measured on SALR, CHWK, LFRA and SETN (<code>data-raw/logs/recompute_access_394/</code>): with fresh 0.44.0’s walks the access step took 27, 535, 1,146 and 764 s. With the prefilter (fresh 0.47.0) it took 3.9, 21.5, 89.5 and 347 s. With existence walks it took 4.0, 19.6, 74.5 and 292 s. With one walk per distinct set it took 4.0, 9.3, 35.3 and 136.5 s. Every output digest was identical.</p>
+</div>
 <div class="section level3">
 <h3 id="accessible-is-settled-from-streams_access-link349">
 <code>accessible</code> is settled from <code>streams_access</code> (link#349)<a class="anchor" aria-label="anchor" href="#accessible-is-settled-from-streams_access-link349"></a></h3>
@@ -765,6 +776,7 @@ Never the receiving river downstream. <code>mad_m3s_source</code> names the tier
 <p><strong>Why two, not one.</strong> A cypher’s software is <em>predictable</em> from the dispatcher before the cypher exists: its link comes from <code>git reset --hard origin/$LINK_BRANCH</code>, its fresh from link’s <code>DESCRIPTION</code>. So <code>preflight_local()</code> validates what the workers are <em>going to get</em> — free, before the spin — and <code>preflight_hosts()</code> confirms after prep that they got it. Predict before spend; verify before write. Framing it as one gate forces a false choice between checking early and checking truthfully.</p>
 <p><code>preflight_hosts()</code> genuinely cannot run earlier, and that is fine: it runs before any <code>wsg_run_one.R</code> touches the persist, and a failure exits 1, which trips the EXIT trap and burns the cyphers. The loss is bounded at spin + prep rather than a whole run of two mixed model versions landing in one schema with no <code>log</code> table to tell them apart.</p>
 <p><strong>No global bypass, on purpose.</strong> An unconditional <code>--skip-preflight</code> is the affordance that let this class of failure happen. <code>--preflight-note="&lt;why&gt;"</code> downgrades <em>only</em> vintage and parity, and only with a written justification — the same position <code>lnk_wsg_downstream_check(override=)</code> takes. <code>--auto-install</code> is remediation, not a skip: it re-runs the cyphers’ install stage (which re-runs the fresh assertion) and re-checks exactly once.</p>
+<p><strong>A fresh bump reaches every host only through that assertion.</strong> Since link#394 the pin is fresh v0.47.0, and <code><a href="reference/lnk_preflight_fresh.html">lnk_preflight_fresh()</a></code> asserts <code>frs_network_features(result)</code>, the existence walk <code><a href="reference/lnk_pipeline_access.html">lnk_pipeline_access()</a></code> calls. A worker or cloud host still on 0.44.0 fails preflight rather than reaching a walk with an argument it does not take. Nothing is done by hand: a cloud host installs fresh at prep from the <code>Remotes:</code> pin, and a persistent worker gets it when the run is launched with <code>--auto-install</code> (<code>worker_prep.sh</code>’s <code>install-fresh</code> stage), which re-checks its <code>RemoteSha</code> against the dispatcher’s.</p>
 <div class="section level3">
 <h3 id="the-pre-run-gate-link372">The pre-run gate (link#372)<a class="anchor" aria-label="anchor" href="#the-pre-run-gate-link372"></a></h3>
 <p>On 2026-10-23 the provincial run was the first contact between new code and OKAN and KTSU, and the dispatcher lost about five hours to them while three cloud hosts idled. A rule’s cost is driven by an input the test groups did not carry, so the gate models the groups at the extreme of each input that the changed code drives, on the dispatcher, before anything is spent:</p>

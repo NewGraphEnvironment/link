@@ -1,12 +1,12 @@
-# Build per-segment access codes + downstream-feature arrays
+# Build per-segment access codes + downstream-barrier indicators
 
 Composes
 [`fresh::frs_network_features()`](https://newgraphenvironment.github.io/fresh/reference/frs_network_features.html)
 calls across species (and optionally observations) to produce a
 `streams_access` wide table that mirrors `bcfishpass.streams_access`'s
-shape — one row per segment, with per-species `barriers_<sp>_dnstr`
-arrays and per- species integer `access_<sp>` codes derived via CASE on
-(wsg-presence × dnstr-empty × observed-upstream).
+shape — one row per segment, with per-species `has_barriers_<sp>_dnstr`
+booleans and per- species integer `access_<sp>` codes derived via CASE
+on (wsg-presence × dnstr-empty × observed-upstream).
 
 ## Usage
 
@@ -57,7 +57,10 @@ lnk_pipeline_access(
   `"working_adms.barriers_bt"`). Each barriers table must have a
   `<sp>_id` column (e.g. `barriers_bt_id`) plus the standard
   `(blue_line_key, downstream_route_measure, wscode_ltree, localcode_ltree)`
-  keys.
+  keys, and `watershed_group_code`, which the key that lets identical
+  tables share one walk reads (as
+  [`lnk_barriers_views()`](https://newgraphenvironment.github.io/link/reference/lnk_barriers_views.md)
+  provides).
 
 - observations:
 
@@ -121,9 +124,23 @@ lnk_pipeline_access(
 
 ## Value
 
-`conn` invisibly, for piping.
+A tibble, one row per segment in `aoi`: `segment_id_col`, the
+`has_barriers_*_dnstr` flags, `access_<sp>` codes, `dam_dnstr_ind` /
+`remediated_dnstr_ind` when computed, and, with `observations`, the
+`obsrvtn_species_codes_upstr` list-column. Written to `to` (scalar
+columns only) when given.
 
 ## Details
+
+A walk whose result is read only for membership (every `barriers_per_sp`
+table, and each `barrier_sources` table no ordered indicator reads) asks
+fresh whether any barrier lies downstream (`result = "exists"`) rather
+than for the array of them. Arrays are built only for the
+`"anthropogenic"` and `"dams"` sources when both are given
+(`dam_dnstr_ind` reads the first element), for `"remediations"` when
+`crossings_table` is set (`remediated_dnstr_ind`), and for the upstream
+observation walk (species codes). A table given in several roles is
+walked once, as an array if any role reads its elements.
 
 This phase runs after
 [`lnk_pipeline_classify()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_classify.md)
