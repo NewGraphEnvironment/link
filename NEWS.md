@@ -1,3 +1,14 @@
+# link 0.69.6
+
+**The recompute's access step is 5.6 to 57 times faster, with the same output** ([#394](https://github.com/NewGraphEnvironment/link/issues/394), [#409](https://github.com/NewGraphEnvironment/link/issues/409)). Pins fresh v0.47.0.
+
+- **fresh's prefilter** (fresh v0.45.0) cuts each `frs_network_features()` walk's feature side to what can lie downstream of the group. link needs no code for it, only the pin.
+- **Existence walks.** `lnk_pipeline_access()` asks for `result = "exists"` (fresh v0.47.0) on every walk it reads only as "is a barrier downstream": the per-species views and `pscis`. `anthropogenic` + `dams`, `remediations` and the observation walk keep their arrays.
+- **One walk per distinct barrier set.** Species views that hold the same rows within the walk's reach of the group share one walk, so CHWK, LFRA and SETN walk 7 tables instead of 11. A `barriers_per_sp` table now needs `watershed_group_code`, which the key reads (`lnk_barriers_views()` provides it).
+- **Measured** on SALR, CHWK, LFRA and SETN: the access step went from 26.9 / 535.0 / 1,145.7 / 763.6 s to 4.0 / 9.3 / 35.3 / 136.5 s, with every output digest identical. Scratch models of ADMS and ELKR digest identical in every persisted table at each step.
+- **Hosts need fresh 0.47.0.** `lnk_preflight_fresh()` now asserts `frs_network_features(result)`, so re-prep workers and cloud hosts with `--auto-install`. The pre-run gate ([#372](https://github.com/NewGraphEnvironment/link/issues/372)) has to pass again before the next provincial run.
+- Mechanics: RUNBOOK §3, "How the walks run". Evidence: `data-raw/logs/recompute_access_394/`.
+
 # link 0.69.5
 
 **A scoped pre-run gate before every provincial run** ([#372](https://github.com/NewGraphEnvironment/link/issues/372)). On 2026-10-23 the run was the first contact between new code and OKAN and KTSU, and the dispatcher lost about five hours while three cloud hosts idled.
