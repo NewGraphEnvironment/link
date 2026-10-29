@@ -128,9 +128,9 @@ test_that("an edited break order or access gradient needs a new token", {
   expect_error(lnk_vocabulary_resolve(cfg, steeper),
                "no acc token .* has the spec\n  sha256:")
 
-  no_control <- cfg
-  no_control$files$user_barriers_definite_control <- NULL
-  expect_error(lnk_vocabulary_resolve(no_control, loaded),
+  no_control <- loaded
+  no_control$user_barriers_definite_control <- NULL
+  expect_error(lnk_vocabulary_resolve(cfg, no_control),
                "no cut token .*barrier_inputs=user_barriers_definite,user_habitat")
 
   fewer <- cfg
@@ -148,9 +148,9 @@ test_that("observation_breaks counts only when observations cut", {
   no_obs <- cfg
   no_obs$pipeline$break_order <- setdiff(cfg$pipeline$break_order,
                                          "observations")
-  a <- link:::.lnk_vocabulary_spec_cut(no_obs)
+  a <- link:::.lnk_vocabulary_spec_cut(no_obs, lnk_load_overrides(cfg))
   no_obs$pipeline$observation_breaks <- "all"
-  expect_identical(link:::.lnk_vocabulary_spec_cut(no_obs), a)
+  expect_identical(link:::.lnk_vocabulary_spec_cut(no_obs, lnk_load_overrides(cfg)), a)
   expect_false(grepl("observation_breaks", a))
 })
 
@@ -206,6 +206,45 @@ test_that("the acc digest does not depend on the session's collation", {
   skip_if(identical(sort(c("CH", "GR")), c("CH", "GR")),
           "this platform's cs_CZ collation does not reorder CH")
   expect_identical(link:::.lnk_vocabulary_spec_acc(cfg, loaded), ref)
+})
+
+test_that("what the pipeline reads exactly, the specs keep exactly", {
+  cfg <- lnk_config("default")
+  loaded <- lnk_load_overrides(cfg)
+  cut <- link:::.lnk_vocabulary_spec_cut(cfg, loaded)
+  acc <- link:::.lnk_vocabulary_spec_acc(cfg, loaded)
+
+  # A gradient class's name is its label, which classify parses as the
+  # threshold: the same values under another name are another cut.
+  renamed <- cfg
+  renamed$pipeline$gradient_classes <- list("1400" = 0.15, "2000" = 0.20,
+                                            "2500" = 0.25, "3000" = 0.30)
+  expect_false(identical(link:::.lnk_vocabulary_spec_cut(renamed, loaded),
+                         cut))
+
+  # Species codes are matched case-sensitively.
+  lower <- cfg
+  lower$species <- tolower(cfg$species)
+  expect_false(identical(link:::.lnk_vocabulary_spec_acc(lower, loaded), acc))
+
+  # A double that as.character() rounds is still another value.
+  nudged <- loaded
+  i <- which(nudged$parameters_fresh$species_code == "CH")
+  nudged$parameters_fresh$access_gradient_max[i] <- 0.15000000000000002
+  expect_false(identical(link:::.lnk_vocabulary_spec_acc(cfg, nudged), acc))
+
+  # Rows are sorted before hashing, so a duplicate key, whose first row the
+  # pipeline reads, is refused.
+  dup <- loaded
+  dup$parameters_fresh <- rbind(dup$parameters_fresh,
+                                dup$parameters_fresh[1, ])
+  expect_error(link:::.lnk_vocabulary_spec_acc(cfg, dup),
+               "duplicate parameters_fresh species_code")
+  dup <- loaded
+  dup$wsg_species_presence <- rbind(dup$wsg_species_presence,
+                                    dup$wsg_species_presence[1, ])
+  expect_error(link:::.lnk_vocabulary_spec_acc(cfg, dup),
+               "duplicate wsg_species_presence")
 })
 
 test_that("a blank key cell in the table is refused, not matched", {

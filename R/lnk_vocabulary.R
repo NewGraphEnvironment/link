@@ -117,25 +117,28 @@ lnk_vocabulary_resolve <- function(cfg, loaded = NULL) {
 
 # The four specification strings for `cfg`, named by axis.
 .lnk_vocabulary_specs <- function(cfg, loaded) {
-  c(cut  = .lnk_vocabulary_spec_cut(cfg),
+  c(cut  = .lnk_vocabulary_spec_cut(cfg, loaded),
     acc  = .lnk_vocabulary_spec_acc(cfg, loaded),
     grad = "gradient=segment",
     flow = .lnk_vocabulary_spec_flow(cfg))
 }
 
-.lnk_vocabulary_spec_cut <- function(cfg) {
+.lnk_vocabulary_spec_cut <- function(cfg, loaded) {
   order <- .lnk_break_order(cfg)
-  classes <- sort(unname(.lnk_resolve_classes(NULL, cfg)))
+  # Names and values as the pipeline reads them: the name is the class a
+  # gradient break is labelled with, which classify parses as its threshold.
+  classes <- .lnk_resolve_classes(NULL, cfg)
   parts <- c(
     paste0("break_order=", paste(order, collapse = ",")),
     if ("observations" %in% order) {
       paste0("observation_breaks=", .lnk_observation_breaks(cfg))
     },
     paste0("gradient_classes=",
-           paste(vapply(classes, as.character, character(1)),
+           paste(names(classes), .lnk_vocabulary_num(classes), sep = ":",
                  collapse = ",")),
     paste0("barrier_inputs=",
-           paste(intersect(.lnk_vocabulary_barrier_inputs, names(cfg$files)),
+           paste(Filter(function(k) !is.null(loaded[[k]]),
+                        .lnk_vocabulary_barrier_inputs),
                  collapse = ",")))
   paste(parts, collapse = ";")
 }
@@ -144,8 +147,8 @@ lnk_vocabulary_resolve <- function(cfg, loaded = NULL) {
 # on: definite barriers join every species' barrier set and cut streams, the
 # control table prunes gradient barriers and lifts, and the habitat
 # classification adds habitat lifts and the habitat end points cuts. Their
-# rows are data vintage (the build record); whether a bundle declares them is
-# method.
+# rows are data vintage (the build record); whether the run has them is
+# method, read from `loaded` as prepare reads it (`!is.null(loaded$<key>)`).
 .lnk_vocabulary_barrier_inputs <- c(
   "user_barriers_definite", "user_barriers_definite_control",
   "user_habitat_classification")
@@ -178,15 +181,27 @@ lnk_vocabulary_resolve <- function(cfg, loaded = NULL) {
   }
   pres <- pres[, c("watershed_group_code",
                    .lnk_presence_species_cols(pres)), drop = FALSE]
+  # Rows are sorted before hashing, which is safe only while each key is
+  # unique: the pipeline takes a species' first parameters_fresh row and
+  # refuses a group with two presence rows (lnk_presence()).
+  for (k in list(list(pf$species_code, "parameters_fresh species_code"),
+                 list(pres$watershed_group_code,
+                      "wsg_species_presence watershed_group_code"))) {
+    dup <- unique(k[[1]][duplicated(k[[1]])])
+    if (length(dup) > 0L) {
+      stop("config '", cfg$name, "': duplicate ", k[[2]], ": ",
+           paste(dup, collapse = ", "), call. = FALSE)
+    }
+  }
   # Two rules held in code also decide access: the gradient classes a
   # species' access label maps to, and which present species make another
   # present (lnk_presence()'s groups). A change to either is a new rule set.
   groups <- eval(formals(lnk_presence)$groups)
   payload <- paste(
-    paste0("species=", paste(sort(toupper(cfg$species), method = "radix"),
-                            collapse = ",")),
+    paste0("species=", paste(cfg$species, collapse = ",")),
     paste0("access_classes=",
-           paste(names(.lnk_classes_bcfp), .lnk_classes_bcfp, sep = ":",
+           paste(names(.lnk_classes_bcfp),
+                 .lnk_vocabulary_num(.lnk_classes_bcfp), sep = ":",
                  collapse = ",")),
     paste0("presence_groups=",
            paste(names(groups),
@@ -199,8 +214,19 @@ lnk_vocabulary_resolve <- function(cfg, loaded = NULL) {
          digest::digest(payload, algo = "sha256", serialize = FALSE))
 }
 
+# A double as text that reads back to the same double: as.character() where
+# it round-trips (0.15), 17 significant digits where it does not
+# (0.15000000000000002), so two values the pipeline compares differently
+# never share a spec.
+.lnk_vocabulary_num <- function(x) {
+  out <- as.character(x)
+  lossy <- !is.na(x) & as.numeric(out) != x
+  out[lossy] <- sprintf("%.17g", x[lossy])
+  unname(out)
+}
+
 # A data frame as text that does not depend on how its file was written:
-# columns by name, rows sorted, each value as R reads it (as.character), with
+# columns by name, rows sorted, each value as R reads it (doubles exactly), with
 # NA kept apart from "" and the delimiters escaped. Values are never folded
 # (no trimming, no "t" = "TRUE"): readers of these tables test values
 # exactly (`.lnk_wsg_species_present()` counts only "t"), so two spellings
@@ -210,7 +236,7 @@ lnk_vocabulary_resolve <- function(cfg, loaded = NULL) {
   df <- as.data.frame(df, stringsAsFactors = FALSE)
   cols <- sort(names(df), method = "radix")
   enc <- function(v) {
-    out <- as.character(v)
+    out <- if (is.double(v)) .lnk_vocabulary_num(v) else as.character(v)
     out <- gsub("\\", "\\\\", out, fixed = TRUE)
     out <- gsub("\t", "\\t", out, fixed = TRUE)
     out <- gsub("\n", "\\n", out, fixed = TRUE)
