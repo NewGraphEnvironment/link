@@ -1,8 +1,8 @@
 # Study-area run (tunnel-free, M1-dispatch)
 
-**Verified:** 2026-10-28 (how hosts are packed, #259); 2026-10-26 (the early recompute, #374); 2026-10-17 (the province-wide section and the corrected lines) · **Issues:** #175, #246, #347, #348, #374, #259 ·
+**Verified:** 2026-10-29 (the pre-run gate, #372); 2026-10-28 (how hosts are packed, #259); 2026-10-26 (the early recompute, #374); 2026-10-17 (the province-wide section and the corrected lines) · **Issues:** #175, #246, #347, #348, #374, #259, #372 ·
 **Produced by:** `data-raw/study_area_run.sh`; logs `data-raw/logs/provincial_246/`, `data-raw/logs/packing_259/`,
-`data-raw/logs/study_area_run/20261017_*`
+`data-raw/logs/study_area_run/20261017_*`, `data-raw/logs/pretest_372/`
 
 Lean alternative to the 5-host `provincial_run_runbook.md` for running
 **study-area** mapping_code parity.
@@ -229,6 +229,27 @@ consolidate, and every run WSG must have rows in the persist afterwards.
 
 Measured timings and the four defects that produced these numbers:
 `research/run_record_2026_08_31_cypher_pilots.md`.
+
+## The pre-run gate (#372, 2026-10-28)
+
+A provincial run is no longer the first contact between new code and every
+group. `data-raw/pretest_run.sh` models the groups at the extreme of each input
+the changed code drives, and `study_area_run.sh` refuses a run no passing
+record clears. Mechanics: RUNBOOK §8d, "The pre-run gate".
+
+What is known from building it:
+- **The near-river walk's cost input is the longest connector run** (fresh's
+  `conn_max`). QUES is first of 246 groups (63.3 km), TAKL second (32.3).
+- **No input picks KTSU** (119th of 143 or lower everywhere), the larger loss of
+  2026-10-23. OKAN is first on dams.
+- **Another session's load is enough to kill small groups at a 3x bound.** TAKL
+  (in the walk) and SAJR were killed at 9.5 and 5 min while six modelling workers
+  from another session ran. Alone they took 2.4 and 0.9 min, and all eight
+  picks passed at 36 to 75 % of their 0.68.0 minutes. So a time bound needs a
+  quiet database, and the gate refuses to start beside other sessions.
+
+Evidence: `data-raw/logs/pretest_372/` (its README indexes it). Record:
+`planning/archive/2026-10-issue-372-pretest-gate/`.
 
 ## How hosts are packed (#259, 2026-10-28)
 
