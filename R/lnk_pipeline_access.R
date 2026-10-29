@@ -43,7 +43,9 @@
 #'   species (e.g. `"working_adms.barriers_bt"`). Each barriers table
 #'   must have a `<sp>_id` column (e.g. `barriers_bt_id`) plus the
 #'   standard `(blue_line_key, downstream_route_measure, wscode_ltree,
-#'   localcode_ltree)` keys.
+#'   localcode_ltree)` keys, and `watershed_group_code`, which the key
+#'   that lets identical tables share one walk reads (as
+#'   [lnk_barriers_views()] provides).
 #' @param observations Character or `NULL`. Optional schema-qualified
 #'   observations table with `(observation_key, species_code, ...)` +
 #'   the standard FWA keys. When provided, drives the access code

@@ -86,9 +86,9 @@ Access step in seconds, the mean of two runs (four at `exists`, which both round
 - **The prefilter costs small source walks a fixed overhead.** In SETN the `pscis` walk
   (3,016 rows) went from 0.2 to 3.3 s and `dams` from 1.2 to 4.2 s, because fresh builds
   its group-scoped temp table and admissible set for every walk whatever the feature
-  table's size. That is 7.7 s against the 484 s the species walks gave back. It does not
+  table's size. That is 7.8 s against the 481 s the species walks gave back (all four `exists` runs). It does not
   change the verdict.
-- Load: the 1-minute load average was 3.0 to 6.6 at run starts. Another client was
+- Load: the 1-minute load average was 2.9 to 6.6 at run starts. Another client was
   connected throughout (below), and the other active client backends seen at any walk's
   end were 0 or 1.
 

@@ -35,7 +35,9 @@ is returned invisibly. Default \code{NULL} returns-only.}
 \code{"bt"}); each value is a schema-qualified barriers table for that
 species (e.g. \code{"working_adms.barriers_bt"}). Each barriers table
 must have a \verb{<sp>_id} column (e.g. \code{barriers_bt_id}) plus the
-standard \verb{(blue_line_key, downstream_route_measure, wscode_ltree, localcode_ltree)} keys.}
+standard \verb{(blue_line_key, downstream_route_measure, wscode_ltree, localcode_ltree)} keys, and \code{watershed_group_code}, which the key
+that lets identical tables share one walk reads (as
+\code{\link[=lnk_barriers_views]{lnk_barriers_views()}} provides).}
 
 \item{observations}{Character or \code{NULL}. Optional schema-qualified
 observations table with \verb{(observation_key, species_code, ...)} +
