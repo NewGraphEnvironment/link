@@ -50,7 +50,7 @@ Approved by the operator at the plan gate, 2026-10-28 ("Go all phases to pr").
 - [x] `data-raw/logs/prefilter_409/README.md` (environment stamps, method, numbers, evidence index)
 - [x] `research/recompute_cost.md`: "Measured since fresh#272" with the per-group minutes
 - [x] CLAUDE.md status entry and its reach line; RUNBOOK: the walk's planner notes and the pre-run gate's "recompute's cost" line (G8)
-- [ ] Edit #377's prefilter item with the measurement and tick it; NEWS + version bump (v0.69.6, outputs unchanged) as the last commit
+- [x] Edit #377's prefilter item with the measurement and tick it; NEWS + version bump (v0.69.6, outputs unchanged) as the last commit
 
 ## Owed at the end (reported, done after merge)
 
@@ -66,7 +66,7 @@ Approved by the operator at the plan gate, 2026-10-28 ("Go all phases to pr").
 
 - [x] Tests pass
 - [x] `/code-check` clean (once over the branch with `/code-check branch`): five rounds, ended on round 5's enumeration (28 claims, 27 supported, the 28th fixed verbatim)
-- [ ] PWF checkboxes match landed work
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
 How each change is proved: the recompute's rows digest identical before and after on five dispatcher groups (`rerun.R` restores and stops otherwise); model-time tables digest identical on three groups built both ways on one host; the gate's map covers the new fresh range (`--pick-only` exit 0, `test-pretest.R`); `lnk_preflight_fresh()` refuses 0.44.0 once the floor moves (existing test reads the floor from DESCRIPTION).
