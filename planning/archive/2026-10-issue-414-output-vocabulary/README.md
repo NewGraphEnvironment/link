@@ -12,7 +12,7 @@ link names every output on four axes: how its streams were cut (`cut`), which ac
 ## Owed
 
 - Before the next provincial run, the pre-run gate (#372) re-runs, because `R/` changed.
-- knowledge#119 reads the table through `lnk_vocabulary_read()` / `vocabulary.csv` at a tag (its own issue).
+- The downstream tuning archive reads the table through `lnk_vocabulary_read()` / `vocabulary.csv` at a tag (its own issue).
 - #415 adds `cut-access` (or whatever name it settles on) when its minimal network is built.
 - A follow-up issue, drafted and not filed, for threshold variants to record their own tokens (`habitat_variants_build.R` writes no `log` row per variant, and a variant can change its flow).
 

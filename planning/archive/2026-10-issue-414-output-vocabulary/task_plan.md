@@ -2,7 +2,7 @@
 
 Configs are named for how they were made: `default`, `default_tuned`, `default_extrabreaks`, `default_rearbreaks`, `bcfishpass`. A config's contents change over time while its name stays, and a provincial run renames its schema `fresh_default_<date>`, so neither a config name nor a schema name says what an output holds. Downstream, habitat-threshold tuning is starting to store runs on several of link's outputs side by side (the same species tuned on differently cut networks, with differently measured gradients), and it needs names that say what each one is and stay true. Only `bcfishpass` is defined by something outside us; every other name here is early and can still be chosen well.
 
-Consumers: knowledge#119 (archive layout `tune/CH_rear/<setup tokens>/`), knowledge#120, link#415 (minimal network).
+Consumers: a downstream tuning archive (layout `tune/CH_rear/<setup tokens>/`), link#415 (minimal network).
 
 ## Decided at the gate (operator, 2026-10-29)
 
@@ -50,7 +50,7 @@ Consumers: knowledge#119 (archive layout `tune/CH_rear/<setup tokens>/`), knowle
 
 ## Owed at the end (reported, done after merge)
 - [ ] Before the next provincial run, the pre-run gate (#372) re-runs, because `R/` changed.
-- [ ] knowledge#119 reads the table through `lnk_vocabulary_read()` / `vocabulary.csv` at a tag (its own issue).
+- [ ] The downstream tuning archive reads the table through `lnk_vocabulary_read()` / `vocabulary.csv` at a tag (its own issue).
 - [ ] #415 adds `cut-access` (or whatever name it settles on) when its minimal network is built.
 
 ## Validation

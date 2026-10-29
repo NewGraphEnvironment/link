@@ -1,6 +1,6 @@
 # Naming link's outputs: what a token covers
 
-**Verified:** 2026-10-29 · **Issues:** #414 (consumers: #415, knowledge#119, knowledge#120) · **Produced by:** reading the five config bundles under `inst/extdata/configs/` and the code paths below; the specs in `inst/extdata/vocabulary.csv` are written by `lnk_vocabulary_resolve()`'s helpers · **Status:** four axes; seven tokens; `default_extrabreaks` and `default_rearbreaks` have none and refuse
+**Verified:** 2026-10-29 · **Issues:** #414 (consumers: #415 and a downstream tuning archive) · **Produced by:** reading the five config bundles under `inst/extdata/configs/` and the code paths below; the specs in `inst/extdata/vocabulary.csv` are written by `lnk_vocabulary_resolve()`'s helpers · **Status:** four axes; seven tokens; `default_extrabreaks` and `default_rearbreaks` have none and refuse
 
 ## The question
 

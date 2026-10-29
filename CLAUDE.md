@@ -15,7 +15,7 @@ Experimental package — breaking all the time and loving the learning curve. St
 
 **`inst/extdata/vocabulary.csv` names what an output is on four axes, and every `lnk_pipeline_run()` writes its tokens to `<schema>.log` (`token_cut`, `token_acc`, `token_grad`, `token_flow`).** `lnk_vocabulary_resolve(cfg, loaded)` derives each axis's spec from what the run reads and matches one live row; a config with none is refused before the log row opens, and `study_area_run.sh`'s local pre-flight asks once before spend. `default` is `cut-full-top acc-v1 grad-seg q-fwapg`, `default_tuned` the same with `q-wet-fill`, `bcfishpass` `cut-full-ssf-all acc-bcfp grad-seg q-fwapg`; `default_extrabreaks` / `default_rearbreaks` have no rows and refuse (operator). Mechanics: RUNBOOK §6b, "Output vocabulary". Write-up: `research/output_vocabulary.md`.
 
-**Owed:** the next provincial run's pre-run gate (`R/` changed) and its builds are the first to carry tokens (older rows are NULL; knowledge#119 reads them). Variant schemas from `habitat_variants_build.R` carry no tokens of their own (follow-up drafted, not filed). #415 adds the minimal network's cut token.
+**Owed:** the next provincial run's pre-run gate (`R/` changed) and its builds are the first to carry tokens (older rows are NULL; a downstream tuning archive reads them). Variant schemas from `habitat_variants_build.R` carry no tokens of their own (follow-up drafted, not filed). #415 adds the minimal network's cut token.
 
 **Facts not worth re-deriving:**
 - **Access is its own axis because #326 cuts only where a modelled species' access changes.** Access gradients, `observation_*` lifts, `cfg$species`, presence, the code-held access-class map and `lnk_presence()`'s groups all move segments. A network is `cut` + `acc`.
