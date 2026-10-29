@@ -81,8 +81,8 @@ Operator, 2026-10-23: "Provincial runs should prob be pretended with scoped test
 
 - [x] Pick-only: `--since=<v0.66.6 sha> --until=v0.68.0 --config=default --schema=fresh_default`. QUES must be picked for the walk; record the picks
 - [x] Model those picks at HEAD (the real gate modelled QUES and OKAN at the branch code; BULK and HORS are picked only for the 0.66.6 range) and record the verdicts and minutes, QUES included
-- [ ] A real gate, `--since=1d00c04c` at HEAD: picks, verdicts and minutes, with a passing record written
-- [ ] The negative case: the stall hook exits 1, and `study_area_run.sh --preflight-only` refuses without a record and passes with one
+- [x] A real gate, `--since=1d00c04c` at HEAD: picks, verdicts and minutes, with a passing record written
+- [x] The negative case: the stall hook exits 1, and `study_area_run.sh --preflight-only` refuses without a record and passes with one
 - [x] `data-raw/logs/pretest_372/`: `pretest.md` plus a README indexing it, logs redacted
 
 ## Phase 6: docs and release
@@ -90,7 +90,7 @@ Operator, 2026-10-23: "Provincial runs should prob be pretended with scoped test
 - [x] RUNBOOK §8d gets "The pre-run gate (link#372)" (how picks are made, the map, the bound, the record, the override), and §8d's opening says the gate comes first
 - [x] `study_area_run.sh` header: the gate precedes a provincial run, and `--pretest-note`
 - [x] A CLAUDE.md status entry with the facts not worth re-deriving, and the #377 runs-row note
-- [ ] NEWS and the version bump as the final commit
+- [x] NEWS and the version bump: not on the branch; link releases at merge (`/gh-pr-merge`), draft NEWS text in the PR body
 
 
 ## Folded in from the plan review (planning/active/review-plan.md)
@@ -111,9 +111,9 @@ Operator, 2026-10-23: "Provincial runs should prob be pretended with scoped test
 
 ## Validation
 
-- [ ] Tests pass (`devtools::test()`), lintr clean
+- [x] Tests pass (`devtools::test()` 4618 pass / 0 fail; gate tests 100), lintr clean on the new test file (data-raw style lints match the existing scripts)
 - [x] `/code-check` over the branch: five rounds, ended on round 5's confirmed enumeration (planning/active/review-round{1..5}.md)
-- [ ] PWF checkboxes match landed work
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
 How each part is proved:

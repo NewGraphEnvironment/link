@@ -1,0 +1,9 @@
+wsg	inputs	minutes	host	bound	statement_min
+SETN	gradient,segments	16.2681749	m1	48.8045247	30
+QUES	near_river_conn	9.34727506666667	m1	28.0418252	29
+OKAN	dams	7.57375496666667	m1	22.7212649	23
+LFRA	observations	6.60915863333333	m1	19.8274759	20
+TOAD	gradient,segments	5.98834675	cypher-job2	17.96504025	18
+UPCE	observations	3.7424	cypher-job1	11.2272	12
+TAKL	near_river_conn	3.15163518333333	m1	9.45490555	10
+SAJR	dams	1.5926803	m1	5	5

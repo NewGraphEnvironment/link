@@ -9,7 +9,7 @@ gate (link#372)".
 | `reach.md` | which link and fresh files the modelling path reaches, by call graph; the basis of the map's `none` rows |
 | `acceptance_0.66.6_0.68.0/` | the acceptance pick: `--since=v0.66.6 --until=v0.68.0` (fresh v0.39.0..v0.42.0), bounded against `fresh_default_20261017`'s minutes (0.66.0, before the walk). Pick only |
 | `gate_1d00c04c_loaded/` | the first real gate, `1d00c04c..20d2bc4c`, eight groups modelled; it failed under another session's load (below) |
-| `gate_final/` | the gate at the branch's final code, on a quiet database, whose record clears the next run (added when it runs) |
+| `gate_final/` | the gate at the branch's final code (`20209b79`), on a quiet database: PASS, the record `study_area_run.sh --preflight-only` accepts |
 
 ## The acceptance pick
 
@@ -64,6 +64,29 @@ say whether TAKL's walk is a regression or the load, which is why the gate now:
 
 The start check then looked only at the persist and `working_` schemas, which
 the other session's schemas do not match.
+
+## The final gate (`gate_final/`)
+
+`1d00c04c..20209b79` (the same eight picks), after the other session's load had
+been gone three minutes (started 23:38 UTC, finished 00:08 UTC on 2026-10-29):
+
+| group | last minutes (0.68.0) | bound | this run | other sessions seen |
+|---|---|---|---|---|
+| SETN | 16.3 | 48.8 | 7.5 | 1 |
+| QUES | 9.3 | 28.0 | 6.6 | 1 |
+| OKAN | 7.6 | 22.7 | 2.7 | 1 |
+| LFRA | 6.6 | 19.8 | 4.3 | 0 |
+| TOAD | 6.0 | 18.0 | 3.3 | 0 |
+| UPCE | 3.7 | 11.2 | 1.7 | 0 |
+| TAKL | 3.2 | 9.5 | 2.4 | 0 |
+| SAJR | 1.6 | 5.0 | 0.9 | 0 |
+
+Every group passed, at 36 to 75 % of its 0.68.0 minutes. TAKL took 2.4 min
+where the loaded run killed it at 9.5, and SAJR 0.9 where it was killed at 5. So
+the first run's two kills were the other session's load, not this code. One
+other session was active during the first three groups.
+`study_area_run.sh --preflight-only` then printed
+`✓ pre-run gate: gate passed at 20209b798d83 … SETN:pass,…,SAJR:pass`.
 
 ## Machinery checks
 
