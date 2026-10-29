@@ -308,7 +308,8 @@ mock_walks <- function(per_table, segment_id_col = "segmented_stream_id") {
     dots <- list(...)
     result <- if (is.null(dots$result)) "ids" else dots$result
     calls$log <- rbind(calls$log, data.frame(
-      features = features, result = result, direction = dots$direction))
+      features = features, result = result, direction = dots$direction
+    ))
     per_segment <- per_table[[features]]
     if (is.null(per_segment)) per_segment <- list()
     if (identical(result, "exists")) {
@@ -331,7 +332,8 @@ test_that("walks read only for membership take the existence walk (#394)", {
     "s.barriers_ch_access" = list(s1 = "C1", s2 = "C2"),
     "s.anth" = list(s1 = c("D1", "P1"), s2 = "P2"),
     "s.pscis" = list(s1 = "P1", s2 = "P2"),
-    "s.dams" = list(s1 = "D1")))
+    "s.dams" = list(s1 = "D1")
+  ))
   local_mocked_bindings(frs_network_features = w$fn, .package = "fresh")
 
   out <- lnk_pipeline_access(
@@ -342,7 +344,8 @@ test_that("walks read only for membership take the existence walk (#394)", {
     wsg_presence = list(bt = TRUE, ch = TRUE),
     barrier_sources = list(anthropogenic = "s.anth", pscis = "s.pscis",
                            dams = "s.dams"),
-    segment_id_col = "segmented_stream_id")
+    segment_id_col = "segmented_stream_id"
+  )
 
   log <- w$calls$log
   expect_identical(stats::setNames(log$result, log$features),
@@ -371,7 +374,8 @@ test_that("anthropogenic without dams, and remediations without crossings, are e
     segments = "s.streams", aoi = "ADMS",
     barrier_sources = list(anthropogenic = "s.anth", remediations = "s.rem"),
     crossings_table = NULL,
-    segment_id_col = "segmented_stream_id")
+    segment_id_col = "segmented_stream_id"
+  )
 
   expect_identical(w$calls$log$result, c("exists", "exists"))
   expect_identical(out$has_barriers_anthropogenic_dnstr, c(TRUE, FALSE))
@@ -404,7 +408,8 @@ test_that("remediations with a crossings table, and observations, walk as arrays
     wsg_presence = list(bt = TRUE),
     barrier_sources = list(remediations = "s.rem"),
     crossings_table = "s.crossings",
-    segment_id_col = "segmented_stream_id")
+    segment_id_col = "segmented_stream_id"
+  )
 
   log <- w$calls$log
   expect_identical(stats::setNames(log$result, log$features),
@@ -430,7 +435,8 @@ test_that("a table given in an array role and a membership role is walked once, 
     barriers_per_sp = list(bt = "s.shared"),
     wsg_presence = list(bt = TRUE),
     barrier_sources = list(anthropogenic = "s.shared", dams = "s.dams"),
-    segment_id_col = "segmented_stream_id")
+    segment_id_col = "segmented_stream_id"
+  )
 
   log <- w$calls$log
   expect_identical(log$features, c("s.shared", "s.dams"))
@@ -447,7 +453,8 @@ test_that("species views with equal keys share one existence walk", {
   w <- mock_walks(list(
     "s.barriers_ch_access" = list(s1 = "C1"),
     "s.barriers_co_access" = list(s1 = "C1"),
-    "s.barriers_bt_access" = list(s2 = "B1")))
+    "s.barriers_bt_access" = list(s2 = "B1")
+  ))
   local_mocked_bindings(frs_network_features = w$fn, .package = "fresh")
 
   out <- lnk_pipeline_access(
@@ -457,7 +464,8 @@ test_that("species views with equal keys share one existence walk", {
                            co = "s.barriers_co_access",
                            bt = "s.barriers_bt_access"),
     wsg_presence = list(ch = TRUE, co = TRUE, bt = TRUE),
-    segment_id_col = "segmented_stream_id")
+    segment_id_col = "segmented_stream_id"
+  )
 
   expect_identical(w$calls$log$features,
                    c("s.barriers_ch_access", "s.barriers_bt_access"))
@@ -474,7 +482,8 @@ test_that("species views with different keys are walked separately", {
   # Same view shape, but CO's override lifted the barrier above s1.
   w <- mock_walks(list(
     "s.barriers_ch_access" = list(s1 = "C1", s2 = "C2"),
-    "s.barriers_co_access" = list(s2 = "C2")))
+    "s.barriers_co_access" = list(s2 = "C2")
+  ))
   local_mocked_bindings(frs_network_features = w$fn, .package = "fresh")
 
   out <- lnk_pipeline_access(
@@ -483,7 +492,8 @@ test_that("species views with different keys are walked separately", {
     barriers_per_sp = list(ch = "s.barriers_ch_access",
                            co = "s.barriers_co_access"),
     wsg_presence = list(ch = TRUE, co = TRUE),
-    segment_id_col = "segmented_stream_id")
+    segment_id_col = "segmented_stream_id"
+  )
 
   expect_identical(nrow(w$calls$log), 2L)
   expect_identical(out$has_barriers_ch_dnstr, c(TRUE, TRUE))
@@ -506,7 +516,8 @@ test_that("a keyed species view also given as a membership source is walked once
                            co = "s.barriers_co_access"),
     wsg_presence = list(ch = TRUE, co = TRUE),
     barrier_sources = list(pscis = "s.barriers_ch_access"),
-    segment_id_col = "segmented_stream_id")
+    segment_id_col = "segmented_stream_id"
+  )
 
   expect_identical(w$calls$log$features,
                    c("s.barriers_ch_access", "s.barriers_co_access"))
@@ -537,7 +548,8 @@ test_that("absent species and array-walked tables are not keyed", {
                            bt = "s.anth", co = "s.barriers_co_access"),
     presence = pres,
     barrier_sources = list(anthropogenic = "s.anth", dams = "s.dams"),
-    segment_id_col = "segmented_stream_id")
+    segment_id_col = "segmented_stream_id"
+  )
 
   expect_length(key_sql, 1L)
   expect_match(key_sql, "s.barriers_ch_access", fixed = TRUE)
