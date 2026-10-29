@@ -43,6 +43,14 @@ Where the build record is written: `.lnk_log_run_start()` (`R/lnk_log.R`), calle
 
 The pretest map refuses an unmapped changed file (`data-raw/pretest_inputs.csv`), so new files need rows.
 
+## Deviations from the approved plan (2026-10-29)
+
+- **Species pooling is not in the acc digest.** `species_pooling.csv` / `species_groups.csv` are read by the validator only; grep of `R/lnk_pipeline_*.R`, `R/lnk_barrier_overrides.R` and `R/lnk_barriers_unify.R` finds no reader.
+- **`observation_exclusions.csv` is not in the acc digest.** It moves lifts, but it is a list of corrections to records extended one review at a time (reviewer, date, source per row), like the bcfishpass correction CSVs: data vintage, carried by `config_hash`. Including it would mint an acc token per review.
+- **The modelled species (`cfg$species`, from the rules YAML) are in the digest**: #326 cuts per present modelled species.
+- **The presence table's `notes` column is not**: only `watershed_group_code` and the species columns (`.lnk_presence_species_cols()`).
+- The GR presence difference runs the other way from the plan-mode note: bcfishpass's table has GR in LARL and default's does not.
+
 ## Errors Encountered
 
 | Error | Resolution |

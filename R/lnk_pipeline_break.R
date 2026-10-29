@@ -102,10 +102,7 @@ lnk_pipeline_break <- function(conn, aoi, cfg, loaded, schema,
   .lnk_pipeline_break_habitat_endpoints(conn, aoi, schema)
   .lnk_pipeline_break_crossings(conn, schema)
 
-  break_order <- cfg$pipeline$break_order %||% c(
-    "observations", "gradient_minimal", "falls",
-    "barriers_definite", "habitat_endpoints", "crossings"
-  )
+  break_order <- .lnk_break_order(cfg)
   # Source table for each valid break_order entry. To add a new break
   # source: register it here, ensure the table is materialized in the
   # appropriate prepare/break helper (gated on the entry being in
@@ -189,6 +186,18 @@ lnk_pipeline_break <- function(conn, aoi, cfg, loaded, schema,
   invisible(NULL)
 }
 
+
+#' The break sources a bundle applies, in order
+#'
+#' `pipeline: break_order:`, or the default when absent
+#' (`subsurfaceflow` left out).
+#' @noRd
+.lnk_break_order <- function(cfg) {
+  cfg$pipeline$break_order %||% c(
+    "observations", "gradient_minimal", "falls",
+    "barriers_definite", "habitat_endpoints", "crossings"
+  )
+}
 
 #' Which observation positions break streams
 #'

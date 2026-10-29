@@ -26,14 +26,14 @@ Consumers: knowledge#119 (archive layout `tune/CH_rear/<setup tokens>/`), knowle
   - `q-wet-fill`: default_tuned.
 
 ## Phase 1: First test and table
-- [ ] `research/output_vocabulary.md`: the five configs described per axis. It covers what moves cuts (gradient_classes and the access inputs, from the CSV diffs), what doesn't (`cabd_additions_barriers` moves only DAM tokens, #367), and why vintage stays in the build record. Add a row in `research/README.md`.
-- [ ] `inst/extdata/vocabulary.csv` with columns `token, axis, definition, spec, introduced, retired` and the seven rows above.
-- [ ] Tests (`test-lnk_vocabulary.R`): tokens match `^[a-z0-9]+(-[a-z0-9]+)*$` and are unique; axis is one of {cut, acc, grad, flow}; the prefix matches the axis; no two live rows share an axis + spec; `retired` is empty or ≥ `introduced`.
-- [ ] Append-only guard: against `origin/main`'s copy (`git show`), no row is removed and no `token`/`spec`/`introduced` is edited; only an empty `retired` may be filled. It skips outside a git checkout. Restore a rename and confirm the guard fires.
+- [x] `research/output_vocabulary.md`: the five configs described per axis. It covers what moves cuts (gradient_classes and the access inputs, from the CSV diffs), what doesn't (`cabd_additions_barriers` moves only DAM tokens, #367), and why vintage stays in the build record. Add a row in `research/README.md`.
+- [x] `inst/extdata/vocabulary.csv` with columns `token, axis, definition, spec, introduced, retired` and the seven rows above.
+- [x] Tests (`test-lnk_vocabulary.R`): tokens match `^[a-z0-9]+(-[a-z0-9]+)*$` and are unique; axis is one of {cut, acc, grad, flow}; the prefix matches the axis; no two live rows share an axis + spec; `retired` is empty or ≥ `introduced`.
+- [x] Append-only guard (the comparison is mutation-tested on fixtures; the live test skips until main holds the table, so it first runs after merge): against `origin/main`'s copy (`git show`), no row is removed and no `token`/`spec`/`introduced` is edited; only an empty `retired` may be filled. It skips outside a git checkout. Restore a rename and confirm the guard fires.
 
 ## Phase 2: Resolver
-- [ ] `R/lnk_vocabulary.R`: `lnk_vocabulary_read()` and `lnk_vocabulary_resolve(cfg, loaded = NULL)`. It builds each axis's spec from the effective values: reuse `.lnk_resolve_classes()`, `.lnk_observation_breaks()`, the break_order default from `lnk_pipeline_break.R:105`, `.lnk_discharge_source()` and `.lnk_discharge_fill()`. The acc digest comes from `lnk_load_overrides(cfg)`. It refuses (`stop`) when a spec matches no row, naming the axis and the spec, and when the match is retired. Runnable `@examples`.
-- [ ] Tests: the first test as unit tests. bcfishpass gives `cut-full-ssf-all / acc-bcfp / grad-seg / q-fwapg`; default gives `cut-full-top / acc-v1 / grad-seg / q-fwapg`; default_tuned gives `cut-full-top / acc-v1 / grad-seg / q-wet-fill`; extrabreaks and rearbreaks refuse. Negative cases: an edited break_order, an edited access gradient, a retired match, and a quoting-only CSV change that still resolves.
+- [x] `R/lnk_vocabulary.R`: `lnk_vocabulary_read()` and `lnk_vocabulary_resolve(cfg, loaded = NULL)`. It builds each axis's spec from the effective values: reuse `.lnk_resolve_classes()`, `.lnk_observation_breaks()`, the break_order default from `lnk_pipeline_break.R:105`, `.lnk_discharge_source()` and `.lnk_discharge_fill()`. The acc digest comes from `lnk_load_overrides(cfg)`. It refuses (`stop`) when a spec matches no row, naming the axis and the spec, and when the match is retired. Runnable `@examples`.
+- [x] Tests: the first test as unit tests. bcfishpass gives `cut-full-ssf-all / acc-bcfp / grad-seg / q-fwapg`; default gives `cut-full-top / acc-v1 / grad-seg / q-fwapg`; default_tuned gives `cut-full-top / acc-v1 / grad-seg / q-wet-fill`; extrabreaks and rearbreaks refuse. Negative cases: an edited break_order, an edited access gradient, a retired match, and a quoting-only CSV change that still resolves.
 
 ## Phase 3: Build record and refusal
 - [ ] `R/lnk_log.R`: add the four `token_*` columns to `cols_log` and write them in `.lnk_log_run_start()`.
