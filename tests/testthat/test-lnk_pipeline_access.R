@@ -643,3 +643,88 @@ test_that("every downstream walk is scoped to the AOI, and the observation walk 
   expect_identical(unname(aoi[dir == "downstream"]), rep("ADMS", 4L))
   expect_identical(feat[dir == "upstream"], "s.observations")
 })
+
+test_that("a record at a segment's start is not upstream of that segment (#399)", {
+  skip_if_no_db()
+  conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
+                      user = "postgres", password = "postgres")
+  on.exit(DBI::dbDisconnect(conn), add = TRUE)
+  ex <- function(sql) DBI::dbExecute(conn, sql)
+  # One line cut at 100 and 521, as metre-rounded breaks at the species' two
+  # records (100 and 520.6 m) would cut it. fwa_upstream() first asks that the
+  # feature's wscode descend from the segment's, so both carry the line's code.
+  ex("CREATE TEMP TABLE seg399 (id_segment int, watershed_group_code text,
+        blue_line_key int, downstream_route_measure float8,
+        wscode_ltree ltree, localcode_ltree ltree)")
+  ex("INSERT INTO seg399 VALUES
+        (1, 'AAAA', 10, 100, '100.200', '100.200'),
+        (2, 'AAAA', 10, 521, '100.200', '100.200')")
+  ex("CREATE TEMP TABLE obs399 (species_code text, blue_line_key int,
+        downstream_route_measure float8, wscode ltree, localcode ltree)")
+  ex("INSERT INTO obs399 VALUES
+        ('X', 10, 100, '100.200', '100.200'),
+        ('X', 10, 520.6, '100.200', '100.200')")
+  ex("CREATE TEMP TABLE barriers_x (barriers_x_id text,
+        watershed_group_code text, blue_line_key int,
+        downstream_route_measure float8, wscode_ltree ltree,
+        localcode_ltree ltree)")
+
+  # fresh reads results through sf, which warns on a query with no geometry.
+  out <- withCallingHandlers(
+    lnk_pipeline_access(
+      conn,
+      segments = "pg_temp.seg399",
+      aoi = "AAAA",
+      barriers_per_sp = list(x = "pg_temp.barriers_x"),
+      observations = "pg_temp.obs399",
+      wsg_presence = list(x = TRUE)
+    ),
+    warning = function(w) {
+      if (grepl("simple features geometry column", conditionMessage(w))) {
+        invokeRestart("muffleWarning")
+      }
+    }
+  )
+  access <- out$access_x[match(c(1L, 2L), out$id_segment)]
+  # The segment ending at the top record reads observed; the one starting
+  # 0.4 m above it reads modelled. Read as upstream (`m >= s - 1`), both 2.
+  expect_identical(access, c(2L, 1L))
+  expect_identical(out$has_barriers_x_dnstr[match(c(1L, 2L), out$id_segment)],
+                   c(FALSE, FALSE))
+})
+
+test_that("the observation walk excludes a record at a segment's start; barrier walks include it (#399)", {
+  # bcfishpass's own observation walk calls FWA_Upstream(..., False, 1)
+  # (load_streams_upstr_observations.sql); a barrier at a segment's start must
+  # still block that segment, so every downstream walk keeps TRUE.
+  local_mocked_bindings(
+    dbGetQuery = mock_keys_db(c("s1", "s2"), c("k1", "k2")),
+    .package = "DBI"
+  )
+  calls <- list()
+  local_mocked_bindings(
+    frs_network_features = function(conn, segments, features, ...) {
+      calls[[length(calls) + 1L]] <<- c(list(features = features), list(...))
+      mock_frs(list(s1 = "X1", s2 = character(0)))
+    },
+    .package = "fresh"
+  )
+  lnk_pipeline_access(
+    conn = structure(list(), class = "DBIConnection"),
+    segments = "s.streams",
+    aoi = "ADMS",
+    barriers_per_sp = list(bt = "s.barriers_bt", ch = "s.barriers_ch"),
+    observations = "s.observations",
+    wsg_presence = list(bt = TRUE, ch = TRUE),
+    barrier_sources = list(anthropogenic = "s.barriers_anthropogenic",
+                           dams = "s.barriers_dams",
+                           pscis = "s.barriers_pscis"),
+    segment_id_col = "segmented_stream_id"
+  )
+  dir <- vapply(calls, function(x) x$direction, character(1))
+  ie <- vapply(calls, function(x) x$include_equivalents, logical(1))
+  expect_identical(sum(dir == "upstream"), 1L)
+  expect_identical(unname(ie[dir == "upstream"]), FALSE)
+  expect_length(ie[dir == "downstream"], 5L)
+  expect_true(all(ie[dir == "downstream"]))
+})

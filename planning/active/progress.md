@@ -7,7 +7,12 @@
 - Created branch `399-read-a-fish-record-at-a-segment-s-start` off origin/main
 - Scaffolded PWF baseline from issue #399 with approved phases
 - Plan review run synchronously (one `Plan` agent, 18:21–18:28 UTC): eleven findings, one blocker (the inherited `pre_post_diff.R` direction rule aborts on every expected piece, since no cut moves), all verified and folded into `task_plan.md`; `review-plan.md`
-- Next: parked 2026-10-30; paste the block under ### Resume into a fresh session
+- Next: parked 2026-10-30; paste the block under ## Session 2026-10-30 (resumed)
+
+- Resumed from the parked baseline; branch current with origin/main (no merge needed)
+- Phase 1: #399's body rewritten (premise corrected, no bundle key, acceptance for both bundles, `## Decisions`). Live fixture and call-log test added to `test-lnk_pipeline_access.R`; against the unchanged walk both fail as expected: fixture `access` = `2 2` (expected `2 1`), call log `include_equivalents` TRUE on the upstream walk. With the fix, 67 pass / 0 fail in that file.
+
+### Resume into a fresh session
 
 ### Resume
 
