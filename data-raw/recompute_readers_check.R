@@ -118,6 +118,9 @@ refuse_all <- character()
 # committed on its path is something no reader's sha describes.
 dirty <- git("status", "--porcelain", "--untracked-files=all", "--", READERS_PATHS)
 if (!is.null(attr(dirty, "status")) || length(dirty)) refuse_all <- c(refuse_all, "dispatcher_tree_dirty")
+# The fresh the recompute would run must be the clean commit its sha names; a
+# reader's build is held to the same (readers_classify's fresh_dirty).
+if (!identical(st$software$fresh$dirty, FALSE)) refuse_all <- c(refuse_all, "dispatcher_fresh_dirty")
 # The run's own groups were built under the hash a reader is compared with.
 run_hash <- q(sprintf(
   "SELECT DISTINCT ON (watershed_group_code) config_hash FROM %s.log
@@ -152,11 +155,13 @@ changed <- function(sha) {
 }
 shas <- unique(last$link_sha)
 pc <- stats::setNames(vapply(shas, changed, integer(1)), shas)
+# Lengths follow `last`: no reader may have a log row at all (groups built
+# before the log tables), and a scalar beside a 0-row column is an error.
 facts <- data.frame(
-  wsg = last$wsg, has_log = TRUE, open = last$open, config_hash = last$config_hash,
-  fresh_sha = last$fresh_sha, fwapg_sha = last$fwapg_sha, link_dirty = last$link_dirty,
-  fresh_dirty = last$fresh_dirty, link_sha = last$link_sha,
-  path_changed = unname(pc[last$link_sha]), downstream = "pass"
+  wsg = last$wsg, has_log = rep(TRUE, nrow(last)), open = last$open,
+  config_hash = last$config_hash, fresh_sha = last$fresh_sha, fwapg_sha = last$fwapg_sha,
+  link_dirty = last$link_dirty, fresh_dirty = last$fresh_dirty, link_sha = last$link_sha,
+  path_changed = as.integer(unname(pc[last$link_sha])), downstream = rep("pass", nrow(last))
 )
 
 tab <- readers_classify(readers, missing, facts, expect, refuse_all)

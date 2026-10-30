@@ -43,3 +43,11 @@
 - Dead ends: UPET/LPET (GR and RB only, no bcfishpass reference, so the compare fails a
   one-group run); CARP above the Peace dams a scratch schema lacks. Found: `--pretest-note`
   cannot record into a schema that does not exist yet (pre-existing; issue drafted).
+- Full suite: 4815 pass, 1 failure: `test-study_area_phases.R` pinned two `( cd "$REPO_ROOT" || exit 1`
+  background wrappers, and the map now launches in three modes (4). Count updated deliberately.
+  Two test files were edited (lint, behaviour-neutral) while the suite ran; they and the phases
+  file were re-run on the final tree: 0 bad.
+- `/code-check branch` round 1 (`review-round1.md`): 2 fragile findings, both fixed. A run whose
+  held readers have no log row made the check exit 1 on a scalar beside a 0-row column (old
+  rc 1, new names KOTL `refused`/`no_log` on a scratch schema); and the fresh the recompute
+  would run is now required clean (`dispatcher_fresh_dirty`).
