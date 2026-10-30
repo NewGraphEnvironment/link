@@ -4,7 +4,7 @@
 
 `lnk_rollup_wsg()`'s default `accessible_km` is `access IN (1, 2)` (`R/lnk_rollup_wsg.R:118`, link@43e34096). No link output tells 2 from 1 (`data-raw/logs/observation_breaks_396/readers_code2.md`). bcfishpass's `aw_linear_summary()` reports the same split as `length_naturallyaccessible_obsrvd_<sp>`.
 
-Branch `403-known-and-suspected-km-per-species-in-th` off `origin/main` at `39e9c2c5` (v0.71.0). **Parked at the gate, 2026-10-30:** the baseline is committed and pushed; no phase has run.
+Branch `403-known-and-suspected-km-per-species-in-th` off `origin/main` at `39e9c2c5` (v0.71.0). Parked at the gate 2026-10-30; resumed the same day.
 
 ## Context
 
@@ -27,9 +27,9 @@ bcfishpass's `aw_linear_summary()` (`db/schema.sql:5283`, local clone at `smnorr
 
 ## Phase 1: Tests first (red)
 
-- [ ] `tests/testthat/test-lnk_rollup_wsg.R`: amend the exact-names assertion at `:173-175` to the six-name default; offline test that the default `metrics` carry `accessible_observed_km` and `accessible_unobserved_km`, each with the `FILTER (WHERE access IN (1, 2))` set and the `access = 2` / `access = 1` CASE, and that the SQL text built from the defaults names both aliases.
-- [ ] Live test (`skip_if_no_db()`, localhost docker; skips when `fresh_default` is absent, so it proves the identity on whichever host runs `devtools::test()`): pick a group with BT `access_bt = 2` rows; `observed + unobserved` equals `accessible_km` within 0.0101 on the default frame, and exactly (`tolerance = 1e-9`) with unrounded custom metrics; `observed` equals a direct `sum(length_metre) FILTER (WHERE access_bt = 2)` that keeps the inner join to `streams_habitat_bt` on the full PK (the rollup's join shape, as #319's direct query at `:232-238`) and no polygon join.
-- [ ] Confirm the new tests fail at `39e9c2c5` (default frame lacks the columns).
+- [x] `tests/testthat/test-lnk_rollup_wsg.R`: amend the exact-names assertion at `:173-175` to the six-name default; offline test that the default `metrics` carry `accessible_observed_km` and `accessible_unobserved_km`, each with the `FILTER (WHERE access IN (1, 2))` set and the `access = 2` / `access = 1` CASE, and that the SQL text built from the defaults names both aliases.
+- [x] Live test (`skip_if_no_db()`, localhost docker; skips when `fresh_default` is absent, so it proves the identity on whichever host runs `devtools::test()`): pick a group with BT `access_bt = 2` rows; `observed + unobserved` equals `accessible_km` within 0.0101 on the default frame, and exactly (`tolerance = 1e-9`) with unrounded custom metrics; `observed` equals a direct `sum(length_metre) FILTER (WHERE access_bt = 2)` that keeps the inner join to `streams_habitat_bt` on the full PK (the rollup's join shape, as #319's direct query at `:232-238`) and no polygon join.
+- [x] Confirm the new tests fail at `39e9c2c5` (default frame lacks the columns).
 
 ## Phase 2: The two default metrics
 

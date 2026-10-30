@@ -14,3 +14,7 @@
 ```bash
 cd /Users/airvine/Projects/repo/link && git fetch -q origin && git checkout 403-known-and-suspected-km-per-species-in-th && git pull --ff-only && git merge origin/main
 ```
+
+## Session 2026-10-30 (resume)
+
+- Phase 1: three tests added; at `cab86f10` the exact-names test fails, the offline split test errors (no such metric) and the live test fails on the default frame, while its unrounded identity on `fresh_default` already holds (`[ FAIL 3 | PASS 58 ]`).

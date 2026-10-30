@@ -171,8 +171,9 @@ test_that("default rearing_km leaves connection lines out, reported apart", {
   # family, the validator's cost and the parity scripts all leave lake
   # connection lines out and carry them as rearing_lake_connection_km.
   m <- eval(formals(lnk_rollup_wsg)$metrics)
-  expect_identical(names(m), c("accessible_km", "spawning_km", "rearing_km",
-                               "rearing_lake_connection_km"))
+  expect_identical(names(m), c("accessible_km", "accessible_observed_km",
+                               "accessible_unobserved_km", "spawning_km",
+                               "rearing_km", "rearing_lake_connection_km"))
   expect_match(m[["rearing_km"]],
                "FILTER (WHERE rearing AND NOT connection)::", fixed = TRUE)
   expect_match(m[["rearing_lake_connection_km"]],
@@ -243,4 +244,66 @@ test_that("stream + lake + wetland rearing km equal rearing km (live)", {
   # Each column is rounded to 0.01 km, so the sum is within 0.01 km.
   expect_lt(abs(sum(d$rearing_km, d$rearing_lake_connection_km,
                     na.rm = TRUE) - r$total / 1000), 0.0101)
+})
+
+test_that("default accessible km split by whether the species is recorded upstream", {
+  # #403: access 2 (the species recorded upstream) and access 1 (accessible,
+  # none recorded) over the same set accessible_km sums, so the two are NULL
+  # exactly where accessible_km is and sum to it (bcfishpass's
+  # length_naturallyaccessible_obsrvd_<sp> / _model_<sp>).
+  m <- eval(formals(lnk_rollup_wsg)$metrics)
+  set <- "FILTER (WHERE access IN (1, 2))::numeric / 1000, 2)"
+  expect_identical(
+    m[["accessible_observed_km"]],
+    paste("round(sum(CASE WHEN access = 2 THEN length_metre ELSE 0 END)", set))
+  expect_identical(
+    m[["accessible_unobserved_km"]],
+    paste("round(sum(CASE WHEN access = 1 THEN length_metre ELSE 0 END)", set))
+  sql <- link:::.lnk_rollup_wsg_sql(
+    conn = DBI::ANSI(), aoi = "MORR", species = c("CO", "BT"),
+    schema = "fresh", metrics = m, where = NULL)
+  expect_match(sql, "AS accessible_observed_km", fixed = TRUE)
+  expect_match(sql, "AS accessible_unobserved_km", fixed = TRUE)
+})
+
+test_that("observed + unobserved accessible km equal accessible km (live)", {
+  conn <- skip_if_no_db()
+  has <- DBI::dbGetQuery(conn, "
+    SELECT count(*) AS n FROM information_schema.tables
+     WHERE table_schema = 'fresh_default'
+       AND table_name IN ('streams', 'streams_habitat_bt', 'streams_access')")
+  skip_if_not(has$n == 3L, "fresh_default not persisted here")
+  # A group with BT recorded upstream of some segments, so both codes occur.
+  aoi <- DBI::dbGetQuery(conn, "
+    SELECT watershed_group_code FROM fresh_default.streams_access
+     WHERE access_bt = 2 LIMIT 1")$watershed_group_code
+  skip_if(length(aoi) == 0L, "no BT access code 2 persisted")
+  m <- function(w) sprintf("sum(length_metre) FILTER (WHERE %s)", w)
+  r <- lnk_rollup_wsg(conn, aoi = aoi, species = "BT",
+                      schema = "fresh_default",
+                      metrics = c(accessible = m("access IN (1, 2)"),
+                                  observed = m("access = 2"),
+                                  unobserved = m("access = 1")))
+  expect_gt(r$observed, 0)
+  expect_gt(r$unobserved, 0)
+  expect_equal(r$observed + r$unobserved, r$accessible, tolerance = 1e-9)
+  # The rollup's own join shape (inner join to habitat on the full PK, left
+  # join to access), with no polygon join, so a fan-out would show.
+  direct <- DBI::dbGetQuery(conn, sprintf("
+    SELECT sum(s.length_metre) AS m
+      FROM fresh_default.streams s
+      JOIN fresh_default.streams_habitat_bt h
+        ON s.id_segment = h.id_segment
+       AND s.watershed_group_code = h.watershed_group_code
+      JOIN fresh_default.streams_access a
+        ON s.id_segment = a.id_segment
+       AND s.watershed_group_code = a.watershed_group_code
+     WHERE s.watershed_group_code = '%s' AND a.access_bt = 2", aoi))$m
+  expect_equal(r$observed, as.numeric(direct), tolerance = 1e-9)
+  # The default frame carries the split; each column is rounded to 0.01 km.
+  d <- lnk_rollup_wsg(conn, aoi = aoi, species = "BT",
+                      schema = "fresh_default")
+  expect_lt(abs(d$accessible_observed_km + d$accessible_unobserved_km -
+                  d$accessible_km), 0.0101)
+  expect_lt(abs(d$accessible_observed_km - r$observed / 1000), 0.0051)
 })
