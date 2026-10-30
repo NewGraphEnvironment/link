@@ -998,7 +998,7 @@ readers_world <- function(readers, deps = c("GGGG\tline\tAAAA", "ZZZZ\tline\tBBB
     "#!/bin/sh",
     sprintf('echo "$*" >> "%s/rscript_calls"', d),
     'if [ "$1" = data-raw/recompute_readers_check.R ]; then',
-    '  eval last=\\${$#}',
+    "  eval last=\\${$#}",
     sprintf('  [ -e "%s" ] && cp "%s" "$last"', fx, fx),
     "fi",
     "exit 0"

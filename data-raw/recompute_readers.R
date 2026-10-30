@@ -80,8 +80,9 @@ readers_classify <- function(readers, missing, facts, expect, refuse_all = chara
     stop("readers must have columns wsg, reads", call. = FALSE)
   }
   need <- c("config_hash", "fresh_sha", "fwapg_sha")
+  scalar_chr <- function(v) is.character(v) && length(v) == 1L
   if (!is.list(expect) || !all(need %in% names(expect)) ||
-      !all(vapply(expect[need], function(v) is.character(v) && length(v) == 1L, logical(1)))) {
+        !all(vapply(expect[need], scalar_chr, logical(1)))) {
     stop("expect must give config_hash, fresh_sha and fwapg_sha", call. = FALSE)
   }
   cols <- c("wsg", "has_log", "open", "config_hash", "fresh_sha", "fwapg_sha",

@@ -110,8 +110,11 @@ for (rn in names(runs)) {
   }
 }
 tab <- do.call(rbind, rows)
-tab$compatible <- with(tab, held & has_log & config_same & fresh_same &
-  !is.na(link_dirty) & !link_dirty & !is.na(path_files_changed) & path_files_changed == 0L)
+tab$compatible <- with(
+  tab,
+  held & has_log & config_same & fresh_same & !is.na(link_dirty) & !link_dirty &
+    !is.na(path_files_changed) & path_files_changed == 0L
+)
 tab$compatible[is.na(tab$compatible)] <- FALSE
 utils::write.table(tab, file.path(here, "readers.tsv"),
   sep = "\t", quote = FALSE, row.names = FALSE, na = "NA"
