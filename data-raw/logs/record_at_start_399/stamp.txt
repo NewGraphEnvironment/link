@@ -1,0 +1,40 @@
+#399 builds, m1 local docker fwapg (scratch schemas zz399_*)
+PRE worktree: 804276e614aed43713b2507dcbaebec98d5704b5 (link 0.71.1, origin/main at the branch point)
+POST worktree: 9a84317d1435e94b04100e629ac24c74a7afb456 (the change)
+fresh installed: 0.47.0 2c35e3eb8524b91b9d282ebe93afd17764a21740 
+build window (UTC): 2026-10-30 19:00:22 to 20:00:15 (status.tsv)
+bcfishpass reference: fresh.streams_vw_bcfp on m1, loaded by snapshot_bcfp.sh --with-bcfp-views on 2026-10-23 00:52 UTC from smnorris/bcfishpass@v0.7.15-50-g620dbe4 (completed 2026-10-21T04:33:41Z; data-raw/logs/bcfp_baselines.csv). #403 read m4's, v0.7.14-113-ga7373af. Both predate smnorris/bcfishpass@3bd2824c, so steelhead's code 2 there comes from sockeye records.
+bcfishobs.observations: loaded 2026-10-23 07:44 UTC (provenance.source_artifact, version 1790057230537)
+analysis run (UTC): 2026-10-30T20:09:52Z at link 21fb3b29
+
+builds read (newest log row per group):
+                schema  wsg link_version link_sha link_dirty fresh_version
+     zz399_default_pre BULK       0.71.1 804276e6      FALSE        0.47.0
+     zz399_default_pre ELKR       0.71.1 804276e6      FALSE        0.47.0
+     zz399_default_pre LKEL       0.71.1 804276e6      FALSE        0.47.0
+     zz399_default_pre PARS       0.71.1 804276e6      FALSE        0.47.0
+     zz399_default_pre UPCE       0.71.1 804276e6      FALSE        0.47.0
+    zz399_default_post BULK       0.71.1 9a84317d      FALSE        0.47.0
+    zz399_default_post ELKR       0.71.1 9a84317d      FALSE        0.47.0
+    zz399_default_post LKEL       0.71.1 9a84317d      FALSE        0.47.0
+    zz399_default_post PARS       0.71.1 9a84317d      FALSE        0.47.0
+    zz399_default_post UPCE       0.71.1 9a84317d      FALSE        0.47.0
+  zz399_bcfishpass_pre BULK       0.71.1 804276e6      FALSE        0.47.0
+  zz399_bcfishpass_pre PARS       0.71.1 804276e6      FALSE        0.47.0
+ zz399_bcfishpass_post BULK       0.71.1 9a84317d      FALSE        0.47.0
+ zz399_bcfishpass_post PARS       0.71.1 9a84317d      FALSE        0.47.0
+ config_hash  token_acc            date_end
+    edb0a5f9     acc-v1 2026-10-30 19:10:21
+    edb0a5f9     acc-v1 2026-10-30 19:35:40
+    edb0a5f9     acc-v1 2026-10-30 19:01:13
+    edb0a5f9     acc-v1 2026-10-30 19:27:33
+    edb0a5f9     acc-v1 2026-10-30 19:21:14
+    b70d0eea     acc-v2 2026-10-30 19:18:27
+    b70d0eea     acc-v2 2026-10-30 19:41:01
+    b70d0eea     acc-v2 2026-10-30 19:01:58
+    b70d0eea     acc-v2 2026-10-30 19:32:10
+    b70d0eea     acc-v2 2026-10-30 19:23:43
+    0d4a152a   acc-bcfp 2026-10-30 19:45:27
+    0d4a152a   acc-bcfp 2026-10-30 19:55:06
+    0d4a152a acc-bcfp-2 2026-10-30 19:49:47
+    0d4a152a acc-bcfp-2 2026-10-30 20:00:15

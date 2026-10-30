@@ -28,7 +28,14 @@
 #'    0 = barriers downstream (blocked)
 #'    1 = no barriers downstream + species not observed upstream
 #'        (modelled accessible)
-#'    2 = no barriers downstream + species observed upstream
+#'    2 = no barriers downstream + species recorded upstream, as fwapg's
+#'        `fwa_upstream()` reads it: at least 1 m above the segment's start
+#'        on its own line, or on a line its watershed codes put upstream.
+#'        By the same-line measure test, a record less than 1 m above the
+#'        segment's start is not upstream of it, as in bcfishpass, so the segment starting at a
+#'        species' top record on a line normally reads 1 (`RUNBOOK.md` §2c
+#'        has the other records the walk counts and when a top does not
+#'        cut).
 #'
 #' @param conn A [DBI::DBIConnection-class] object pointing at fwapg.
 #' @param segments Character. Schema-qualified segments table.
@@ -267,6 +274,15 @@ lnk_pipeline_access <- function(
   # streams), so override the features-side codes. Returns a list-
   # column of character vectors (fresh#204 v0.29.0+) — the per-species
   # `observed` boolean is then a clean `%in%` per row.
+  #
+  # `include_equivalents = FALSE`, as bcfishpass's own walk calls
+  # `FWA_Upstream(..., False, 1)` (load_streams_upstr_observations.sql):
+  # its same-line measure test counts a record only at `m >= start + 1`, so a record
+  # at a segment's start is not upstream of it. Breaks are rounded to the
+  # metre, so the segment starting at a species' top record on a line
+  # normally reads 1 (#399; RUNBOOK §2c has the other records the walk
+  # counts and when a top does not cut). The barrier walks above keep TRUE:
+  # a barrier at a segment's start must still block it.
   obsrvtn_species_per_seg <- NULL
   if (!is.null(observations)) {
     obsrvtn_species_per_seg <- fresh::frs_network_features(
@@ -277,7 +293,7 @@ lnk_pipeline_access <- function(
       feature_id_col         = "species_code",
       direction              = "upstream",
       aoi                    = aoi,
-      include_equivalents    = TRUE,
+      include_equivalents    = FALSE,
       features_wscode_col    = "wscode",
       features_localcode_col = "localcode"
     )

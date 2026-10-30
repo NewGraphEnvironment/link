@@ -129,7 +129,7 @@ where accessible rows exist but none carry its code, and
 \code{accessible_km} to the 0.01 km each column is rounded to. bcfishpass
 reports the same split as \verb{length_naturallyaccessible_obsrvd_<sp>} and
 \verb{length_naturallyaccessible_model_<sp>}. Which records count, and where
-code 2 ends upstream of the top record, are the access walk's rules
+code 2 ends relative to a species' top record, are the access walk's rules
 (see \code{RUNBOOK.md}), not this function's.
 }
 \examples{

@@ -52,8 +52,8 @@ lnk_pipeline_run(conn, aoi = "PARS", cfg = cfg, loaded = loaded,
 lnk_rollup_wsg(conn, aoi = "PARS", species = c("BT", "GR"),
                schema = "fresh_default")
 #>    wsg species accessible_km accessible_observed_km accessible_unobserved_km
-#> 1 PARS      BT       6882.15                 842.81                  6039.34
-#> 2 PARS      GR       4441.86                 596.01                  3845.86
+#> 1 PARS      BT       6882.15                 815.31                  6066.83
+#> 2 PARS      GR       4441.86                 590.11                  3851.75
 #>   spawning_km rearing_km rearing_lake_connection_km
 #> 1     1682.72    2624.20                      40.16
 #> 2      983.83    1398.15                      30.09

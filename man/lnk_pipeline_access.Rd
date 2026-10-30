@@ -125,7 +125,14 @@ Access integer codes per species (mirroring bcfp):
 0 = barriers downstream (blocked)
 1 = no barriers downstream + species not observed upstream
 (modelled accessible)
-2 = no barriers downstream + species observed upstream
+2 = no barriers downstream + species recorded upstream, as fwapg's
+\code{fwa_upstream()} reads it: at least 1 m above the segment's start
+on its own line, or on a line its watershed codes put upstream.
+By the same-line measure test, a record less than 1 m above the
+segment's start is not upstream of it, as in bcfishpass, so the segment starting at a
+species' top record on a line normally reads 1 (\code{RUNBOOK.md} §2c
+has the other records the walk counts and when a top does not
+cut).
 }
 \seealso{
 Other pipeline: 
