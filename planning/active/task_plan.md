@@ -87,12 +87,12 @@ What exploration settled:
 - [ ] Measure first (`walk_time.R`, below): array walk group-only vs province, and per-species
   existence walks over the province table, on LFRA, SETN and one small group. Go on only if the
   existence walks are tolerable; else draft a fresh distinct-result issue and stop for the user.
-- [ ] Tests: the key is checked at manifest load (`province` | `group_gated`, absent =
+- [x] Tests: the key is checked at manifest load (`province` | `group_gated`, absent =
   `group_gated`); a DB fixture where a segment with an own-group record upstream reads 2 from
   another group's species under both values, and one with none reads 2 only under `province`;
   `lnk_pipeline_access()` walks one existence walk per present species plus, under `group_gated`,
   one over the group's own records; the acc digest moves with the key.
-- [ ] `lnk_config.R` key check; `lnk_pipeline_access()` gains the own-group table and the mode;
+- [x] `lnk_config.R` key check; `lnk_pipeline_access()` gains the own-group table and the mode;
   `lnk_pipeline_run()` passes both tables; `default/config.yaml` sets `province`; the acc spec
   hashes the resolved value; `acc-v3` / `acc-bcfp-3` specs regenerated.
 

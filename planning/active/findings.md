@@ -32,3 +32,4 @@ Related: #349, #396, #403.
 
 | Error | Resolution |
 |-------|------------|
+| `walk_time.R` stopped at BULK: `cannot drop table zz401_walk.observations_province because other objects depend on it` (the per-species temp view) | Drop the view after each group's walks. The same holds for the pipeline: `lnk_pipeline_access()` must drop its own views, or `lnk_pipeline_run()`'s `try()`-wrapped drop fails silently and keeps the table |

@@ -83,7 +83,8 @@ lnk_vocabulary_read <- function() {
 #' - **acc:** a sha256 digest of the access rules, which decide where
 #'   gradient barriers cut streams as well as what is accessible: the
 #'   species the rules model, each species' `access_gradient_max` and
-#'   `observation_*` lift parameters, the species presence table, and the
+#'   `observation_*` lift parameters, the species presence table, which fish
+#'   records make code 2 (`pipeline: observation_upstream`, resolved), and the
 #'   two access rules held in code (the gradient class each access label
 #'   maps to, and [lnk_presence()]'s species groups). The
 #'   digest is over the parsed values, so a change in quoting or column
@@ -199,6 +200,7 @@ lnk_vocabulary_resolve <- function(cfg, loaded = NULL) {
   groups <- eval(formals(lnk_presence)$groups)
   payload <- paste(
     paste0("species=", paste(cfg$species, collapse = ",")),
+    paste0("observation_upstream=", .lnk_observation_upstream(cfg)),
     paste0("access_classes=",
            paste(names(.lnk_classes_bcfp),
                  .lnk_vocabulary_num(.lnk_classes_bcfp), sep = ":",

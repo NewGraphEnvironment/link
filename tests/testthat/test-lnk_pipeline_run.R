@@ -303,6 +303,9 @@ test_that("lnk_pipeline_run composes phases in expected order", {
   # Code 2 counts every group's records, as bcfishpass's walk does (link#401);
   # the province copy is dropped when the run ends, after the walk read it.
   expect_identical(access_args$observations, "working_adms.observations_province")
+  # bcfishpass's reading (the bcfishpass config, observation_upstream absent):
+  # another group's record counts only below one of the group's own.
+  expect_identical(access_args$observations_gate, "working_adms.observations")
   expect_identical(drops[length(drops)],
                    "DROP TABLE IF EXISTS working_adms.observations_province")
   # Returns conn invisibly

@@ -296,6 +296,10 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
   # load_streams_upstr_observations.sql joins bcfishpass.observations with no
   # group filter (smnorris/bcfishpass@620dbe4). The group's own records alone
   # read a main stem as unobserved up to its group boundary (link#401).
+  # bcfishpass keeps that array only where a record of the segment's own
+  # group is upstream (`spp INNER JOIN ids`); `pipeline: observation_upstream:
+  # group_gated` (the bcfishpass bundle, and the value when absent) passes the
+  # group's own records as that gate, `province` (default) passes none.
   # Breaks still read the group's own `<schema>.observations`.
   sp_set <- tolower(active_species)
   barriers_per_sp <- setNames(
@@ -308,6 +312,10 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
     to              = paste0(schema, ".streams_access"),
     barriers_per_sp = barriers_per_sp,
     observations    = paste0(schema, ".observations_province"),
+    observations_gate = if (identical(.lnk_observation_upstream(cfg),
+                                      "group_gated")) {
+      paste0(schema, ".observations")
+    },
     presence        = pres,
     barrier_sources = list(
       anthropogenic = paste0(schema, ".barriers_anthropogenic_unified"),

@@ -277,3 +277,15 @@ test_that("a retired match or two live matches refuse", {
   expect_identical(link:::.lnk_vocabulary_match(c(cut = "s2"), vocab, "x"),
                    c(cut = "cut-c"))
 })
+
+test_that("the acc digest moves with observation_upstream (#401)", {
+  cfg <- lnk_config("default")
+  loaded <- lnk_load_overrides(cfg)
+  a <- .lnk_vocabulary_spec_acc(cfg, loaded)
+  cfg$pipeline$observation_upstream <- "group_gated"
+  expect_false(identical(a, .lnk_vocabulary_spec_acc(cfg, loaded)))
+  # Absent reads as group_gated, so it is the same rule set.
+  g <- .lnk_vocabulary_spec_acc(cfg, loaded)
+  cfg$pipeline$observation_upstream <- NULL
+  expect_identical(.lnk_vocabulary_spec_acc(cfg, loaded), g)
+})

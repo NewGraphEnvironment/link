@@ -107,6 +107,10 @@ pipeline:
   # observation_breaks is left out, which means `all`: streams break at every
   # fish observation position, as bcfishpass cuts. The default bundle sets
   # `top_per_species` (link#396).
+  # observation_upstream is left out, which means `group_gated`: code 2 counts
+  # a record in any group upstream only where a record of the segment's own
+  # group is also upstream, as bcfishpass computes. The default bundle sets
+  # `province` (link#401).
   cluster:
     three_phase: yes
   spawn_connected:

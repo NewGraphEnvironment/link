@@ -1,0 +1,33 @@
+NOTICE:  schema "zz401_walk" already exists, skipping
+
+15:10:01 LKEL
+NOTICE:  schema "pg_temp" does not exist, skipping
+
+NOTICE:  view "obs401_sp" does not exist, skipping
+
+15:10:12 BULK
+NOTICE:  view "obs401_sp" does not exist, skipping
+
+15:12:00 UPCE
+NOTICE:  view "obs401_sp" does not exist, skipping
+
+15:13:39 PARS
+NOTICE:  view "obs401_sp" does not exist, skipping
+
+15:14:39 ELKR
+NOTICE:  view "obs401_sp" does not exist, skipping
+
+15:16:06 LNTH
+NOTICE:  view "obs401_sp" does not exist, skipping
+
+15:18:19 SETN
+NOTICE:  view "obs401_sp" does not exist, skipping
+
+15:26:00 LFRA
+NOTICE:  view "obs401_sp" does not exist, skipping
+
+NOTICE:  drop cascades to 2 other objects
+DETAIL:  drop cascades to table zz401_walk.observations_province
+drop cascades to table zz401_walk.observations
+
+WALK_TIME_DONE
