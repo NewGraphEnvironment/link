@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.69.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.70.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,9 +32,24 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.69.7/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.70.0" id="link-0700">link 0.70.0<a class="anchor" aria-label="anchor" href="#link-0700"></a></h2>
+<p><strong>Every build is named by what it is: how its streams were cut, which access rules decided where, how gradient was measured and where flow came from</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/414" class="external-link">#414</a>). Config names move under a fixed name; the tokens do not.</p>
+<ul><li>
+<strong><code>inst/extdata/vocabulary.csv</code></strong> holds the tokens, one row each with its axis, a prose definition, the spec it matches, and the release that introduced (and retired) it. <code><a href="../reference/lnk_vocabulary_read.html">lnk_vocabulary_read()</a></code> returns it for consumers; <code>lnk_vocabulary_resolve(cfg)</code> derives a config’s four tokens. Seven to start: <code>cut-full-top</code> and <code>cut-full-ssf-all</code>, <code>acc-v1</code> and <code>acc-bcfp</code>, <code>grad-seg</code>, <code>q-fwapg</code> and <code>q-wet-fill</code>. <code>default</code> is <code>cut-full-top acc-v1 grad-seg q-fwapg</code>, <code>default_tuned</code> the same with <code>q-wet-fill</code>, and <code>bcfishpass</code> is <code>cut-full-ssf-all acc-bcfp grad-seg q-fwapg</code>.</li>
+<li>
+<strong>Access is its own axis.</strong> Since <a href="https://github.com/NewGraphEnvironment/link/issues/326" class="external-link">#326</a>, gradient positions cut a stream only where a modelled species’ access changes, so access gradients, observation lifts, the modelled species and the presence table move segments as much as the break sources do. A network is its <code>cut</code> and <code>acc</code> tokens together.</li>
+<li>
+<strong>Thresholds and data vintage get no token.</strong> Habitat thresholds, rules and width against flow change flags, not segments. Observation records, the bcfishpass correction CSVs, <code>observation_exclusions.csv</code> and FWA identify one build, which <code>config_hash</code> and <code>log_input</code> already record.</li>
+<li>
+<strong>Each build records its tokens</strong> in <code>&lt;schema&gt;.log</code> (<code>token_cut</code>, <code>token_acc</code>, <code>token_grad</code>, <code>token_flow</code>), and the habitat export carries them in its provenance. Rows from earlier builds are NULL.</li>
+<li>
+<strong>A config with no live token is refused</strong> before the run opens, and <code>study_area_run.sh</code>’s local pre-flight asks once before any spend. <code>default_extrabreaks</code> and <code>default_rearbreaks</code> have no rows and now refuse, as does a bundle loaded by path that matches no named one. Adding a row is the fix: RUNBOOK §6b, “Output vocabulary”.</li>
+<li>Write-up: <code>research/output_vocabulary.md</code>.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.69.7" id="link-0697">link 0.69.7<a class="anchor" aria-label="anchor" href="#link-0697"></a></h2>
 <p><strong>The recompute walks each barrier set once and builds arrays only where it reads them</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/394" class="external-link">#394</a>, on <a href="https://github.com/NewGraphEnvironment/link/issues/377" class="external-link">#377</a>). Pins fresh v0.47.0. On top of 0.69.6’s prefilter, the access step is a further 1.0 to 2.6 times faster, with the same output.</p>

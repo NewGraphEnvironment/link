@@ -139,6 +139,12 @@ rather than the comparison RDS artifact.
 
 ### Phase order
 
+Before any phase,
+[`lnk_vocabulary_resolve()`](https://newgraphenvironment.github.io/link/reference/lnk_vocabulary_resolve.md)
+names the output on its four axes (cut, access, gradient, flow). A
+config the vocabulary has no live token for is refused before anything
+is written, and the tokens go in the run's `<persist_schema>.log` row.
+
 1.  [`lnk_pipeline_setup()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_setup.md)
     — create per-WSG working schema.
 

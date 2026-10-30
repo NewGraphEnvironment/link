@@ -328,6 +328,12 @@ Redistributed bcfishpass data carries its own license: see
 - [`lnk_thresholds()`](https://newgraphenvironment.github.io/link/reference/lnk_thresholds.md)
   : Load configurable severity scoring thresholds
 
+- [`lnk_vocabulary_read()`](https://newgraphenvironment.github.io/link/reference/lnk_vocabulary_read.md)
+  : Read link's output vocabulary
+
+- [`lnk_vocabulary_resolve()`](https://newgraphenvironment.github.io/link/reference/lnk_vocabulary_resolve.md)
+  : Name a config's output in the vocabulary
+
 - [`lnk_wsg_downstream_check()`](https://newgraphenvironment.github.io/link/reference/lnk_wsg_downstream_check.md)
   : Verify downstream state before modelling a watershed group
 

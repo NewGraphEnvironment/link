@@ -13,7 +13,7 @@ streams_habitat_&amp;lt;sp&amp;gt; per species, barriers)."><meta property="og:i
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.69.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.70.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -38,7 +38,7 @@ streams_habitat_&amp;lt;sp&amp;gt; per species, barriers)."><meta property="og:i
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Run the link pipeline end-to-end for one watershed group</h1>
-      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.69.7/R/lnk_pipeline_run.R" class="external-link"><code>R/lnk_pipeline_run.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/R/lnk_pipeline_run.R" class="external-link"><code>R/lnk_pipeline_run.R</code></a></small>
       <div class="d-none name"><code>lnk_pipeline_run.Rd</code></div>
     </div>
 
@@ -176,7 +176,11 @@ state via <code>link:::.lnk_wsg_persisted()</code> rather than the comparison
 RDS artifact.</p><div class="section">
 <h3 id="phase-order">Phase order<a class="anchor" aria-label="anchor" href="#phase-order"></a></h3>
 
-<ol><li><p><code><a href="lnk_pipeline_setup.html">lnk_pipeline_setup()</a></code> — create per-WSG working schema.</p></li>
+
+<p>Before any phase, <code><a href="lnk_vocabulary_resolve.html">lnk_vocabulary_resolve()</a></code> names the output on its four
+axes (cut, access, gradient, flow). A config the vocabulary has no live
+token for is refused before anything is written, and the tokens go in the
+run's <code>&lt;persist_schema&gt;.log</code> row.</p><ol><li><p><code><a href="lnk_pipeline_setup.html">lnk_pipeline_setup()</a></code> — create per-WSG working schema.</p></li>
 <li><p><code><a href="lnk_pipeline_load.html">lnk_pipeline_load()</a></code> — crossings + modelled fixes + PSCIS status.</p></li>
 <li><p><code><a href="lnk_pipeline_prepare.html">lnk_pipeline_prepare()</a></code> — falls, definite + control, habitat
 confirms, gradient barriers, natural barriers, barrier overrides,

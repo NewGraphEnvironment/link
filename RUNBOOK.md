@@ -881,6 +881,80 @@ installed packages), `FWAPG_GIT_SHA` / `FWAPG_DIR`,
 
 ------------------------------------------------------------------------
 
+### Output vocabulary: naming what a build is (link#414)
+
+A config name says how a bundle was made, and its contents move under
+that name. The output’s name is four tokens from
+`inst/extdata/vocabulary.csv`, one per axis.
+`lnk_vocabulary_resolve(cfg)` derives them, and every
+[`lnk_pipeline_run()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_run.md)
+writes them to its `log` row (`token_cut`, `token_acc`, `token_grad`,
+`token_flow`).
+
+| Axis | Prefix | What it names | Spec matched |
+|----|----|----|----|
+| cut | `cut-` | break sources in order, `observation_breaks` (when observations cut), gradient classes, and which of the definite-barrier, control and habitat-classification files the bundle declares | canonical string |
+| acc | `acc-` | the modelled species, each species’ `access_gradient_max` and `observation_*` lifts, the presence table, and the two access rules held in code (`.lnk_classes_bcfp`, [`lnk_presence()`](https://newgraphenvironment.github.io/link/reference/lnk_presence.md)’s groups) | sha256 of the parsed values |
+| grad | `grad-` | how segment gradient is measured | `gradient=segment` |
+| flow | `q-` | `discharge_source` and `discharge_fill` | canonical string |
+
+**A network is `cut` and `acc` together.** Since \#326, gradient
+positions cut a stream only where a modelled species’ access changes, so
+the access rules move segments as much as the break sources do. Two
+outputs with the same `cut` token and different `acc` tokens are cut
+differently.
+
+**What gets no token.** Habitat thresholds and rules, and width against
+flow: they change flags, not segments, and a tuning chooses them. Data
+vintage: observation records, the bcfishpass correction CSVs,
+`observation_exclusions.csv`, FWA and the discharge loads. `config_hash`
+and `log_input` carry those. Same tokens means made the same way, not
+necessarily from the same data.
+
+**A config with no live token is refused** before the run opens. That
+covers a changed break source, a new access gradient, an edited presence
+table, a bundle loaded by path that differs from every named one, or
+`default_extrabreaks` and `default_rearbreaks`, which have no rows. The
+error prints the spec. `study_area_run.sh`’s local pre-flight asks the
+same question once, before any spend.
+
+**Adding a token.** Add a row with `token`, `axis`, `definition` (prose
+that still makes sense in years), `spec` (paste the one the error
+printed), `introduced` (the release that ships it) and an empty
+`retired`. Then add a test of the config resolving to it in
+`test-lnk_vocabulary.R`.
+
+The rules: - Tokens are lowercase, `^[a-z0-9]+(-[a-z0-9]+)*$`. - A token
+is never renamed, never removed and never given a new spec: a changed
+definition is a new token, and the old row gets `retired`. - Our own
+access rule sets are numbered (`acc-v1`, `acc-v2`, …), and the
+definition says what changed from the last one. A new transcription of
+bcfishpass’s rules is `acc-bcfp-2`. - `test-lnk_vocabulary.R` holds the
+rules against `origin/main`’s copy, in a checkout only. CI’s shallow
+clone and `R CMD check` skip that test, so run it locally before merging
+an edit to the table.
+
+**Code changes can need a token too.** The specs see the bundle, not the
+code. A change to how fresh finds gradient barriers, to
+`frs_barriers_minimal()`, to the CT alias expansion in observation
+breaks moves cuts with no spec change. Retire and re-add the affected
+tokens in the same PR. Changing `.lnk_vocabulary_canonical()` or the
+digest inputs re-specs every `acc` token the same way.
+
+**The recompute is not checked.** `wsg_recompute_one.R` rewrites
+`streams_access` from the config at the commit it runs, and
+`log_recompute` carries `config_hash` but no tokens. A
+`--recompute-only` at a later commit whose presence table or lifts
+changed ships access decided under rules other than the build’s
+`token_acc`. Within one run the repo is frozen, so this only bites a
+recompute run later: compare its `config_hash` with the build’s.
+
+**Rows from before.** Builds logged before link 0.70.0 have NULL tokens.
+The consolidate copies the columns both sides share after bringing the
+destination’s log tables up to the dispatcher’s link
+(`schema_consolidate.R`), so the dispatcher must run this link or newer;
+under `load_all` it does.
+
 ## 6c. Run identity and the recompute log (link#262)
 
 ### Three identifiers, and they answer different questions

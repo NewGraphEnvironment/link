@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.69.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.70.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,7 +32,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="logo.png" class="logo" alt=""><h1>link RUNBOOK — how the system actually works</h1>
-      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.69.7/RUNBOOK.md" class="external-link"><code>RUNBOOK.md</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/RUNBOOK.md" class="external-link"><code>RUNBOOK.md</code></a></small>
     </div>
 
 <div id="link-runbook--how-the-system-actually-works" class="section level1">
@@ -420,7 +420,41 @@ The bucket is versioned but cannot be listed (<code>?versions</code> is AccessDe
 <code>log</code>, <code>log_input</code> and <code>log_recompute</code> carry <code>watershed_group_code</code> so <code>schema_consolidate.R</code> auto-discovers them. They are history, not per-group state: consolidate replaces their rows on the dispatcher by primary key (one key is one build) and never deletes them there by group (the source’s copy is still cleared once copied), so a group copied home from a cloud host keeps its earlier builds’ rows (link#354; before it, every cloud-built group kept only its newest row). The set is <code>.lnk_log_specs()</code>, read by the DDL and by consolidate. <code>log_parameters_fresh</code> / <code>log_parameters_habitat_thresholds</code> / <code>log_dimensions</code> deliberately do not (they key on <code>config_hash</code>), so <strong>they do not yet travel between hosts</strong> — follow-up PR.</li>
 </ul><p><strong>Guard notes (link#227).</strong> <code>notes</code> may carry a downstream-guard record: <code>link#227 guard(override): 3 unmodelled downstream dam(s) — PCEA(1), UPCE(2) — &lt;justification&gt;</code> or <code>guard(warn): … at open</code>. Cross-check against the same row’s <code>wsg_upstream</code>, which independently records what was persisted when the run opened. See §8c.</p>
 <p><strong>Env vars:</strong> <code>LNK_RUN_UID</code> / <code>LNK_RUN_LABEL</code> (identify a dispatch — see §6c), <code>LINK_GIT_DIRTY</code> / <code>FRESH_GIT_DIRTY</code> (dirty-tree flag for installed packages), <code>FWAPG_GIT_SHA</code> / <code>FWAPG_DIR</code>, <code>LNK_BCFP_MODEL_VERSION</code> (bcfp reference pin), <code>LNK_BCFP_BASELINE</code> (ledger path override), <code>LNK_HOST_ALIAS</code> (host name in provenance rows), <code>LNK_LOG=0</code> (skip recompute logging — benchmarks only).</p>
-<hr></div>
+<hr><div class="section level3">
+<h3 id="output-vocabulary-naming-what-a-build-is-link414">Output vocabulary: naming what a build is (link#414)<a class="anchor" aria-label="anchor" href="#output-vocabulary-naming-what-a-build-is-link414"></a></h3>
+<p>A config name says how a bundle was made, and its contents move under that name. The output’s name is four tokens from <code>inst/extdata/vocabulary.csv</code>, one per axis. <code>lnk_vocabulary_resolve(cfg)</code> derives them, and every <code><a href="reference/lnk_pipeline_run.html">lnk_pipeline_run()</a></code> writes them to its <code>log</code> row (<code>token_cut</code>, <code>token_acc</code>, <code>token_grad</code>, <code>token_flow</code>).</p>
+<table class="table"><colgroup><col width="25%"><col width="25%"><col width="25%"><col width="25%"></colgroup><thead><tr><th>Axis</th>
+<th>Prefix</th>
+<th>What it names</th>
+<th>Spec matched</th>
+</tr></thead><tbody><tr><td>cut</td>
+<td><code>cut-</code></td>
+<td>break sources in order, <code>observation_breaks</code> (when observations cut), gradient classes, and which of the definite-barrier, control and habitat-classification files the bundle declares</td>
+<td>canonical string</td>
+</tr><tr><td>acc</td>
+<td><code>acc-</code></td>
+<td>the modelled species, each species’ <code>access_gradient_max</code> and <code>observation_*</code> lifts, the presence table, and the two access rules held in code (<code>.lnk_classes_bcfp</code>, <code><a href="reference/lnk_presence.html">lnk_presence()</a></code>’s groups)</td>
+<td>sha256 of the parsed values</td>
+</tr><tr><td>grad</td>
+<td><code>grad-</code></td>
+<td>how segment gradient is measured</td>
+<td><code>gradient=segment</code></td>
+</tr><tr><td>flow</td>
+<td><code>q-</code></td>
+<td>
+<code>discharge_source</code> and <code>discharge_fill</code>
+</td>
+<td>canonical string</td>
+</tr></tbody></table><p><strong>A network is <code>cut</code> and <code>acc</code> together.</strong> Since #326, gradient positions cut a stream only where a modelled species’ access changes, so the access rules move segments as much as the break sources do. Two outputs with the same <code>cut</code> token and different <code>acc</code> tokens are cut differently.</p>
+<p><strong>What gets no token.</strong> Habitat thresholds and rules, and width against flow: they change flags, not segments, and a tuning chooses them. Data vintage: observation records, the bcfishpass correction CSVs, <code>observation_exclusions.csv</code>, FWA and the discharge loads. <code>config_hash</code> and <code>log_input</code> carry those. Same tokens means made the same way, not necessarily from the same data.</p>
+<p><strong>A config with no live token is refused</strong> before the run opens. That covers a changed break source, a new access gradient, an edited presence table, a bundle loaded by path that differs from every named one, or <code>default_extrabreaks</code> and <code>default_rearbreaks</code>, which have no rows. The error prints the spec. <code>study_area_run.sh</code>’s local pre-flight asks the same question once, before any spend.</p>
+<p><strong>Adding a token.</strong> Add a row with <code>token</code>, <code>axis</code>, <code>definition</code> (prose that still makes sense in years), <code>spec</code> (paste the one the error printed), <code>introduced</code> (the release that ships it) and an empty <code>retired</code>. Then add a test of the config resolving to it in <code>test-lnk_vocabulary.R</code>.</p>
+<p>The rules: - Tokens are lowercase, <code>^[a-z0-9]+(-[a-z0-9]+)*$</code>. - A token is never renamed, never removed and never given a new spec: a changed definition is a new token, and the old row gets <code>retired</code>. - Our own access rule sets are numbered (<code>acc-v1</code>, <code>acc-v2</code>, …), and the definition says what changed from the last one. A new transcription of bcfishpass’s rules is <code>acc-bcfp-2</code>. - <code>test-lnk_vocabulary.R</code> holds the rules against <code>origin/main</code>’s copy, in a checkout only. CI’s shallow clone and <code>R CMD check</code> skip that test, so run it locally before merging an edit to the table.</p>
+<p><strong>Code changes can need a token too.</strong> The specs see the bundle, not the code. A change to how fresh finds gradient barriers, to <code>frs_barriers_minimal()</code>, to the CT alias expansion in observation breaks moves cuts with no spec change. Retire and re-add the affected tokens in the same PR. Changing <code>.lnk_vocabulary_canonical()</code> or the digest inputs re-specs every <code>acc</code> token the same way.</p>
+<p><strong>The recompute is not checked.</strong> <code>wsg_recompute_one.R</code> rewrites <code>streams_access</code> from the config at the commit it runs, and <code>log_recompute</code> carries <code>config_hash</code> but no tokens. A <code>--recompute-only</code> at a later commit whose presence table or lifts changed ships access decided under rules other than the build’s <code>token_acc</code>. Within one run the repo is frozen, so this only bites a recompute run later: compare its <code>config_hash</code> with the build’s.</p>
+<p><strong>Rows from before.</strong> Builds logged before link 0.70.0 have NULL tokens. The consolidate copies the columns both sides share after bringing the destination’s log tables up to the dispatcher’s link (<code>schema_consolidate.R</code>), so the dispatcher must run this link or newer; under <code>load_all</code> it does.</p>
+</div>
+</div>
 <div class="section level2">
 <h2 id="id_6c-run-identity-and-the-recompute-log-link262">6c. Run identity and the recompute log (link#262)<a class="anchor" aria-label="anchor" href="#id_6c-run-identity-and-the-recompute-log-link262"></a></h2>
 <div class="section level3">
