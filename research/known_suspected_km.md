@@ -87,9 +87,11 @@ steelhead needs a re-score against a newer reference.
 
 ## What will move these numbers
 
-- **#399** removes the km above each species' top record on a line: under `bcfishpass` the
-  1.9 to 29.7 km per pair measured above. Under `default` the segment above a top record runs to
-  the next break, which `top_per_species` puts further away, so it moves more there.
+- **#399** removes code 2 from the segment above each record that has no other record of the
+  species upstream of it: under `bcfishpass` the 1.9 to 29.7 km per pair measured above. A
+  segment with a record on a tributary entering above it keeps code 2. Under `default` such a
+  segment runs to the next break, which `top_per_species` puts further away, so #399 is
+  expected to move more there; that is not measured here.
 - **#401** raises observed km on main stems below a group boundary. Today code 2 reads only
   the group's own records, so a main stem with the species recorded just upstream, in the
   next group, reads 1.

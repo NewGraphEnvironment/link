@@ -58,7 +58,7 @@ bcfishpass's `aw_linear_summary()` (`db/schema.sql:5283`, local clone at `smnorr
 
 - [x] `devtools::test()` passes (one call, grep for FAIL/ERROR/PASS)
 - [x] `lintr::lint_package()` clean; `devtools::document()` leaves `man/lnk_rollup_wsg.Rd` regenerated; `pkgdown::check_pkgdown()` (no new export, so expected clean)
-- [ ] `/code-check branch` clean before the PR
+- [x] `/code-check branch` clean before the PR (four rounds; see progress)
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion, then `/gh-pr-push`
 
