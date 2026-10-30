@@ -117,7 +117,7 @@ is Phase 1.
       `log_recompute` carries the run_uid, both verifiers pass. Then set G's `link_sha` to an
       unresolvable sha in scratch and run `--recompute-only`: G named `refused`, exit status as
       before. Drop the scratch schema
-- [ ] RUNBOOK §8d "Groups outside a partial run", its class table, the `--recompute-only` lines and
+- [x] RUNBOOK §8d "Groups outside a partial run", its class table, the `--recompute-only` lines and
       the phases row; CLAUDE.md status; NEWS and version bump last
 - [ ] Tick #274 on #377 with its measured line
 
@@ -129,7 +129,7 @@ is Phase 1.
 ## Validation
 
 - [ ] Tests pass (`devtools::test()`), lint clean
-- [ ] `/code-check` clean (once over the branch with `/code-check branch`, three-round floor)
+- [x] `/code-check` clean (once over the branch with `/code-check branch`, three-round floor): 4 rounds, ended on round 4's enumeration
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
