@@ -106,11 +106,13 @@ per assessment watershed:
 
 - **`length_naturallyaccessible_obsrvd_<sp>` / `_model_<sp>`:** `access_<sp>` 2 and 1. This
   is the split link now reports.
-- **`length_spawningrearing_obsrvd_<sp>` / `_model_<sp>`:** habitat code 2 against 1. Code 2
-  is set where the model says habitat and the user habitat classification confirms it
-  (`model/02_habitat_linear/sql/load_habitat_linear.sql`). That is expert-confirmed habitat
-  against model-only habitat, with spawning and rearing combined. It is not about fish
-  recorded upstream.
+- **`length_spawningrearing_obsrvd_<sp>` / `_model_<sp>`:** habitat codes 2 and 3 against 1.
+  Code 2 is set where the model says habitat and the user habitat classification confirms it,
+  and code 3 where only the classification does
+  (`model/02_habitat_linear/sql/load_habitat_linear.sql`). That is habitat confirmed by the
+  classification, modelled or not, against model-only habitat. Spawning and rearing are
+  combined, except for CM and PK, which read spawning only. It is not about fish recorded
+  upstream.
 
 Both come with `_access_a` (no dam or PSCIS barrier downstream) and `_access_b` (no
 anthropogenic barrier downstream) variants.
@@ -120,8 +122,8 @@ anthropogenic barrier downstream) variants.
 - **The split in `lnk_scenario_export()`.** Its Parquet carries habitat flags, not access
   codes. A column there is stored data, and these values move under #399 and #401, so it waits
   for them.
-- **An expert-confirmed habitat split** matching bcfishpass's `spawningrearing_obsrvd`. link
-  matches the user habitat classification at gate time and persists no flag
+- **A habitat split by the user habitat classification,** matching bcfishpass's
+  `spawningrearing_obsrvd`. link matches the classification at gate time and persists no flag
   (`R/lnk_habitat_gate.R`), so this needs that flag first.
 - **Spawning and rearing by access code** need no new code. `lnk_rollup_wsg()`'s examples show
   them through `metrics =`. bcfishpass has no such split.

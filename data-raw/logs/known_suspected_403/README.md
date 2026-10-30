@@ -29,7 +29,7 @@ same split against bcfishpass for BULK and PARS. Write-up: `research/known_suspe
 | file | what it is |
 |---|---|
 | `rollup.R` | Runs the default rollup on both `default` schemas for every modelled species (an `access_<sp>` column and habitat table, not -9 everywhere in the group), asserts the identity on every row, then reads the split against the reference view for BULK and PARS |
-| `rollup.csv` | 50 rows: schema, group, species, the eight default columns, `share_observed` |
+| `rollup.csv` | 50 rows: schema, group, species, the six default metrics, `share_observed` |
 | `parity_bcfp.csv` | BULK (BT, CH, CO, PK, SK, ST) and PARS (BT): link's `bcfishpass` build against the view, accessible, observed and unobserved km |
 | `parity_pieces.sql` | Classifies the km where the two disagree on code 2: measure overlaps per `blue_line_key`, pieces under 1 cm dropped, and whether link's segment starts within 1 m of a record of the species on the same line |
 | `parity_pieces.csv` | Its output for the seven pairs above less ST |
