@@ -7,9 +7,9 @@
 # two configs filter it differently (presence, exclusions), so after run.sh each
 # working schema holds whichever config ran last. This writes
 # zz399_obs.<config>_<wsg> (the AOI table .lnk_pipeline_prep_observations()
-# builds as <schema>.observations) and zz399_obs.province (its
-# <schema>.observations_province under `default`, for the upstream-group
-# reading in parity_pieces.sql). The helper is unchanged by #399, so PRE and
+# builds as <schema>.observations) and zz399_obs.province_<config> (its
+# <schema>.observations_province; parity_pieces.sql reads
+# province_bcfishpass for its upstream-group reading). The helper is unchanged by #399, so PRE and
 # POST read the same set.
 pkgload::load_all(quiet = TRUE)
 # nolint start: indentation_linter, brace_linter

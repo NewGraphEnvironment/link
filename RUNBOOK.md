@@ -202,7 +202,8 @@ its measure is at least 1 m above the segment's start (fwapg `fwa_upstream`, fre
 species' top starts its segment within 0.5 m of the record: that segment reads 1 and the
 one ending there reads 2. So code 2 is a property of a segment's start, and species X
 turns from 2 to 1 at **its own top break**, the boundary on its highest record on each
-line, whichever bundle (#399). A top within 1 m of another observation's break does not
+line, whichever bundle (#399), unless a tributary entering above that top holds a record
+of X: its records count for every segment of the receiving line below its mouth. A top within 1 m of another observation's break does not
 cut itself (`frs_break_apply()` cuts only more than 1 m from an existing end), and the
 boundary lands on that break instead, within 1 m of the record. Until #399 the walk passed `TRUE`, which
 counts a record at start − 1 or above, so the segment starting at a species' top still
@@ -815,8 +816,8 @@ The rules:
 - A token is never renamed, never removed and never given a new spec: a changed
   definition is a new token, and the old row gets `retired`.
 - Our own access rule sets are numbered (`acc-v1`, `acc-v2`, …), and the definition says
-  what changed from the last one. A new transcription of bcfishpass's rules is
-  `acc-bcfp-2`.
+  what changed from the last one. A transcription of bcfishpass's rules is `acc-bcfp`,
+  then `acc-bcfp-2` (#399), `acc-bcfp-3` and so on.
 - `test-lnk_vocabulary.R` holds the rules against `origin/main`'s copy, in a checkout
   only. CI's shallow clone and `R CMD check` skip that test, so run it locally before
   merging an edit to the table.

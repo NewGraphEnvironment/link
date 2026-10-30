@@ -11,14 +11,26 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-30, latest) — a fish record at a segment's start is not upstream of it (#399)
+
+**The access walk's observation call passes `include_equivalents = FALSE` for every bundle, as bcfishpass's own walk does (`FWA_Upstream(…, False, 1)`), so a same-line record counts as upstream of a segment only at `m >= start + 1`.** Breaks are rounded to the metre, so on each line a species turns from code 2 to 1 at its own top record, unless a tributary entering above it holds a record of the species. Barrier walks keep `TRUE`. No bundle key (operator). `acc-v1` and `acc-bcfp` are retired at 0.72.0 for `acc-v2` and `acc-bcfp-2`, same specs, so the release is a minor bump. Mechanics: RUNBOOK §2c. Write-ups: `research/known_suspected_km.md` ("After #399"), `research/observation_breaks.md`. Evidence: `data-raw/logs/record_at_start_399/`.
+
+**Owed:** every persisted group keeps the old reading until re-modelled (the recompute passes no observations and keeps a prior 2): `fresh_default` and the `bcfishpass` schema at the next provincial run (#377's runs row), stacked on #326's and #396's re-models, after the pre-run gate (#372) runs again.
+
+**Facts not worth re-deriving:**
+- **Only code 2 moved**, built before and after on five `default` groups and two `bcfishpass` groups on m1's local fwapg: same segments and starts, 346.6 and 93.6 km of 2 to 1 (at most 5.4 % of a species' observed km), every piece on a segment with a record of the species within 1 m of its start, no barrier flag, mapping code or habitat change. `pre_post_diff.R` stops on anything else, shown on three hand edits.
+- **link's `bcfishpass` builds now equal bcfishpass's observed km** (0.00 km on BULK BT, CH, CO, PK, SK and PARS BT, against m1's reference `v0.7.15-50-g620dbe4`); steelhead stays apart until a reference built after `smnorris/bcfishpass@3bd2824c`.
+- **The issue's parity premise was wrong:** it assumed bcfishpass reads a record at a segment's start as upstream. Its SQL passes `False`; link's `TRUE` was a transcription error.
+- **psql on m1 needs `PGPASSWORD`** for the local docker; a quiet-database gate whose probe fails reads every minute as busy and waits out its cap.
+
 ## Status (2026-10-30, later) — the group rollup splits accessible km by whether the species is recorded upstream (#403)
 
 **`lnk_rollup_wsg()`'s default adds `accessible_observed_km` (`access = 2`) and `accessible_unobserved_km` (`access = 1`)**, over the rows `accessible_km` sums, so the pair adds to it within 0.01 km and all three are NA together; the validator's `summary` carries them. Mechanics: RUNBOOK §2c and the #319 rollup bullet. Write-up: `research/known_suspected_km.md`. Evidence: `data-raw/logs/known_suspected_403/`.
 
-**Owed:** nothing here. The numbers are a baseline before #399 and #401; their builds revise the research file. The export column waits for them.
+**Owed:** nothing here. The numbers are a baseline before #399 and #401; #399's builds are in the research file ("After #399"), #401's will revise it. The export column waits for #401.
 
 **Facts not worth re-deriving:**
-- **link's observed km run above bcfishpass's by exactly the segment above a record with no other record upstream** (BULK and PARS, 1.9 to 29.7 km per species, every disagreeing piece); accessible km agree within 1.3 km. That is #399.
+- **link's observed km run above bcfishpass's by exactly the segment above a record with no other record upstream** (BULK and PARS, 1.9 to 29.7 km per species, every disagreeing piece); accessible km agree within 1.3 km. That was #399's reading, fixed there: after it the gap is 0.00 km, steelhead excepted.
 - **bcfishpass's `streams_vw_bcfp` codes steelhead 2 from sockeye records** at any reference built before `smnorris/bcfishpass@3bd2824c` (2026-10-23), so a steelhead observed-km comparison needs a newer reference.
 - **bcfishpass's `length_spawningrearing_obsrvd_<sp>` is habitat codes 2 and 3** (confirmed by the user habitat classification, modelled or not; CM and PK spawning only), not fish recorded upstream. link persists no classification flag, so it has no counterpart yet.
 
@@ -120,7 +132,7 @@ Experimental package — breaking all the time and loving the learning curve. St
 
 **`pipeline: observation_breaks: top_per_species` is `default`'s, and `all` (every observation, what bcfishpass does) is the value when absent, which the `bcfishpass` bundle keeps.** `.lnk_pipeline_break_obs()` builds `observations_breaks` from each species' farthest-upstream record per `blue_line_key`; the key is checked at manifest load. Measured on five groups built both ways on m4: segments fall 0.7 to 3.6 %, minutes do not move beyond noise, and the bias in segment length at fish sites closes (UPCE FISS fish / no-fish median segment 98 / 195 m before, 411 / 385 m after). Mechanics: RUNBOOK §2c. Record: `research/observation_breaks.md`. Evidence: `data-raw/logs/observation_breaks_396/` (its README indexes it).
 
-**Owed:** every persisted `default` group re-segments again at the next provincial run, stacked on #326's owed re-model; `fresh` does not. Known-vs-suspected fish (code 2 against 1) is #398 to #403: CT aliases (#398), each species' boundary at its highest record (#399), what counts as known (#400), every group's records (#401), presence checked against the records (#402), and the rollup (#403).
+**Owed:** every persisted `default` group re-segments again at the next provincial run, stacked on #326's owed re-model; `fresh` does not. Known-vs-suspected fish (code 2 against 1) is #398 to #403: CT aliases (#398), each species' boundary at its highest record (#399, done), what counts as known (#400), every group's records (#401), presence checked against the records (#402), and the rollup (#403).
 
 **Facts not worth re-deriving:**
 - **Until #399, a species' own top break never changed its own code 2.** The walk counted a same-line record upstream of a segment when `m >= start - 1`, so the segment starting at the top still reads 2; a species turns to 1 at the first cut more than 1 m above its raw top. A kept top matters as the place species recorded only below it turn. The issue chose the tops on the opposite premise.

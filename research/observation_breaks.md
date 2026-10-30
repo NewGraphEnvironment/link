@@ -16,8 +16,10 @@ record, as bcfishpass does (`all`, the value when the key is absent). Mechanics:
 Since #399 the access walk counts a same-line record as upstream of a segment only when it
 lies at least 1 m above the segment's start, as bcfishpass's walk does
 (`FWA_Upstream(…, False, 1)`). Breaks are rounded to the metre, so the segment starting at a
-species' top record reads 1 and the one ending there reads 2: under either value of
-`observation_breaks`, a species turns from 2 to 1 at its own top on each line.
+species' top record on a line reads 1 and the one ending there reads 2: under either value of
+`observation_breaks`, a species turns from 2 to 1 at its own top on each line, unless a
+tributary entering above that top holds a record of the species, whose records count for
+every segment of the receiving line below its mouth.
 
 Before #399, which every measurement in this file was made under, the walk counted a record
 above the segment's start or within 1 m of it. A species' own top break then never changed
@@ -173,15 +175,16 @@ Question 6 checks the direction rule on every piece.
 
 ## Since #399
 
-#399 changed only the walk's same-line test, so with every break where it was, each species'
-segment above its top record went from 2 to 1 and nothing else moved. On the five groups
+#399 changed only the walk's same-line test, so with every break where it was, the segment
+starting at each species' top record went from 2 to 1 where no tributary record of the species
+enters above it, and nothing else moved. On the five groups
 under `default` (and BULK and PARS under `bcfishpass`), built before and after on one
 database: segment counts and starts identical, 346.6 km of code 2 became 1 over 25
 group-species (0.02 to 73.5 km each, at most 5.4 % of a species' observed km), every piece on
 a segment with a record of the species within 1 m of its start, and no barrier flag, mapping
 code or habitat flag moved (`data-raw/logs/record_at_start_399/pre_post_diff.csv`). So the
 tops now do what #396 chose them for: each species' boundary is at its highest record on each
-line. The measurements above this section were made under the earlier reading.
+line, or above it where a tributary holds records. The measurements above this section were made under the earlier reading.
 
 ## Owed
 

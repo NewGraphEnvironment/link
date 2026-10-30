@@ -89,7 +89,8 @@ steelhead needs a re-score against a newer reference (still so after #399, below
 ## After #399
 
 Since #399 a same-line record counts as upstream of a segment only at least 1 m above its
-start, so the segment above each species' highest record on a line reads 1. The same groups
+start, so the segment starting at each species' highest record on a line reads 1, unless a
+tributary entering above it holds a record of the species. The same groups
 were built before and after the change on one database, in both configs
 (`data-raw/logs/record_at_start_399/`; its builds reproduce the tables above to the
 hundredth of a km).
@@ -104,10 +105,10 @@ start. Accessible km, barrier flags, mapping codes and habitat do not move
 | `default` | 25 | 346.6 | 0.02 to 73.5 | 0 to 5.4 %, median 1.8 % |
 | `bcfishpass` | 7 | 93.6 | 1.9 to 29.7 | 0.6 to 4.2 %, median 1.9 % |
 
-The largest losses are rainbow trout and coho (BULK RB 73.5 km, 5.2 %; PARS RB 41.2 km;
-BULK CO 29.0 km). In BULK, where both configs were built, a species loses nearly the same in
-each: `top_per_species` did not leave `default` more to lose, because the segment above a
-top runs to the next break of any source, not of observations alone.
+The largest losses are BULK RB (73.5 km, 5.2 %), ELKR WCT (54.3 km), PARS RB (41.2 km) and
+BULK CO (29.0 km). In BULK, where both configs were built, each species loses nearly the same
+under both (BT 14.5 and 14.5 km, CO 29.0 and 27.8): #403's expectation that `default` would
+move more did not hold there.
 
 **Against bcfishpass the observed km now agree.** link minus bcfishpass is 0.00 km for BULK
 BT, CH, CO, PK and SK and for PARS BT, from 1.91 to 29.70 km before (`parity_bcfp.csv`).
