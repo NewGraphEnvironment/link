@@ -46,7 +46,7 @@ then aggregates by (watershed_group_code, species_code)."><meta property="og:ima
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Roll up per-(WSG, species) length metrics from persisted state</h1>
-      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.71.0/R/lnk_rollup_wsg.R" class="external-link"><code>R/lnk_rollup_wsg.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/R/lnk_rollup_wsg.R" class="external-link"><code>R/lnk_rollup_wsg.R</code></a></small>
       <div class="d-none name"><code>lnk_rollup_wsg.Rd</code></div>
     </div>
 
@@ -70,10 +70,15 @@ then aggregates by <code>(watershed_group_code, species_code)</code>.</p>
 <span>  schema <span class="op">=</span> <span class="st">"fresh"</span>,</span>
 <span>  metrics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>accessible_km <span class="op">=</span></span>
 <span>    <span class="st">"round(sum(length_metre) FILTER (WHERE access IN (1, 2))::numeric / 1000, 2)"</span>,</span>
+<span>    accessible_observed_km <span class="op">=</span></span>
+<span>    <span class="st">"round(sum(CASE WHEN access = 2 THEN length_metre ELSE 0 END) FILTER (WHERE access IN (1, 2))::numeric / 1000, 2)"</span>,</span>
+<span>    accessible_unobserved_km <span class="op">=</span></span>
+<span>    <span class="st">"round(sum(CASE WHEN access = 1 THEN length_metre ELSE 0 END) FILTER (WHERE access IN (1, 2))::numeric / 1000, 2)"</span>,</span>
 <span>    spawning_km <span class="op">=</span> <span class="st">"round(sum(length_metre) FILTER (WHERE spawning)::numeric / 1000, 2)"</span>,</span>
 <span>    rearing_km <span class="op">=</span></span>
 <span>    <span class="st">"round(sum(length_metre) FILTER (WHERE rearing AND NOT connection)::numeric / 1000, 2)"</span>,</span>
-<span>    rearing_lake_connection_km <span class="op">=</span></span>
+<span>    </span>
+<span>     rearing_lake_connection_km <span class="op">=</span></span>
 <span>    <span class="st">"round(COALESCE(sum(length_metre) FILTER (WHERE rearing AND connection), 0)::numeric / 1000, 2)"</span><span class="op">)</span>,</span>
 <span>  where <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -110,7 +115,9 @@ identifier whitelist.</p></dd>
 values are SQL aggregate expressions over the generic aliases
 <code>length_metre</code>, <code>edge_type</code>, <code>waterbody</code>, <code>connection</code>, <code>access</code>,
 <code>spawning</code>, <code>rearing</code>. Default emits
-<code>accessible_km</code>, <code>spawning_km</code>, <code>rearing_km</code> (lines flagged <code>rearing</code>,
+<code>accessible_km</code>, its split <code>accessible_observed_km</code> (access 2) and
+<code>accessible_unobserved_km</code> (access 1), <code>spawning_km</code>, <code>rearing_km</code>
+(lines flagged <code>rearing</code>,
 lake connection lines left out) and <code>rearing_lake_connection_km</code> (the
 connection lines flagged <code>rearing</code>). Raw SQL — trusted caller input,
 like <code>frs_aggregate()</code>.</p></dd>
@@ -132,7 +139,7 @@ per metric. Columns: <code>wsg</code>, <code>species</code>, then <code>names(me
     <p>The <code>streams_access</code> join is a LEFT join: access is optional metadata
 for a length roll-up. When a segment has no <code>streams_access</code> row
 (access not yet built for the WSG), <code>access</code> is <code>NULL</code> and
-<code>accessible_km</code> resolves to 0 — build it via
+<code>accessible_km</code> is <code>NA</code> (a filtered sum over no rows) — build it via
 <code>lnk_pipeline_run(mapping_code = TRUE)</code> (or the unconditional access
 phase). Length is never dropped by a missing access row, so the
 habitat metrics (<code>spawning_km</code>, <code>rearing_km</code>) are unaffected.</p>
@@ -173,6 +180,18 @@ deliberately does <strong>not</strong> use the
 <code>accessible</code> boolean on <code>streams_habitat_&lt;sp&gt;</code>, which carries
 different (pre-gating) semantics and diverges from the access model
 (MORR coho: 3424 km vs the validated 3330 km).</p>
+<p>The default also splits <code>accessible_km</code> in two by the access code:
+<code>accessible_observed_km</code> (<code>access = 2</code>, the species recorded upstream of
+the segment) and <code>accessible_unobserved_km</code> (<code>access = 1</code>, accessible
+with no record upstream). Both sum over the same rows as <code>accessible_km</code>,
+so all three are <code>NA</code> together where access is not built, a part is 0
+where accessible rows exist but none carry its code, and
+<code>accessible_observed_km + accessible_unobserved_km</code> equals
+<code>accessible_km</code> to the 0.01 km each column is rounded to. bcfishpass
+reports the same split as <code>length_naturallyaccessible_obsrvd_&lt;sp&gt;</code> and
+<code>length_naturallyaccessible_model_&lt;sp&gt;</code>. Which records count, and where
+code 2 ends upstream of the top record, are the access walk's rules
+(see <code>RUNBOOK.md</code>), not this function's.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -208,6 +227,21 @@ different (pre-gating) semantics and diverges from the access model
 <span class="r-in"><span>      <span class="st">"AND NOT connection) / 1000"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>    rearing_wetland_km <span class="op">=</span></span></span>
 <span class="r-in"><span>      <span class="st">"sum(length_metre) FILTER (WHERE rearing AND waterbody = 'wetland') / 1000"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Spawning and rearing km split by whether the species is recorded</span></span></span>
+<span class="r-in"><span><span class="co"># upstream (access 2) or not (access 1).</span></span></span>
+<span class="r-in"><span><span class="fu">lnk_rollup_wsg</span><span class="op">(</span><span class="va">conn</span>, aoi <span class="op">=</span> <span class="st">"MORR"</span>, species <span class="op">=</span> <span class="st">"CO"</span>,</span></span>
+<span class="r-in"><span>  metrics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    spawning_observed_km <span class="op">=</span></span></span>
+<span class="r-in"><span>      <span class="st">"sum(length_metre) FILTER (WHERE spawning AND access = 2) / 1000"</span>,</span></span>
+<span class="r-in"><span>    spawning_unobserved_km <span class="op">=</span></span></span>
+<span class="r-in"><span>      <span class="st">"sum(length_metre) FILTER (WHERE spawning AND access = 1) / 1000"</span>,</span></span>
+<span class="r-in"><span>    rearing_observed_km <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>      <span class="st">"sum(length_metre) FILTER (WHERE rearing AND NOT connection"</span>,</span></span>
+<span class="r-in"><span>      <span class="st">"AND access = 2) / 1000"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    rearing_unobserved_km <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>      <span class="st">"sum(length_metre) FILTER (WHERE rearing AND NOT connection"</span>,</span></span>
+<span class="r-in"><span>      <span class="st">"AND access = 1) / 1000"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Custom metric: count accessible segments per species.</span></span></span>
 <span class="r-in"><span><span class="fu">lnk_rollup_wsg</span><span class="op">(</span><span class="va">conn</span>, aoi <span class="op">=</span> <span class="st">"MORR"</span>, species <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CO"</span>, <span class="st">"BT"</span><span class="op">)</span>,</span></span>

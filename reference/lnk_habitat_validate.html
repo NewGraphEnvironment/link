@@ -48,7 +48,7 @@ false-positive check."><meta property="og:image" content="https://newgraphenviro
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Validate modelled habitat against fish observations</h1>
-      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.71.0/R/lnk_habitat_validate.R" class="external-link"><code>R/lnk_habitat_validate.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/R/lnk_habitat_validate.R" class="external-link"><code>R/lnk_habitat_validate.R</code></a></small>
       <div class="d-none name"><code>lnk_habitat_validate.Rd</code></div>
     </div>
 
@@ -187,8 +187,10 @@ records the WSG), <code>n_obs</code> (locations on a segment), <code>n_unattache
 <code>n_rearing_any</code>, <code>n_habitat</code> (spawning or any rearing), the matching
 <code>share_*</code> (of <code>n_obs</code>; <code>NA</code> when <code>n_obs</code> is 0), <code>n_in_uhc_spawn</code>,
 <code>n_in_uhc_rear</code>, the <code>*_outside_uhc</code> counts and shares, and cost
-<code>accessible_km</code>, <code>spawning_km</code>, <code>rearing_km</code> (lake connection lines
-left out) and <code>rearing_lake_connection_km</code> from <code><a href="lnk_rollup_wsg.html">lnk_rollup_wsg()</a></code>.
+<code>accessible_km</code>, its split <code>accessible_observed_km</code> (the species
+recorded upstream) and <code>accessible_unobserved_km</code>, <code>spawning_km</code>,
+<code>rearing_km</code> (lake connection lines left out) and
+<code>rearing_lake_connection_km</code> from <code><a href="lnk_rollup_wsg.html">lnk_rollup_wsg()</a></code>.
 With <code>absences</code>, also <code>n_absence</code>, <code>n_absence_accessible</code>,
 <code>n_absence_spawning</code>, <code>n_absence_rearing</code> (the <code>rearing</code> flag) and
 <code>n_absence_rearing_any</code> (the same on every stage). <code>model</code> is the

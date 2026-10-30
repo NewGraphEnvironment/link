@@ -100,9 +100,12 @@
 <span></span>
 <span><span class="fu"><a href="reference/lnk_rollup_wsg.html">lnk_rollup_wsg</a></span><span class="op">(</span><span class="va">conn</span>, aoi <span class="op">=</span> <span class="st">"PARS"</span>, species <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"BT"</span>, <span class="st">"GR"</span><span class="op">)</span>,</span>
 <span>               schema <span class="op">=</span> <span class="st">"fresh_default"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;    wsg species accessible_km spawning_km rearing_km rearing_lake_connection_km</span></span>
-<span><span class="co">#&gt; 1 PARS      BT       6883.03     1685.38    2635.01                          0</span></span>
-<span><span class="co">#&gt; 2 PARS      GR       4442.31      983.86    1366.32                          0</span></span></code></pre></div>
+<span><span class="co">#&gt;    wsg species accessible_km accessible_observed_km accessible_unobserved_km</span></span>
+<span><span class="co">#&gt; 1 PARS      BT       6882.15                 842.81                  6039.34</span></span>
+<span><span class="co">#&gt; 2 PARS      GR       4441.86                 596.01                  3845.86</span></span>
+<span><span class="co">#&gt;   spawning_km rearing_km rearing_lake_connection_km</span></span>
+<span><span class="co">#&gt; 1     1682.72    2624.20                      40.16</span></span>
+<span><span class="co">#&gt; 2      983.83    1398.15                      30.09</span></span></code></pre></div>
 <p>Change a threshold, run again, and compare. Each run records its inputs, its parameters and the source versions its data was loaded from, in log tables beside its results.</p>
 </div>
 <div class="section level2">

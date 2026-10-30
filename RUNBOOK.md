@@ -236,10 +236,13 @@ matters as the place where species recorded only below it turn to 1.
 Lifts count observations point against point
 ([`lnk_barrier_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_barrier_overrides.md)),
 and the mapping code and habitat gate read `has_barriers_<sp>_dnstr` and
-`access = 0` against `> 0`; none needs a break. Nothing in link tells 2
-from 1 (every reader tests `IN (1, 2)`, `> 0` or `= 0`); bcfishpass’s
-own `aw_linear_summary()` does, on its own tables
-(`data-raw/logs/observation_breaks_396/readers_code2.md`).
+`access = 0` against `> 0`; none needs a break. Until \#403 nothing in
+link told 2 from 1 (every reader tested `IN (1, 2)`, `> 0` or `= 0`;
+`data-raw/logs/observation_breaks_396/readers_code2.md`). Now
+[`lnk_rollup_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_rollup_wsg.md)’s
+default `accessible_observed_km` / `accessible_unobserved_km` do, as
+bcfishpass’s `aw_linear_summary()` does on its own tables
+(`length_naturallyaccessible_obsrvd_<sp>` / `_model_<sp>`).
 
 **The access changes follow from one fact: a segment’s codes depend only
 on where it starts.** Both tests in the walk are monotone in the start:
@@ -1462,6 +1465,13 @@ dispatch.**
     to the nearest line, so they are evidence for the lake.
     [`lnk_habitat_validate()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_validate.md)’s
     roxygen carries the table.
+  - **`accessible_km` splits by access code too (#403).** The default
+    `accessible_observed_km` (`access = 2`) and
+    `accessible_unobserved_km` (`access = 1`) sum over the rows
+    `accessible_km` sums, so the pair sums to it (to 0.01 km a column)
+    and all three are NA together where access is not built. The
+    validator’s `summary` carries all three. What code 2 means, and
+    where it ends above a species’ top record, is §2c.
   - **[`lnk_aggregate()`](https://newgraphenvironment.github.io/link/reference/lnk_aggregate.md)
     still sums the flag**, connection lines included: it is
     per-crossing, link-side SQL over boolean habitat columns, with no
