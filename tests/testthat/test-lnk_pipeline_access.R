@@ -693,6 +693,56 @@ test_that("a record at a segment's start is not upstream of that segment (#399)"
                    c(FALSE, FALSE))
 })
 
+test_that("a record in another group upstream makes this group's line read 2 (#401)", {
+  skip_if_no_db()
+  conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
+                      user = "postgres", password = "postgres")
+  on.exit(DBI::dbDisconnect(conn), add = TRUE)
+  ex <- function(sql) DBI::dbExecute(conn, sql)
+  # Group AAAA holds a stretch of line 10; group BBBB holds a tributary
+  # (line 20, coded under line 10) with the only X record. The group-only
+  # table holds AAAA's records (a Y on line 10); the province table holds both.
+  ex("CREATE TEMP TABLE seg401 (id_segment int, watershed_group_code text,
+        blue_line_key int, downstream_route_measure float8,
+        wscode_ltree ltree, localcode_ltree ltree)")
+  ex("INSERT INTO seg401 VALUES (1, 'AAAA', 10, 100, '100.200', '100.200')")
+  ex("CREATE TEMP TABLE obs401_group (watershed_group_code text,
+        species_code text, blue_line_key int, downstream_route_measure float8,
+        wscode ltree, localcode ltree)")
+  ex("INSERT INTO obs401_group VALUES
+        ('AAAA', 'Y', 10, 500, '100.200', '100.200')")
+  ex("CREATE TEMP TABLE obs401_province AS SELECT * FROM obs401_group")
+  ex("INSERT INTO obs401_province VALUES
+        ('BBBB', 'X', 20, 50, '100.200.300', '100.200.300')")
+  ex("CREATE TEMP TABLE barriers_x (barriers_x_id text,
+        watershed_group_code text, blue_line_key int,
+        downstream_route_measure float8, wscode_ltree ltree,
+        localcode_ltree ltree)")
+
+  walk <- function(obs) {
+    # fresh reads results through sf, which warns on a query with no geometry.
+    withCallingHandlers(
+      lnk_pipeline_access(
+        conn,
+        segments = "pg_temp.seg401",
+        aoi = "AAAA",
+        barriers_per_sp = list(x = "pg_temp.barriers_x"),
+        observations = obs,
+        wsg_presence = list(x = TRUE)
+      ),
+      warning = function(w) {
+        if (grepl("simple features geometry column", conditionMessage(w))) {
+          invokeRestart("muffleWarning")
+        }
+      }
+    )
+  }
+  # The walk scopes segments to the AOI, never the records it is given, so
+  # what it counts is decided by the table lnk_pipeline_run() passes.
+  expect_identical(walk("pg_temp.obs401_group")$access_x, 1L)
+  expect_identical(walk("pg_temp.obs401_province")$access_x, 2L)
+})
+
 test_that("the observation walk excludes a record at a segment's start; barrier walks include it (#399)", {
   # bcfishpass's own observation walk calls FWA_Upstream(..., False, 1)
   # (load_streams_upstr_observations.sql); a barrier at a segment's start must

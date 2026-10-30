@@ -108,7 +108,11 @@ test_that("lnk_pipeline_run errors before persist when active_species is empty",
   m_persist <- function(...) {
     m_persist_called <<- TRUE; invisible(NULL)
   }
-  m_exec <- function(...) 1L
+  drops <- character()
+  m_exec <- function(conn, sql, ...) {
+    if (grepl("DROP", sql)) drops <<- c(drops, sql)
+    1L
+  }
 
   m_log_fail_called <- FALSE
   m_log_finish_called <- FALSE
@@ -167,6 +171,9 @@ test_that("lnk_pipeline_run errors before persist when active_species is empty",
   expect_false(m_persist_init_called)
   expect_false(m_unify_called)
   expect_false(m_persist_called)
+  # A run that stops still drops the province copy prepare built (link#401):
+  # wsg_run_one.R keeps its working schema.
+  expect_true("DROP TABLE IF EXISTS working_adms.observations_province" %in% drops)
 })
 
 test_that("lnk_pipeline_run composes phases in expected order", {
@@ -212,14 +219,19 @@ test_that("lnk_pipeline_run composes phases in expected order", {
   m_views <- function(conn, schema, cfg, species, ...) {
     calls <<- c(calls, "barriers_views"); invisible(conn)
   }
+  access_args <- NULL
   m_access <- function(conn, ...) {
+    access_args <<- list(...)
     calls <<- c(calls, "access"); invisible(conn)
   }
   m_gate <- function(conn, ...) {
     calls <<- c(calls, "habitat_gate"); NULL
   }
+  drops <- character()
   m_exec <- function(conn, sql) {
-    if (grepl("DROP", sql)) calls <<- c(calls, "exec_drop")
+    if (grepl("DROP", sql)) {
+      calls <<- c(calls, "exec_drop"); drops <<- c(drops, sql)
+    }
     1L
   }
   m_log_start <- function(...) {
@@ -283,9 +295,15 @@ test_that("lnk_pipeline_run composes phases in expected order", {
     "persist_init", "barriers_unify",
     "presence", "persist", "barriers_views", "access",
     "persist", "habitat_gate",
-    "log_finish"
+    "log_finish",
+    "exec_drop"
   )
   expect_equal(calls, expected_order)
+  # Code 2 counts every group's records, as bcfishpass's walk does (link#401);
+  # the province copy is dropped when the run ends, after the walk read it.
+  expect_identical(access_args$observations, "working_adms.observations_province")
+  expect_identical(drops[length(drops)],
+                   "DROP TABLE IF EXISTS working_adms.observations_province")
   # Returns conn invisibly
   expect_s3_class(result, "DBIConnection")
 })

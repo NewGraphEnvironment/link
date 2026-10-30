@@ -46,16 +46,16 @@ What exploration settled:
 
 ## Phase 1: Tests first
 
-- [ ] `test-lnk_pipeline_access.R`: DB fixture (modelled on #399's `seg399`/`obs399`). Group
+- [x] `test-lnk_pipeline_access.R`: DB fixture (modelled on #399's `seg399`/`obs399`). Group
   `AAAA` holds a segment on line 10 (`100.200`); a record of species X in group `BBBB` on a
   tributary (`100.200.300`) upstream of it, and a group-`AAAA` table with no X. The segment reads
   2 against the province-style table and 1 against the group-only one.
-- [ ] `test-lnk_pipeline_run.R`: (mocked) the access call gets `observations =
+- [x] `test-lnk_pipeline_run.R`: (mocked) the access call gets `observations =
   "<schema>.observations_province"`, the break step still reads `<schema>.observations`, and the
   province table is dropped after access, including on the no-active-species early return.
-- [ ] `test-lnk_pipeline_prepare.R:1140`: `prep_overrides` still reads the province table for
+- [x] `test-lnk_pipeline_prepare.R:1140`: `prep_overrides` still reads the province table for
   lifts but no longer drops it.
-- [ ] `test-lnk_vocabulary.R` / `test-lnk_log.R`: `default` resolves `acc-v3`, `bcfishpass`
+- [x] `test-lnk_vocabulary.R` / `test-lnk_log.R`: `default` resolves `acc-v3`, `bcfishpass`
   `acc-bcfp-3`; the old tokens are retired at 0.73.0.
 
 ## Phase 2: Code
