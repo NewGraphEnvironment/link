@@ -1,0 +1,7 @@
+Warning message:
+reference has 0 rows for LPCE — not modelled there; returning NA stats. 
+[study_area_compare] 1 rows across 1/1 WSGs -> <worktree>/data-raw/logs/study_area_run/20261030_050720_compare.csv
+# A tibble: 1 × 7
+  wsg   species total_segs match_pct n_diffs top_pattern top_pattern_count
+* <chr> <chr>        <int>     <dbl>   <int> <chr>                   <int>
+1 LPCE  BT               0        NA      NA <NA>                       NA

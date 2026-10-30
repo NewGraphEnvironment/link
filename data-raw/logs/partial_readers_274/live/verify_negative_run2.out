@@ -1,0 +1,28 @@
+=== negative test of study_area_verify.sql against run 20261030_050720-41d61c31 ===
+NOTICE:  schema "zz_lnk_verify_negative" does not exist, skipping
+  scratch schema zz_lnk_verify_negative built: 1 WSG(s)
+  habitat copied settled: bt in LPCE
+  ✓ 1. healthy data              -> PASS (as expected)
+  ✓ 2. LPCE recompute deleted -> FAIL (as expected)
+  ✓ 3. expected_n=2 (wrong)  -> FAIL (as expected)
+  ✓ 4a. unpinned, no reason      -> FAIL (as expected)
+  ✓ 4b. unpinned + written reason-> PASS (as expected)
+  ✓ 4c. unpinned + blank reason  -> FAIL (as expected)
+  ✓ 5. fresh_sha NULLed -> FAIL (as expected)
+  ✓ 6. bcfishobs_sha NULLed -> FAIL (as expected)
+  ✓ 6b. fresh_dirty=TRUE         -> FAIL (as expected)
+  ⊘ 6c. SKIPPED: run 20261030_050720-41d61c31 used one host, so hosts cannot disagree.
+       Absence reported as absence -- this is NOT a pass. Counted as a
+       failure, like cases 2, 4 and 5/6: without it the banner would
+       read 'the verify script fails when it should' about a brand-new
+       assertion this run never exercised.
+  ✓ 6d. bt row un-settled -> FAIL (as expected)
+NOTICE:  column "habitat_gate_lifted" of relation "log_recompute" already exists, skipping
+  ✓ 6e. LPCE lifted 3      -> FAIL (as expected)
+  ✓ 6f. LPCE open row, superseded -> PASS (as expected)
+  ✓ 6g. LPCE open row, not superseded -> FAIL (as expected)
+  ✓ 6h. outside reader recomputed -> PASS (as expected)
+  ✓ 6i. outside reader lifted 3   -> PASS, reported (as expected)
+  ✓ 7. healthy data, post-restore-> PASS (as expected)
+
+=== negative test FAILED (1 case(s) wrong) ===

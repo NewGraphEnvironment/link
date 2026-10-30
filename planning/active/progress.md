@@ -33,3 +33,13 @@
   including new 6h (reader present → PASS) and 6i (reader lifted → PASS, reported); against the
   old verifier 6i fails. Audit tests: a reader started from the final set → `ok`, one started
   before its run group landed → `EARLY` (57 pass in test-recompute_readers.R).
+- Phase 4 live, from a worktree at `27e8089c`, scratch `fresh_274`, dispatcher only:
+  run 1 `20261030_050409-473440fc` models KISK (exit 0); run 2 `20261030_050720-41d61c31`
+  models LPCE and recomputes KISK as its reader (`recompute`; `log_recompute` row under run 2's
+  uid; compare over LPCE only; audit ok; verify passes, KISK labelled an outside reader;
+  negative script right on every case it can run, 6c skipped for one host); run 3
+  `--recompute-only` after KISK's `link_sha` was set unresolvable: KISK `refused`
+  (`sha_unresolvable`), named with the re-model, no recompute row, exit 0. Evidence `live/`.
+- Dead ends: UPET/LPET (GR and RB only, no bcfishpass reference, so the compare fails a
+  one-group run); CARP above the Peace dams a scratch schema lacks. Found: `--pretest-note`
+  cannot record into a schema that does not exist yet (pre-existing; issue drafted).

@@ -112,7 +112,7 @@ is Phase 1.
 
 ## Phase 4: Live verification and docs
 
-- [ ] Commit first, then freeze HEAD. Scratch `fresh_274` on the dispatcher: model a small pair D
+- [x] Commit first, then freeze HEAD. Scratch `fresh_274` on the dispatcher: model a small pair D
       and its reader G, then a dispatcher-only run of D (`--pretest-note`): G recomputed, its
       `log_recompute` carries the run_uid, both verifiers pass. Then set G's `link_sha` to an
       unresolvable sha in scratch and run `--recompute-only`: G named `refused`, exit status as

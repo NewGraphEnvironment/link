@@ -1,0 +1,70 @@
+=== study_area_run 20261030_051034 ===
+  run_uid:      20261030_050720-41d61c31
+  run_label:    <none>
+  config:       default
+  branch:        (cyphers run this ref)
+  persist:      fresh_274
+  cyphers:      <none> (0)
+  workers:      <none> (0; persistent, never burned)
+  log dir:      <worktree>/data-raw/logs/study_area_run
+  vintage max:  7 d
+  recompute -j: 4
+  buckets:      closure (each --focal= expanded to its drainage closure, DS-first)
+  MODE:         --recompute-only (finish run_uid 20261030_050720-41d61c31; no spend)
+  phases:       <worktree>/data-raw/logs/study_area_run/20261030_051034_phases.tsv
+=== --recompute-only: run_uid 20261030_050720-41d61c31 ===
+  pre-flight, dispatch and consolidate SKIPPED: this reads only the
+  persisted tables in fresh_274, and spins up nothing.
+  ✓ run_uid 20261030_050720-41d61c31 was built with --config=default
+  expected WSGs: 1: the 1 in <worktree>/data-raw/logs/study_area_run/20261030_050720_run_wsgs.tsv
+  [phase] prep ok 2026-10-30T05:10:34Z -> 2026-10-30T05:10:34Z (0.0 min, 1 groups)
+=== verify WSG coverage in fresh_274 (run_uid 20261030_050720-41d61c31) ===
+  1/1 run WSGs have rows from a build this run finished
+  classes: <worktree>/data-raw/logs/study_area_run/20261030_051034_coverage.tsv
+  [phase] coverage ok 2026-10-30T05:10:34Z -> 2026-10-30T05:10:34Z (0.0 min, 1 groups)
+=== groups outside the run that read it (fresh_274) ===
+  ✓ outside readers: 0 to recompute, 1 named (<worktree>/data-raw/logs/study_area_run/20261030_051034_outside_readers.tsv)
+=== post-consolidate recompute (lnk_access, 1 WSGs, -j4) ===
+  ✓ log tables present in fresh_274
+  ✓ barrier views built once for fresh_274
+  [phase] views ok 2026-10-30T05:11:46Z -> 2026-10-30T05:11:48Z (0.0 min)
+  ordering 241 known WSG time(s) longest-first (median 2.43 min for the rest)
+[fanout] recompute - OK: 1/1 job(s) succeeded
+  ✓ recompute: 1/1 WSGs
+  [phase] recompute ok 2026-10-30T05:11:48Z -> 2026-10-30T05:11:53Z (0.1 min, 1 groups)
+=== compare (tunnel-free) ===
+  ✓ compare CSV: <worktree>/data-raw/logs/study_area_run/20261030_051034_compare.csv
+  [phase] compare ok 2026-10-30T05:11:53Z -> 2026-10-30T05:11:56Z (0.1 min, 1 groups)
+=== summary ===
+  phases (<worktree>/data-raw/logs/study_area_run/20261030_051034_phases.tsv):
+    phase       host       start_utc            end_utc              minutes groups status
+    prep                   2026-10-30T05:10:34Z 2026-10-30T05:10:34Z     0.0      1 ok
+    coverage               2026-10-30T05:10:34Z 2026-10-30T05:10:34Z     0.0      1 ok
+    views                  2026-10-30T05:11:46Z 2026-10-30T05:11:48Z     0.0        ok
+    recompute              2026-10-30T05:11:48Z 2026-10-30T05:11:53Z     0.1      1 ok
+    compare                2026-10-30T05:11:53Z 2026-10-30T05:11:56Z     0.1      1 ok
+  critical path: 1.4 min (first start to last end)
+  run WSGs:        LPCE
+  recomputed WSGs: LPCE
+  compare CSV: <worktree>/data-raw/logs/study_area_run/20261030_051034_compare.csv
+Warning message:
+reference has 0 rows for LPCE — not modelled there; returning NA stats. 
+[study_area_compare] 1 rows across 1/1 WSGs -> <worktree>/data-raw/logs/study_area_run/20261030_051034_compare.csv
+# A tibble: 1 × 7
+  wsg   species total_segs match_pct n_diffs top_pattern top_pattern_count
+* <chr> <chr>        <int>     <dbl>   <int> <chr>                   <int>
+1 LPCE  BT               0        NA      NA <NA>                       NA
+  WARN: groups outside this run read a group it rebuilt and still hold access
+        (and habitat) from before it. Per group and why: <worktree>/data-raw/logs/study_area_run/20261030_051034_outside_readers.tsv
+    built at another version (refused):     KISK
+  Leave them to the next full run, or re-model each under this run_uid
+  (which makes it a run group), then recompute the run; a re-modelled
+  group's own readers are named on that pass:
+    PGOPTIONS='-c statement_timeout=30min' \
+    LNK_RUN_UID=20261030_050720-41d61c31 LNK_SCHEMA=fresh_274 \
+      LNK_GUARD_DOWNSTREAM=warn LNK_HABITAT_GATE=0 LNK_LOAD=loadall \
+      Rscript data-raw/wsg_run_one.R <WSG> default
+    bash data-raw/study_area_run.sh --recompute-only --run-uid=20261030_050720-41d61c31 \
+      --config=default --schema=fresh_274
+=== study_area_run done ===
+  ✓ redacted host addresses in 12 log file(s)
