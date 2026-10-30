@@ -1,6 +1,6 @@
 # Accessible km with and without the species recorded upstream
 
-**Verified:** 2026-10-30 · **Issues:** #403 (from #396; blocked by #398, #399, #400, #401) · **Produced by:** `data-raw/logs/known_suspected_403/` (its README indexes it): `rollup.R`, `parity_pieces.sql` · **Status:** the split ships in `lnk_rollup_wsg()`'s default; the numbers below are a baseline taken before #399 and #401, which will move them
+**Verified:** 2026-10-30 · **Issues:** #403 (from #396; blocked by #398, #400, #401; #399 done) · **Produced by:** `data-raw/logs/known_suspected_403/` (its README indexes it): `rollup.R`, `parity_pieces.sql`; after #399, `data-raw/logs/record_at_start_399/` · **Status:** the split ships in `lnk_rollup_wsg()`'s default; the first tables below are a baseline taken before #399, and "After #399" has the same groups since; #401 will move them again
 
 ## The rule
 
@@ -15,7 +15,7 @@ rounding of two columns. All three are NA together where a group has no access b
 
 What the columns report is whatever the access walk wrote. Since #399 a record on the same
 line counts as upstream of a segment only when it lies at least 1 m above the segment's
-start, as in bcfishpass (`RUNBOOK.md` §2c). The tables below were taken before #399, when
+start, as in bcfishpass (`RUNBOOK.md` §2c). The tables up to "After #399" were taken before it, when
 the walk also counted a record within 1 m of the start.
 
 ## How much of the accessible network has a record upstream
@@ -84,15 +84,39 @@ reference build, bcfishpass coded steelhead's code 2 from sockeye records
 (`model/01_access/sql/load_streams_access.sql`, the `access_st` case tests `'SK'`, at
 `smnorris/bcfishpass@620dbe43`). Upstream fixed it on 2026-10-23
 (`smnorris/bcfishpass@3bd2824c`; their issue 938). The view on m4 predates the fix, so
-steelhead needs a re-score against a newer reference.
+steelhead needs a re-score against a newer reference (still so after #399, below).
+
+## After #399
+
+Since #399 a same-line record counts as upstream of a segment only at least 1 m above its
+start, so the segment above each species' highest record on a line reads 1. The same groups
+were built before and after the change on one database, in both configs
+(`data-raw/logs/record_at_start_399/`; its builds reproduce the tables above to the
+hundredth of a km).
+
+**Only that code moved.** Every segment and segment start is the same in both builds, and
+the one change is code 2 to 1 on a segment with a record of the species within 1 m of its
+start. Accessible km, barrier flags, mapping codes and habitat do not move
+(`pre_post_diff.csv`).
+
+| config | group-species | observed km lost | per group-species | share of observed km |
+|---|---|---|---|---|
+| `default` | 25 | 346.6 | 0.02 to 73.5 | 0 to 5.4 %, median 1.8 % |
+| `bcfishpass` | 7 | 93.6 | 1.9 to 29.7 | 0.6 to 4.2 %, median 1.9 % |
+
+The largest losses are rainbow trout and coho (BULK RB 73.5 km, 5.2 %; PARS RB 41.2 km;
+BULK CO 29.0 km). In BULK, where both configs were built, a species loses nearly the same in
+each: `top_per_species` did not leave `default` more to lose, because the segment above a
+top runs to the next break of any source, not of observations alone.
+
+**Against bcfishpass the observed km now agree.** link minus bcfishpass is 0.00 km for BULK
+BT, CH, CO, PK and SK and for PARS BT, from 1.91 to 29.70 km before (`parity_bcfp.csv`).
+This reference is a newer bcfishpass build than the one above (`v0.7.15-50-g620dbe4`), and
+it still predates the steelhead fix, so steelhead stays apart. No disagreeing piece needed a
+record from another group, which is where #401 would show.
 
 ## What will move these numbers
 
-- **#399** removes code 2 from the segment above each record that has no other record of the
-  species upstream of it: under `bcfishpass` the 1.9 to 29.7 km per pair measured above. A
-  segment with a record on a tributary entering above it keeps code 2. Under `default` such a
-  segment runs to the next break, which `top_per_species` puts further away, so #399 is
-  expected to move more there; that is not measured here.
 - **#401** raises observed km on main stems below a group boundary. Today code 2 reads only
   the group's own records, so a main stem with the species recorded just upstream, in the
   next group, reads 1.
@@ -123,8 +147,8 @@ anthropogenic barrier downstream) variants.
 ## Not done, and not filed
 
 - **The split in `lnk_scenario_export()`.** Its Parquet carries habitat flags, not access
-  codes. A column there is stored data, and these values move under #399 and #401, so it waits
-  for them.
+  codes. A column there is stored data, and these values still move under #401, so it waits
+  for it.
 - **A habitat split by the user habitat classification,** matching bcfishpass's
   `spawningrearing_obsrvd`. link matches the classification at gate time and persists no flag
   (`R/lnk_habitat_gate.R`), so this needs that flag first.

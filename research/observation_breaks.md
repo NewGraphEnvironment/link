@@ -1,6 +1,6 @@
 # Where a fish observation breaks a stream
 
-**Verified:** 2026-10-28 · **Issues:** #396 (from #326's break history; #283 the validator, #294 observation positions as threshold evidence) · **Produced by:** `data-raw/logs/observation_breaks_396/` (its README indexes it): `build_obs.R`, `cuts.sql`, `province.sql`, `code2_class.sql`, `redundancy.sql`, `run.sh`, `pre_post_diff.R`, `bias.R`, `data-raw/breaks_diff.R` · **Status:** `default` breaks at each species' top observation per line, measured on five groups; `bcfishpass` unchanged; the smaller near-exact set below is dropped (2026-10-28, #399)
+**Verified:** 2026-10-30 ("The rule" and "Since #399"; the rest 2026-10-28) · **Issues:** #396, #399 (from #326's break history; #283 the validator, #294 observation positions as threshold evidence) · **Produced by:** `data-raw/logs/observation_breaks_396/` (its README indexes it): `build_obs.R`, `cuts.sql`, `province.sql`, `code2_class.sql`, `redundancy.sql`, `run.sh`, `pre_post_diff.R`, `bias.R`, `data-raw/breaks_diff.R`; `data-raw/logs/record_at_start_399/` for "Since #399" · **Status:** `default` breaks at each species' top observation per line, measured on five groups; `bcfishpass` unchanged; the smaller near-exact set below is dropped (2026-10-28); since #399 each species turns from 2 to 1 at its own top
 
 ## The rule
 
@@ -171,10 +171,22 @@ other break within 1 m of a removed observation cut, which did not cut, now cuts
 segment can turn from open to blocked (the metre-rounding defect of #349) or from 2 to 1.
 Question 6 checks the direction rule on every piece.
 
+## Since #399
+
+#399 changed only the walk's same-line test, so with every break where it was, each species'
+segment above its top record went from 2 to 1 and nothing else moved. On the five groups
+under `default` (and BULK and PARS under `bcfishpass`), built before and after on one
+database: segment counts and starts identical, 346.6 km of code 2 became 1 over 25
+group-species (0.02 to 73.5 km each, at most 5.4 % of a species' observed km), every piece on
+a segment with a record of the species within 1 m of its start, and no barrier flag, mapping
+code or habitat flag moved (`data-raw/logs/record_at_start_399/pre_post_diff.csv`). So the
+tops now do what #396 chose them for: each species' boundary is at its highest record on each
+line. The measurements above this section were made under the earlier reading.
+
 ## Owed
 
 - Every persisted `default` group re-segments again at the next provincial run, stacked on
   #326's owed re-model. The `bcfishpass` schema does not.
 - Known-vs-suspected fish under `default`, #398 to #403: #398 (CT aliases), #399 (a record at a
-  segment's start), #400 (what counts as known), #401 (every group's records), #402
+  segment's start; done, above), #400 (what counts as known), #401 (every group's records), #402
   (presence checked against the records), #403 (the rollup).

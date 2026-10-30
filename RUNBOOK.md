@@ -207,7 +207,12 @@ cut itself (`frs_break_apply()` cuts only more than 1 m from an existing end), a
 boundary lands on that break instead, within 1 m of the record. Until #399 the walk passed `TRUE`, which
 counts a record at start − 1 or above, so the segment starting at a species' top still
 read 2 and the species turned at the first cut more than 1 m above its top, whatever made
-that cut (#396's measurements below were made under that reading). Lifts count observations
+that cut (#396's measurements below were made under that reading). Built before and after
+#399 on five `default` groups and two `bcfishpass` groups, only that code moved: 346.6 and
+93.6 km of 2 to 1, at most 5.4 % of a species' observed km, every piece at a record, with
+segments, barrier flags, mapping codes and habitat unchanged
+(`data-raw/logs/record_at_start_399/`), and the `bcfishpass` builds' observed km now equal
+bcfishpass's (steelhead excepted, whose reference codes it from sockeye records). Lifts count observations
 point against point
 (`lnk_barrier_overrides()`), and the mapping code and habitat gate read
 `has_barriers_<sp>_dnstr` and `access = 0` against `> 0`; none needs a break.

@@ -43,8 +43,8 @@ With `include_equivalents = FALSE`, the same function counts the record only whe
 
 ## Phase 4: Write-ups
 
-- [ ] `research/known_suspected_km.md`: a post-#399 section with the `default` split and the bcfishpass parity after the fix (the file says its numbers are a baseline before #399); `Verified` line; "What will move these numbers" updated.
-- [ ] `research/observation_breaks.md` and RUNBOOK §2c carry the measured direction (2 → 1 km per group-species, where).
+- [x] `research/known_suspected_km.md`: a post-#399 section with the `default` split and the bcfishpass parity after the fix (the file says its numbers are a baseline before #399); `Verified` line; "What will move these numbers" updated.
+- [x] `research/observation_breaks.md` and RUNBOOK §2c carry the measured direction (2 → 1 km per group-species, where).
 - [ ] NEWS text drafted in the PR body for `/gh-pr-merge`, and the body says explicitly: bump **minor** to 0.72.0, because `vocabulary.csv` already names 0.72.0 in `introduced` / `retired` and that cell cannot be edited afterwards (review item 7). Version bump at the release step, not in the branch.
 
 ## Owed at the end (reported, done after merge)
