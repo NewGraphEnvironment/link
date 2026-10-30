@@ -10,6 +10,7 @@
 #
 # Writes rollup.csv, parity_bcfp.csv and stamp.txt beside this script.
 pkgload::load_all(quiet = TRUE)
+# nolint start: indentation_linter
 host <- Sys.getenv("LNK_DB_HOST")
 if (!nzchar(host)) stop("set LNK_DB_HOST", call. = FALSE)
 conn <- lnk_db_conn(dbname = "fwapg", host = host, port = 5432L,
@@ -123,3 +124,4 @@ writeLines(c(
   utils::capture.output(print(logs, row.names = FALSE))),
   file.path(dir_out, "stamp.txt"))
 DBI::dbDisconnect(conn)
+# nolint end: indentation_linter
