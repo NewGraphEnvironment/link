@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.71.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.71.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,9 +32,17 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.71.1/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.71.1" id="link-0711">link 0.71.1<a class="anchor" aria-label="anchor" href="#link-0711"></a></h2>
+<p><strong>The group rollup splits accessible km by whether the species is recorded upstream</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/403" class="external-link">#403</a>). <code><a href="../reference/lnk_rollup_wsg.html">lnk_rollup_wsg()</a></code> reported <code>accessible_km</code> only, and nothing in link told the two accessible codes apart.</p>
+<ul><li>
+<strong>Two default columns.</strong> <code>accessible_observed_km</code> is <code>access_&lt;sp&gt; = 2</code> and <code>accessible_unobserved_km</code> is <code>access_&lt;sp&gt; = 1</code>, summed over the rows <code>accessible_km</code> sums, so they add to it within 0.01 km and all three are NA together where access is not built. bcfishpass reports the same split as <code>length_naturallyaccessible_obsrvd_&lt;sp&gt;</code> / <code>_model_&lt;sp&gt;</code>. <code><a href="../reference/lnk_habitat_validate.html">lnk_habitat_validate()</a></code>’s <code>summary</code> carries both.</li>
+<li>
+<strong>Measured.</strong> On <a href="https://github.com/NewGraphEnvironment/link/issues/396" class="external-link">#396</a>’s five groups, 0.3 % (ELKR grayling) to 42 % (LKEL coho) of accessible km has the species recorded upstream. Against bcfishpass on BULK and PARS, accessible km agree within 1.3 km and link’s observed km run 1.9 to 29.7 km higher, all of it the segment above a record with no other record upstream (<a href="https://github.com/NewGraphEnvironment/link/issues/399" class="external-link">#399</a>). Write-up: <code>research/known_suspected_km.md</code>. Evidence: <code>data-raw/logs/known_suspected_403/</code>.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.71.0" id="link-0710">link 0.71.0<a class="anchor" aria-label="anchor" href="#link-0710"></a></h2>
 <p><strong>A partial run recomputes, or names, the groups outside it that read it</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/274" class="external-link">#274</a>, on <a href="https://github.com/NewGraphEnvironment/link/issues/377" class="external-link">#377</a>). A run rebuilds its groups’ barrier rows, and a group the schema holds outside the run whose recompute walk reads one of them used to keep access, mapping codes and settled habitat computed against the old rows.</p>

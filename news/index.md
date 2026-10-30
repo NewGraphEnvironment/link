@@ -1,5 +1,33 @@
 # Changelog
 
+## link 0.71.1
+
+**The group rollup splits accessible km by whether the species is
+recorded upstream**
+([\#403](https://github.com/NewGraphEnvironment/link/issues/403)).
+[`lnk_rollup_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_rollup_wsg.md)
+reported `accessible_km` only, and nothing in link told the two
+accessible codes apart.
+
+- **Two default columns.** `accessible_observed_km` is `access_<sp> = 2`
+  and `accessible_unobserved_km` is `access_<sp> = 1`, summed over the
+  rows `accessible_km` sums, so they add to it within 0.01 km and all
+  three are NA together where access is not built. bcfishpass reports
+  the same split as `length_naturallyaccessible_obsrvd_<sp>` /
+  `_model_<sp>`.
+  [`lnk_habitat_validate()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_validate.md)’s
+  `summary` carries both.
+- **Measured.** On
+  [\#396](https://github.com/NewGraphEnvironment/link/issues/396)’s five
+  groups, 0.3 % (ELKR grayling) to 42 % (LKEL coho) of accessible km has
+  the species recorded upstream. Against bcfishpass on BULK and PARS,
+  accessible km agree within 1.3 km and link’s observed km run 1.9 to
+  29.7 km higher, all of it the segment above a record with no other
+  record upstream
+  ([\#399](https://github.com/NewGraphEnvironment/link/issues/399)).
+  Write-up: `research/known_suspected_km.md`. Evidence:
+  `data-raw/logs/known_suspected_403/`.
+
 ## link 0.71.0
 
 **A partial run recomputes, or names, the groups outside it that read
