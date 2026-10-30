@@ -1,3 +1,12 @@
+# link 0.71.0
+
+**A partial run recomputes, or names, the groups outside it that read it** ([#274](https://github.com/NewGraphEnvironment/link/issues/274), on [#377](https://github.com/NewGraphEnvironment/link/issues/377)). A run rebuilds its groups' barrier rows, and a group the schema holds outside the run whose recompute walk reads one of them used to keep access, mapping codes and settled habitat computed against the old rows.
+
+- **Which groups.** After coverage, `run_finish` asks `data-raw/recompute_readers_check.R` for every held group outside the run that reads a group it rebuilt, by `recompute_deps.R`'s line rule. The map is now computed in `--recompute-at-end` and `--recompute-only` runs too.
+- **Recomputed only when compatible.** A reader joins the recompute when its newest build is closed and carries the config hash, fresh sha and version, crate version and fwapg checkout the recompute would stamp now, from a commit with no change on the recompute's path, and its downstream check would pass. Anything unknown refuses. The compare stays on the run's own groups.
+- **The rest are named**, not failed: `<TS>_outside_readers.tsv` and a summary WARN list each reader as refused, waiting (it reads a run group that did not finish) or unchecked, with the re-model. A recomputed reader that lifted segments the habitat gate had cleared is named too, and `study_area_verify.sql` reports it rather than raising.
+- **Measured.** A six-group North Thompson run has 65 readers (every Fraser group reads LFRA), the 34-group field scope 78. No local schema has a compatible reader today (`fresh_default` was built at 0.68.0), so until the next provincial run the change names them. Evidence: `data-raw/logs/partial_readers_274/`. Mechanics: RUNBOOK §8d, "Groups outside a partial run".
+
 # link 0.70.0
 
 **Every build is named by what it is: how its streams were cut, which access rules decided where, how gradient was measured and where flow came from** ([#414](https://github.com/NewGraphEnvironment/link/issues/414)). Config names move under a fixed name; the tokens do not.

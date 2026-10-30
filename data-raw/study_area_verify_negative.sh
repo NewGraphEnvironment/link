@@ -97,7 +97,9 @@ CREATE TABLE ${SCRATCH}.log_recompute  AS SELECT * FROM ${SRC_SCHEMA}.log_recomp
 CREATE TABLE ${SCRATCH}.streams        AS
   SELECT id_segment, watershed_group_code FROM ${SRC_SCHEMA}.streams
    WHERE watershed_group_code IN
-     (SELECT watershed_group_code FROM ${SRC_SCHEMA}.log WHERE run_uid = '${RUN_UID}');
+     (SELECT watershed_group_code FROM ${SRC_SCHEMA}.log WHERE run_uid = '${RUN_UID}'
+      UNION
+      SELECT watershed_group_code FROM ${SRC_SCHEMA}.log_recompute WHERE run_uid = '${RUN_UID}');
 SQL
 
 N_WSG=$("${PSQL[@]}" -c "SELECT count(DISTINCT watershed_group_code) FROM ${SCRATCH}.log")
@@ -167,7 +169,11 @@ fi
 # --- 2. a missing recompute row: must FAIL -----------------------------------
 # The acceptance criterion, literally. The DELETE hits the scratch copy only,
 # and the EXIT trap drops that schema whatever happens.
+# A run group: a group outside the run that the run recomputed (link#274)
+# has no log row, so deleting its recompute row is no 'modelled but not
+# recomputed' case.
 VICTIM=$("${PSQL[@]}" -c "SELECT watershed_group_code FROM ${SCRATCH}.log_recompute
+                           WHERE watershed_group_code IN (SELECT watershed_group_code FROM ${SCRATCH}.log)
                            ORDER BY watershed_group_code LIMIT 1")
 if [ -z "$VICTIM" ]; then
   echo "  ⊘ 2. SKIPPED: run $RUN_UID has no log_recompute rows to delete."
@@ -385,7 +391,9 @@ fi
 "${PSQL[@]}" -c "ALTER TABLE ${SCRATCH}.log_recompute
                    ADD COLUMN IF NOT EXISTS habitat_gate_lifted integer" >/dev/null
 LIFT_WSG=$("${PSQL[@]}" -c "SELECT watershed_group_code FROM ${SCRATCH}.log_recompute
-                             WHERE date_end IS NOT NULL ORDER BY watershed_group_code LIMIT 1")
+                             WHERE date_end IS NOT NULL
+                               AND watershed_group_code IN (SELECT watershed_group_code FROM ${SCRATCH}.log)
+                             ORDER BY watershed_group_code LIMIT 1")
 if [ -z "$LIFT_WSG" ]; then
   echo "  ⊘ 6e. SKIPPED: run $RUN_UID has no finished recompute row."
   echo "       Absence reported as absence -- this is NOT a pass."
@@ -453,6 +461,37 @@ SQL
      INSERT INTO ${SCRATCH}.log SELECT * FROM ${SRC_SCHEMA}.log
       WHERE run_uid = '${RUN_UID}' AND watershed_group_code = '${OPEN_WSG}'"
 fi
+
+# --- 6h. a group outside the run, recomputed because it reads it (link#274) --
+# Its recompute row has no log row of the run: that must PASS (6h), and its
+# lifted-but-settled segments are reported, not raised (6i). ZZZZ is no
+# watershed group, so the copy cannot collide with a real one.
+"${PSQL[@]}" >/dev/null <<SQL
+CREATE TEMP TABLE neg6h AS
+  SELECT * FROM ${SCRATCH}.log_recompute WHERE date_end IS NOT NULL
+   ORDER BY watershed_group_code, date_start DESC LIMIT 1;
+UPDATE neg6h SET recompute_id = recompute_id || '-neg6h', watershed_group_code = 'ZZZZ',
+       habitat_gate_lifted = NULL;
+INSERT INTO ${SCRATCH}.log_recompute SELECT * FROM neg6h;
+SQL
+if run_verify -v expected_n="$N_WSG"; then
+  echo "  ✓ 6h. outside reader recomputed -> PASS (as expected)"
+else
+  echo "  ✗ 6h. outside reader recomputed -> FAILED, but should have passed."
+  echo "       A group the run recomputed because it reads the run is read as one of the run's."
+  show_verify
+  fails=$((fails + 1))
+fi
+"${PSQL[@]}" >/dev/null -c "UPDATE ${SCRATCH}.log_recompute SET habitat_gate_lifted = 3
+    WHERE recompute_id LIKE '%-neg6h'"
+if run_verify -v expected_n="$N_WSG" && grep -q "groups outside the run, recomputed because they read it" "$VERIFY_LOG"; then
+  echo "  ✓ 6i. outside reader lifted 3   -> PASS, reported (as expected)"
+else
+  echo "  ✗ 6i. outside reader lifted 3   -> should PASS and report it."
+  show_verify
+  fails=$((fails + 1))
+fi
+"${PSQL[@]}" >/dev/null -c "DELETE FROM ${SCRATCH}.log_recompute WHERE recompute_id LIKE '%-neg6h'"
 
 # The healthy case again, LAST. Cases 2/4/5/6 each mutate the scratch schema
 # and restore it, and a restore that silently did not restore would leave every

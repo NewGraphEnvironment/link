@@ -127,6 +127,9 @@
 #                           soon as it and every group whose barrier rows its
 #                           walk reads (recompute_deps.R, line rule) have
 #                           landed on the dispatcher (study_area_recompute.sh).
+#                           Either way the groups outside the run that read
+#                           it are recomputed at the end where their last
+#                           build allows, and named where not (link#274).
 #   --statement-timeout=N   minutes any one statement of a group's modelling
 #                           may run (default 30, 1..1440; link#371). Set as
 #                           PGOPTIONS='-c statement_timeout=<N>min' on BOTH
@@ -173,7 +176,10 @@
 #                           <TS>_run_wsgs.tsv when its buckets resolved, and
 #                           any with a log row for the run_uid on the
 #                           dispatcher (the log alone for a run before
-#                           link#358).
+#                           link#358). Like a run, it also recomputes the
+#                           groups outside the run that read it and may be
+#                           recomputed now, and names the rest (link#274,
+#                           <TS>_outside_readers.tsv).
 #
 # Run identity (link#262). Three levels, and only the middle one is new:
 #
@@ -913,6 +919,14 @@ if [ "$RECOMPUTE_ONLY" = "1" ]; then
     KEPT_TSV_GROUPS=$(awk -F'\t' -v u="$RUN_UID" '$4 == u { print $6 "," $7 "," $8 }' \
       $RO_KEPT | .hosts_csv)
   fi
+  # The dependency map, for the groups outside the run that read it
+  # (link#274): FWA only, about 80 s, computed while coverage runs and waited
+  # on in run_finish. A failure costs only those readers, named.
+  RC_DEPS="$LOG_DIR/${TS}_recompute_deps.tsv"
+  rm -f "$RC_DEPS"
+  ( cd "$REPO_ROOT" || exit 1
+    Rscript data-raw/recompute_deps.R "$RC_DEPS" line ) > "$LOG_DIR/${TS}_recompute_deps.log" 2>&1 &
+  RC_DEPS_PID=$!
   # The run's run_wsgs.tsv and its log rows, or --wsgs= (link#358).
   run_expected_recompute_only "$WSGS_ARG" || exit 1
   phase_end prep "" "$(.hosts_n "$RO_EXPECT")" ok
@@ -1732,6 +1746,15 @@ if [ "$RECOMPUTE_EARLY" = "1" ]; then
   ( cd "$REPO_ROOT" || exit 1
     Rscript data-raw/recompute_deps.R "$RC_DEPS" line ) > "$LOG_DIR/${TS}_recompute_deps.log" 2>&1 &
   RC_DEPS_PID=$!
+else
+  # --recompute-at-end reads the map only at the end, for the groups outside
+  # the run that read it (link#274): computed through the run, waited on in
+  # run_finish, and a failure there costs only those readers, named.
+  RC_DEPS="$LOG_DIR/${TS}_recompute_deps.tsv"
+  rm -f "$RC_DEPS"
+  ( cd "$REPO_ROOT" || exit 1
+    Rscript data-raw/recompute_deps.R "$RC_DEPS" line ) > "$LOG_DIR/${TS}_recompute_deps.log" 2>&1 &
+  RC_DEPS_PID=$!
 fi
 
 if [ "$N_HOSTS" -gt 0 ]; then
@@ -1953,8 +1976,10 @@ if [ -n "$BACKUP_RC_FILE" ]; then
     || { echo "FATAL: the pre-run backup of $SCHEMA failed; see $LOG_DIR/${TS}_backup.log. Nothing dispatched."; exit 1; }
   echo "  ✓ pre-run backup taken (see $LOG_DIR/${TS}_backup.log)"
 fi
-# Nor until the early recompute's dependency map is whole (link#374).
-if [ -n "$RC_DEPS_PID" ]; then
+# Nor until the early recompute's dependency map is whole (link#374). Under
+# --recompute-at-end the map is read only at the end (link#274), so it is not
+# waited on here.
+if [ "$RECOMPUTE_EARLY" = "1" ] && [ -n "$RC_DEPS_PID" ]; then
   drc=0; wait "$RC_DEPS_PID" || drc=$?
   RC_DEPS_PID=""
   # An empty map would make every landed group ready at once: refused.

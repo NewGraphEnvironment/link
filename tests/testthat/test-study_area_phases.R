@@ -262,8 +262,9 @@ test_that("each model and prep leg re-raises its own exit status after writing i
   # stdout, which it would otherwise hold open for the whole leg.
   expect_length(grep('^  exit "\\$mrc" \\) >> "\\$LOG_DIR/\\$\\{TS\\}_run_[^"]+\\.log" 2>&1 &$', drv), 2L)
   # errexit is off on the left of `||`, so the local leg's cd must fail by hand,
-  # and so must the early recompute's dependency map, a background job (link#374).
-  expect_length(grep('^  \\( cd "\\$REPO_ROOT" \\|\\| exit 1$', drv), 2L)
+  # and so must the dependency map, a background job started in each of the
+  # three recomputing modes (link#374, link#274).
+  expect_length(grep('^  \\( cd "\\$REPO_ROOT" \\|\\| exit 1$', drv), 4L)
   # The backup's subshell, likewise (link#369).
   expect_length(grep('^    \\( cd "\\$REPO_ROOT" \\|\\| exit 1$', drv), 1L)
   # Two prep legs: the cyphers' and the workers' (link#376).

@@ -23,6 +23,14 @@ finish_phases_lib <- function() {
   normalizePath(testthat::test_path("..", "..", "data-raw", "study_area_phases.sh"),
                 mustWork = FALSE)
 }
+# LNK_TEST_FINISH_RECOMPUTE_LIB points the tests at a mutant copy of it.
+finish_recompute_lib <- function() {
+  p <- Sys.getenv(
+    "LNK_TEST_FINISH_RECOMPUTE_LIB",
+    testthat::test_path("..", "..", "data-raw", "study_area_recompute.sh")
+  )
+  normalizePath(p, mustWork = FALSE)
+}
 finish_driver <- function() {
   normalizePath(testthat::test_path("..", "..", "data-raw", "study_area_run.sh"),
                 mustWork = FALSE)
@@ -112,6 +120,7 @@ run_finish_sh <- function(world, schema, body) {
     sprintf("source %s", shQuote(finish_hosts_lib())),
     sprintf("source %s", shQuote(finish_lib())),
     sprintf("source %s", shQuote(finish_phases_lib())),
+    sprintf("source %s", shQuote(finish_recompute_lib())),
     sprintf("eval \"$(sed -n '/^csv_lines() {/p' %s)\"", drv),
     sprintf("eval \"$(sed -n '/^csv_count() {/p' %s)\"", drv),
     sprintf("eval \"$(awk '/^recompute_one\\(\\)/,/^}/' %s)\"", drv),
@@ -972,4 +981,154 @@ test_that("run_finish_report prints the calibration hint before the INCOMPLETE b
   incomplete <- grep("study_area_run INCOMPLETE", body)
   expect_length(hint, 1)
   expect_true(hint > start && hint < min(incomplete[incomplete > start]))
+})
+
+# --- groups outside the run that read it (link#274) --------------------------
+
+# A world whose Rscript stub, called with recompute_readers_check.R, copies
+# `readers` (lines of a readers table, or NULL to write nothing) to the path
+# it is given last; and a dependency map holding `deps` rows.
+readers_world <- function(readers, deps = c("GGGG\tline\tAAAA", "ZZZZ\tline\tBBBB"),
+                          env = parent.frame()) {
+  d <- finish_world(env)
+  fx <- file.path(d, "readers_fixture.tsv")
+  if (!is.null(readers)) writeLines(readers, fx)
+  p <- file.path(d, "bin", "Rscript")
+  writeLines(c(
+    "#!/bin/sh",
+    sprintf('echo "$*" >> "%s/rscript_calls"', d),
+    'if [ "$1" = data-raw/recompute_readers_check.R ]; then',
+    "  eval last=\\${$#}",
+    sprintf('  [ -e "%s" ] && cp "%s" "$last"', fx, fx),
+    "fi",
+    "exit 0"
+  ), p)
+  Sys.chmod(p, "755")
+  writeLines(c("wsg\trule\tdep", deps), file.path(d, "deps.tsv"))
+  d
+}
+readers_body <- function(w, call) {
+  c(sprintf("RC_DEPS=%s", shQuote(file.path(w, "deps.tsv"))), call)
+}
+recomputed_of <- function(w) {
+  sort(sub("^data-raw/wsg_recompute_one\\.R ([A-Z]{4}) default$", "\\1",
+           grep("wsg_recompute_one", rscript_calls(w), value = TRUE)))
+}
+
+test_that("a reader the check clears is recomputed, judged, and never compared", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- readers_world(c(
+    "wsg\tclass\treason\treads",
+    "GGGG\trecompute\t\tAAAA",
+    "RRRR\trefused\tconfig_differs\tAAAA",
+    "WWWW\twaiting\treads_unfinished:CCCC\tCCCC"
+  ))
+  r <- run_finish_sh(w, sc, readers_body(w, "run_finish AAAA,BBBB ''"))
+  expect_equal(r$status, 0L, info = r$out)
+  expect_identical(recomputed_of(w), c("AAAA", "BBBB", "GGGG"))
+  calls <- rscript_calls(w)
+  expect_match(grep("study_area_compare", calls, value = TRUE), " AAAA,BBBB default$")
+  expect_match(grep("fanout_judge", calls, value = TRUE), " AAAA,BBBB,GGGG recompute$")
+  expect_match(r$out, "of them outside the run (readers of it): GGGG", fixed = TRUE)
+  expect_match(r$out, "built at another version (refused):     RRRR", fixed = TRUE)
+  expect_match(r$out, "read a run group that did not finish:   WWWW", fixed = TRUE)
+  expect_match(r$out, "study_area_run done", fixed = TRUE)
+  # The check is handed the run's groups and coverage's missing set.
+  chk <- grep("recompute_readers_check", calls, value = TRUE)
+  expect_length(chk, 1L)
+  expect_match(chk, sprintf("^data-raw/recompute_readers_check.R default %s %s ", sc, finish_uid))
+})
+
+test_that("no outside reader: recompute, judge and compare are the run's groups, and nothing is named", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- readers_world("wsg\tclass\treason\treads")
+  r <- run_finish_sh(w, sc, readers_body(w, "run_finish AAAA,BBBB ''"))
+  expect_equal(r$status, 0L, info = r$out)
+  expect_identical(recomputed_of(w), c("AAAA", "BBBB"))
+  calls <- rscript_calls(w)
+  expect_match(grep("study_area_compare", calls, value = TRUE), " AAAA,BBBB default$")
+  expect_match(grep("fanout_judge", calls, value = TRUE), " AAAA,BBBB recompute$")
+  expect_no_match(r$out, "outside the run (readers of it)", fixed = TRUE)
+  expect_no_match(r$out, "WARN: groups outside", fixed = TRUE)
+  expect_match(r$out, "outside readers: 0 to recompute, 0 named", fixed = TRUE)
+})
+
+test_that("a check that writes nothing names the map's candidates unchecked, recomputes none", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- readers_world(NULL)
+  r <- run_finish_sh(w, sc, readers_body(w, "run_finish AAAA,BBBB ''"))
+  expect_equal(r$status, 0L, info = r$out)
+  expect_identical(recomputed_of(w), c("AAAA", "BBBB"))
+  expect_match(r$out, "outside readers NOT checked", fixed = TRUE)
+  expect_match(r$out, "not checked (see T0_outside_readers.log): GGGG,ZZZZ", fixed = TRUE)
+  tab <- utils::read.delim(file.path(w, "logs", "T0_outside_readers.tsv"), colClasses = "character")
+  expect_identical(tab$wsg, c("GGGG", "ZZZZ"))
+  expect_identical(unique(tab$class), "unchecked")
+})
+
+test_that("a malformed readers table is unchecked, never taken as no readers", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- readers_world(c("wsg\tclass\treason\treads", "GGGG\tmaybe\t\tAAAA"))
+  r <- run_finish_sh(w, sc, readers_body(w, "run_finish AAAA,BBBB ''"))
+  expect_identical(recomputed_of(w), c("AAAA", "BBBB"))
+  expect_match(r$out, "outside readers NOT checked", fixed = TRUE)
+})
+
+test_that("no dependency map: every outside group is said to be unchecked", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- readers_world("wsg\tclass\treason\treads")
+  r <- run_finish_sh(w, sc, "run_finish AAAA,BBBB ''")
+  expect_equal(r$status, 0L, info = r$out)
+  expect_identical(recomputed_of(w), c("AAAA", "BBBB"))
+  expect_length(grep("recompute_readers_check", rscript_calls(w)), 0L)
+  expect_match(r$out, "groups outside the run were NOT checked (no dependency map)", fixed = TRUE)
+})
+
+test_that("a recomputed reader that lifted gated segments is named with the re-model", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  DBI::dbExecute(conn, sprintf(paste(
+    "INSERT INTO %s.log_recompute (recompute_id, watershed_group_code, date_start, date_end,",
+    "run_uid, habitat_gate_lifted) VALUES ('g', 'GGGG', '2026-10-19', '2026-10-19', '%s', 4)"
+  ), sc, finish_uid))
+  w <- readers_world(c("wsg\tclass\treason\treads", "GGGG\trecompute\t\tAAAA"))
+  r <- run_finish_sh(w, sc, readers_body(w, "run_finish AAAA,BBBB ''"))
+  expect_equal(r$status, 0L, info = r$out)
+  expect_match(r$out, "recomputed, but habitat the gate cleared stays cleared: GGGG", fixed = TRUE)
+  expect_match(r$out, "LNK_GUARD_DOWNSTREAM=warn LNK_HABITAT_GATE=0", fixed = TRUE)
+})
+
+test_that("every recomputing mode computes the map, and only the early one waits before dispatch", {
+  skip_if_no_finish_lib()
+  drv <- readLines(finish_driver())
+  fin <- readLines(finish_lib())
+  expect_length(grep('Rscript data-raw/recompute_deps.R "$RC_DEPS" line )', drv, fixed = TRUE), 3L)
+  expect_length(grep('if [ "$RECOMPUTE_EARLY" = "1" ] && [ -n "$RC_DEPS_PID" ]; then', drv,
+                     fixed = TRUE), 1L)
+  # --recompute-only starts it before it reads the run's groups.
+  ro <- grep("^if \\[ \"\\$RECOMPUTE_ONLY\" = \"1\" \\]; then$", drv)
+  ro_deps <- grep('Rscript data-raw/recompute_deps.R "$RC_DEPS" line )', drv, fixed = TRUE)
+  ro_exp <- grep('run_expected_recompute_only "$WSGS_ARG" || exit 1', drv, fixed = TRUE)
+  expect_true(any(ro_deps > ro[1] & ro_deps < ro_exp))
+  # run_finish checks readers after coverage and before the recompute.
+  rf <- grep("^run_finish\\(\\) \\{", fin)
+  fb <- fin[rf:(rf + which(fin[-seq_len(rf)] == "}")[1])]
+  chk <- grep("^  recompute_readers$", fb)
+  uni <- grep('ALL_WSGS=$(.hosts_union "$COV_RECOMPUTE" "$READERS_RECOMPUTE")', fb, fixed = TRUE)
+  rec <- grep("^    run_finish_recompute$", fb)
+  expect_length(chk, 1L)
+  expect_lt(grep("phase_end coverage", fb, fixed = TRUE), chk)
+  expect_lt(chk, uni)
+  expect_lt(uni, rec)
 })

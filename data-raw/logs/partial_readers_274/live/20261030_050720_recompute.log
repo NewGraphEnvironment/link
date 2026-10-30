@@ -1,0 +1,40 @@
+[1] 0
+[1] 0
+[wsg_recompute_one] LPCE prologue 1.26 s
+NOTICE:  table "zz_lnk_access_prior_lpce" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_lpce" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] LPCE habitat gate: 243 segments (111.084 km) settled
+[wsg_recompute_one] LPCE recomputed in 0.28 min (persist=fresh_274)
+[1] 0
+[1] 0
+[wsg_recompute_one] KISK prologue 1.21 s
+NOTICE:  table "zz_lnk_access_prior_kisk" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_kisk" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] KISK habitat gate: 0 segments (0.000 km) settled
+[wsg_recompute_one] KISK recomputed in 0.08 min (persist=fresh_274)

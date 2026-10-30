@@ -1,0 +1,8 @@
+run	schema	run_groups	outside	held	no_log	config_differs	fresh_differs	dirty_or_unknown	sha_unresolvable	path_changed	compatible
+dunc_20261012	fresh_default	1	1	1	0	1	1	0	0	1	0
+field_20260831	fresh	34	78	35	30	5	5	0	0	5	0
+field_20260831	fresh_default	34	78	78	0	78	78	0	0	78	0
+nthompson_20260903	fresh	6	65	32	13	19	19	0	0	19	0
+nthompson_20260903	fresh_default	6	65	65	0	65	65	0	0	65	0
+parity_20261023	fresh_default	17	85	85	0	85	85	0	0	85	0
+parity_20261023	fresh_parity361	17	85	0	0	0	0	0	0	0	0

@@ -11,6 +11,21 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-30) — a partial run recomputes or names the groups outside it that read it (#274)
+
+**After coverage, `run_finish` asks `data-raw/recompute_readers_check.R` which groups the schema holds outside the run read a group it rebuilt (`recompute_deps.R`'s line rule, now computed in every recomputing mode) and recomputes those whose last build matches what the recompute would run now; the rest are named in `<TS>_outside_readers.tsv` and a summary WARN with the re-model.** The recompute set (`ALL_WSGS`) is the union; the compare stays on the run's groups (`CMP_WSGS`). Named readers never change the exit status. Mechanics: RUNBOOK §8d, "Groups outside a partial run". Evidence: `data-raw/logs/partial_readers_274/` (its README).
+
+**Owed:** the first real partial run after the next provincial run exercises it; commit its `<TS>_outside_readers.tsv`.
+
+**Facts not worth re-deriving:**
+- **Readers are many wherever a run holds a main-stem group:** North Thompson's six groups have 65 (every Fraser group reads LFRA), the 34-group field scope 78, DUNC alone 1 (KOTL).
+- **No local schema has a compatible reader today:** `fresh_default` is at 0.68.0 (`1d00c04c`) and `R/` has moved; most of `fresh`'s readers predate the log tables. Until the provincial run, the change names readers.
+- **Compatible** means the reader's newest `log` row is closed, carries the config hash, fresh sha and version, crate version and fwapg sha `lnk_stamp()` gives now with both dirty flags FALSE (a `FRESH_GIT_SHA` pin counts only where the installed `RemoteSha` confirms it), has a resolvable `link_sha` with no difference to the working tree on `READERS_PATHS`, and its downstream check would pass (asked with `on_fail = "warn"`, since the real one fails after the rewrite). Anything unknown refuses.
+- **One hop:** a recompute writes no barrier rows, so a reader's readers read nothing that moved.
+- **The line rule errs wide:** ADMS reads BBAR under it, but none of BBAR's rows lie downstream of ADMS. Nine pairs are linked only by rows the run group holds on the reader's own segments (KOTR's three on KOTL's), which the owner rule misses.
+- **`lnk_fanout_judge()` refuses `.rc` files it was not asked for,** so every pool reader of `ALL_WSGS` must see the union; a reader whose recompute fails fails the run.
+- **`--pretest-note` cannot record into a schema that does not exist yet** (pre-existing): create the scratch schema first.
+
 ## Status (2026-10-29, late night) — every build is named in an output vocabulary (#414)
 
 **`inst/extdata/vocabulary.csv` names what an output is on four axes, and every `lnk_pipeline_run()` writes its tokens to `<schema>.log` (`token_cut`, `token_acc`, `token_grad`, `token_flow`).** `lnk_vocabulary_resolve(cfg, loaded)` derives each axis's spec from what the run reads and matches one live row; a config with none is refused before the log row opens, and `study_area_run.sh`'s local pre-flight asks once before spend. `default` is `cut-full-top acc-v1 grad-seg q-fwapg`, `default_tuned` the same with `q-wet-fill`, `bcfishpass` `cut-full-ssf-all acc-bcfp grad-seg q-fwapg`; `default_extrabreaks` / `default_rearbreaks` have no rows and refuse (operator). Mechanics: RUNBOOK §6b, "Output vocabulary". Write-up: `research/output_vocabulary.md`.

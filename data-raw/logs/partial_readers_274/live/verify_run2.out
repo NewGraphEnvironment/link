@@ -1,0 +1,83 @@
+
+=== run under verification ===
+         run_uid          | run_label | n_attempted | n_completed | n_hosts |   bcfp_reference    | bcfp_pin_source |            started            |           finished            
+--------------------------+-----------+-------------+-------------+---------+---------------------+-----------------+-------------------------------+-------------------------------
+ 20261030_050720-41d61c31 |           |           1 |           1 |       1 | v0.7.15-50-g620dbe4 | env             | 2026-10-30 05:08:43.282894+00 | 2026-10-30 05:09:48.643259+00
+(1 row)
+
+ scope_assertion 
+-----------------
+ expected_n = 1
+(1 row)
+
+
+=== 1. Provenance per host ===
+ host | n_wsg | has_link_sha | has_fresh_sha | has_fwapg_sha | has_bcfishobs_sha | has_bcfp_version | n_dirty | n_dirty_unknown |          first_done           |           last_done           
+------+-------+--------------+---------------+---------------+-------------------+------------------+---------+-----------------+-------------------------------+-------------------------------
+ m1   |     1 |            1 |             1 |             1 |                 1 |                1 |       0 |               0 | 2026-10-30 05:09:48.643259+00 | 2026-10-30 05:09:48.643259+00
+(1 row)
+
+
+=== 1b. Provenance verdict (per host) ===
+ host | verdict 
+------+---------
+ m1   | OK
+(1 row)
+
+
+=== 1c. Started but never finished (must be empty, or every row superseded) ===
+ host | watershed_group_code | date_start | notes | superseded 
+------+----------------------+------------+-------+------------
+(0 rows)
+
+
+=== 2. The distinct SHAs -- all hosts must agree ===
+                 link_sha                 |                fresh_sha                 |                fwapg_sha                 |              bcfishobs_sha               | bcfp_model_version  
+------------------------------------------+------------------------------------------+------------------------------------------+------------------------------------------+---------------------
+ 27e8089cab7ade0d689722dd3992703e55633c1b | 2c35e3eb8524b91b9d282ebe93afd17764a21740 | b088b43a628690b315100785b23a26dbaa54505e | 08630cf4ac14b2f17cc4d7058b127f3996f3fd8a | v0.7.15-50-g620dbe4
+(1 row)
+
+
+=== 2b. Inputs every host must agree on (must be one row) ===
+ n_distinct_input_sets | verdict 
+-----------------------+---------
+                     1 | OK
+(1 row)
+
+
+=== 3. Coverage: every WSG of this run has streams rows ===
+ wsg  | n_segments 
+------+------------
+ LPCE |      11043
+(1 row)
+
+
+=== 4. Modelled vs recomputed -- the difference, per WSG ===
+ wsg  | modelled | recomputed |          model_done           |        recompute_done         |                       state                       
+------+----------+------------+-------------------------------+-------------------------------+---------------------------------------------------
+ KISK | f        | t          |                               | 2026-10-30 05:09:57.421475+00 | outside reader of this run (recomputed, link#274)
+ LPCE | t        | t          | 2026-10-30 05:09:48.643259+00 | 2026-10-30 05:10:07.266836+00 | ok
+(2 rows)
+
+
+=== 5. Whole-schema picture: the mixture this run leaves behind ===
+ wsg_in_streams 
+----------------
+              2
+(1 row)
+
+ wsg_with_any_log 
+------------------
+                2
+(1 row)
+
+ runs_ever_labelled 
+--------------------
+                  2
+(1 row)
+
+
+=== 6. ASSERTIONS (raise, so this script can actually fail) ===
+psql:data-raw/study_area_verify.sql:648: NOTICE:  PASS: run 20261030_050720-41d61c31 -- 1 WSG(s), all modelled, recomputed, settled, segmented and provenanced
+
+=== verify: OK ===

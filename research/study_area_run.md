@@ -1,8 +1,8 @@
 # Study-area run (tunnel-free, M1-dispatch)
 
-**Verified:** 2026-10-29 (the pre-run gate, #372); 2026-10-28 (how hosts are packed, #259); 2026-10-26 (the early recompute, #374); 2026-10-17 (the province-wide section and the corrected lines) · **Issues:** #175, #246, #347, #348, #374, #259, #372 ·
+**Verified:** 2026-10-30 (groups outside a partial run, #274); 2026-10-29 (the pre-run gate, #372); 2026-10-28 (how hosts are packed, #259); 2026-10-26 (the early recompute, #374); 2026-10-17 (the province-wide section and the corrected lines) · **Issues:** #175, #246, #347, #348, #374, #259, #372, #274 ·
 **Produced by:** `data-raw/study_area_run.sh`; logs `data-raw/logs/provincial_246/`, `data-raw/logs/packing_259/`,
-`data-raw/logs/study_area_run/20261017_*`, `data-raw/logs/pretest_372/`
+`data-raw/logs/study_area_run/20261017_*`, `data-raw/logs/pretest_372/`, `data-raw/logs/partial_readers_274/`
 
 Lean alternative to the 5-host `provincial_run_runbook.md` for running
 **study-area** mapping_code parity.
@@ -111,6 +111,20 @@ identical to one over every group (over only its closure: 2 segments differ).
 Replayed on 2026-10-23 without its stalls, with the measured load on the
 dispatcher (1.2x modelling at `-j4`, 2x at `-j8`), it ends the recompute 36.7
 min sooner at `-j8`. Evidence: `data-raw/logs/recompute_early_374/`.
+
+**Since link#274 (2026-10-30) a partial run also settles the groups outside it that read
+it.** The same line rule, asked the other way: every group the schema holds outside the run
+whose walk reads a group the run rebuilt. They are many wherever a run holds a main-stem
+group. A six-group North Thompson run has 65 (every Fraser group reads LFRA), the 34-group
+field scope 78, DUNC alone 1 (KOTL). Of those, `fresh` held 32 and 35, and `fresh_default`
+holds every one. A reader is recomputed only when its last build matches what the recompute
+runs now (same config hash, fresh, fwapg checkout, a resolvable sha with nothing changed on
+the recompute's path, and a downstream check that would pass); the rest are named. No local
+schema has a compatible reader today: `fresh_default` was built at 0.68.0 and `R/` has moved,
+and most of `fresh`'s readers predate the log tables. So until the next provincial run the
+change names readers rather than recomputing them. Nine pairs are linked only by a row the run
+group holds on the reader's own segments (KOTR's three on KOTL's), which the owner rule
+misses. Evidence: `data-raw/logs/partial_readers_274/`.
 
 ## Gotchas that cost real time (2026-05-25)
 

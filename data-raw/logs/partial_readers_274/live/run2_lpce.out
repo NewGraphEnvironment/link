@@ -1,0 +1,98 @@
+=== study_area_run 20261030_050720 ===
+  run_uid:      20261030_050720-41d61c31
+  run_label:    <none>
+  config:       default
+  branch:        (cyphers run this ref)
+  persist:      fresh_274
+  cyphers:      <none> (0)
+  workers:      <none> (0; persistent, never burned)
+  log dir:      <worktree>/data-raw/logs/study_area_run
+  vintage max:  7 d
+  recompute -j: 4
+  recompute:    early (each group once it and every group it reads have landed; link#374)
+  statement:    30 min per modelling statement (PGOPTIONS, both legs); recompute 10 min (wsg_recompute_one.R)
+  buckets:      exact (--buckets-exact; each --focal= list as given; the recompute settles access)
+  OVERRIDE:     no pre-run gate record required — link#274 scratch verification of outside readers
+  phases:       <worktree>/data-raw/logs/study_area_run/20261030_050720_phases.tsv
+  [phase] refresh skipped
+=== pre-flight (local; pre-spend) ===
+  ✓ dispatcher fresh exports what the pipeline calls
+  ✓ output tokens: cut-full-top acc-v1 grad-seg q-fwapg 
+  ✓ fwapg_sha b088b43a6286 (exported to all hosts)
+  ✓ bcfishobs_sha 08630cf4ac14 (exported to all hosts)
+  ✓ fresh_sha 2c35e3eb8524 (clean)
+  WARN: pre-run gate not cleared (no gate record for config default) — proceeding on --pretest-note
+  ✓ bcfp reference pinned at v0.7.15-50-g620dbe4 (exported to all hosts)
+    ok   discharge (fwapg) loaded: whse_basemapping.fwa_stream_networks_discharge
+  ✓ discharge (fwapg) loaded on the dispatcher
+    [preflight] primitive vintage (window 7 d) - OK, oldest 6.9 d (whse_fish.pscis_assessment_svw) [judged by load stamp: 4, statistics: 0, none: 0]
+  ✓ dispatcher primitives within 7 d
+  ✓ pre-flight clean (tunnel-free)
+psql:<worktree>/data-raw/pretest_override.sql:20: NOTICE:  relation "log_pretest" already exists, skipping
+  recorded --pretest-note in fresh_274.log_pretest (run_uid 20261030_050720-41d61c31)
+=== resolve exact buckets (--buckets-exact; order as given, species filter only) ===
+  dispatcher (focal=LPCE): LPCE
+  run groups: <worktree>/data-raw/logs/study_area_run/20261030_050720_run_wsgs.tsv
+=== dispatcher persist (fresh_274): init ===
+  ✓ fresh_274 initialised (see <worktree>/data-raw/logs/study_area_run/20261030_050720_persist_init.log)
+=== early recompute: log tables, barrier views, dependency map ===
+  ✓ log tables present in fresh_274
+  ✓ barrier views built once for fresh_274
+  [phase] views ok 2026-10-30T05:07:30Z -> 2026-10-30T05:07:32Z (0.0 min)
+  ✓ dependency map: 2211 pairs (see <worktree>/data-raw/logs/study_area_run/20261030_050720_recompute_deps.log)
+  [phase] prep ok 2026-10-30T05:07:20Z -> 2026-10-30T05:08:41Z (1.4 min, 1 groups)
+=== run buckets (DS-first) ===
+  early recompute scheduler started (-j4; see <worktree>/data-raw/logs/study_area_run/20261030_050720_recompute_scheduler.log)
+  [phase] model dispatcher ok 2026-10-30T05:08:41Z -> 2026-10-30T05:09:48Z (1.1 min, 1 groups)
+  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)
+=== dispatcher completeness (database) ===
+  ✓ dispatcher: 1/1 WSGs accounted for (1 finished, 0 SKIP; database)
+  [phase] account dispatcher ok 2026-10-30T05:09:48Z -> 2026-10-30T05:09:48Z (0.0 min, 1 groups)
+  [phase] consolidate skipped
+  [phase] burn skipped
+=== verify WSG coverage in fresh_274 (run_uid 20261030_050720-41d61c31) ===
+  1/1 run WSGs have rows from a build this run finished
+  classes: <worktree>/data-raw/logs/study_area_run/20261030_050720_coverage.tsv
+  [phase] coverage ok 2026-10-30T05:09:48Z -> 2026-10-30T05:09:49Z (0.0 min, 1 groups)
+=== groups outside the run that read it (fresh_274) ===
+  ✓ outside readers: 1 to recompute, 0 named (<worktree>/data-raw/logs/study_area_run/20261030_050720_outside_readers.tsv)
+=== post-consolidate recompute (lnk_access, 2 WSGs, -j4) ===
+  1 of 2 group(s) recomputed while the legs ran (see <worktree>/data-raw/logs/study_area_run/20261030_050720_recompute_scheduler.log)
+[fanout] recompute - OK: 2/2 job(s) succeeded
+  ✓ recompute: 2/2 WSGs
+  ✓ recompute audit: no group started before a group it reads had landed
+  [phase] recompute ok 2026-10-30T05:09:48Z -> 2026-10-30T05:10:09Z (0.3 min, 2 groups)
+=== compare (tunnel-free) ===
+  ✓ compare CSV: <worktree>/data-raw/logs/study_area_run/20261030_050720_compare.csv
+  [phase] compare ok 2026-10-30T05:10:09Z -> 2026-10-30T05:10:11Z (0.0 min, 1 groups)
+=== summary ===
+  phases (<worktree>/data-raw/logs/study_area_run/20261030_050720_phases.tsv):
+    phase       host       start_utc            end_utc              minutes groups status
+    refresh                                                                         skipped
+    views                  2026-10-30T05:07:30Z 2026-10-30T05:07:32Z     0.0        ok
+    prep                   2026-10-30T05:07:20Z 2026-10-30T05:08:41Z     1.4      1 ok
+    model       dispatcher 2026-10-30T05:08:41Z 2026-10-30T05:09:48Z     1.1      1 ok
+    account     dispatcher 2026-10-30T05:09:48Z 2026-10-30T05:09:48Z     0.0      1 ok
+    consolidate                                                                     skipped
+    burn                                                                            skipped
+    coverage               2026-10-30T05:09:48Z 2026-10-30T05:09:49Z     0.0      1 ok
+    recompute              2026-10-30T05:09:48Z 2026-10-30T05:10:09Z     0.3      2 ok
+    compare                2026-10-30T05:10:09Z 2026-10-30T05:10:11Z     0.0      1 ok
+  critical path: 2.9 min (first start to last end)
+  longest model leg: 1.1 min (dispatcher)
+  learn host speeds from this run's legs (a plan packed on --minutes-schema):
+    Rscript data-raw/host_speeds_calibrate.R --plan=<study_area_buckets.R --plan-out> \
+      --phases=<worktree>/data-raw/logs/study_area_run/20261030_050720_phases.tsv [--skip=<name>:<reason>] [--dry-run]
+  run WSGs:        LPCE
+  recomputed WSGs: KISK,LPCE
+    of them outside the run (readers of it): KISK
+  compare CSV: <worktree>/data-raw/logs/study_area_run/20261030_050720_compare.csv
+Warning message:
+reference has 0 rows for LPCE — not modelled there; returning NA stats. 
+[study_area_compare] 1 rows across 1/1 WSGs -> <worktree>/data-raw/logs/study_area_run/20261030_050720_compare.csv
+# A tibble: 1 × 7
+  wsg   species total_segs match_pct n_diffs top_pattern top_pattern_count
+* <chr> <chr>        <int>     <dbl>   <int> <chr>                   <int>
+1 LPCE  BT               0        NA      NA <NA>                       NA
+=== study_area_run done ===
+  ✓ redacted host addresses in 20 log file(s)
