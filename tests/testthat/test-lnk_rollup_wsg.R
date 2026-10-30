@@ -253,15 +253,15 @@ test_that("default accessible km split by whether the species is recorded upstre
   # length_naturallyaccessible_obsrvd_<sp> / _model_<sp>).
   m <- eval(formals(lnk_rollup_wsg)$metrics)
   set <- "FILTER (WHERE access IN (1, 2))::numeric / 1000, 2)"
-  expect_identical(
-    m[["accessible_observed_km"]],
-    paste("round(sum(CASE WHEN access = 2 THEN length_metre ELSE 0 END)", set))
-  expect_identical(
-    m[["accessible_unobserved_km"]],
-    paste("round(sum(CASE WHEN access = 1 THEN length_metre ELSE 0 END)", set))
-  sql <- link:::.lnk_rollup_wsg_sql(
-    conn = DBI::ANSI(), aoi = "MORR", species = c("CO", "BT"),
-    schema = "fresh", metrics = m, where = NULL)
+  part <- function(code) {
+    paste(sprintf("round(sum(CASE WHEN access = %d THEN length_metre ELSE 0 END)",
+                  code), set)
+  }
+  expect_identical(m[["accessible_observed_km"]], part(2L))
+  expect_identical(m[["accessible_unobserved_km"]], part(1L))
+  sql <- link:::.lnk_rollup_wsg_sql(conn = DBI::ANSI(), aoi = "MORR",
+                                    species = c("CO", "BT"), schema = "fresh",
+                                    metrics = m, where = NULL)
   expect_match(sql, "AS accessible_observed_km", fixed = TRUE)
   expect_match(sql, "AS accessible_unobserved_km", fixed = TRUE)
 })

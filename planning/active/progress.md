@@ -18,3 +18,4 @@ cd /Users/airvine/Projects/repo/link && git fetch -q origin && git checkout 403-
 ## Session 2026-10-30 (resume)
 
 - Phase 1: three tests added; at `cab86f10` the exact-names test fails, the offline split test errors (no such metric) and the live test fails on the default frame, while its unrounded identity on `fresh_default` already holds (`[ FAIL 3 | PASS 58 ]`).
+- Phase 2: the two default metrics, roxygen (codes, identity, NA/0, bcfishpass counterpart, `@examples` splitting spawning / rearing by code, the "resolves to 0" sentence corrected to `NA`); validator roxygen and the driver's `cols_km` / `cols_cmp`; RUNBOOK §2c's "nothing in link tells 2 from 1" corrected and a bullet beside #319's. Rollup tests 65 pass, validator tests 433 pass; lint unchanged on the touched files (the driver's 26 are pre-existing).

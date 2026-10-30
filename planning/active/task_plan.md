@@ -33,11 +33,11 @@ bcfishpass's `aw_linear_summary()` (`db/schema.sql:5283`, local clone at `smnorr
 
 ## Phase 2: The two default metrics
 
-- [ ] `R/lnk_rollup_wsg.R`: add the two metrics to the `metrics` default after `accessible_km`; roxygen: the codes, the identity and its rounding, the NULL/0 semantics (and correct `:14-16`, which says an unbuilt access "resolves to 0": a `FILTER` sum over no rows is NULL), `@param metrics` (`:76-79`) listing the two additions, bcfishpass's `length_naturallyaccessible_obsrvd_<sp>` / `_model_<sp>` as the counterpart, and an `@examples` entry splitting spawning and rearing km by `access` through `metrics =`.
-- [ ] `lnk_habitat_validate()` calls the rollup with its defaults (`R/lnk_habitat_validate.R:349`) and merges the whole cost frame (`:1382`), so its `summary` gains the two columns: name them in its roxygen (`:238-239`); add them to `data-raw/habitat_validate.R`'s `cols_km` (`:163`) so totals and the pre/post comparison carry them. This is a second exported function's output change: name it for the NEWS line.
-- [ ] `devtools::document()`; `lintr::lint_package()` clean on the files; Phase 1 tests green.
-- [ ] `RUNBOOK.md`: one bullet beside the #319 rollup entry (~line 1244) naming the split and the identity.
-- [ ] Commit, so Phase 4 runs from a clean SHA.
+- [x] `R/lnk_rollup_wsg.R`: add the two metrics to the `metrics` default after `accessible_km`; roxygen: the codes, the identity and its rounding, the NULL/0 semantics (and correct `:14-16`, which says an unbuilt access "resolves to 0": a `FILTER` sum over no rows is NULL), `@param metrics` (`:76-79`) listing the two additions, bcfishpass's `length_naturallyaccessible_obsrvd_<sp>` / `_model_<sp>` as the counterpart, and an `@examples` entry splitting spawning and rearing km by `access` through `metrics =`.
+- [x] `lnk_habitat_validate()` calls the rollup with its defaults (`R/lnk_habitat_validate.R:349`) and merges the whole cost frame (`:1382`), so its `summary` gains the two columns: name them in its roxygen (`:238-239`); add them to `data-raw/habitat_validate.R`'s `cols_km` (`:163`) so totals and the pre/post comparison carry them. This is a second exported function's output change: name it for the NEWS line.
+- [x] `devtools::document()`; `lintr::lint_package()` clean on the files; Phase 1 tests green.
+- [x] `RUNBOOK.md`: one bullet beside the #319 rollup entry (~line 1244) naming the split and the identity.
+- [x] Commit, so Phase 4 runs from a clean SHA.
 
 ## Phase 3: README output refreshed
 
