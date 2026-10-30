@@ -127,6 +127,9 @@
 #                           soon as it and every group whose barrier rows its
 #                           walk reads (recompute_deps.R, line rule) have
 #                           landed on the dispatcher (study_area_recompute.sh).
+#                           Either way the groups outside the run that read
+#                           it are recomputed at the end where their last
+#                           build allows, and named where not (link#274).
 #   --statement-timeout=N   minutes any one statement of a group's modelling
 #                           may run (default 30, 1..1440; link#371). Set as
 #                           PGOPTIONS='-c statement_timeout=<N>min' on BOTH
@@ -173,7 +176,10 @@
 #                           <TS>_run_wsgs.tsv when its buckets resolved, and
 #                           any with a log row for the run_uid on the
 #                           dispatcher (the log alone for a run before
-#                           link#358).
+#                           link#358). Like a run, it also recomputes the
+#                           groups outside the run that read it and may be
+#                           recomputed now, and names the rest (link#274,
+#                           <TS>_outside_readers.tsv).
 #
 # Run identity (link#262). Three levels, and only the middle one is new:
 #

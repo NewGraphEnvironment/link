@@ -188,3 +188,52 @@ test_that("no readers gives an empty table with the columns", {
   expect_identical(names(out), c("wsg", "class", "reason", "reads"))
   expect_identical(nrow(out), 0L)
 })
+
+# The early recompute's audit (data-raw/recompute_audit.R) over a reader the
+# final set started: its dependencies in the run are judged like any group's.
+rr_audit <- function(conn, reader_start, mode) {
+  p <- normalizePath(testthat::test_path("..", "..", "data-raw", "recompute_audit.R"),
+                     mustWork = FALSE)
+  testthat::skip_if_not(file.exists(p), "data-raw/recompute_audit.R absent")
+  sc <- paste0("lnk_test_readers_", Sys.getpid())
+  DBI::dbExecute(conn, "SET client_min_messages TO warning")
+  DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", sc))
+  link:::.lnk_log_create_tables(conn, sc)
+  withr::defer(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", sc)))
+  uid <- "20261030_000000-0000abcd"
+  DBI::dbExecute(conn, sprintf(paste(
+    "INSERT INTO %s.log (run_id, watershed_group_code, date_start, date_end, run_uid)",
+    "VALUES ('d', 'DDDD', '2026-10-30 01:00+00', '2026-10-30 02:00+00', '%s')"
+  ), sc, uid))
+  DBI::dbExecute(conn, sprintf(paste(
+    "INSERT INTO %s.log_recompute (recompute_id, watershed_group_code, date_start, date_end, run_uid)",
+    "VALUES ('rd', 'DDDD', '2026-10-30 02:10+00', '2026-10-30 02:11+00', '%s'),",
+    "('rg', 'GGGG', '%s', '2026-10-30 03:00+00', '%s')"
+  ), sc, uid, reader_start, uid))
+  d <- withr::local_tempdir(.local_envir = parent.frame())
+  writeLines(c("wsg\trule\tdep", "GGGG\tline\tDDDD"), file.path(d, "deps.tsv"))
+  writeLines(c("wsg\thost\tskip\trun_uid", sprintf("DDDD\tdispatcher\tno\t%s", uid)),
+             file.path(d, "run_wsgs.tsv"))
+  ep <- as.numeric(as.POSIXct(reader_start, tz = "UTC"))
+  writeLines(sprintf("GGGG\t%s %d\t%s\t1", reader_start, ep, mode), file.path(d, "launched.tsv"))
+  out <- suppressWarnings(system2(file.path(R.home("bin"), "Rscript"), c(
+    p, sc, uid, file.path(d, "deps.tsv"), file.path(d, "run_wsgs.tsv"),
+    file.path(d, "state.tsv"), file.path(d, "launched.tsv"), file.path(d, "audit.tsv")
+  ), stdout = TRUE, stderr = TRUE))
+  list(status = attr(out, "status") %||% 0L, out = paste(out, collapse = "\n"),
+       tab = utils::read.delim(file.path(d, "audit.tsv"), colClasses = "character"))
+}
+
+test_that("the audit passes a reader the final set started after its run group landed", {
+  conn <- skip_if_no_db()
+  a <- rr_audit(conn, "2026-10-30 02:30:00", "final")
+  expect_equal(a$status, 0L, info = a$out)
+  expect_identical(a$tab$verdict[a$tab$wsg == "GGGG"], "ok")
+})
+
+test_that("the audit catches a reader started before its run group landed", {
+  conn <- skip_if_no_db()
+  a <- rr_audit(conn, "2026-10-30 01:30:00", "early")
+  expect_equal(a$status, 1L, info = a$out)
+  expect_identical(a$tab$verdict[a$tab$wsg == "GGGG"], "EARLY")
+})

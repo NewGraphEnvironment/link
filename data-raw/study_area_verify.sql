@@ -330,7 +330,7 @@ SELECT coalesce(m.wsg, r.wsg)                              AS wsg,
        m.done                                              AS model_done,
        r.done                                              AS recompute_done,
        CASE
-         WHEN m.wsg IS NULL                THEN 'recomputed but never modelled'
+         WHEN m.wsg IS NULL                THEN 'outside reader of this run (recomputed, link#274)'
          WHEN r.wsg IS NULL                THEN 'MODELLED BUT NOT RECOMPUTED'
          WHEN r.done IS NULL               THEN 'recompute started, never finished'
          WHEN m.done IS NULL               THEN 'model started, never finished'
@@ -557,8 +557,11 @@ BEGIN
          JOIN %I.streams_access a USING (id_segment, watershed_group_code)
         WHERE h.accessible AND a.%I = 0
           AND h.watershed_group_code IN
-              (SELECT watershed_group_code FROM %I.log WHERE run_uid = $1)',
-      v_sch, 'streams_habitat_' || v_sp, v_sch, 'access_' || v_sp, v_sch)
+              (SELECT watershed_group_code FROM %I.log WHERE run_uid = $1
+               UNION
+               SELECT watershed_group_code FROM %I.log_recompute
+                WHERE run_uid = $1 AND date_end IS NOT NULL)',
+      v_sch, 'streams_habitat_' || v_sp, v_sch, 'access_' || v_sp, v_sch, v_sch)
       INTO n_sp USING v_run;
     IF n_sp > 0 THEN
       n_unset := n_unset + n_sp;
@@ -589,11 +592,35 @@ BEGIN
                    FROM %I.log_recompute
                   WHERE run_uid = $1 AND date_end IS NOT NULL
                   ORDER BY watershed_group_code, date_start DESC) r
-          WHERE habitat_gate_lifted > 0$q$,
-      v_sch) INTO n_lift, bad USING v_run;
+          WHERE habitat_gate_lifted > 0
+            AND watershed_group_code IN (SELECT watershed_group_code FROM %I.log
+                                          WHERE run_uid = $1)$q$,
+      v_sch, v_sch) INTO n_lift, bad USING v_run;
     IF n_lift > 0 THEN
       RAISE EXCEPTION
         'run %: % segment(s) were lifted by the recompute after the habitat gate had blanked them, so their habitat is missing (%). Re-model those groups under this run_uid with LNK_HABITAT_GATE=0, then re-run the recompute (link#349).',
+        v_run, n_lift, bad;
+    END IF;
+    -- The same for a group outside the run that it recomputed because it reads
+    -- a run group (link#274): reported, not raised, as the run reports it. The
+    -- run was asked about its own groups; the remedy is a re-model of the
+    -- reader, which makes it one of the run's.
+    EXECUTE format(
+      $q$SELECT coalesce(sum(habitat_gate_lifted), 0),
+                coalesce(string_agg(watershed_group_code || ' ' || habitat_gate_lifted,
+                                    ', ' ORDER BY watershed_group_code), '')
+           FROM (SELECT DISTINCT ON (watershed_group_code)
+                        watershed_group_code, habitat_gate_lifted
+                   FROM %I.log_recompute
+                  WHERE run_uid = $1 AND date_end IS NOT NULL
+                  ORDER BY watershed_group_code, date_start DESC) r
+          WHERE habitat_gate_lifted > 0
+            AND watershed_group_code NOT IN (SELECT watershed_group_code FROM %I.log
+                                              WHERE run_uid = $1)$q$,
+      v_sch, v_sch) INTO n_lift, bad USING v_run;
+    IF n_lift > 0 THEN
+      RAISE WARNING
+        'run %: % segment(s) of groups outside the run, recomputed because they read it, were lifted after the habitat gate had blanked them (%). Their habitat stays missing until each is re-modelled (under this run_uid with LNK_HABITAT_GATE=0, then --recompute-only).',
         v_run, n_lift, bad;
     END IF;
   END IF;

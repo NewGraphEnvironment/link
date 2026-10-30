@@ -98,14 +98,14 @@ is Phase 1.
       refused, waiting, unchecked and lifted readers with the remedy (re-model under this run_uid
       with `LNK_HABITAT_GATE=0 LNK_GUARD_DOWNSTREAM=warn`, then a bare `--recompute-only`; its
       own readers surface on that pass) and the tsv; exit status unchanged for named readers
-- [ ] Recovery texts (finish.sh, hosts.sh "each run group that reads it"), driver header text,
+- [x] Recovery texts (finish.sh, hosts.sh "each run group that reads it"), driver header text,
       `--recompute-only` usage
-- [ ] `study_area_verify.sql`: relabel the no-`log` row "outside reader of this run"; extend the
+- [x] `study_area_verify.sql`: relabel the no-`log` row "outside reader of this run"; extend the
       habitat-settled invariant to `log ∪ log_recompute` groups; readers with lifted segments get
       their own reported message (not the run groups' RAISE); `study_area_verify_negative.sh`:
       VICTIM from `log` groups, scratch copy covers readers, new cases (reader present → PASS;
       reader lifted → the new message)
-- [ ] Driver tests: the union reaches the final set, judge and pool; compare stays the run's;
+- [x] Driver tests: the union reaches the final set, judge and pool; compare stays the run's;
       with a header-only readers tsv every output (FINAL line, judge and compare arguments,
       phases rows, summary, exit code) is byte-identical to today's; `recompute_audit.R` passes
       readers launched from the final set; the stub writes the tsv

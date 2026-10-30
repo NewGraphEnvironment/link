@@ -27,3 +27,9 @@
   `run_readers_report` names refused, waiting, unchecked and lifted readers. Finish tests 277
   pass; three one-line mutants (compare reads the union, no union, a bad class accepted) each
   fail a test.
+- Verifier: an outside reader's recompute row is labelled as such; the habitat invariant covers
+  `log ∪ log_recompute` groups; a reader's lifted segments are a WARNING, the run's still raise.
+  `study_area_verify_negative.sh` on `fresh_default`'s 2026-10-23 run: all 19 cases right,
+  including new 6h (reader present → PASS) and 6i (reader lifted → PASS, reported); against the
+  old verifier 6i fails. Audit tests: a reader started from the final set → `ok`, one started
+  before its run group landed → `EARLY` (57 pass in test-recompute_readers.R).
