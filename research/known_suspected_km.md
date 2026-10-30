@@ -13,9 +13,9 @@ Both sum over the rows `accessible_km` sums, so the pair adds to it within 0.01 
 rounding of two columns. All three are NA together where a group has no access build.
 `lnk_habitat_validate()`'s `summary` carries all three.
 
-What the columns report is whatever the access walk wrote. Since #399 a record on the same
-line counts as upstream of a segment only when it lies at least 1 m above the segment's
-start, as in bcfishpass (`RUNBOOK.md` §2c). The tables up to "After #399" were taken before it, when
+What the columns report is whatever the access walk wrote. Since #399 the walk's same-line
+measure test counts a record as upstream of a segment only when it lies at least 1 m above
+the segment's start, as in bcfishpass (`RUNBOOK.md` §2c). The tables up to "After #399" were taken before it, when
 the walk also counted a record within 1 m of the start.
 
 ## How much of the accessible network has a record upstream
@@ -75,7 +75,7 @@ code 2 in link and code 1 in bcfishpass, never the reverse. Every piece lies on 
 segment that starts within 1 m of a record of the species on the same line. That is the
 segment above a record. Link's walk counted the record as upstream of it, and bcfishpass
 does not. Each species' piece total equals its gap above, to rounding. #399 removed it:
-link's walk now counts a same-line record only when it lies at least 1 m above a segment's
+link's walk's same-line measure test now counts a record only when it lies at least 1 m above a segment's
 start, as bcfishpass's does.
 
 **Steelhead is not comparable against this reference.** bcfishpass's view gives BULK
@@ -88,9 +88,9 @@ steelhead needs a re-score against a newer reference (still so after #399, below
 
 ## After #399
 
-Since #399 a same-line record counts as upstream of a segment only at least 1 m above its
-start, so a segment reads 2 only if it starts at least 1 m below the species' highest record
-on its line, or below the mouth of a tributary holding a record of the species (RUNBOOK §2c).
+Since #399 the walk's same-line measure test counts a record as upstream of a segment only at least 1 m above its
+start, so the segment starting at each species' highest record on a line normally reads 1
+(RUNBOOK §2c has the other records the walk counts and when a top does not cut).
 The same groups
 were built before and after the change on one database, in both configs
 (`data-raw/logs/record_at_start_399/`; its builds reproduce the tables above to the

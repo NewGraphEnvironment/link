@@ -13,14 +13,13 @@ the mapping code and habitat gate read barrier flags and `access = 0` against `>
 (`pipeline: observation_breaks: top_per_species`). The `bcfishpass` bundle breaks at every
 record, as bcfishpass does (`all`, the value when the key is absent). Mechanics: RUNBOOK §2c.
 
-Since #399 the access walk counts a same-line record as upstream of a segment only when it
+Since #399 the access walk's same-line measure test counts a record as upstream of a segment only when it
 lies at least 1 m above the segment's start, as bcfishpass's walk does
 (`FWA_Upstream(…, False, 1)`). Breaks are rounded to the metre, so the segment starting at a
-species' top record on a line normally reads 1 and the one ending there reads 2: under either
-value of `observation_breaks`, a segment reads 2 only if it starts at least 1 m below the
-species' highest record on its line, or below the mouth of a tributary holding a record of
-the species. RUNBOOK §2c has the cases that move the boundary off the top (a tributary
-record entering above; a top that did not cut because another end lies within 1 m).
+species' top record on a line normally reads 1 and the one ending there reads 2, under either
+value of `observation_breaks`. RUNBOOK §2c has what keeps 2 above a top: records the walk
+counts by watershed code (tributaries, and fwapg's side-channel clause, which ignores
+measure), and a top within 1 m of an FWA line end, which does not cut.
 
 Before #399, which every measurement in this file was made under, the walk counted a record
 above the segment's start or within 1 m of it. A species' own top break then never changed
@@ -134,8 +133,8 @@ reduced breaks change nothing there; making the reader see aliases is a separate
 The issue asked how often a species' top is redundant because the species is also recorded
 up a tributary joining above it. Under the walk of the time that premise did not hold: a
 species' own top never changed its own code. Since #399 it does, and a top is redundant
-exactly where a tributary with the species' records joins above it (such tops still read 2
-after #399). The tributary count is kept for the record (`redundancy.csv`: 34, 19,
+where something else keeps 2 above it: a tributary or side-channel record, a top that made
+no cut, or a barrier (RUNBOOK §2c). The tributary count is kept for the record (`redundancy.csv`: 34, 19,
 103 and 86 species-tops in PARS, LKEL, BULK and ELKR), but the real redundancy in the tops is
 every top that is not the first cut more than 1 m above some other species' top. That was
 what the exact set above removes: it keeps 3 to 31 % of the `all` positions, against 17 to
@@ -187,7 +186,7 @@ group-species (0.02 to 73.5 km each, at most 5.4 % of a species' observed km), e
 a segment with a record of the species within 1 m of its start, and no barrier flag, mapping
 code or habitat flag moved (`data-raw/logs/record_at_start_399/pre_post_diff.csv`). So the
 tops now do what #396 chose them for: each species' boundary is at its highest record on each
-line, except where RUNBOOK §2c's two cases move it. The measurements above this section were made under the earlier reading.
+line, except where RUNBOOK §2c's other records or an uncut top keep 2 above it. The measurements above this section were made under the earlier reading.
 
 ## Owed
 

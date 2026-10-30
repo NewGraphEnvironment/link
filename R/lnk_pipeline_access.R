@@ -28,13 +28,14 @@
 #'    0 = barriers downstream (blocked)
 #'    1 = no barriers downstream + species not observed upstream
 #'        (modelled accessible)
-#'    2 = no barriers downstream + species recorded upstream: at least
-#'        1 m above the segment's start on its own line, or on a line
-#'        upstream of it. A record less than 1 m above the segment's start
-#'        is not upstream of it, as in bcfishpass. So code 2 reads 2 only
-#'        on a segment starting at least 1 m below the species' highest
-#'        record on its line, or below the mouth of a tributary holding a
-#'        record of the species (`RUNBOOK.md` §2c).
+#'    2 = no barriers downstream + species recorded upstream, as fwapg's
+#'        `fwa_upstream()` reads it: at least 1 m above the segment's start
+#'        on its own line, or on a line its watershed codes put upstream.
+#'        By the same-line measure test, a record less than 1 m above the
+#'        segment's start is not upstream of it, as in bcfishpass, so the segment starting at a
+#'        species' top record on a line normally reads 1 (`RUNBOOK.md` §2c
+#'        has the other records the walk counts and when a top does not
+#'        cut).
 #'
 #' @param conn A [DBI::DBIConnection-class] object pointing at fwapg.
 #' @param segments Character. Schema-qualified segments table.
@@ -276,13 +277,12 @@ lnk_pipeline_access <- function(
   #
   # `include_equivalents = FALSE`, as bcfishpass's own walk calls
   # `FWA_Upstream(..., False, 1)` (load_streams_upstr_observations.sql):
-  # on the same line a record counts only at `m >= start + 1`, so a record
+  # its same-line measure test counts a record only at `m >= start + 1`, so a record
   # at a segment's start is not upstream of it. Breaks are rounded to the
-  # metre, so a segment reads 2 only if it starts at least 1 m below the
-  # species' highest record on its line, or below the mouth of a tributary
-  # holding a record of it; normally the boundary is the top's own break
-  # (#399; RUNBOOK §2c has the cases that move it). The barrier walks above keep TRUE: a
-  # barrier at a segment's start must still block it.
+  # metre, so the segment starting at a species' top record on a line
+  # normally reads 1 (#399; RUNBOOK §2c has the other records the walk
+  # counts and when a top does not cut). The barrier walks above keep TRUE:
+  # a barrier at a segment's start must still block it.
   obsrvtn_species_per_seg <- NULL
   if (!is.null(observations)) {
     obsrvtn_species_per_seg <- fresh::frs_network_features(

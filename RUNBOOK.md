@@ -195,23 +195,32 @@ exist`.) `barriers_per_sp` mechanically requires the *feature view* shape.
 species is observed upstream") against code 1. The access walk
 (`lnk_pipeline_access()`, `frs_network_features(direction = "upstream",
 include_equivalents = FALSE)`) reads `<schema>.observations` itself, every record,
-not the breaks table, and a same-line record counts as upstream of a segment only when
-its measure is at least 1 m above the segment's start (fwapg `fwa_upstream`, fresh's
-1 m tolerance). That is bcfishpass's reading: its walk calls `FWA_Upstream(…, False, 1)`
+not the breaks table, and its same-line measure test counts a record as upstream of a
+segment only when the record is at least 1 m above the segment's start (fwapg
+`fwa_upstream`, fresh's 1 m tolerance; clause 1 below). That is bcfishpass's reading: its walk calls `FWA_Upstream(…, False, 1)`
 (`load_streams_upstr_observations.sql`). Breaks are rounded to the metre, so a break at a
 species' top starts its segment within 0.5 m of the record: that segment reads 1 (barring
-the cases below) and the one ending there reads 2. So code 2 is a property of a segment's start. **The exact rule:**
-on a line, species X reads 2 on a segment that starts at least 1 m below X's highest record
-on that line, or below the mouth of a tributary holding a record of X (a tributary's records
-count for every segment of the receiving line below its mouth), and 1 elsewhere, barriers
-aside. Each species' top is a break in both bundles (under `all` every record is), so
-normally the segment starting at the top is the first to read 1 and the boundary sits on the
-highest record (#399). Two cases move it: a tributary with records of X entering above the
-top keeps 2 to its mouth; and a top that did not cut, because an earlier end (another
-record's break, an FWA line end) lies within 1 m of it (`frs_break_apply()` cuts only more
-than 1 m from an existing end), leaves the boundary at that end if it lies above the record or less than 1 m
-below it, else at the next end above (ELKR: a BT record 1 m above its line's start
-reads 2 to the line's first end, 112 m up). Until #399 the walk passed `TRUE`, which
+the cases below) and the one ending there reads 2. So code 2 is a property of a segment's start. **What reads 2** is `fwa_upstream()`'s
+clauses (fwapg; each first asks that the record's watershed code descend from the segment's):
+
+1. A record on the segment's own line at least 1 m above its start. This is the only clause
+   #399 changed; `TRUE` read `start − 1`.
+2. A record on a tributary: a line whose watershed code puts it above the segment's local
+   code. It ignores measure, so a tributary's records count for every segment of the
+   receiving line below its mouth.
+3. Where the segment's watershed and local codes differ, a record on a line with the same
+   watershed code and a larger local code (fwapg's "capture side channels"). It also ignores
+   measure, and can count a record on the same line below the segment where local codes do
+   not rise with measure: on PARS line 359567332 the segments starting at 182477 and 183194 m
+   read BT 2 from the line's top BT record at 182461 m.
+
+Each species' top is a break in both bundles (under `all` every record is), so normally the
+segment starting at the top reads 1, and the boundary sits on the highest record (#399). Clauses 2 and 3 can keep 2 above it. So can a top within 1 m of an FWA
+line end, which does not cut. Observations are the first break source and all go to one
+`frs_break_apply()` call, which tests a break only against the ends that existed before it,
+so another record's break never blocks one. The boundary is then that end if it lies above
+the record or less than 1 m below it, else the next end above (ELKR: a BT record 1 m above
+its line's start reads 2 to the line's first end, 112 m up). Until #399 the walk passed `TRUE`, which
 counts a record at start − 1 or above, so the segment starting at a species' top still
 read 2 and the species turned at the first cut more than 1 m above its top, whatever made
 that cut (#396's measurements below were made under that reading). Built before and after

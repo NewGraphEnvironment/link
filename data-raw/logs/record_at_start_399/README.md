@@ -1,7 +1,7 @@
 # A record at a segment's start, before and after (#399)
 
 The access walk's observation call went from `include_equivalents = TRUE` to `FALSE`
-(bcfishpass's reading), so a same-line record counts as upstream of a segment only at
+(bcfishpass's reading), so the same-line measure test counts a record as upstream of a segment only at
 `m >= start + 1`. These builds measure what moved, under both configs. Write-ups:
 `research/known_suspected_km.md` ("After #399") and `research/observation_breaks.md`.
 

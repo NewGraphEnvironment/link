@@ -118,10 +118,11 @@ pipeline:
   #   top_per_species  — on each stream line, each present species' farthest-
   #                      upstream observation
   # Only access_<sp> code 2 ("accessible, observed upstream", against 1)
-  # reads an observation break. A same-line record counts as upstream of a
-  # segment only at least 1 m above its start, so normally a species turns
+  # reads an observation break. The walk's same-line measure test counts a
+  # record as upstream of a segment only at least 1 m above its start, so normally a species turns
   # from 2 to 1 at its own top on each line (link#399; RUNBOOK §2c has the
-  # cases that move it). Every other position mostly
+  # other records the walk counts and when a top does not cut). Every other
+  # position mostly
   # shortens
   # segments: more segments to classify and recompute, and shorter-reach,
   # noisier gradients at the places fish were recorded. Barrier lifts count
