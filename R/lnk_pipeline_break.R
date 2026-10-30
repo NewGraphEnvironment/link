@@ -25,7 +25,7 @@
 #'
 #' | name | source table | role | classify label |
 #' |---|---|---|---|
-#' | `observations` | `<schema>.observations_breaks` | fish observations from `bcfishobs.observations`, WSG- and species-filtered, exclusions applied. `cfg$pipeline$observation_breaks` picks the positions: `all` (every one, what bcfishpass does; the value when absent) or `top_per_species` (on each `blue_line_key`, each species' farthest-upstream observation; the `default` bundle). Code 2 counts a same-line record only at least 1 m above a segment's start (as bcfishpass does), so on each line a species turns from code 2 to 1 at its own top break, unless a tributary entering above it holds a record of the species | (informational; not a barrier) |
+#' | `observations` | `<schema>.observations_breaks` | fish observations from `bcfishobs.observations`, WSG- and species-filtered, exclusions applied. `cfg$pipeline$observation_breaks` picks the positions: `all` (every one, what bcfishpass does; the value when absent) or `top_per_species` (on each `blue_line_key`, each species' farthest-upstream observation; the `default` bundle). Code 2 counts a same-line record only at least 1 m above a segment's start (as bcfishpass does), so a segment reads 2 only on a segment starting at least 1 m below the species' highest record on its line, or below the mouth of a tributary holding a record of the species (`RUNBOOK.md` §2c); normally that puts each species' boundary on its own top break | (informational; not a barrier) |
 #' | `gradient_minimal` | `<schema>.gradient_barriers_minimal` | each present species' post-lift natural barriers (gradient at its classes, falls, opt-in subsurface flow, minus its overrides, plus user-definite), reduced to the downstream-most position per flow path (#326) | classify gates on the full `gradient_barriers_raw` set with `gradient_<NNNN>` labels |
 #' | `falls` | `<schema>.falls` | natural waterfalls from fresh's `inst/extdata/falls.csv` (read by [lnk_pipeline_prepare()]); each fall is its own barrier (NOT minimal-reduced) | `blocked` |
 #' | `barriers_definite` | `<schema>.barriers_definite` | `user_barriers_definite.csv` for the AOI | `blocked` |
@@ -151,9 +151,9 @@ lnk_pipeline_break <- function(conn, aoi, cfg, loaded, schema,
 #' - `"top_per_species"`: on each `blue_line_key`, each species' farthest-
 #'   upstream observation (#396). The access walk reads `<schema>.observations`
 #'   itself, not this table, and counts a same-line record only at least 1 m
-#'   above a segment's start (#399), so on each line each species turns from
-#'   code 2 to 1 at its own top break, unless a tributary entering above it
-#'   holds a record of the species.
+#'   above a segment's start (#399), so normally each species' code-2
+#'   boundary on a line is its own top break (`RUNBOOK.md` §2c has the cases
+#'   that move it: a tributary record entering above, a top that did not cut).
 #'
 #' Positions are rounded to the metre either way; `round(max(m))` equals
 #' `max(round(m))`, so the tops are a subset of the `"all"` positions.

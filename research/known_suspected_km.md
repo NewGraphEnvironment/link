@@ -89,8 +89,9 @@ steelhead needs a re-score against a newer reference (still so after #399, below
 ## After #399
 
 Since #399 a same-line record counts as upstream of a segment only at least 1 m above its
-start, so the segment starting at each species' highest record on a line reads 1, unless a
-tributary entering above it holds a record of the species. The same groups
+start, so a segment reads 2 only if it starts at least 1 m below the species' highest record
+on its line, or below the mouth of a tributary holding a record of the species (RUNBOOK §2c).
+The same groups
 were built before and after the change on one database, in both configs
 (`data-raw/logs/record_at_start_399/`; its builds reproduce the tables above to the
 hundredth of a km).

@@ -119,9 +119,9 @@ pipeline:
   #                      upstream observation
   # Only access_<sp> code 2 ("accessible, observed upstream", against 1)
   # reads an observation break. A same-line record counts as upstream of a
-  # segment only at least 1 m above its start, so on each line a species
-  # turns from 2 to 1 at its own top, unless a tributary entering above it
-  # holds a record of the species (link#399). Every other position mostly
+  # segment only at least 1 m above its start, so normally a species turns
+  # from 2 to 1 at its own top on each line (link#399; RUNBOOK §2c has the
+  # cases that move it). Every other position mostly
   # shortens
   # segments: more segments to classify and recompute, and shorter-reach,
   # noisier gradients at the places fish were recorded. Barrier lifts count

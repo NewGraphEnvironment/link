@@ -199,13 +199,19 @@ not the breaks table, and a same-line record counts as upstream of a segment onl
 its measure is at least 1 m above the segment's start (fwapg `fwa_upstream`, fresh's
 1 m tolerance). That is bcfishpass's reading: its walk calls `FWA_Upstream(…, False, 1)`
 (`load_streams_upstr_observations.sql`). Breaks are rounded to the metre, so a break at a
-species' top starts its segment within 0.5 m of the record: that segment reads 1 and the
-one ending there reads 2. So code 2 is a property of a segment's start, and species X
-turns from 2 to 1 at **its own top break**, the boundary on its highest record on each
-line, whichever bundle (#399), unless a tributary entering above that top holds a record
-of X: its records count for every segment of the receiving line below its mouth. A top within 1 m of another observation's break does not
-cut itself (`frs_break_apply()` cuts only more than 1 m from an existing end), and the
-boundary lands on that break instead, within 1 m of the record. Until #399 the walk passed `TRUE`, which
+species' top starts its segment within 0.5 m of the record: that segment reads 1 (barring
+the cases below) and the one ending there reads 2. So code 2 is a property of a segment's start. **The exact rule:**
+on a line, species X reads 2 on a segment that starts at least 1 m below X's highest record
+on that line, or below the mouth of a tributary holding a record of X (a tributary's records
+count for every segment of the receiving line below its mouth), and 1 elsewhere, barriers
+aside. Each species' top is a break in both bundles (under `all` every record is), so
+normally the segment starting at the top is the first to read 1 and the boundary sits on the
+highest record (#399). Two cases move it: a tributary with records of X entering above the
+top keeps 2 to its mouth; and a top that did not cut, because an earlier end (another
+record's break, an FWA line end) lies within 1 m of it (`frs_break_apply()` cuts only more
+than 1 m from an existing end), leaves the boundary at that end if it lies above the record or less than 1 m
+below it, else at the next end above (ELKR: a BT record 1 m above its line's start
+reads 2 to the line's first end, 112 m up). Until #399 the walk passed `TRUE`, which
 counts a record at start − 1 or above, so the segment starting at a species' top still
 read 2 and the species turned at the first cut more than 1 m above its top, whatever made
 that cut (#396's measurements below were made under that reading). Built before and after
@@ -251,11 +257,12 @@ above X's top).
 The recompute (`lnk_access()`) passes no observations and keeps a prior 2, so a recompute
 after a re-model keeps these. `data-raw/logs/observation_breaks_396/pre_post_diff.R`
 checks the direction rule on every piece: any change against the direction its start
-moved, or with the start unmoved, is a defect. The set that would keep nearly every turn
-to 1 where `all` puts it is smaller than the tops: per species, the lowest record of any
-species more than 1 m above its raw top (`exact_set.sql`). It is near-exact, not exact,
-and dropped: the tops stay, because putting each species' boundary at its highest record
-(#399) needs exactly them. `research/observation_breaks.md` has the counts.
+moved, or with the start unmoved, is a defect. Under the reading before #399, the set
+that would have kept nearly every turn to 1 where `all` put it was smaller than the tops:
+per species, the lowest record of any species more than 1 m above its raw top
+(`exact_set.sql`). It was near-exact, not exact, and dropped: the tops stay, because
+putting each species' boundary at its highest record (#399) needs exactly them; since
+#399 that set no longer reproduces `all`, which now normally turns each species at its own top. `research/observation_breaks.md` has the counts.
 
 **Omitting `observations` from `break_order`** removes its segmentation only: code 2
 is still computed, at the resolution of the segments left.
@@ -1272,7 +1279,7 @@ next dispatch.**
     `accessible_observed_km` (`access = 2`) and `accessible_unobserved_km` (`access = 1`) sum over
     the rows `accessible_km` sums, so the pair sums to it (to 0.01 km a column) and all three are NA
     together where access is not built. The validator's `summary` carries all three. What code 2
-    means, and where it ends above a species' top record, is §2c.
+    means, and where it ends relative to a species' top record, is §2c.
   - **`lnk_aggregate()` still sums the flag**, connection lines included: it is per-crossing,
     link-side SQL over boolean habitat columns, with no connection split. So do the older
     one-off scripts with their own SQL (`data-raw/compare_adms.R`,

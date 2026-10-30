@@ -16,10 +16,11 @@ record, as bcfishpass does (`all`, the value when the key is absent). Mechanics:
 Since #399 the access walk counts a same-line record as upstream of a segment only when it
 lies at least 1 m above the segment's start, as bcfishpass's walk does
 (`FWA_Upstream(…, False, 1)`). Breaks are rounded to the metre, so the segment starting at a
-species' top record on a line reads 1 and the one ending there reads 2: under either value of
-`observation_breaks`, a species turns from 2 to 1 at its own top on each line, unless a
-tributary entering above that top holds a record of the species, whose records count for
-every segment of the receiving line below its mouth.
+species' top record on a line normally reads 1 and the one ending there reads 2: under either
+value of `observation_breaks`, a segment reads 2 only if it starts at least 1 m below the
+species' highest record on its line, or below the mouth of a tributary holding a record of
+the species. RUNBOOK §2c has the cases that move the boundary off the top (a tributary
+record entering above; a top that did not cut because another end lies within 1 m).
 
 Before #399, which every measurement in this file was made under, the walk counted a record
 above the segment's start or within 1 m of it. A species' own top break then never changed
@@ -32,7 +33,7 @@ fwapg's `fwa_upstream`), and #399 made it so.
 
 ## A smaller set that keeps code 2 nearly as `all` does
 
-**Dropped (operator, 2026-10-28).** It only reproduces where `all` puts each turn, and `all` does not put it at the highest fish either: the walk counts a record at a segment's start as upstream of it. Putting each species' boundary at its highest record is #399, reading such a record as not upstream, and the tops are exactly the breaks that needs. Recorded here for the counts.
+**Dropped (operator, 2026-10-28).** It only reproduced where `all` put each turn, and `all` did not put it at the highest fish either: the walk then counted a record at a segment's start as upstream of it. Since #399 `all` turns each species at its own top too, and this set, which cuts at no top, reproduces neither. Putting each species' boundary at its highest record is #399, reading such a record as not upstream, and the tops are exactly the breaks that needs. Recorded here for the counts.
 
 Keeping, per species, the lowest record of any species more than 1 m above its raw top puts
 nearly every turn to 1 where `all` puts it, and it is smaller than the tops (`exact_set.sql`,
@@ -131,10 +132,12 @@ reduced breaks change nothing there; making the reader see aliases is a separate
 ## Is the remaining redundancy worth removing (question 5)
 
 The issue asked how often a species' top is redundant because the species is also recorded
-up a tributary joining above it. That premise does not hold: a species' own top never
-changes its own code. The tributary count is kept for the record (`redundancy.csv`: 34, 19,
+up a tributary joining above it. Under the walk of the time that premise did not hold: a
+species' own top never changed its own code. Since #399 it does, and a top is redundant
+exactly where a tributary with the species' records joins above it (such tops still read 2
+after #399). The tributary count is kept for the record (`redundancy.csv`: 34, 19,
 103 and 86 species-tops in PARS, LKEL, BULK and ELKR), but the real redundancy in the tops is
-every top that is not the first cut more than 1 m above some other species' top. That is
+every top that is not the first cut more than 1 m above some other species' top. That was
 what the exact set above removes: it keeps 3 to 31 % of the `all` positions, against 17 to
 59 % for the tops.
 
@@ -176,15 +179,15 @@ Question 6 checks the direction rule on every piece.
 ## Since #399
 
 #399 changed only the walk's same-line test, so with every break where it was, the segment
-starting at each species' top record went from 2 to 1 where no tributary record of the species
-enters above it, and nothing else moved. On the five groups
+starting at each species' top record went from 2 to 1 wherever the walk's new test reads it
+so, and nothing else moved. On the five groups
 under `default` (and BULK and PARS under `bcfishpass`), built before and after on one
 database: segment counts and starts identical, 346.6 km of code 2 became 1 over 25
 group-species (0.02 to 73.5 km each, at most 5.4 % of a species' observed km), every piece on
 a segment with a record of the species within 1 m of its start, and no barrier flag, mapping
 code or habitat flag moved (`data-raw/logs/record_at_start_399/pre_post_diff.csv`). So the
 tops now do what #396 chose them for: each species' boundary is at its highest record on each
-line, or above it where a tributary holds records. The measurements above this section were made under the earlier reading.
+line, except where RUNBOOK §2c's two cases move it. The measurements above this section were made under the earlier reading.
 
 ## Owed
 

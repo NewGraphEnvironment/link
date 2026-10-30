@@ -128,9 +128,10 @@ Access integer codes per species (mirroring bcfp):
 2 = no barriers downstream + species recorded upstream: at least
 1 m above the segment's start on its own line, or on a line
 upstream of it. A record less than 1 m above the segment's start
-is not upstream of it, as in bcfishpass, so the segment starting
-at a species' top record on a line reads 1, unless a tributary
-entering above it holds a record of the species.
+is not upstream of it, as in bcfishpass. So code 2 reads 2 only
+on a segment starting at least 1 m below the species' highest
+record on its line, or below the mouth of a tributary holding a
+record of the species (\code{RUNBOOK.md} §2c).
 }
 \seealso{
 Other pipeline: 
