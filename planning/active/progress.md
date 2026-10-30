@@ -14,3 +14,10 @@
 - Plan review (Plan agent, `review-plan.md`): 4 blockers, 8 gaps. B3 (judge refuses unasked ids)
   and B4 (verify's lifted RAISE has no `log` join; label premise wrong) reproduced; all folded
   into `task_plan.md`'s decisions and phases.
+- Full-run proof: 2026-10-23's `run_wsgs.tsv` (241 groups, no SKIPs) leaves no group
+  `fresh_default` holds outside it.
+- Phase 2: `data-raw/recompute_readers.R` (`readers_outside()`, `readers_classify()`) and
+  `data-raw/recompute_readers_check.R`; 52 tests pass; mutants (no `held` filter, no `waiting`
+  precedence, an unknown open row passing, any rule counting) each fail one. The check script
+  over three measured runs gives readers.tsv's held counts (32 / 0 / 1), all refused
+  (`check_*.tsv`).

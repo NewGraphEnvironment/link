@@ -61,21 +61,23 @@ is Phase 1.
 - [ ] Negative case: find a line-but-not-owner pair, show in `fresh_default` that the reader's
       path holds a barrier row persisted by the run group on a segment that group does not own,
       and that the line rule finds the reader
-- [ ] Full-run proof on real data (A4): 2026-10-23's `run_wsgs.tsv` against `fresh_default`'s held
-      groups leaves no outside group, and its SKIPs hold no rows
+- [x] Full-run proof on real data (A4): 2026-10-23's `run_wsgs.tsv` against `fresh_default`'s held
+      groups leaves no outside group (241 run groups, no SKIPs, 0 held outside)
 - [ ] README (Measurement, Evidence); a "Groups outside a partial run" section in
       `research/study_area_run.md`; revise #274's body with the numbers
 
 ## Phase 2: The reader classifier (tests first)
 
-- [ ] `tests/testthat/test-recompute_readers.R` (sourced like `test-pretest.R`): readers the
+- [x] `tests/testthat/test-recompute_readers.R` (sourced like `test-pretest.R`): readers the
       schema does not hold are dropped; the run's SKIPs and log-row groups are never readers;
       `waiting` precedence; each refusal reason (open newest row, config, fresh, fwapg, dirty,
       unresolvable sha, path changed, tree dirty, downstream check); one hop only; the co-held
       pair (line present, owner absent in the committed map) is found, and fails under the owner
-      rule; malformed input fails closed; the verdicts reproduce `readers.tsv`'s facts
-- [ ] `data-raw/recompute_readers.R`: pure functions `readers_outside()` and `readers_classify()`
-- [ ] `data-raw/recompute_readers_check.R`: reads the map, the run sets and the database, stamps
+      rule; malformed input fails closed (52 pass; four mutants of the helper each fail a test). The
+      verdicts are cross-checked live instead: the check script over North Thompson, the parity
+      closure and DUNC gives readers.tsv's held counts (32, 0, 1), all refused
+- [x] `data-raw/recompute_readers.R`: pure functions `readers_outside()` and `readers_classify()`
+- [x] `data-raw/recompute_readers_check.R`: reads the map, the run sets and the database, stamps
       under the recompute's environment, diffs per distinct sha, dry-runs the downstream check;
       writes `<TS>_outside_readers.tsv` (`wsg class reason reads`); exits non-zero, writing
       nothing, on any unknown input
