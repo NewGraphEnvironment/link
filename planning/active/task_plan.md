@@ -39,10 +39,21 @@ What exploration settled:
 
 ## Decided at the gate (user approval of the plan, 2026-10-30)
 
-- Both bundles read province-wide records; no `pipeline:` key (bcfishpass's SQL, above).
-- Output changes with no spec change, so `acc-v2` and `acc-bcfp-2` retire at 0.73.0 for
-  `acc-v3` and `acc-bcfp-3` with the same specs, the #399 pattern. Minor release.
-- The province table is dropped after the access walk instead of after the lifts.
+- ~~Both bundles read province-wide records; no `pipeline:` key.~~ **Revised after the plan review
+  (operator, 2026-10-30):** bcfishpass's code 2 is a hybrid (`spp INNER JOIN ids`, `ids` same-group),
+  so other groups' records count only where an own-group record of any species is upstream. The
+  `bcfishpass` bundle reproduces it through a new key, `pipeline: observation_upstream:`
+  (`province` for `default`; `group_gated` for `bcfishpass` and when absent, as #396's
+  `observation_breaks` defaults to bcfishpass's behaviour). Draft for upstream filed in our fork:
+  NewGraphEnvironment/bcfishpass#16 (`upstream-draft`; confirm again and check what is pending
+  before offering it; we may have a pull request in flight there).
+- ~~Same specs.~~ The key enters the `acc` digest, so `acc-v3` and `acc-bcfp-3` carry new specs;
+  `acc-v2` and `acc-bcfp-2` retire at 0.73.0. Minor release.
+- The province table is dropped when `lnk_pipeline_run()` ends (`on.exit()`), not after the lifts.
+- Walk mechanism (mine, from the review): per-species existence walks over each species' records
+  instead of one array walk, because the array walk returns every segment-record pair (a Fraser
+  main-stem segment would carry ~10^5 codes). The returned `obsrvtn_species_codes_upstr` becomes the
+  walked species found upstream; nothing reads it, and it is never persisted.
 
 ## Phase 1: Tests first
 
@@ -71,31 +82,49 @@ What exploration settled:
   `acc-bcfp-3` (definition: as before, but code 2 counts records in every group).
 - [ ] `devtools::document()`, `devtools::test()`, `lintr::lint_package()`.
 
+## Phase 2b: The bcfishpass gate and the walk's shape (added after the plan review)
+
+- [ ] Measure first (`walk_time.R`, below): array walk group-only vs province, and per-species
+  existence walks over the province table, on LFRA, SETN and one small group. Go on only if the
+  existence walks are tolerable; else draft a fresh distinct-result issue and stop for the user.
+- [ ] Tests: the key is checked at manifest load (`province` | `group_gated`, absent =
+  `group_gated`); a DB fixture where a segment with an own-group record upstream reads 2 from
+  another group's species under both values, and one with none reads 2 only under `province`;
+  `lnk_pipeline_access()` walks one existence walk per present species plus, under `group_gated`,
+  one over the group's own records; the acc digest moves with the key.
+- [ ] `lnk_config.R` key check; `lnk_pipeline_access()` gains the own-group table and the mode;
+  `lnk_pipeline_run()` passes both tables; `default/config.yaml` sets `province`; the acc spec
+  hashes the resolved value; `acc-v3` / `acc-bcfp-3` specs regenerated.
+
 ## Phase 3: Measure before and after (scratch schemas only, m1 local fwapg)
 
 Run decision written into the evidence README before any build: host, scratch schemas
 `zz401_*`, PRE = origin/main at the branch point, POST = the Phase 2 commit, each from its own
 worktree under `load_all`, fresh 0.47.0, `PGPASSWORD` set for the quiet-database gate.
 
-- [ ] Walk cost, standalone (`data-raw/logs/obs_province_401/walk_time.R`): time the upstream
-  observation walk against the group-only and province tables on persisted `fresh_default`
-  segments for LKEL, BULK, UPCE, PARS, ELKR, LNTH, SETN and LFRA, alternating order, with load
-  sampled. If a group's walk rises past 2× and 1 min, draft (not file) a fresh issue for an
-  upstream prefilter.
+- [ ] Walk cost, standalone (`data-raw/logs/obs_province_401/walk_time.R`): each group's
+  segments copied from `fresh_default` into a temp table; time the walk shapes above, alternating
+  order, with load, element counts and R peak memory recorded (as `prefilter_409/rerun.R`). Groups:
+  LKEL, BULK, UPCE, PARS, ELKR, LNTH, SETN, LFRA.
 - [ ] Builds PRE and POST (`run.sh` adapted from `record_at_start_399/`): `default` on #396's
-  five groups (LKEL, BULK, UPCE, PARS, ELKR) plus LNTH (main stem downstream of UNTH; confirm
-  with `recompute_deps.R`'s line rule that it reads upstream groups, else pick another), and
-  `bcfishpass` on BULK and PARS. Build minutes recorded against #396's `minutes.csv`.
+  five groups (LKEL, BULK, UPCE, PARS, ELKR) plus LNTH (confirmed by counting out-of-group
+  records upstream of its lowest segment), and `bcfishpass` on BULK, PARS and UPCE. Speed read from
+  the PRE/POST pairs; #396's `minutes.csv` is context only (other host state, other data).
 - [ ] `pre_post_diff.R` adapted from #399: segments and starts identical, `access_<sp>` moves
-  1 → 2 only, each moved piece has a record of the species upstream in another group, nothing
-  else moves. Restore-the-bug check: hand-edit one piece in POST and see it stop.
+  1 → 2 only, each moved piece has a qualifying out-of-group record upstream (the walk's own
+  `fwa_upstream(..., false, 1)` against the rebuilt province table), nothing else moves. Checks that
+  can fail: completeness (no POST piece at 1 with a qualifying record upstream, under the bundle's
+  rule), the AOI slice of the province table equals `<schema>.observations`, bcfishobs unchanged
+  between PRE and POST. Restore-the-bug: hand-edit one piece in POST and see it stop.
 - [ ] `bcfishpass` parity against bcfishpass's observed km (reuse #399's `parity_pieces.sql`):
-  BULK and PARS stay at 0.00 km, steelhead excepted.
+  BULK, PARS and UPCE match (0.00 km), steelhead excepted.
 - [ ] `data-raw/logs/obs_province_401/README.md` indexes it all.
 
 ## Phase 4: Docs
 
-- [ ] RUNBOOK §2c: the walk reads `<schema>.observations_province`; breaks read the group's own.
+- [ ] RUNBOOK §2c and §5 (~586): which table code 2 reads, the key, the gate; breaks read the
+  group's own. `R/lnk_pipeline_break.R:23,152`; `research/access_columns.md:80` (the table lives
+  longer).
 - [ ] `research/known_suspected_km.md` "After #401" (CLAUDE.md says #401 revises it);
   `research/observation_breaks.md`, `research/access_columns.md`, `research/output_vocabulary.md`.
 - [ ] CLAUDE.md: new status entry; correct #396's "Code 2 reads only the group's own records";
