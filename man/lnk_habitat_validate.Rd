@@ -98,8 +98,10 @@ records the WSG), \code{n_obs} (locations on a segment), \code{n_unattached},
 \code{n_rearing_any}, \code{n_habitat} (spawning or any rearing), the matching
 \verb{share_*} (of \code{n_obs}; \code{NA} when \code{n_obs} is 0), \code{n_in_uhc_spawn},
 \code{n_in_uhc_rear}, the \verb{*_outside_uhc} counts and shares, and cost
-\code{accessible_km}, \code{spawning_km}, \code{rearing_km} (lake connection lines
-left out) and \code{rearing_lake_connection_km} from \code{\link[=lnk_rollup_wsg]{lnk_rollup_wsg()}}.
+\code{accessible_km}, its split \code{accessible_observed_km} (the species
+recorded upstream) and \code{accessible_unobserved_km}, \code{spawning_km},
+\code{rearing_km} (lake connection lines left out) and
+\code{rearing_lake_connection_km} from \code{\link[=lnk_rollup_wsg]{lnk_rollup_wsg()}}.
 With \code{absences}, also \code{n_absence}, \code{n_absence_accessible},
 \code{n_absence_spawning}, \code{n_absence_rearing} (the \code{rearing} flag) and
 \code{n_absence_rearing_any} (the same on every stage). \code{model} is the

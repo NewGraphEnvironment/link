@@ -1,0 +1,7 @@
+wsg,species,side,at_start,km,n_pieces
+BULK,BT,link_only,t,14.46,28
+BULK,CH,link_only,t,5.46,25
+BULK,CO,link_only,t,27.77,65
+BULK,PK,link_only,t,4.15,19
+BULK,SK,link_only,t,1.91,6
+PARS,BT,link_only,t,29.70,87

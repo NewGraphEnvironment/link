@@ -235,8 +235,10 @@
 #'     `n_rearing_any`, `n_habitat` (spawning or any rearing), the matching
 #'     `share_*` (of `n_obs`; `NA` when `n_obs` is 0), `n_in_uhc_spawn`,
 #'     `n_in_uhc_rear`, the `*_outside_uhc` counts and shares, and cost
-#'     `accessible_km`, `spawning_km`, `rearing_km` (lake connection lines
-#'     left out) and `rearing_lake_connection_km` from [lnk_rollup_wsg()].
+#'     `accessible_km`, its split `accessible_observed_km` (the species
+#'     recorded upstream) and `accessible_unobserved_km`, `spawning_km`,
+#'     `rearing_km` (lake connection lines left out) and
+#'     `rearing_lake_connection_km` from [lnk_rollup_wsg()].
 #'     With `absences`, also `n_absence`, `n_absence_accessible`,
 #'     `n_absence_spawning`, `n_absence_rearing` (the `rearing` flag) and
 #'     `n_absence_rearing_any` (the same on every stage). `model` is the

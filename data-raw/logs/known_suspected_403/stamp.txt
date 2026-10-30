@@ -1,0 +1,55 @@
+link commit run: 735349e03c1e478067d42a57c85765743cd9d2ba
+run at (UTC): 2026-10-30 15:05:10
+builds read (newest log row per group):
+             schema watershed_group_code link_version
+  zz396_default_pre                 BULK       0.69.1
+  zz396_default_pre                 ELKR       0.69.1
+  zz396_default_pre                 LKEL       0.69.1
+  zz396_default_pre                 PARS       0.69.1
+  zz396_default_pre                 UPCE       0.69.1
+ zz396_default_post                 BULK       0.69.1
+ zz396_default_post                 ELKR       0.69.1
+ zz396_default_post                 LKEL       0.69.1
+ zz396_default_post                 PARS       0.69.1
+ zz396_default_post                 UPCE       0.69.1
+              fresh                 BULK       0.69.1
+              fresh                 PARS       0.69.1
+                                 link_sha link_dirty fresh_version config_name
+ 43e3409675988811b845cb67b5de179ab150f16d      FALSE        0.43.0     default
+ 43e3409675988811b845cb67b5de179ab150f16d      FALSE        0.43.0     default
+ 43e3409675988811b845cb67b5de179ab150f16d      FALSE        0.43.0     default
+ 43e3409675988811b845cb67b5de179ab150f16d      FALSE        0.43.0     default
+ 43e3409675988811b845cb67b5de179ab150f16d      FALSE        0.43.0     default
+ 71ccc2ce6577c45bf78ca6f4b0858eb7b288320d      FALSE        0.43.0     default
+ 71ccc2ce6577c45bf78ca6f4b0858eb7b288320d      FALSE        0.43.0     default
+ 71ccc2ce6577c45bf78ca6f4b0858eb7b288320d      FALSE        0.43.0     default
+ 71ccc2ce6577c45bf78ca6f4b0858eb7b288320d      FALSE        0.43.0     default
+ 71ccc2ce6577c45bf78ca6f4b0858eb7b288320d      FALSE        0.43.0     default
+ 71ccc2ce6577c45bf78ca6f4b0858eb7b288320d      FALSE        0.43.0  bcfishpass
+ 71ccc2ce6577c45bf78ca6f4b0858eb7b288320d      FALSE        0.43.0  bcfishpass
+                                                             config_hash
+ sha256:b652bca098333f300c53276a8113902c8e809548bc83deb3ae5045728849fa36
+ sha256:b652bca098333f300c53276a8113902c8e809548bc83deb3ae5045728849fa36
+ sha256:b652bca098333f300c53276a8113902c8e809548bc83deb3ae5045728849fa36
+ sha256:b652bca098333f300c53276a8113902c8e809548bc83deb3ae5045728849fa36
+ sha256:b652bca098333f300c53276a8113902c8e809548bc83deb3ae5045728849fa36
+ sha256:780afc0fb3e34aa2609f580016d80e72d9b2676bb20132e173e46099cc73f234
+ sha256:780afc0fb3e34aa2609f580016d80e72d9b2676bb20132e173e46099cc73f234
+ sha256:780afc0fb3e34aa2609f580016d80e72d9b2676bb20132e173e46099cc73f234
+ sha256:780afc0fb3e34aa2609f580016d80e72d9b2676bb20132e173e46099cc73f234
+ sha256:780afc0fb3e34aa2609f580016d80e72d9b2676bb20132e173e46099cc73f234
+ sha256:192ddf6965230421d91e00ced86eec565d5a5564a479610d43d06c00c87ccba7
+ sha256:192ddf6965230421d91e00ced86eec565d5a5564a479610d43d06c00c87ccba7
+            date_end
+ 2026-10-28 07:53:17
+ 2026-10-28 08:58:33
+ 2026-10-28 06:56:16
+ 2026-10-28 08:08:15
+ 2026-10-28 08:01:06
+ 2026-10-28 07:58:11
+ 2026-10-28 08:54:38
+ 2026-10-28 07:01:07
+ 2026-10-28 08:12:19
+ 2026-10-28 08:04:00
+ 2026-10-28 08:29:24
+ 2026-10-28 08:32:37

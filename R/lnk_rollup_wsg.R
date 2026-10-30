@@ -13,7 +13,7 @@
 #' The `streams_access` join is a LEFT join: access is optional metadata
 #' for a length roll-up. When a segment has no `streams_access` row
 #' (access not yet built for the WSG), `access` is `NULL` and
-#' `accessible_km` resolves to 0 — build it via
+#' `accessible_km` is `NA` (a filtered sum over no rows) — build it via
 #' `lnk_pipeline_run(mapping_code = TRUE)` (or the unconditional access
 #' phase). Length is never dropped by a missing access row, so the
 #' habitat metrics (`spawning_km`, `rearing_km`) are unaffected.
@@ -60,6 +60,19 @@
 #' different (pre-gating) semantics and diverges from the access model
 #' (MORR coho: 3424 km vs the validated 3330 km).
 #'
+#' The default also splits `accessible_km` in two by the access code:
+#' `accessible_observed_km` (`access = 2`, the species recorded upstream of
+#' the segment) and `accessible_unobserved_km` (`access = 1`, accessible
+#' with no record upstream). Both sum over the same rows as `accessible_km`,
+#' so all three are `NA` together where access is not built, a part is 0
+#' where accessible rows exist but none carry its code, and
+#' `accessible_observed_km + accessible_unobserved_km` equals
+#' `accessible_km` to the 0.01 km each column is rounded to. bcfishpass
+#' reports the same split as `length_naturallyaccessible_obsrvd_<sp>` and
+#' `length_naturallyaccessible_model_<sp>`. Which records count, and where
+#' code 2 ends upstream of the top record, are the access walk's rules
+#' (see `RUNBOOK.md`), not this function's.
+#'
 #' @param conn A [DBI::DBIConnection-class] object (from [lnk_db_conn()]).
 #' @param aoi Watershed group code (e.g. `"MORR"`). Uppercase 3-5 letters.
 #' @param species Character vector of species codes (e.g. `c("CO","BT")`).
@@ -74,7 +87,9 @@
 #'   values are SQL aggregate expressions over the generic aliases
 #'   `length_metre`, `edge_type`, `waterbody`, `connection`, `access`,
 #'   `spawning`, `rearing`. Default emits
-#'   `accessible_km`, `spawning_km`, `rearing_km` (lines flagged `rearing`,
+#'   `accessible_km`, its split `accessible_observed_km` (access 2) and
+#'   `accessible_unobserved_km` (access 1), `spawning_km`, `rearing_km`
+#'   (lines flagged `rearing`,
 #'   lake connection lines left out) and `rearing_lake_connection_km` (the
 #'   connection lines flagged `rearing`). Raw SQL — trusted caller input,
 #'   like `frs_aggregate()`.
@@ -103,6 +118,21 @@
 #'     rearing_wetland_km =
 #'       "sum(length_metre) FILTER (WHERE rearing AND waterbody = 'wetland') / 1000"))
 #'
+#' # Spawning and rearing km split by whether the species is recorded
+#' # upstream (access 2) or not (access 1).
+#' lnk_rollup_wsg(conn, aoi = "MORR", species = "CO",
+#'   metrics = c(
+#'     spawning_observed_km =
+#'       "sum(length_metre) FILTER (WHERE spawning AND access = 2) / 1000",
+#'     spawning_unobserved_km =
+#'       "sum(length_metre) FILTER (WHERE spawning AND access = 1) / 1000",
+#'     rearing_observed_km = paste(
+#'       "sum(length_metre) FILTER (WHERE rearing AND NOT connection",
+#'       "AND access = 2) / 1000"),
+#'     rearing_unobserved_km = paste(
+#'       "sum(length_metre) FILTER (WHERE rearing AND NOT connection",
+#'       "AND access = 1) / 1000")))
+#'
 #' # Custom metric: count accessible segments per species.
 #' lnk_rollup_wsg(conn, aoi = "MORR", species = c("CO", "BT"),
 #'   metrics = c(n_accessible = "COUNT(*) FILTER (WHERE access IN (1, 2))"))
@@ -118,6 +148,10 @@ lnk_rollup_wsg <- function(conn, aoi, species,
                            metrics = c(
                              accessible_km =
                                "round(sum(length_metre) FILTER (WHERE access IN (1, 2))::numeric / 1000, 2)", # nolint: line_length_linter
+                             accessible_observed_km =
+                               "round(sum(CASE WHEN access = 2 THEN length_metre ELSE 0 END) FILTER (WHERE access IN (1, 2))::numeric / 1000, 2)", # nolint: line_length_linter
+                             accessible_unobserved_km =
+                               "round(sum(CASE WHEN access = 1 THEN length_metre ELSE 0 END) FILTER (WHERE access IN (1, 2))::numeric / 1000, 2)", # nolint: line_length_linter
                              spawning_km =
                                "round(sum(length_metre) FILTER (WHERE spawning)::numeric / 1000, 2)", # nolint: line_length_linter
                              rearing_km =
