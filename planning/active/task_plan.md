@@ -41,7 +41,7 @@ bcfishpass's `aw_linear_summary()` (`db/schema.sql:5283`, local clone at `smnorr
 
 ## Phase 3: README output refreshed
 
-- [x] Re-run the README example (`lnk_rollup_wsg(conn, "PARS", c("BT", "GR"), schema = "fresh_default")`) on m1's local `fresh_default` (0.68.0 build, the one the current block came from) and paste the printed eight-column frame into `README.md`'s block; check it does not wrap badly at the published width.
+- [x] Re-run the README example (`lnk_rollup_wsg(conn, "PARS", c("BT", "GR"), schema = "fresh_default")`) on m1's local `fresh_default` (0.68.0 build, the one the current block came from) and paste the printed eight-column frame into `README.md`'s block; check it does not wrap badly at the published width. *Revised after code-check round 1: the 0.68.0 build does not match what the shown code produces at this release, so the block now comes from running the README's code at the branch head into a scratch schema.*
 
 ## Phase 4: Baseline numbers for #396's groups (m4's database, not m1's)
 
