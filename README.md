@@ -51,9 +51,12 @@ lnk_pipeline_run(conn, aoi = "PARS", cfg = cfg, loaded = loaded,
 
 lnk_rollup_wsg(conn, aoi = "PARS", species = c("BT", "GR"),
                schema = "fresh_default")
-#>    wsg species accessible_km spawning_km rearing_km rearing_lake_connection_km
-#> 1 PARS      BT       6883.03     1685.38    2635.01                          0
-#> 2 PARS      GR       4442.31      983.86    1366.32                          0
+#>    wsg species accessible_km accessible_observed_km accessible_unobserved_km
+#> 1 PARS      BT       6883.03                 841.45                  6041.59
+#> 2 PARS      GR       4442.31                 596.01                  3846.30
+#>   spawning_km rearing_km rearing_lake_connection_km
+#> 1     1685.38    2632.99                      40.16
+#> 2      983.86    1397.78                      30.09
 ```
 
 Change a threshold, run again, and compare. Each run records its inputs, its parameters and the source versions its data was loaded from, in log tables beside its results.
