@@ -61,10 +61,10 @@
 #'   group upstream counts; [lnk_pipeline_run()] passes every group's
 #'   (`<schema>.observations_province`, link#401). Default
 #'   `NULL` collapses observation-distinguishing logic — every
-#'   accessible segment gets `access_<sp> = 1`. Walked once per present
-#'   species, as an existence walk over that species' records, so a main
-#'   stem below many groups' records costs one yes or no per segment
-#'   rather than one array element per record (link#401).
+#'   accessible segment gets `access_<sp> = 1`. Walked once for the
+#'   distinct species upstream of each segment (fresh's
+#'   `result = "distinct"`), so a main stem below many groups' records
+#'   costs one element per species rather than one per record (link#401).
 #' @param observations_gate Character or `NULL`. Optional schema-qualified
 #'   table of the same shape. When given, a segment reads `2` only where a
 #'   record from this table, of any species, is also upstream: bcfishpass's
@@ -301,18 +301,19 @@ lnk_pipeline_access <- function(
   # counts and when a top does not cut). The barrier walks above keep TRUE:
   # a barrier at a segment's start must still block it.
   #
-  # One existence walk per present species, over a temp view of that
-  # species' records (link#401): the array walk returns every
-  # segment-record pair, and a main stem below every other group's records
-  # (LFRA under the Fraser's) would carry ~10^5 elements per segment.
-  # bcfishpass takes the distinct species per segment, which is what these
-  # walks give. Under `observations_gate`, one more existence walk over that
-  # table, any species.
+  # One walk returning each segment's distinct species (fresh's
+  # result = "distinct", fresh#284), as bcfishpass's `spp` CTE takes
+  # `SELECT DISTINCT segment, species_code` (link#401): the array walk
+  # returns every segment-record pair, and a main stem below every other
+  # group's records (LFRA under the Fraser's) carries ~10^5 of them. Over
+  # every group's records it costs no more than the array walk over the
+  # group's own (LFRA 65 to 37 s, BULK 21 to 8 s;
+  # data-raw/logs/obs_province_401/). Under `observations_gate`, one
+  # existence walk over that table, any species.
   obs_upstr <- list()
   obs_gate_ids <- NULL
   if (!is.null(observations)) {
-    .lnk_validate_identifier(observations, "observations table")
-    obs_walk <- function(features) {
+    obs_walk <- function(features, result) {
       fresh::frs_network_features(
         conn,
         segments               = segments,
@@ -324,36 +325,14 @@ lnk_pipeline_access <- function(
         include_equivalents    = FALSE,
         features_wscode_col    = "wscode",
         features_localcode_col = "localcode",
-        result                 = "exists"
-      )[[segment_id_col]]
+        result                 = result
+      )
     }
-    obs_sp <- Filter(function(sp) {
-      isTRUE(wsg_presence[[sp]]) || length(wsg_presence) == 0L
-    }, names(barriers_per_sp))
-    bad <- obs_sp[!grepl("^[a-z]{1,4}$", obs_sp)]
-    if (length(bad) > 0L) {
-      stop("barriers_per_sp names must be species codes (1 to 4 lower-case ",
-           "letters): ", paste(bad, collapse = ", "), call. = FALSE)
-    }
-    # Dropped before returning: a view depends on its table, so one left
-    # behind would make the caller's drop of `observations` fail.
-    views <- character(0)
-    on.exit(for (v in views) {
-      try(DBI::dbExecute(conn, sprintf("DROP VIEW IF EXISTS %s", v)),
-          silent = TRUE)
-    }, add = TRUE)
-    for (sp in obs_sp) {
-      v <- paste0("lnk_obs_upstr_", sp)
-      .lnk_db_execute(conn, sprintf("DROP VIEW IF EXISTS pg_temp.%s", v))
-      .lnk_db_execute(conn, sprintf(
-        "CREATE TEMP VIEW %s AS SELECT * FROM %s WHERE species_code = %s",
-        v, observations, .lnk_quote_literal(toupper(sp))))
-      views <- c(views, paste0("pg_temp.", v))
-      obs_upstr[[toupper(sp)]] <- obs_walk(paste0("pg_temp.", v))
-    }
+    sp_up <- obs_walk(observations, "distinct")
+    obs_upstr <- setNames(sp_up$feature_ids,
+                          as.character(sp_up[[segment_id_col]]))
     if (!is.null(observations_gate)) {
-      .lnk_validate_identifier(observations_gate, "observations_gate table")
-      obs_gate_ids <- obs_walk(observations_gate)
+      obs_gate_ids <- obs_walk(observations_gate, "exists")[[segment_id_col]]
     }
   }
 
@@ -470,23 +449,19 @@ lnk_pipeline_access <- function(
     }
   }
 
-  # Carry the observations onto `out`: the walked species with a record
-  # upstream of each segment (character(0) where none), and whether a record
-  # of `observations_gate` is upstream (any walked species where no gate is
+  # Carry the observations onto `out`: the species with a record upstream of
+  # each segment, each once (character(0) where none), and whether a record
+  # of `observations_gate` is upstream (any record at all where no gate is
   # given). Neither is persisted.
   if (!is.null(observations)) {
     ids <- as.character(out[[segment_id_col]])
-    hit <- vapply(obs_upstr, function(x) ids %in% as.character(x),
-                  logical(length(ids)))
-    hit <- matrix(hit, nrow = length(ids))
-    sp_codes <- names(obs_upstr)
-    out$obsrvtn_species_codes_upstr <- lapply(seq_along(ids), function(i) {
-      sp_codes[hit[i, ]]
-    })
+    sp_seg <- unname(obs_upstr[ids])
+    sp_seg[vapply(sp_seg, is.null, logical(1))] <- list(character(0))
+    out$obsrvtn_species_codes_upstr <- sp_seg
     out$has_observation_key_upstr <- if (!is.null(observations_gate)) {
       ids %in% as.character(obs_gate_ids)
     } else {
-      rowSums(hit) > 0L
+      ids %in% names(obs_upstr)
     }
   }
 
@@ -501,8 +476,9 @@ lnk_pipeline_access <- function(
     } else {
       blocked <- out[[paste0("has_barriers_", sp, "_dnstr")]]
       observed <- if (!is.null(observations)) {
-        o <- as.character(out[[segment_id_col]]) %in%
-          as.character(obs_upstr[[sp_upper]])
+        o <- vapply(out$obsrvtn_species_codes_upstr, function(x) {
+          sp_upper %in% x
+        }, logical(1))
         if (!is.null(observations_gate)) o & out$has_observation_key_upstr else o
       } else {
         rep(FALSE, nrow(out))

@@ -243,7 +243,6 @@ test_that("access_<sp> is integer 1 / 2 when a present species has no barrier in
   # ifelse(NA, ...) returned a logical NA column that persist rejected.
   local_mocked_bindings(
     dbGetQuery = function(conn, sql, ...) mock_segments_aoi(c("s1", "s2")),
-    dbExecute = function(conn, sql, ...) 0L,
     .package = "DBI"
   )
   local_mocked_bindings(
@@ -384,13 +383,8 @@ test_that("anthropogenic without dams, and remediations without crossings, are e
   expect_false("dam_dnstr_ind" %in% names(out))
 })
 
-test_that("remediations with a crossings table walk as arrays; observations as one existence walk per species (#401)", {
-  views <- character()
+test_that("remediations with a crossings table walk as arrays; observations as one distinct walk (#401)", {
   local_mocked_bindings(
-    dbExecute = function(conn, sql, ...) {
-      views <<- c(views, sql)
-      0L
-    },
     dbGetQuery = function(conn, sql, ...) {
       if (grepl("aggregated_crossings_id", sql)) {
         data.frame(id = "R1", pscis_status = "REMEDIATED",
@@ -402,7 +396,7 @@ test_that("remediations with a crossings table walk as arrays; observations as o
     .package = "DBI"
   )
   w <- mock_walks(list("s.rem" = list(s1 = "R1"),
-                       "pg_temp.lnk_obs_upstr_bt" = list(s2 = "BT"),
+                       "s.obs" = list(s2 = "BT"),
                        "s.barriers_bt_access" = list()))
   local_mocked_bindings(frs_network_features = w$fn, .package = "fresh")
 
@@ -420,13 +414,7 @@ test_that("remediations with a crossings table walk as arrays; observations as o
   log <- w$calls$log
   expect_identical(stats::setNames(log$result, log$features),
                    c("s.barriers_bt_access" = "exists", "s.rem" = "ids",
-                     "pg_temp.lnk_obs_upstr_bt" = "exists"))
-  # The species' view reads only its records, and is dropped on the way out.
-  expect_true(any(grepl(
-    "CREATE TEMP VIEW lnk_obs_upstr_bt AS SELECT * FROM s.obs WHERE species_code = 'BT'",
-    views, fixed = TRUE)))
-  expect_identical(views[length(views)],
-                   "DROP VIEW IF EXISTS pg_temp.lnk_obs_upstr_bt")
+                     "s.obs" = "distinct"))
   expect_identical(out$remediated_dnstr_ind, c(TRUE, FALSE))
   # Present with no barrier rows: FALSE (not NA), and observed upstream at s2.
   expect_identical(out$has_barriers_bt_dnstr, c(FALSE, FALSE))
@@ -626,7 +614,6 @@ test_that("every downstream walk is scoped to the AOI, and the observation walk 
   local_mocked_bindings(
     # Two species views with different keys (link#394), so each is walked.
     dbGetQuery = mock_keys_db(c("s1", "s2"), c("k1", "k2")),
-    dbExecute = function(conn, sql, ...) 0L,
     .package = "DBI"
   )
   calls <- list()
@@ -654,8 +641,7 @@ test_that("every downstream walk is scoped to the AOI, and the observation walk 
   expect_setequal(feat[dir == "downstream"],
                   c("s.barriers_bt", "s.barriers_ch", "s.barriers_anthropogenic", "s.barriers_dams"))
   expect_identical(unname(aoi[dir == "downstream"]), rep("ADMS", 4L))
-  expect_setequal(feat[dir == "upstream"],
-                  c("pg_temp.lnk_obs_upstr_bt", "pg_temp.lnk_obs_upstr_ch"))
+  expect_identical(feat[dir == "upstream"], "s.observations")
 })
 
 test_that("a record at a segment's start is not upstream of that segment (#399)", {
@@ -763,7 +749,6 @@ test_that("the observation walk excludes a record at a segment's start; barrier 
   # still block that segment, so every downstream walk keeps TRUE.
   local_mocked_bindings(
     dbGetQuery = mock_keys_db(c("s1", "s2"), c("k1", "k2")),
-    dbExecute = function(conn, sql, ...) 0L,
     .package = "DBI"
   )
   calls <- list()
@@ -789,8 +774,8 @@ test_that("the observation walk excludes a record at a segment's start; barrier 
   )
   dir <- vapply(calls, function(x) x$direction, character(1))
   ie <- vapply(calls, function(x) x$include_equivalents, logical(1))
-  # One walk per species, and the gate.
-  expect_identical(sum(dir == "upstream"), 3L)
+  # The distinct walk, and the gate.
+  expect_identical(sum(dir == "upstream"), 2L)
   expect_false(any(ie[dir == "upstream"]))
   expect_length(ie[dir == "downstream"], 5L)
   expect_true(all(ie[dir == "downstream"]))
@@ -799,13 +784,12 @@ test_that("the observation walk excludes a record at a segment's start; barrier 
 test_that("observations_gate: a segment reads 2 only where a gate record is also upstream (#401)", {
   local_mocked_bindings(
     dbGetQuery = function(conn, sql, ...) mock_segments_aoi(c("s1", "s2", "s3")),
-    dbExecute = function(conn, sql, ...) 0L,
     .package = "DBI"
   )
   w <- mock_walks(list(
     "s.barriers_bt" = list(),
     # BT recorded upstream of s1 and s2; the group's own records above s1, s3.
-    "pg_temp.lnk_obs_upstr_bt" = list(s1 = "BT", s2 = "BT"),
+    "s.prov" = list(s1 = c("BT", "CO"), s2 = "BT"),
     "s.own" = list(s1 = "CO", s3 = "CO")))
   local_mocked_bindings(frs_network_features = w$fn, .package = "fresh")
   run <- function(gate) {
@@ -820,11 +804,13 @@ test_that("observations_gate: a segment reads 2 only where a gate record is also
   ungated <- run(NULL)
   expect_identical(ungated$access_bt, c(2L, 2L, 1L))
   expect_identical(ungated$obsrvtn_species_codes_upstr,
-                   list("BT", "BT", character(0)))
+                   list(c("BT", "CO"), "BT", character(0)))
+  expect_identical(ungated$has_observation_key_upstr, c(TRUE, TRUE, FALSE))
   gated <- run("s.own")
   expect_identical(gated$access_bt, c(2L, 1L, 1L))
   expect_identical(gated$has_observation_key_upstr, c(TRUE, FALSE, TRUE))
   log <- w$calls$log
+  expect_identical(unique(log$result[log$features == "s.prov"]), "distinct")
   expect_identical(log$result[log$features == "s.own"], "exists")
   expect_identical(log$direction[log$features == "s.own"], "upstream")
 })
@@ -892,10 +878,4 @@ test_that("group_gated reads 2 from another group's record only below an own-gro
   }
   expect_identical(walk(NULL), c(2L, 2L))
   expect_identical(walk("pg_temp.own401"), c(2L, 1L))
-  # No view outlives the call, so the caller can drop the record table.
-  expect_identical(DBI::dbGetQuery(conn,
-    "SELECT count(*)::int AS n FROM pg_views
-      WHERE viewname LIKE 'lnk_obs_upstr_%' AND schemaname LIKE 'pg_temp%'")$n,
-    0L)
-  expect_no_error(ex("DROP TABLE pg_temp.prov401"))
 })

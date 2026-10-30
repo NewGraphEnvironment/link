@@ -84,7 +84,7 @@ What exploration settled:
 
 ## Phase 2b: The bcfishpass gate and the walk's shape (added after the plan review)
 
-- [ ] Measure first (`walk_time.R`, below): array walk group-only vs province, and per-species
+- [x] Measure first (`walk_time.R`, below): array walk group-only vs province, and per-species
   existence walks over the province table, on LFRA, SETN and one small group. Go on only if the
   existence walks are tolerable; else draft a fresh distinct-result issue and stop for the user.
 - [x] Tests: the key is checked at manifest load (`province` | `group_gated`, absent =
@@ -95,6 +95,17 @@ What exploration settled:
 - [x] `lnk_config.R` key check; `lnk_pipeline_access()` gains the own-group table and the mode;
   `lnk_pipeline_run()` passes both tables; `default/config.yaml` sets `province`; the acc spec
   hashes the resolved value; `acc-v3` / `acc-bcfp-3` specs regenerated.
+
+## Phase 2c: One distinct walk, from fresh (user, 2026-10-30: "fresh mode first")
+
+- [x] fresh#284 filed; `result = "distinct"` on fresh branch `284-distinct-result` (aabba77), tests
+  including SKGT live parity with `unique()` of `"ids"`; both guards fire with `DISTINCT` removed.
+- [x] Timed fresh's own call (`walk_fresh_distinct.csv`): LFRA 65 → 37–39 s, BULK 21 → 8 s, SETN
+  47 → 44–46 s, against today's group-only array walk.
+- [x] link: one `"distinct"` walk over `observations`, one `"exists"` walk over `observations_gate`;
+  the per-species views are gone. Tests pass against the fresh branch (scratch library).
+- [ ] `/code-check branch` on fresh, PR, merge, release (fresh 0.48.0); then link's `Imports:`
+  floor and `Remotes:` pin move to it (the formals check cannot see a new value of `result`).
 
 ## Phase 3: Measure before and after (scratch schemas only, m1 local fwapg)
 
