@@ -55,3 +55,11 @@ Related: #396.
 
 | Error | Resolution |
 |-------|------------|
+
+## Phase 4 measurements (2026-10-30)
+
+- **The before-#396 builds are at link `43e34096`, not `71ccc2ce`** (`zz396_default_pre.log`); the plan's stamp named only the after builds' SHA. Both 0.69.1, fresh 0.43.0, different config hashes.
+- **Identity holds on all 50 rows** of the five groups in both schemas, largest gap 0.010 km; no row has an empty accessible set.
+- **Observed km only rose under `top_per_species`** (0 to 2.29 km), accessible km did not move.
+- **link's `bcfishpass` builds read more observed km than the reference view** (BULK BT +14.46, CH +5.46, CO +27.77, PK +4.14, SK +1.91; PARS BT +29.70), with accessible km within 1.3 km. Every disagreeing piece is link 2 / bcfishpass 1 and lies on a link segment starting within 1 m of a same-line record of the species: the segment above a record, #399's subject.
+- **bcfishpass's view codes steelhead 2 from sockeye records** (BULK ST observed = SK observed = 312.53). Upstream defect, fixed `smnorris/bcfishpass@3bd2824c` on 2026-10-23 (their issue 938); the view on m4 is from `v0.7.14-113-ga7373af`, before it. Not reported upstream by us: already fixed there.
