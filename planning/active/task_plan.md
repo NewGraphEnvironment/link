@@ -104,7 +104,8 @@ What exploration settled:
   47 → 44–46 s, against today's group-only array walk.
 - [x] link: one `"distinct"` walk over `observations`, one `"exists"` walk over `observations_gate`;
   the per-species views are gone. Tests pass against the fresh branch (scratch library).
-- [ ] `/code-check branch` on fresh, PR, merge, release (fresh 0.48.0); then link's `Imports:`
+- [x] `/code-check branch` on fresh (three rounds, Clean), PR NewGraphEnvironment/fresh#285.
+- [ ] Merge and release fresh (0.48.0, on the user's word); then link's `Imports:`
   floor and `Remotes:` pin move to it (the formals check cannot see a new value of `result`).
 
 ## Phase 3: Measure before and after (scratch schemas only, m1 local fwapg)
