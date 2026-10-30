@@ -45,7 +45,7 @@ With `include_equivalents = FALSE`, the same function counts the record only whe
 
 - [x] `research/known_suspected_km.md`: a post-#399 section with the `default` split and the bcfishpass parity after the fix (the file says its numbers are a baseline before #399); `Verified` line; "What will move these numbers" updated.
 - [x] `research/observation_breaks.md` and RUNBOOK §2c carry the measured direction (2 → 1 km per group-species, where).
-- [ ] NEWS text drafted in the PR body for `/gh-pr-merge`, and the body says explicitly: bump **minor** to 0.72.0, because `vocabulary.csv` already names 0.72.0 in `introduced` / `retired` and that cell cannot be edited afterwards (review item 7). Version bump at the release step, not in the branch.
+- [x] NEWS text drafted in the PR body for `/gh-pr-merge`, and the body says explicitly: bump **minor** to 0.72.0, because `vocabulary.csv` already names 0.72.0 in `introduced` / `retired` and that cell cannot be edited afterwards (review item 7). Version bump at the release step, not in the branch.
 
 ## Owed at the end (reported, done after merge)
 
@@ -54,9 +54,9 @@ With `include_equivalents = FALSE`, the same function counts the record only whe
 
 ## Validation
 
-- [ ] Tests pass (`devtools::test()`, with the live fixture running against the local docker)
-- [ ] `/code-check` clean (once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
+- [x] Tests pass (`devtools::test()`, with the live fixture running against the local docker) — 4,835 pass, 0 fail, 1 skip at `60943831`
+- [x] `/code-check` clean (once over the branch with `/code-check branch`)
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
 How each change is proved:
