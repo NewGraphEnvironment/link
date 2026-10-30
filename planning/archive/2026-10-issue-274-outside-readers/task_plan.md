@@ -119,7 +119,7 @@ is Phase 1.
       before. Drop the scratch schema
 - [x] RUNBOOK §8d "Groups outside a partial run", its class table, the `--recompute-only` lines and
       the phases row; CLAUDE.md status; NEWS and version bump last
-- [ ] Tick #274 on #377 with its measured line
+- [ ] Tick #274 on #377 with its measured line (needs the PR number: done right after the PR opens)
 
 ## Owed at the end (reported, done after merge)
 
@@ -128,10 +128,10 @@ is Phase 1.
 
 ## Validation
 
-- [ ] Tests pass (`devtools::test()`), lint clean
+- [x] Tests pass (`devtools::test()`: 4,820, 0 failed, at `762c895a`), lint clean on the changed files
 - [x] `/code-check` clean (once over the branch with `/code-check branch`, three-round floor): 4 rounds, ended on round 4's enumeration
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
 
 How each change is proved: the classifier by its tests, including a mutation of the line rule to
 the owner rule failing the co-held case; the full-run invariance over the real map; the wiring by
