@@ -1762,8 +1762,9 @@ pre-persist can leave `streams` rows, so rows alone do not make a group
 later run rebuilt, or a hand re-run under the same uid that failed after its
 pre-persist, has a closed row for the uid that no longer names its rows. The
 classes are written to `<TS>_coverage.tsv`, beside the compare CSV, which
-covers the first class only. The recompute and the compare run over the first class only. If
-that class is empty, neither runs and the report says why. Any other class
+covers the first class only. The compare runs over the first class only, and the recompute
+over it and the groups outside the run that read it and may be recomputed now ("Groups outside
+a partial run", below). If that class is empty, neither runs and the report says why. Any other class
 makes the run exit non-zero, and the report names the groups and the recovery:
 
 ```bash
@@ -1778,7 +1779,8 @@ bash data-raw/study_area_run.sh --recompute-only --run-uid=<uid> \
 `--recompute-only` runs the driver's tail and nothing else: no droplet, no
 pre-flight, no consolidate. It recomputes every group of the run, not just
 the re-modelled ones, because a re-modelled group's barriers change access
-upstream of it. Without `--wsgs=`, the expected set is the groups the run
+upstream of it, and, as a run does, the groups outside the run that read it
+(link#274). Without `--wsgs=`, the expected set is the groups the run
 recorded in `<TS>_run_wsgs.tsv` (`wsg`, `host`, `skip`, `run_uid`; a run_uid's
 prefix is its `TS`), together with any group holding a log row for the run_uid
 on the dispatcher (link#358). The driver writes that file as soon as the buckets
@@ -1934,7 +1936,8 @@ measured off a file, run after run (#377).
     kept-hosts report's to name. A worker's row is always `skipped`.
   - `coverage`: `failed` when a run group has no rows from this run.
   - `views`: the log-table step and `barriers_views_build.R`.
-  - `recompute`: the pool, ordering and judge included; skipped when `views` failed.
+  - `recompute`: the pool, ordering and judge included; skipped when `views` failed. Its
+    group count includes the outside readers it recomputed (link#274).
   - `compare`.
   - The tail is skipped when no group has rows.
 - **Rows overlap, so never sum them.** The run-wide `prep` holds `refresh`,
@@ -2040,7 +2043,9 @@ min of `-j8` on the critical path on 2026-10-23. Now `recompute_scheduler`
 (`data-raw/study_area_recompute.sh`) runs in the background beside the legs and
 starts each group's `wsg_recompute_one.R` as soon as the group, and every group
 it reads, has **landed** on the dispatcher. `--recompute-at-end` keeps the old
-behaviour; `--recompute-only` is unchanged.
+behaviour; `--recompute-only` is unchanged. Both of those compute the same
+dependency map too, for the groups outside the run (link#274), but wait on it
+only at the end.
 
 - **What a group reads.** Its own rows, and the `barriers` and
   `barrier_overrides` rows of every group holding one on its downstream path:
@@ -2098,6 +2103,49 @@ behaviour; `--recompute-only` is unchanged.
   width is still best: replayed on 2026-10-23 without its stalls, it ends the
   recompute 36.7 min sooner, against 22.2 at width 4 and 11.1 at none.
   Evidence: `data-raw/logs/recompute_early_374/`.
+
+### Groups outside a partial run (link#274)
+
+A run rebuilds its groups' barrier rows. A group the schema holds **outside** the run whose
+walk reads one of them (line rule, above) keeps `streams_access`, `streams_mapping_code` and
+settled habitat computed against the old rows. A full run has none: every group is in it.
+After coverage, `run_finish` calls `recompute_readers` (`data-raw/study_area_recompute.sh`),
+which runs `data-raw/recompute_readers_check.R` (functions in `data-raw/recompute_readers.R`)
+and writes `<TS>_outside_readers.tsv` (`wsg class reason reads`):
+
+| class | when | what happens |
+|---|---|---|
+| `recompute` | every test below passes | joins the recompute: the pool, the early scheduler's final set and the judge all read the union; the compare does not (`CMP_WSGS`) |
+| `waiting` | it reads a run group coverage did not find finished | named; the `--recompute-only` after that group's re-model takes it up |
+| `refused` | any test fails, each one named | named, with the re-model |
+| `unchecked` | the check could not run, or its table is missing or malformed | the map's candidates, named; never read as "no readers" |
+
+- **The run** for "outside": its rebuilt groups, every row of `run_wsgs.tsv` (SKIPs too) and
+  every group with a `log` row of the run_uid, so a `--wsgs=` leftover is never a reader.
+- **The tests**, on the reader's newest `log` row: closed; the `config_hash`, `fresh_sha` and
+  `fwapg_sha` that `lnk_stamp()` gives now under the recompute's own environment;
+  `link_dirty` and `fresh_dirty` FALSE; a `link_sha` git resolves, with no difference to the
+  working tree in `R/`, `inst/extdata/`, `DESCRIPTION`, `NAMESPACE`, `wsg_recompute_one.R`,
+  `barriers_views_build.R`, `study_area_run.sh` or `study_area_finish.sh` (`READERS_PATHS`);
+  and the error-mode downstream check the recompute ends with would pass (asked first with
+  `on_fail = "warn"`, because it fails after the group is rewritten). Every reader is refused
+  when the run's own rows carry another config hash, or the dispatcher tree has uncommitted
+  files on that path. Anything unknown refuses: a recompute that reads wrongly cannot be undone.
+- **One hop.** A recompute writes its own group's access, habitat and mapping codes, never
+  barrier rows, so a reader's readers read nothing that moved.
+- **Not the exit status.** Named readers are a WARN in the summary; the run did what it was
+  asked for its own groups. A reader whose recompute fails does fail the run, as any recompute
+  failure does. A recomputed reader that lifted segments the gate had cleared is named
+  (`log_recompute.habitat_gate_lifted`); `study_area_verify.sql` reports it as a WARNING where
+  it raises for the run's own groups.
+- **The remedy** printed for refused, unchecked and lifted readers: leave them to the next full
+  run, or re-model each under the run_uid (`LNK_HABITAT_GATE=0 LNK_GUARD_DOWNSTREAM=warn`),
+  which makes it a run group, then `--recompute-only`; its own readers are named on that pass.
+- **What it means today.** Every local schema was built before `R/` last changed
+  (`fresh_default` at 0.68.0), so every reader there is refused. After the next provincial
+  run, a partial run at that run's commit recomputes its readers. Measured: a six-group North
+  Thompson run has 65 readers by the line rule (every Fraser group reads LFRA), the 34-group
+  field scope 78. Evidence: `data-raw/logs/partial_readers_274/`.
 
 ### Which host may be burned (link#347)
 

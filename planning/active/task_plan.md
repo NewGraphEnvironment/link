@@ -64,8 +64,8 @@ is Phase 1.
       segments; `coheld.csv`, test fixture)
 - [x] Full-run proof on real data (A4): 2026-10-23's `run_wsgs.tsv` against `fresh_default`'s held
       groups leaves no outside group (241 run groups, no SKIPs, 0 held outside)
-- [ ] README (Measurement, Evidence); a "Groups outside a partial run" section in
-      `research/study_area_run.md`; revise #274's body with the numbers
+- [x] README (Measurement, Evidence); a "Groups outside a partial run" section in
+      `research/study_area_run.md`; revise #274's body with the numbers (body: at the PR)
 
 ## Phase 2: The reader classifier (tests first)
 
