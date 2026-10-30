@@ -119,7 +119,7 @@ is Phase 1.
       before. Drop the scratch schema
 - [x] RUNBOOK §8d "Groups outside a partial run", its class table, the `--recompute-only` lines and
       the phases row; CLAUDE.md status; NEWS and version bump last
-- [ ] Tick #274 on #377 with its measured line (needs the PR number: done right after the PR opens)
+- [x] Tick #274 on #377 with its measured line (done after PR #417 opened)
 
 ## Owed at the end (reported, done after merge)
 

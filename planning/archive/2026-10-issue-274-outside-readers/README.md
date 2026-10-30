@@ -20,4 +20,4 @@
 - The first real partial run after the provincial run exercises it; its
       `<TS>_outside_readers.tsv` is committed with that run's evidence
 
-Closed by: PR (opened from branch `274-partial-runs-recompute-the-groups-outsid`, v0.71.0)
+Closed by: PR #417 (v0.71.0)
