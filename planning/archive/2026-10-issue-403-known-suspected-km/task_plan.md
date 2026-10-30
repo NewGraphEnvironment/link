@@ -59,7 +59,7 @@ bcfishpass's `aw_linear_summary()` (`db/schema.sql:5283`, local clone at `smnorr
 - [x] `devtools::test()` passes (one call, grep for FAIL/ERROR/PASS)
 - [x] `lintr::lint_package()` clean; `devtools::document()` leaves `man/lnk_rollup_wsg.Rd` regenerated; `pkgdown::check_pkgdown()` (no new export, so expected clean)
 - [x] `/code-check branch` clean before the PR (four rounds; see progress)
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion, then `/gh-pr-push`
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion; `/gh-pr-push` follows this commit
 
 **Verification of the change itself:** the live test on `fresh_default` is the proof the identity holds on real rows; `rollup.R` asserts it on every row of the five groups in both scratch schemas; `parity_bcfp.csv` shows the `bcfishpass` config's observed km against the reference view for BULK and PARS (expected equal, since that config keeps every observation break and its access walk matches).

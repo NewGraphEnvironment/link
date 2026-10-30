@@ -11,6 +11,17 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-10-30, later) — the group rollup splits accessible km by whether the species is recorded upstream (#403)
+
+**`lnk_rollup_wsg()`'s default adds `accessible_observed_km` (`access = 2`) and `accessible_unobserved_km` (`access = 1`)**, over the rows `accessible_km` sums, so the pair adds to it within 0.01 km and all three are NA together; the validator's `summary` carries them. Mechanics: RUNBOOK §2c and the #319 rollup bullet. Write-up: `research/known_suspected_km.md`. Evidence: `data-raw/logs/known_suspected_403/`.
+
+**Owed:** nothing here. The numbers are a baseline before #399 and #401; their builds revise the research file. The export column waits for them.
+
+**Facts not worth re-deriving:**
+- **link's observed km run above bcfishpass's by exactly the segment above a record with no other record upstream** (BULK and PARS, 1.9 to 29.7 km per species, every disagreeing piece); accessible km agree within 1.3 km. That is #399.
+- **bcfishpass's `streams_vw_bcfp` codes steelhead 2 from sockeye records** at any reference built before `smnorris/bcfishpass@3bd2824c` (2026-10-23), so a steelhead observed-km comparison needs a newer reference.
+- **bcfishpass's `length_spawningrearing_obsrvd_<sp>` is habitat codes 2 and 3** (confirmed by the user habitat classification, modelled or not; CM and PK spawning only), not fish recorded upstream. link persists no classification flag, so it has no counterpart yet.
+
 ## Status (2026-10-30) — a partial run recomputes or names the groups outside it that read it (#274)
 
 **After coverage, `run_finish` asks `data-raw/recompute_readers_check.R` which groups the schema holds outside the run read a group it rebuilt (`recompute_deps.R`'s line rule, now computed in every recomputing mode) and recomputes those whose last build matches what the recompute would run now; the rest are named in `<TS>_outside_readers.tsv` and a summary WARN with the re-model.** The recompute set (`ALL_WSGS`) is the union; the compare stays on the run's groups (`CMP_WSGS`). Named readers never change the exit status. Mechanics: RUNBOOK §8d, "Groups outside a partial run". Evidence: `data-raw/logs/partial_readers_274/` (its README).
