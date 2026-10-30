@@ -121,3 +121,17 @@ pre-run gate's map).
 
 | Error | Resolution |
 |-------|------------|
+
+## Rows a group holds on another group's segments (2026-10-30, `coheld.csv`)
+
+- 1,864 `fresh_default.barriers` rows sit on no segment their holder owns (#374 counted the
+  same); 1,216 of them lie downstream of a segment of the group that owns the one they sit on,
+  so that owner's recompute reads them.
+- Nine (holder, owner) pairs have such a row while the owner rule holds no pair for them and the
+  line rule does: CLRH→REVL 5, UNRS→LNRS 4, PCEA/FINA→UPCE 3, KOTR→KOTL 3, BULL→KOTL 3,
+  ZYMO→BULK, SALR→LSAL, CARR→QUES 1 (counts are rows of the holder on the owner's segments).
+  KOTL reading KOTR is the test fixture.
+- The line rule errs wide, as designed: ADMS reads BBAR under it, but BBAR's 23 rows on the
+  Fraser (`100`) all sit upstream of ADMS (none `fwa_downstream` of an ADMS segment).
+- A query over all 968 line-but-not-owner pairs hit its 15 min statement bound; the per-row
+  query (holder vs segment owner) ran in seconds.

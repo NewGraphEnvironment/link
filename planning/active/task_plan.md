@@ -58,9 +58,10 @@ is Phase 1.
       `fresh_parity361`, DUNC → `fresh_default`, and each set against `fresh_default`: outside
       readers, how many the schema holds, and each held reader's facts against today's HEAD (raw
       facts, not the classifier's verdict, so the two derive the rule independently; O2)
-- [ ] Negative case: find a line-but-not-owner pair, show in `fresh_default` that the reader's
+- [x] Negative case: find a line-but-not-owner pair, show in `fresh_default` that the reader's
       path holds a barrier row persisted by the run group on a segment that group does not own,
-      and that the line rule finds the reader
+      and that the line rule finds the reader (KOTL reads KOTR through three KOTR rows on KOTL's
+      segments; `coheld.csv`, test fixture)
 - [x] Full-run proof on real data (A4): 2026-10-23's `run_wsgs.tsv` against `fresh_default`'s held
       groups leaves no outside group (241 run groups, no SKIPs, 0 held outside)
 - [ ] README (Measurement, Evidence); a "Groups outside a partial run" section in

@@ -89,20 +89,21 @@ test_that("a reader that holds no segment of the path, only a co-held row, is fo
                                          "recompute_early_374", "deps.tsv"), mustWork = FALSE)
   testthat::skip_if_not(file.exists(p), "recompute_early_374/deps.tsv absent")
   deps <- utils::read.delim(p, colClasses = "character", quote = "")
-  # ADMS reads BBAR only through a line both touch: the line rule holds the
-  # pair and the owner rule (a segment on the path) does not. Partial runs'
-  # field evidence: data-raw/logs/partial_readers_274/coheld.csv.
+  # KOTL reads KOTR only through rows KOTR holds on KOTL's own segments (three
+  # gradient rows on blue line 356570348 in fresh_default, each downstream of a
+  # KOTL segment: data-raw/logs/partial_readers_274/coheld.csv). KOTR has no
+  # segment on that path, so the owner rule misses the pair and the line rule
+  # holds it.
   line <- deps[deps$rule == "line", ]
   owner <- deps[deps$rule == "owner", ]
-  expect_true(any(line$wsg == "ADMS" & line$dep == "BBAR"))
-  expect_false(any(owner$wsg == "ADMS" & owner$dep == "BBAR"))
-  r <- e$readers_outside(deps, run = "BBAR", rebuilt = "BBAR", held = c("ADMS", "BBAR"))
-  expect_true("ADMS" %in% r$wsg)
+  expect_true(any(line$wsg == "KOTL" & line$dep == "KOTR"))
+  expect_false(any(owner$wsg == "KOTL" & owner$dep == "KOTR"))
+  r <- e$readers_outside(deps, run = "KOTR", rebuilt = "KOTR", held = c("KOTL", "KOTR"))
+  expect_true("KOTL" %in% r$wsg)
   # The owner rule alone would miss it: the reason the line rule is the one.
-  owner_only <- owner
-  r_owner <- e$readers_outside(transform(owner_only, rule = "line"), run = "BBAR",
-                               rebuilt = "BBAR", held = c("ADMS", "BBAR"))
-  expect_false("ADMS" %in% r_owner$wsg)
+  r_owner <- e$readers_outside(transform(owner, rule = "line"), run = "KOTR",
+                               rebuilt = "KOTR", held = c("KOTL", "KOTR"))
+  expect_false("KOTL" %in% r_owner$wsg)
 })
 
 test_that("a compatible reader is recomputed", {
