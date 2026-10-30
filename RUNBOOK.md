@@ -194,8 +194,9 @@ exist`.) `barriers_per_sp` mechanically requires the *feature view* shape.
 **What reads an observation break.** Only `access_<sp>` code 2 ("accessible, and the
 species is observed upstream") against code 1. The access walk
 (`lnk_pipeline_access()`, `frs_network_features(direction = "upstream",
-include_equivalents = FALSE)`) reads `<schema>.observations` itself, every record,
-not the breaks table, and its same-line measure test counts a record as upstream of a
+include_equivalents = FALSE, result = "distinct")`) reads every group's records itself
+(`<schema>.observations_province`, since #401), not the breaks table, and its same-line
+measure test counts a record as upstream of a
 segment only when the record is at least 1 m above the segment's start (fwapg
 `fwa_upstream`, fresh's 1 m tolerance; clause 1 below). That is bcfishpass's reading: its walk calls `FWA_Upstream(…, False, 1)`
 (`load_streams_upstr_observations.sql`). Breaks are rounded to the metre, so a break at a
@@ -217,6 +218,33 @@ segment's):
    own line, again ignoring measure, wherever local codes there do not rise with measure: on
    PARS line 359567332 the segments starting at 182477 and 183194 m read BT 2 from the line's
    top BT record at 182461 m.
+
+**Which records count** is the bundle's `pipeline: observation_upstream:` (#401), checked
+when the manifest loads and hashed into the `acc` token:
+
+| value | a segment reads 2 when | bundles |
+|---|---|---|
+| `province` | a record of the species in any group is upstream | `default`, and `default_tuned` by inheritance |
+| `group_gated` (also when absent) | as `province`, and a record of the segment's own group, of any species, is also upstream | `bcfishpass` |
+
+`group_gated` is what bcfishpass computes: its `spp` CTE collects the species upstream from
+every group's records, but the insert is `spp INNER JOIN ids`, and `ids` is same-group only, so
+a segment with no own-group record upstream gets no row and reads 1
+(`load_streams_upstr_observations.sql`, `smnorris/bcfishpass@620dbe4`; our fork's draft for
+upstream is NewGraphEnvironment/bcfishpass#16). Under it a main stem reads 1 below a group
+boundary until the group holds a record above it. Before #401 both bundles read the group's own
+records only (`<schema>.observations`), so such a main stem read 1 up to its boundary whatever was
+recorded just upstream. Breaks still read the group's own records: a record in another group cannot
+cut this group's segments.
+
+The walk asks fresh for each segment's distinct species (`result = "distinct"`, fresh#284), as
+bcfishpass's `SELECT DISTINCT segment, species_code`, and under `group_gated` one existence walk
+over `<schema>.observations` for the gate. The array walk it replaced returned every
+segment-record pair, and over every group's records a Fraser main-stem segment in LFRA has about
+126,000 above it. The distinct walk over every group's records costs less than the array walk over
+the group's own did (LFRA 65 to 37 s, BULK 21 to 8 s, SETN 47 to 45 s;
+`data-raw/logs/obs_province_401/walk_fresh_distinct.csv`). `lnk_pipeline_run()` drops
+`<schema>.observations_province` in an `on.exit()`, so no kept working schema holds it.
 
 Each species' top is a break in both bundles (under `all` every record is), so normally the
 segment starting at the top reads 1, and the boundary sits on the highest record (#399). Clauses 2 and 3 can keep 2 above it. So can a top within 1 m of an FWA
@@ -583,8 +611,9 @@ bcfishpass counts a barrier's upstream observations over **every** group's recor
 (the Peace rows sit under FINA, LPCE, PCEA and UPCE), was lifted only if one holding group had
 enough records *inside itself*. Since #349 `.lnk_pipeline_prep_observations()` also builds
 `<schema>.observations_province` (every group's records by its own presence, minus exclusions,
-GiST on the ltrees) and `lnk_barrier_overrides()` counts over it. `<schema>.observations` stays
-AOI-scoped for the observation break source and access code 2. Cost: ~4 s per group to build
+GiST on the ltrees) and `lnk_barrier_overrides()` counts over it. Since #401 the access walk reads
+it too, for code 2 (§2c, "Which records count"); `<schema>.observations` stays AOI-scoped for the
+observation break source and `group_gated`'s gate. Cost: ~4 s per group to build
 both tables, no change to the override step (DUNC, CARP). `default`'s RB row gained a rule shaped like BT's
 (one RB record, only RB counting for RB, no date floor); before it RB had no rule and nothing lifted for it.
 

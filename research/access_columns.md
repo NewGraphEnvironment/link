@@ -79,7 +79,9 @@ groups held enough records inside itself.
 
 Since #349 the lift counts over `<schema>.observations_province`. Building it costs ~4 s per
 group and the override step is no slower (DUNC 27.6 → 18.6 s, CARP 18.0 → 17.5 s;
-`overrides_scope_time.csv`).
+`overrides_scope_time.csv`). Since #401 the access walk reads it too, for code 2, and it is
+dropped when `lnk_pipeline_run()` ends rather than after the lifts, so it lives through
+break, classify and connect (RUNBOOK §2c, "Which records count").
 
 ## What the settle keeps and loses
 
