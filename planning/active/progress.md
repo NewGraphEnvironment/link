@@ -58,3 +58,8 @@
   `FRESH_GIT_SHA` pin, not the installed fresh. Fixed: a pin the installed `RemoteSha` does not
   confirm refuses every reader (`dispatcher_fresh_pin_stale`); probed with a fake pin.
   Its enumeration of every compared fact and every empty value found the rest holding.
+- Round 4 (`review-round4.md`), the terminating enumeration: every fact `readers_classify()` tests
+  and every input the recompute reads, each holds, predates the branch, or was a gap. No defect
+  in fixes 1 to 3. Two gaps fixed: crate's version (it shapes the overlay the one-way gate keeps)
+  and the build's fresh version (a build's fresh sha can be a stale pin) are now compared; the
+  unconfirmed-pin reason is renamed `dispatcher_fresh_pin_unconfirmed`. 61 classifier tests pass.

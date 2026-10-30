@@ -94,10 +94,12 @@ write_out <- function(tab) {
 if (nrow(readers) == 0L) {
   write_out(readers_classify(readers, missing, data.frame(
     wsg = character(), has_log = logical(), open = logical(), config_hash = character(),
-    fresh_sha = character(), fwapg_sha = character(), link_dirty = logical(),
+    fresh_sha = character(), fresh_version = character(), crate_version = character(),
+    fwapg_sha = character(), link_dirty = logical(),
     fresh_dirty = logical(), link_sha = character(), path_changed = integer(),
     downstream = character()
-  ), list(config_hash = "", fresh_sha = "", fwapg_sha = "")))
+  ), list(config_hash = "", fresh_sha = "", fresh_version = "", crate_version = "",
+          fwapg_sha = "")))
   quit(status = 0L)
 }
 
@@ -107,6 +109,8 @@ na_chr <- function(x) if (is.null(x) || length(x) != 1L || is.na(x)) "" else as.
 expect <- list(
   config_hash = na_chr(st$config_hash),
   fresh_sha = na_chr(st$software$fresh$git_sha),
+  fresh_version = na_chr(st$software$fresh$version),
+  crate_version = na_chr(link:::.lnk_pkg_version_or_na("crate")),
   fwapg_sha = na_chr(st$fwapg_sha)
 )
 
@@ -126,7 +130,7 @@ if (!identical(st$software$fresh$dirty, FALSE)) refuse_all <- c(refuse_all, "dis
 # The run's pre-flight refuses a stale pin, but --recompute-only runs none.
 if (identical(st$software$fresh$sha_source, "env") &&
       !identical(link:::.lnk_pkg_remote_sha("fresh"), st$software$fresh$git_sha)) {
-  refuse_all <- c(refuse_all, "dispatcher_fresh_pin_stale")
+  refuse_all <- c(refuse_all, "dispatcher_fresh_pin_unconfirmed")
 }
 # The run's own groups were built under the hash a reader is compared with.
 run_hash <- q(sprintf(
@@ -141,8 +145,8 @@ if (length(run_hash) == 0L || any(is.na(run_hash) | run_hash != expect$config_ha
 wl <- paste(DBI::dbQuoteLiteral(conn, readers$wsg), collapse = ", ")
 last <- q(sprintf(
   "SELECT DISTINCT ON (watershed_group_code) watershed_group_code AS wsg,
-          date_end IS NULL AS open, config_hash, fresh_sha, fwapg_sha,
-          link_dirty, fresh_dirty, link_sha
+          date_end IS NULL AS open, config_hash, fresh_sha, fresh_version,
+          crate_version, fwapg_sha, link_dirty, fresh_dirty, link_sha
      FROM %s.log WHERE watershed_group_code IN (%s)
     ORDER BY watershed_group_code, date_start DESC", schema, wl
 ))
@@ -166,7 +170,9 @@ pc <- stats::setNames(vapply(shas, changed, integer(1)), shas)
 # before the log tables), and a scalar beside a 0-row column is an error.
 facts <- data.frame(
   wsg = last$wsg, has_log = rep(TRUE, nrow(last)), open = last$open,
-  config_hash = last$config_hash, fresh_sha = last$fresh_sha, fwapg_sha = last$fwapg_sha,
+  config_hash = last$config_hash, fresh_sha = last$fresh_sha,
+  fresh_version = last$fresh_version, crate_version = last$crate_version,
+  fwapg_sha = last$fwapg_sha,
   link_dirty = last$link_dirty, fresh_dirty = last$fresh_dirty, link_sha = last$link_sha,
   path_changed = as.integer(unname(pc[last$link_sha])), downstream = rep("pass", nrow(last))
 )

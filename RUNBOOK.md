@@ -2122,15 +2122,18 @@ and writes `<TS>_outside_readers.tsv` (`wsg class reason reads`):
 
 - **The run** for "outside": its rebuilt groups, every row of `run_wsgs.tsv` (SKIPs too) and
   every group with a `log` row of the run_uid, so a `--wsgs=` leftover is never a reader.
-- **The tests**, on the reader's newest `log` row: closed; the `config_hash`, `fresh_sha` and
-  `fwapg_sha` that `lnk_stamp()` gives now under the recompute's own environment;
+- **The tests**, on the reader's newest `log` row: closed; the `config_hash`, `fresh_sha`,
+  `fresh_version`, `crate_version` (crate shapes the overlay the gate keeps) and `fwapg_sha`
+  that `lnk_stamp()` gives now under the recompute's own environment;
   `link_dirty` and `fresh_dirty` FALSE; a `link_sha` git resolves, with no difference to the
   working tree in `R/`, `inst/extdata/`, `DESCRIPTION`, `NAMESPACE`, `wsg_recompute_one.R`,
   `barriers_views_build.R`, `study_area_run.sh` or `study_area_finish.sh` (`READERS_PATHS`);
   and the error-mode downstream check the recompute ends with would pass (asked first with
   `on_fail = "warn"`, because it fails after the group is rewritten). Every reader is refused
-  when the run's own rows carry another config hash, or the dispatcher tree has uncommitted
-  files on that path. Anything unknown refuses: a recompute that reads wrongly cannot be undone.
+  when the run's own rows carry another config hash, the dispatcher tree has uncommitted
+  files on that path, the fresh it would run is dirty or unknown, or its sha is a
+  `FRESH_GIT_SHA` pin the installed fresh's `RemoteSha` does not confirm (`--recompute-only`
+  runs no pre-flight, which tests the pin otherwise). Anything unknown refuses: a recompute that reads wrongly cannot be undone.
 - **One hop.** A recompute writes its own group's access, habitat and mapping codes, never
   barrier rows, so a reader's readers read nothing that moved.
 - **Not the exit status.** Named readers are a WARN in the summary; the run did what it was

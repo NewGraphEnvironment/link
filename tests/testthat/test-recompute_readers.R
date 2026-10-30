@@ -24,11 +24,13 @@ rr_deps <- function(...) {
 }
 
 # A reader whose every fact passes, and the expected stamp it is checked against.
-rr_expect <- list(config_hash = "sha256:c", fresh_sha = "f1", fwapg_sha = "w1")
+rr_expect <- list(config_hash = "sha256:c", fresh_sha = "f1", fresh_version = "0.47.0",
+                  crate_version = "0.8.0", fwapg_sha = "w1")
 rr_fact <- function(wsg, ...) {
   x <- list(
     wsg = wsg, has_log = TRUE, open = FALSE, config_hash = "sha256:c",
-    fresh_sha = "f1", fwapg_sha = "w1", link_dirty = FALSE, fresh_dirty = FALSE,
+    fresh_sha = "f1", fresh_version = "0.47.0", crate_version = "0.8.0", fwapg_sha = "w1",
+    link_dirty = FALSE, fresh_dirty = FALSE,
     link_sha = "abc", path_changed = 0L, downstream = "pass"
   )
   x[names(list(...))] <- list(...)
@@ -131,6 +133,8 @@ test_that("each fact the rule tests refuses on its own", {
     newest_build_open_unknown = list(open = NA),
     config_differs = list(config_hash = "sha256:old"),
     fresh_differs = list(fresh_sha = "f0"),
+    fresh_version_differs = list(fresh_version = "0.46.0"),
+    crate_differs = list(crate_version = NA_character_),
     fwapg_differs = list(fwapg_sha = "w0"),
     link_dirty = list(link_dirty = TRUE),
     link_dirty_unknown = list(link_dirty = NA),

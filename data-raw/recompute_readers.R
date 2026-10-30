@@ -68,25 +68,28 @@ readers_outside <- function(deps, run, rebuilt, held) {
 # unfinished classes), `refused` (a fact below fails, or `refuse_all` names a
 # reason that holds for every reader), or `recompute`. Precedence is that
 # order. `facts` has one row per group: has_log, open (newest log row has no
-# date_end), config_hash, fresh_sha, fwapg_sha, link_dirty, fresh_dirty,
-# link_sha, path_changed (files changed since link_sha on READERS_PATHS; NA
+# date_end), config_hash, fresh_sha, fresh_version, crate_version, fwapg_sha,
+# link_dirty, fresh_dirty, link_sha, path_changed (files changed since link_sha on READERS_PATHS; NA
 # when git cannot resolve the sha) and downstream (the dry-run status of the
 # error-mode downstream check, "pass" to pass). `expect` is what the recompute
-# would stamp now: config_hash, fresh_sha, fwapg_sha. Every refusal reason
+# would stamp now: config_hash, fresh_sha, fresh_version, crate_version,
+# fwapg_sha. The versions back the shas: a build's fresh sha can be a stale
+# FRESH_GIT_SHA pin, and crate shapes the overlay the habitat gate keeps. Every refusal reason
 # that holds is listed, `;`-separated. Returns data.frame(wsg, class, reason,
 # reads).
 readers_classify <- function(readers, missing, facts, expect, refuse_all = character()) {
   if (!is.data.frame(readers) || !identical(names(readers), c("wsg", "reads"))) {
     stop("readers must have columns wsg, reads", call. = FALSE)
   }
-  need <- c("config_hash", "fresh_sha", "fwapg_sha")
+  need <- c("config_hash", "fresh_sha", "fresh_version", "crate_version", "fwapg_sha")
   scalar_chr <- function(v) is.character(v) && length(v) == 1L
   if (!is.list(expect) || !all(need %in% names(expect)) ||
         !all(vapply(expect[need], scalar_chr, logical(1)))) {
-    stop("expect must give config_hash, fresh_sha and fwapg_sha", call. = FALSE)
+    stop("expect must give ", paste(need, collapse = ", "), call. = FALSE)
   }
-  cols <- c("wsg", "has_log", "open", "config_hash", "fresh_sha", "fwapg_sha",
-            "link_dirty", "fresh_dirty", "link_sha", "path_changed", "downstream")
+  cols <- c("wsg", "has_log", "open", "config_hash", "fresh_sha", "fresh_version",
+            "crate_version", "fwapg_sha", "link_dirty", "fresh_dirty", "link_sha",
+            "path_changed", "downstream")
   if (!is.data.frame(facts) || !all(cols %in% names(facts))) {
     stop("facts lacks a column: ", paste(setdiff(cols, names(facts)), collapse = ", "),
       call. = FALSE
@@ -110,6 +113,8 @@ readers_classify <- function(readers, missing, facts, expect, refuse_all = chara
       if (!is_false(f$open)) why <- c(why, "newest_build_open")
       if (!same(f$config_hash, expect$config_hash)) why <- c(why, "config_differs")
       if (!same(f$fresh_sha, expect$fresh_sha)) why <- c(why, "fresh_differs")
+      if (!same(f$fresh_version, expect$fresh_version)) why <- c(why, "fresh_version_differs")
+      if (!same(f$crate_version, expect$crate_version)) why <- c(why, "crate_differs")
       if (!same(f$fwapg_sha, expect$fwapg_sha)) why <- c(why, "fwapg_differs")
       if (!is_false(f$link_dirty)) why <- c(why, "link_dirty")
       if (!is_false(f$fresh_dirty)) why <- c(why, "fresh_dirty")
