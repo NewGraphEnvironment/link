@@ -46,7 +46,7 @@ then aggregates by (watershed_group_code, species_code)."><meta property="og:ima
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Roll up per-(WSG, species) length metrics from persisted state</h1>
-      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.71.1/R/lnk_rollup_wsg.R" class="external-link"><code>R/lnk_rollup_wsg.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/R/lnk_rollup_wsg.R" class="external-link"><code>R/lnk_rollup_wsg.R</code></a></small>
       <div class="d-none name"><code>lnk_rollup_wsg.Rd</code></div>
     </div>
 
@@ -190,7 +190,7 @@ where accessible rows exist but none carry its code, and
 <code>accessible_km</code> to the 0.01 km each column is rounded to. bcfishpass
 reports the same split as <code>length_naturallyaccessible_obsrvd_&lt;sp&gt;</code> and
 <code>length_naturallyaccessible_model_&lt;sp&gt;</code>. Which records count, and where
-code 2 ends upstream of the top record, are the access walk's rules
+code 2 ends relative to a species' top record, are the access walk's rules
 (see <code>RUNBOOK.md</code>), not this function's.</p>
     </div>
     <div class="section level2">

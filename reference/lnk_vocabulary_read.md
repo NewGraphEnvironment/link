@@ -49,4 +49,6 @@ v[, c("token", "axis", "introduced")]
 #> 5         grad-seg grad     0.70.0
 #> 6          q-fwapg flow     0.70.0
 #> 7       q-wet-fill flow     0.70.0
+#> 8           acc-v2  acc     0.72.0
+#> 9       acc-bcfp-2  acc     0.72.0
 ```

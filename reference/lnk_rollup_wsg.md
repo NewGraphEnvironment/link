@@ -150,8 +150,8 @@ and `accessible_observed_km + accessible_unobserved_km` equals
 `accessible_km` to the 0.01 km each column is rounded to. bcfishpass
 reports the same split as `length_naturallyaccessible_obsrvd_<sp>` and
 `length_naturallyaccessible_model_<sp>`. Which records count, and where
-code 2 ends upstream of the top record, are the access walk's rules (see
-`RUNBOOK.md`), not this function's.
+code 2 ends relative to a species' top record, are the access walk's
+rules (see `RUNBOOK.md`), not this function's.
 
 ## See also
 

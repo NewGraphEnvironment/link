@@ -42,7 +42,7 @@ species integer access_&amp;lt;sp&amp;gt; codes derived via CASE on
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Build per-segment access codes + downstream-barrier indicators</h1>
-      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.71.1/R/lnk_pipeline_access.R" class="external-link"><code>R/lnk_pipeline_access.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/R/lnk_pipeline_access.R" class="external-link"><code>R/lnk_pipeline_access.R</code></a></small>
       <div class="d-none name"><code>lnk_pipeline_access.Rd</code></div>
     </div>
 
@@ -191,7 +191,14 @@ picked up by persist on the next commit).</p>
 0 = barriers downstream (blocked)
 1 = no barriers downstream + species not observed upstream
 (modelled accessible)
-2 = no barriers downstream + species observed upstream</p>
+2 = no barriers downstream + species recorded upstream, as fwapg's
+<code>fwa_upstream()</code> reads it: at least 1 m above the segment's start
+on its own line, or on a line its watershed codes put upstream.
+By the same-line measure test, a record less than 1 m above the
+segment's start is not upstream of it, as in bcfishpass, so the segment starting at a
+species' top record on a line normally reads 1 (<code>RUNBOOK.md</code> §2c
+has the other records the walk counts and when a top does not
+cut).</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

@@ -222,18 +222,59 @@ checked when the manifest loads:
 (“accessible, and the species is observed upstream”) against code 1. The
 access walk
 ([`lnk_pipeline_access()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_access.md),
-`frs_network_features(direction = "upstream", include_equivalents = TRUE)`)
+`frs_network_features(direction = "upstream", include_equivalents = FALSE)`)
 reads `<schema>.observations` itself, every record, not the breaks
-table, and a same-line record counts as upstream of a segment when its
-measure is above the segment’s start or within 1 m of it. So code 2 is a
-property of a segment’s start, and a species’ own top break never
-changes its own code: the segment starting at the top still reads 2.
-Species X turns from 2 to 1 at the **first cut more than 1 m above its
-top**, whatever made that cut. Under `all` that is often another
-species’ lower record; under `top_per_species` it is the next of the
-line’s FWA ends, other break sources and other species’ tops. A kept top
-matters as the place where species recorded only below it turn to 1.
-Lifts count observations point against point
+table, and its same-line measure test counts a record as upstream of a
+segment only when the record is at least 1 m above the segment’s start
+(fwapg `fwa_upstream`, fresh’s 1 m tolerance; clause 1 below). That is
+bcfishpass’s reading: its walk calls `FWA_Upstream(…, False, 1)`
+(`load_streams_upstr_observations.sql`). Breaks are rounded to the
+metre, so a break at a species’ top starts its segment within 0.5 m of
+the record: that segment reads 1 (barring the cases below) and the one
+ending there reads 2. So code 2 is a property of a segment’s start.
+**What reads 2** is `fwa_upstream()`’s clauses (fwapg; each first asks
+that the record’s watershed code descend from or equal the segment’s):
+
+1.  A record on the segment’s own line at least 1 m above its start.
+    This is the only clause \#399 changed; `TRUE` read `start − 1`.
+2.  A record on another line, by watershed codes alone. Where the
+    segment’s watershed and local codes are equal, any other line whose
+    watershed code descends from or equals the segment’s counts, except
+    a distributary carrying the same two codes. Where they differ, a
+    line counts when its watershed code is greater than the segment’s
+    local code and does not descend from it (a tributary entering
+    above), or when it has the same watershed code and a larger local
+    code (fwapg’s “capture side channels”). None of this reads measure,
+    so a tributary’s records count for every segment of the receiving
+    line below its mouth.
+3.  Where the segment’s two codes differ, the side-channel test also
+    matches the segment’s own line, again ignoring measure, wherever
+    local codes there do not rise with measure: on PARS line 359567332
+    the segments starting at 182477 and 183194 m read BT 2 from the
+    line’s top BT record at 182461 m.
+
+Each species’ top is a break in both bundles (under `all` every record
+is), so normally the segment starting at the top reads 1, and the
+boundary sits on the highest record (#399). Clauses 2 and 3 can keep 2
+above it. So can a top within 1 m of an FWA line end, which does not
+cut. Observations are the first break source and all go to one
+`frs_break_apply()` call, which tests a break only against the ends that
+existed before it, so another record’s break never blocks one. The
+boundary is then that end if it lies above the record or less than 1 m
+below it, else the next end above (ELKR: a BT record 1 m above its
+line’s start reads 2 to the line’s first end, 112 m up). Until \#399 the
+walk passed `TRUE`, which counts a record at start − 1 or above, so the
+segment starting at a species’ top still read 2 and the species turned
+at the first cut more than 1 m above its top, whatever made that cut
+(#396’s measurements below were made under that reading). Built before
+and after \#399 on five `default` groups and two `bcfishpass` groups,
+only that code moved: 346.6 and 93.6 km of 2 to 1, at most 5.4 % of a
+species’ observed km, every piece at a record, with segments, barrier
+flags, mapping codes and habitat unchanged
+(`data-raw/logs/record_at_start_399/`), and the `bcfishpass` builds’
+observed km now equal bcfishpass’s (steelhead excepted, whose reference
+codes it from sockeye records). Lifts count observations point against
+point
 ([`lnk_barrier_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_barrier_overrides.md)),
 and the mapping code and habitat gate read `has_barriers_<sp>_dnstr` and
 `access = 0` against `> 0`; none needs a break. Until \#403 nothing in
@@ -246,15 +287,17 @@ bcfishpass’s `aw_linear_summary()` does on its own tables
 
 **The access changes follow from one fact: a segment’s codes depend only
 on where it starts.** Both tests in the walk are monotone in the start:
-a record counts as upstream when its measure is at least start − 1, a
-barrier as downstream when at most start + 1, and a segment never spans
-a confluence (FWA ends cut in every build), so the tributary tests are
-constant within one: a tributary’s records count for every segment of
-the feature below its mouth, whatever its start, and for no segment
-above. So when a break goes and a segment now starts lower, its upper
-part can only open or gain “observed upstream”; when a segment now
-starts higher, the reverse. Fewer observation breaks mostly move starts
-down:
+the same-line measure test counts a record when its measure is at least
+start + 1 (start − 1 before \#399), a barrier as downstream when at most
+start + 1, the code clauses read only codes, which are constant within
+an FWA feature, and a segment never spans a confluence (FWA ends cut in
+every build), so the tributary tests are constant within one: a
+tributary’s records count for every segment of the feature below its
+mouth, whatever its start, and for no segment above. So when a break
+goes and a segment now starts lower, its upper part can only open or
+gain “observed upstream”; when a segment now starts higher, the reverse.
+Fewer observation breaks mostly move starts down (measured by \#396,
+under the reading before \#399):
 
 - **1 to 2 at a species’ top**, the main change. Where a removed
   record’s rounded position lay more than 1 m above X’s raw top and
@@ -282,13 +325,14 @@ passes no observations and keeps a prior 2, so a recompute after a
 re-model keeps these.
 `data-raw/logs/observation_breaks_396/pre_post_diff.R` checks the
 direction rule on every piece: any change against the direction its
-start moved, or with the start unmoved, is a defect. The set that would
-keep nearly every turn to 1 where `all` puts it is smaller than the
-tops: per species, the lowest record of any species more than 1 m above
-its raw top (`exact_set.sql`). It is near-exact, not exact, and dropped:
-the tops stay, because putting each species’ boundary at its highest
-record (#399) needs exactly them. `research/observation_breaks.md` has
-the counts.
+start moved, or with the start unmoved, is a defect. Under the reading
+before \#399, the set that would have kept nearly every turn to 1 where
+`all` put it was smaller than the tops: per species, the lowest record
+of any species more than 1 m above its raw top (`exact_set.sql`). It was
+near-exact, not exact, and dropped: the tops stay, because putting each
+species’ boundary at its highest record (#399) needs exactly them; since
+\#399 that set no longer reproduces `all`, which now normally turns each
+species at its own top. `research/observation_breaks.md` has the counts.
 
 **Omitting `observations` from `break_order`** removes its segmentation
 only: code 2 is still computed, at the resolution of the segments left.
@@ -931,18 +975,23 @@ The rules: - Tokens are lowercase, `^[a-z0-9]+(-[a-z0-9]+)*$`. - A token
 is never renamed, never removed and never given a new spec: a changed
 definition is a new token, and the old row gets `retired`. - Our own
 access rule sets are numbered (`acc-v1`, `acc-v2`, …), and the
-definition says what changed from the last one. A new transcription of
-bcfishpass’s rules is `acc-bcfp-2`. - `test-lnk_vocabulary.R` holds the
-rules against `origin/main`’s copy, in a checkout only. CI’s shallow
-clone and `R CMD check` skip that test, so run it locally before merging
-an edit to the table.
+definition says what changed from the last one. A transcription of
+bcfishpass’s rules is `acc-bcfp`, then `acc-bcfp-2` (#399), `acc-bcfp-3`
+and so on. - `test-lnk_vocabulary.R` holds the rules against
+`origin/main`’s copy, in a checkout only. CI’s shallow clone and
+`R CMD check` skip that test, so run it locally before merging an edit
+to the table.
 
 **Code changes can need a token too.** The specs see the bundle, not the
 code. A change to how fresh finds gradient barriers, to
 `frs_barriers_minimal()`, to the CT alias expansion in observation
-breaks moves cuts with no spec change. Retire and re-add the affected
-tokens in the same PR. Changing `.lnk_vocabulary_canonical()` or the
-digest inputs re-specs every `acc` token the same way.
+breaks moves cuts with no spec change, and a change to how the access
+walk reads a record moves codes with none (#399 retired `acc-v1` and
+`acc-bcfp` for `acc-v2` and `acc-bcfp-2`). Retire and re-add the
+affected tokens in the same PR: the retired row and its successor then
+share a spec, and `.lnk_vocabulary_match()` returns the live one.
+Changing `.lnk_vocabulary_canonical()` or the digest inputs re-specs
+every `acc` token the same way.
 
 **The recompute is not checked.** `wsg_recompute_one.R` rewrites
 `streams_access` from the config at the commit it runs, and
@@ -1471,7 +1520,7 @@ dispatch.**
     `accessible_km` sums, so the pair sums to it (to 0.01 km a column)
     and all three are NA together where access is not built. The
     validator’s `summary` carries all three. What code 2 means, and
-    where it ends above a species’ top record, is §2c.
+    where it ends relative to a species’ top record, is §2c.
   - **[`lnk_aggregate()`](https://newgraphenvironment.github.io/link/reference/lnk_aggregate.md)
     still sums the flag**, connection lines included: it is
     per-crossing, link-side SQL over boolean habitat columns, with no
