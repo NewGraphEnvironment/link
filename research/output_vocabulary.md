@@ -1,6 +1,6 @@
 # Naming link's outputs: what a token covers
 
-**Verified:** 2026-10-29 · **Issues:** #414 (consumers: #415 and a downstream tuning archive) · **Produced by:** reading the five config bundles under `inst/extdata/configs/` and the code paths below; the specs in `inst/extdata/vocabulary.csv` are written by `lnk_vocabulary_resolve()`'s helpers · **Status:** four axes; seven tokens; `default_extrabreaks` and `default_rearbreaks` have none and refuse
+**Verified:** 2026-10-29 · **Issues:** #414 (consumers: #415 and a downstream tuning archive) · **Produced by:** reading the five config bundles under `inst/extdata/configs/` and the code paths below; the specs in `inst/extdata/vocabulary.csv` are written by `lnk_vocabulary_resolve()`'s helpers · **Status:** four axes; seven live tokens (nine rows since #399); `default_extrabreaks` and `default_rearbreaks` have none and refuse
 
 ## The question
 
@@ -53,13 +53,13 @@ So access is its own axis, and the cut axis keeps naming the method:
 | grad | `grad-` | how a segment's gradient is measured | `gradient=segment` |
 | flow | `q-` | `discharge_source` and `discharge_fill` | canonical string |
 
-With these axes, five configs take seven tokens:
+With these axes, five configs take seven live tokens:
 
 | Config | cut | acc | grad | flow |
 |---|---|---|---|---|
-| `default` | `cut-full-top` | `acc-v1` | `grad-seg` | `q-fwapg` |
-| `default_tuned` | `cut-full-top` | `acc-v1` | `grad-seg` | `q-wet-fill` |
-| `bcfishpass` | `cut-full-ssf-all` | `acc-bcfp` | `grad-seg` | `q-fwapg` |
+| `default` | `cut-full-top` | `acc-v2` | `grad-seg` | `q-fwapg` |
+| `default_tuned` | `cut-full-top` | `acc-v2` | `grad-seg` | `q-wet-fill` |
+| `bcfishpass` | `cut-full-ssf-all` | `acc-bcfp-2` | `grad-seg` | `q-fwapg` |
 | `default_extrabreaks` | none | none | `grad-seg` | `q-fwapg` |
 | `default_rearbreaks` | none | none | `grad-seg` | `q-fwapg` |
 
@@ -69,6 +69,11 @@ someone names it.
 `acc-bcfp` is named for its source, because bcfishpass is the one rule set defined outside
 us. link's own access rules are numbered revisions (`acc-v1`, then `acc-v2`), not named
 after the company (operator, 2026-10-29).
+
+**The first code change that needed new tokens** was #399 (link 0.72.0): the access walk
+stopped counting a record at a segment's start as upstream of it, which moves code 2 with
+no change to any spec. `acc-v1` and `acc-bcfp` were retired for `acc-v2` and `acc-bcfp-2`
+with the same specs, and `.lnk_vocabulary_match()` returns the live row of a shared spec.
 
 ## What stays out of tokens
 

@@ -13,9 +13,10 @@ Both sum over the rows `accessible_km` sums, so the pair adds to it within 0.01 
 rounding of two columns. All three are NA together where a group has no access build.
 `lnk_habitat_validate()`'s `summary` carries all three.
 
-What the columns report is whatever the access walk wrote. Under link's walk, a record on
-the same line counts as upstream of a segment when it lies above the segment's start or
-within 1 m of it (`RUNBOOK.md` §2c).
+What the columns report is whatever the access walk wrote. Since #399 a record on the same
+line counts as upstream of a segment only when it lies at least 1 m above the segment's
+start, as in bcfishpass (`RUNBOOK.md` §2c). The tables below were taken before #399, when
+the walk also counted a record within 1 m of the start.
 
 ## How much of the accessible network has a record upstream
 
@@ -72,10 +73,10 @@ codes (`parity_bcfp.csv`). Accessible km agree within 1.3 km. Observed km do not
 **One mechanism accounts for all of it** (`parity_pieces.csv`). Every disagreeing piece is
 code 2 in link and code 1 in bcfishpass, never the reverse. Every piece lies on a link
 segment that starts within 1 m of a record of the species on the same line. That is the
-segment above a record. Link's walk counts the record as upstream of it, and bcfishpass
-does not. Each species' piece total equals its gap above, to rounding. This is #399's
-subject: counting a same-line record only when it lies more than 1 m above a segment's
-start puts the boundary on the record, as bcfishpass does.
+segment above a record. Link's walk counted the record as upstream of it, and bcfishpass
+does not. Each species' piece total equals its gap above, to rounding. #399 removed it:
+link's walk now counts a same-line record only when it lies at least 1 m above a segment's
+start, as bcfishpass's does.
 
 **Steelhead is not comparable against this reference.** bcfishpass's view gives BULK
 steelhead the same observed km as sockeye (312.53), against link's 523.55. At the

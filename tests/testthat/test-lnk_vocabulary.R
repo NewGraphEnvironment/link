@@ -94,15 +94,15 @@ test_that("the vocabulary only grows against the default branch", {
 test_that("each shipped config resolves to its tokens", {
   expect_identical(
     lnk_vocabulary_resolve(lnk_config("default")),
-    c(cut = "cut-full-top", acc = "acc-v1", grad = "grad-seg",
+    c(cut = "cut-full-top", acc = "acc-v2", grad = "grad-seg",
       flow = "q-fwapg"))
   expect_identical(
     lnk_vocabulary_resolve(lnk_config("default_tuned")),
-    c(cut = "cut-full-top", acc = "acc-v1", grad = "grad-seg",
+    c(cut = "cut-full-top", acc = "acc-v2", grad = "grad-seg",
       flow = "q-wet-fill"))
   expect_identical(
     lnk_vocabulary_resolve(lnk_config("bcfishpass")),
-    c(cut = "cut-full-ssf-all", acc = "acc-bcfp", grad = "grad-seg",
+    c(cut = "cut-full-ssf-all", acc = "acc-bcfp-2", grad = "grad-seg",
       flow = "q-fwapg"))
 })
 
@@ -271,4 +271,9 @@ test_that("a retired match or two live matches refuse", {
   vocab$retired[1] <- NA
   expect_identical(link:::.lnk_vocabulary_match(c(cut = "s1"), vocab, "x"),
                    c(cut = "cut-a"))
+  # A retired token and its live successor share a spec when the code changed
+  # the output and the spec did not (acc-v1 -> acc-v2, #399): the live one wins.
+  vocab$retired[2] <- "0.2.0"
+  expect_identical(link:::.lnk_vocabulary_match(c(cut = "s2"), vocab, "x"),
+                   c(cut = "cut-c"))
 })

@@ -118,9 +118,10 @@ pipeline:
   #   top_per_species  — on each stream line, each present species' farthest-
   #                      upstream observation
   # Only access_<sp> code 2 ("accessible, observed upstream", against 1)
-  # reads an observation break. A species turns from 2 to 1 at the first cut
-  # more than 1 m above its top observation, and the tops are those cuts for
-  # the species recorded below them. Every other position mostly shortens
+  # reads an observation break. A record counts as upstream of a segment
+  # only more than 1 m above its start, so a species turns from 2 to 1 at its
+  # own top, which is also where species recorded only below it turn
+  # (link#399). Every other position mostly shortens
   # segments: more segments to classify and recompute, and shorter-reach,
   # noisier gradients at the places fish were recorded. Barrier lifts count
   # observations point against point and need no break (link#396; RUNBOOK

@@ -194,15 +194,21 @@ exist`.) `barriers_per_sp` mechanically requires the *feature view* shape.
 **What reads an observation break.** Only `access_<sp>` code 2 ("accessible, and the
 species is observed upstream") against code 1. The access walk
 (`lnk_pipeline_access()`, `frs_network_features(direction = "upstream",
-include_equivalents = TRUE)`) reads `<schema>.observations` itself, every record,
-not the breaks table, and a same-line record counts as upstream of a segment when its
-measure is above the segment's start or within 1 m of it. So code 2 is a property of
-a segment's start, and a species' own top break never changes its own code: the
-segment starting at the top still reads 2. Species X turns from 2 to 1 at the **first
-cut more than 1 m above its top**, whatever made that cut. Under `all` that is often
-another species' lower record; under `top_per_species` it is the next of the line's
-FWA ends, other break sources and other species' tops. A kept top matters as the place
-where species recorded only below it turn to 1. Lifts count observations point against point
+include_equivalents = FALSE)`) reads `<schema>.observations` itself, every record,
+not the breaks table, and a same-line record counts as upstream of a segment only when
+its measure is at least 1 m above the segment's start (fwapg `fwa_upstream`, fresh's
+1 m tolerance). That is bcfishpass's reading: its walk calls `FWA_Upstream(…, False, 1)`
+(`load_streams_upstr_observations.sql`). Breaks are rounded to the metre, so a break at a
+species' top starts its segment within 0.5 m of the record: that segment reads 1 and the
+one ending there reads 2. So code 2 is a property of a segment's start, and species X
+turns from 2 to 1 at **its own top break**, the boundary on its highest record on each
+line, whichever bundle (#399). A top within 1 m of another observation's break does not
+cut itself (`frs_break_apply()` cuts only more than 1 m from an existing end), and the
+boundary lands on that break instead, within 1 m of the record. Until #399 the walk passed `TRUE`, which
+counts a record at start − 1 or above, so the segment starting at a species' top still
+read 2 and the species turned at the first cut more than 1 m above its top, whatever made
+that cut (#396's measurements below were made under that reading). Lifts count observations
+point against point
 (`lnk_barrier_overrides()`), and the mapping code and habitat gate read
 `has_barriers_<sp>_dnstr` and `access = 0` against `> 0`; none needs a break.
 Until #403 nothing in link told 2 from 1 (every reader tested `IN (1, 2)`, `> 0` or `= 0`;
@@ -212,12 +218,13 @@ does on its own tables (`length_naturallyaccessible_obsrvd_<sp>` / `_model_<sp>`
 
 **The access changes follow from one fact: a segment's codes depend only on where it
 starts.** Both tests in the walk are monotone in the start: a record counts as upstream
-when its measure is at least start − 1, a barrier as downstream when at most start + 1,
+when its measure is at least start + 1, a barrier as downstream when at most start + 1,
 and a segment never spans a confluence (FWA ends cut in every build), so the tributary
 tests are constant within one: a tributary's records count for every segment of the
 feature below its mouth, whatever its start, and for no segment above. So when a break goes and a segment now starts lower,
 its upper part can only open or gain "observed upstream"; when a segment now starts
-higher, the reverse. Fewer observation breaks mostly move starts down:
+higher, the reverse. Fewer observation breaks mostly move starts down (measured by
+#396, under the reading before #399):
 
 - **1 to 2 at a species' top**, the main change. Where a removed record's rounded
   position lay more than 1 m above X's raw top and below the next kept cut, the segment
@@ -812,7 +819,10 @@ The rules:
 **Code changes can need a token too.** The specs see the bundle, not the code. A
 change to how fresh finds gradient barriers, to `frs_barriers_minimal()`, to the CT
 alias expansion in observation breaks moves cuts with no
-spec change. Retire and re-add the affected tokens in the same PR. Changing
+spec change, and a change to how the access walk reads a record moves codes with none
+(#399 retired `acc-v1` and `acc-bcfp` for `acc-v2` and `acc-bcfp-2`). Retire and re-add
+the affected tokens in the same PR: the retired row and its successor then share a spec,
+and `.lnk_vocabulary_match()` returns the live one. Changing
 `.lnk_vocabulary_canonical()` or the digest inputs re-specs every `acc` token the same
 way.
 

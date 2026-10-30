@@ -13,15 +13,20 @@ the mapping code and habitat gate read barrier flags and `access = 0` against `>
 (`pipeline: observation_breaks: top_per_species`). The `bcfishpass` bundle breaks at every
 record, as bcfishpass does (`all`, the value when the key is absent). Mechanics: RUNBOOK §2c.
 
-The access walk counts a same-line record as upstream of a segment when it lies above the
-segment's start or within 1 m of it. So code 2 belongs to a segment's start, and a species'
-own top break never changes its own code: the segment starting at the top still reads 2. A
-species turns from 2 to 1 at the first cut more than 1 m above its top, whatever made that
-cut. Under `all` that is often another species' lower record. Under `top_per_species` it is
-the next FWA line end, other break source or other species' top, so a kept top is where
-species recorded only below it turn to 1. The issue chose the tops on the premise that a
-species' top is where its own code changes; the code shows it is not (code-check round 2,
-verified against fwapg's `fwa_upstream`).
+Since #399 the access walk counts a same-line record as upstream of a segment only when it
+lies at least 1 m above the segment's start, as bcfishpass's walk does
+(`FWA_Upstream(…, False, 1)`). Breaks are rounded to the metre, so the segment starting at a
+species' top record reads 1 and the one ending there reads 2: under either value of
+`observation_breaks`, a species turns from 2 to 1 at its own top on each line.
+
+Before #399, which every measurement in this file was made under, the walk counted a record
+above the segment's start or within 1 m of it. A species' own top break then never changed
+its own code: the segment starting at the top still read 2, and the species turned at the
+first cut more than 1 m above its top, whatever made that cut. Under `all` that was often
+another species' lower record; under `top_per_species` the next FWA line end, other break
+source or other species' top. #396 chose the tops on the premise that a species' top is
+where its own code changes; under that walk it was not (code-check round 2, verified against
+fwapg's `fwa_upstream`), and #399 made it so.
 
 ## A smaller set that keeps code 2 nearly as `all` does
 
