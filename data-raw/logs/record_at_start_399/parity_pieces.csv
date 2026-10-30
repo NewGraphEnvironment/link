@@ -1,0 +1,13 @@
+"build","wsg","species","side","at_start","upstream_group","km","n_pieces"
+"pre","BULK","BT","link_only",TRUE,FALSE,14.461,28
+"pre","BULK","CH","link_only",TRUE,FALSE,5.459,25
+"pre","BULK","CO","link_only",TRUE,FALSE,27.773,65
+"pre","BULK","PK","link_only",TRUE,FALSE,4.147,19
+"pre","BULK","SK","link_only",TRUE,FALSE,1.908,6
+"pre","BULK","ST","bcfp_only",FALSE,FALSE,1.036,5
+"pre","BULK","ST","link_only",FALSE,FALSE,187.109,778
+"pre","BULK","ST","link_only",TRUE,FALSE,24.947,88
+"pre","PARS","BT","link_only",TRUE,FALSE,29.703,87
+"post","BULK","ST","bcfp_only",FALSE,FALSE,1.036,5
+"post","BULK","ST","link_only",FALSE,FALSE,187.109,778
+"post","BULK","ST","link_only",TRUE,FALSE,14.778,55

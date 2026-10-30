@@ -1,0 +1,258 @@
+[wsg_run_one] PARS statement_timeout=0
+PARS BLOCKED (link#227) — 1 blocking dam(s) on PARS's downstream flow path have not been modelled yet.
+
+link computes accessibility by reading ALREADY-PERSISTED downstream barriers.
+Running PARS now would mark segments accessible that are in fact dammed off, and exit 0.
+
+  persist schema : zz399_default_pre
+  unmodelled blocking dams downstream of PARS:
+    PCEA  785afb41-dfdf-423c-a291-e213d4b44f26   W.A.C. Bennett Dam (psc 1)
+  model these first, DS-first: LPCE, UPCE, PCEA, PARA
+
+Fix — pick one:
+  1. Model the downstream WSGs first:
+       for w in LPCE UPCE PCEA PARA; do Rscript data-raw/wsg_run_one.R $w <config>; done
+  2. Model PARS now and settle access after they land:
+       Rscript data-raw/wsg_recompute_one.R PARS <config>
+  3. Override, if those dams are known passable / remediated / irrelevant.
+     Recorded in the run log and surfaced by lnk_log_read():
+       LNK_GUARD_DOWNSTREAM_NOTE="..." Rscript data-raw/wsg_run_one.R PARS <config>
+
+NOTICE:  schema "zz399_default_pre" already exists, skipping
+
+NOTICE:  relation "log" already exists, skipping
+
+NOTICE:  relation "log_recompute" already exists, skipping
+
+NOTICE:  relation "log_input" already exists, skipping
+
+NOTICE:  relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  relation "log_dimensions" already exists, skipping
+
+NOTICE:  schema "working_pars" does not exist, skipping
+
+NOTICE:  schema "working_pars" does not exist, skipping
+
+NOTICE:  schema "working_pars" does not exist, skipping
+
+NOTICE:  schema "working_pars" does not exist, skipping
+
+NOTICE:  schema "fresh" already exists, skipping
+
+Override validation: working_pars.pscis_fixes vs working_pars.crossings
+  Total overrides:  3
+  Valid (matched):  3
+  Orphans:          0
+  Duplicates:       0
+Updated 3 of 3961 rows (barrier_status)
+NOTICE:  table "barriers_definite" does not exist, skipping
+
+NOTICE:  table "barriers_definite_control" does not exist, skipping
+
+NOTICE:  table "observations_province" does not exist, skipping
+
+NOTICE:  table "observations" does not exist, skipping
+
+NOTICE:  table "streams_blk" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_raw" does not exist, skipping
+
+NOTICE:  table "natural_barriers" does not exist, skipping
+
+NOTICE:  table "barrier_overrides" does not exist, skipping
+
+NOTICE:  table "barriers_bt" does not exist, skipping
+
+NOTICE:  table "barriers_bt_min" does not exist, skipping
+
+NOTICE:  table "barriers_ko" does not exist, skipping
+
+NOTICE:  table "barriers_ko_min" does not exist, skipping
+
+NOTICE:  table "barriers_rb" does not exist, skipping
+
+NOTICE:  table "barriers_rb_min" does not exist, skipping
+
+NOTICE:  table "barriers_gr" does not exist, skipping
+
+NOTICE:  table "barriers_gr_min" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_minimal" does not exist, skipping
+
+NOTICE:  table "streams" does not exist, skipping
+
+NOTICE:  table "streams_habitat" does not exist, skipping
+
+NOTICE:  table "cabd_exclusions" does not exist, skipping
+
+NOTICE:  table "cabd_blkey_xref" does not exist, skipping
+
+NOTICE:  table "cabd_passability_status_updates" does not exist, skipping
+
+NOTICE:  table "cabd_additions" does not exist, skipping
+
+NOTICE:  table "cabd_dams_raw" does not exist, skipping
+
+NOTICE:  table "dams" does not exist, skipping
+
+NOTICE:  table "pscis_modelledcrossings_streams_xref" does not exist, skipping
+
+NOTICE:  table "pscis_stream_candidates" does not exist, skipping
+
+NOTICE:  table "pscis_streams_150m" does not exist, skipping
+
+NOTICE:  table "pscis_picked" does not exist, skipping
+
+NOTICE:  table "pscis" does not exist, skipping
+
+NOTICE:  table "crossings_lookup" does not exist, skipping
+
+NOTICE:  table "barriers_anthropogenic" does not exist, skipping
+
+NOTICE:  table "barriers_pscis" does not exist, skipping
+
+NOTICE:  table "barriers_dams" does not exist, skipping
+
+NOTICE:  table "barriers_remediations" does not exist, skipping
+
+NOTICE:  table "observations_breaks" does not exist, skipping
+
+NOTICE:  table "habitat_endpoints" does not exist, skipping
+
+NOTICE:  table "crossings_breaks" does not exist, skipping
+
+NOTICE:  table "streams_breaks" does not exist, skipping
+
+NOTICE:  table "streams_habitat_near_river" does not exist, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  table "streams_acc_015" does not exist, skipping
+
+NOTICE:  table "streams_acc_025" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_bt" does not exist, skipping
+
+NOTICE:  table "streams_acc_025_ovr_rb" does not exist, skipping
+
+NOTICE:  table "frs_clusters_bt" does not exist, skipping
+
+NOTICE:  table "frs_clusters_ko" does not exist, skipping
+
+NOTICE:  table "frs_qual_spawn_ko" does not exist, skipping
+
+NOTICE:  table "frs_trace_lfid_ko" does not exist, skipping
+
+NOTICE:  table "frs_clusters_gr" does not exist, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_bt_wetland_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_rb_lake_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_rb_wetland_rearing" does not exist, skipping
+
+NOTICE:  relation "streams_geom_gist_idx" already exists, skipping
+
+NOTICE:  table "frs_bkt_keys_gr_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_poly_gr_lake_rearing" does not exist, skipping
+
+NOTICE:  table "frs_bkt_spawn_gr_lake_rearing" does not exist, skipping
+
+NOTICE:  schema "zz399_default_pre" already exists, skipping
+
+NOTICE:  relation "streams" already exists, skipping
+
+NOTICE:  relation "streams_habitat_bt" already exists, skipping
+
+NOTICE:  relation "streams_habitat_ch" already exists, skipping
+
+NOTICE:  relation "streams_habitat_cm" already exists, skipping
+
+NOTICE:  relation "streams_habitat_co" already exists, skipping
+
+NOTICE:  relation "streams_habitat_pk" already exists, skipping
+
+NOTICE:  relation "streams_habitat_sk" already exists, skipping
+
+NOTICE:  relation "streams_habitat_st" already exists, skipping
+
+NOTICE:  relation "streams_habitat_wct" already exists, skipping
+
+NOTICE:  relation "streams_habitat_ko" already exists, skipping
+
+NOTICE:  relation "streams_habitat_rb" already exists, skipping
+
+NOTICE:  relation "streams_habitat_gr" already exists, skipping
+
+NOTICE:  relation "barriers" already exists, skipping
+
+NOTICE:  relation "barrier_overrides" already exists, skipping
+
+NOTICE:  relation "streams_access" already exists, skipping
+
+NOTICE:  relation "streams_mapping_code" already exists, skipping
+
+NOTICE:  relation "streams_near_river" already exists, skipping
+
+NOTICE:  schema "zz399_default_pre" already exists, skipping
+
+NOTICE:  relation "log" already exists, skipping
+
+NOTICE:  relation "log_recompute" already exists, skipping
+
+NOTICE:  relation "log_input" already exists, skipping
+
+NOTICE:  relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  relation "log_dimensions" already exists, skipping
+
+NOTICE:  table "barriers" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+8: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_run_one] PARS done in 3.8 min (persist=zz399_default_pre)
