@@ -971,6 +971,30 @@ quit(status = if (isTRUE(res$ok)) 0L else 1L)
        echo "  ✗ could not run the fresh check (R error, not a fresh problem)"; fail=1 ;;
   esac
 
+  # --- gate: the config's output has a name (link#414) ---------------------
+  # lnk_pipeline_run() refuses a config the vocabulary has no live token
+  # for, once per group on every host. Ask once here, before any spend.
+  # Exit 3 is the refusal; any other non-zero is the harness (load, config),
+  # kept apart as the fresh gate above keeps them.
+  local vocab_out vocab_rc
+  vocab_out=$(cd "$REPO_ROOT" && Rscript -e '
+suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
+cfg <- lnk_config(commandArgs(TRUE)[1])
+tok <- tryCatch(lnk_vocabulary_resolve(cfg),
+                error = function(e) { cat(conditionMessage(e), "\n"); NULL })
+if (is.null(tok)) quit(status = 3L)
+cat(paste(tok, collapse = " "), "\n")
+' "$CONFIG" 2>&1) && vocab_rc=0 || vocab_rc=$?
+  case "$vocab_rc" in
+    0) echo "  ✓ output tokens: $(printf '%s' "$vocab_out" | tail -1)" ;;
+    3) printf '%s\n' "$vocab_out" | sed 's/^/    /'
+       echo "  ✗ config '$CONFIG' has no output tokens (RUNBOOK, \"Output vocabulary\")"
+       fail=1 ;;
+    *) printf '%s\n' "$vocab_out" | sed 's/^/    /'
+       echo "  ✗ could not run the vocabulary check (R error, not a missing token)"
+       fail=1 ;;
+  esac
+
   # --- gate: branch pushed + worktree clean (link#246) --------------------
   # Cyphers do `git fetch origin && git reset --hard origin/$BRANCH`
   # (cypher_prep.sh). Anything unpushed does not exist on them, and the host

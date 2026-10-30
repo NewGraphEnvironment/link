@@ -1,3 +1,14 @@
+# link 0.70.0
+
+**Every build is named by what it is: how its streams were cut, which access rules decided where, how gradient was measured and where flow came from** ([#414](https://github.com/NewGraphEnvironment/link/issues/414)). Config names move under a fixed name; the tokens do not.
+
+- **`inst/extdata/vocabulary.csv`** holds the tokens, one row each with its axis, a prose definition, the spec it matches, and the release that introduced (and retired) it. `lnk_vocabulary_read()` returns it for consumers; `lnk_vocabulary_resolve(cfg)` derives a config's four tokens. Seven to start: `cut-full-top` and `cut-full-ssf-all`, `acc-v1` and `acc-bcfp`, `grad-seg`, `q-fwapg` and `q-wet-fill`. `default` is `cut-full-top acc-v1 grad-seg q-fwapg`, `default_tuned` the same with `q-wet-fill`, and `bcfishpass` is `cut-full-ssf-all acc-bcfp grad-seg q-fwapg`.
+- **Access is its own axis.** Since [#326](https://github.com/NewGraphEnvironment/link/issues/326), gradient positions cut a stream only where a modelled species' access changes, so access gradients, observation lifts, the modelled species and the presence table move segments as much as the break sources do. A network is its `cut` and `acc` tokens together.
+- **Thresholds and data vintage get no token.** Habitat thresholds, rules and width against flow change flags, not segments. Observation records, the bcfishpass correction CSVs, `observation_exclusions.csv` and FWA identify one build, which `config_hash` and `log_input` already record.
+- **Each build records its tokens** in `<schema>.log` (`token_cut`, `token_acc`, `token_grad`, `token_flow`), and the habitat export carries them in its provenance. Rows from earlier builds are NULL.
+- **A config with no live token is refused** before the run opens, and `study_area_run.sh`'s local pre-flight asks once before any spend. `default_extrabreaks` and `default_rearbreaks` have no rows and now refuse, as does a bundle loaded by path that matches no named one. Adding a row is the fix: RUNBOOK §6b, "Output vocabulary".
+- Write-up: `research/output_vocabulary.md`.
+
 # link 0.69.7
 
 **The recompute walks each barrier set once and builds arrays only where it reads them** ([#394](https://github.com/NewGraphEnvironment/link/issues/394), on [#377](https://github.com/NewGraphEnvironment/link/issues/377)). Pins fresh v0.47.0. On top of 0.69.6's prefilter, the access step is a further 1.0 to 2.6 times faster, with the same output.

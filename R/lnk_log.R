@@ -337,6 +337,13 @@ cols_log <- c(
   # against its cfg, because the persisted streams_near_river holds only
   # the pairs this build walked.
   near_river             = "text",
+  # The output's name in link's vocabulary (#414): one token per axis from
+  # lnk_vocabulary_resolve(), resolved before the run opens. NULL on a row
+  # from before it was logged.
+  token_cut              = "text",
+  token_acc              = "text",
+  token_grad             = "text",
+  token_flow             = "text",
   schema_persist         = "text",
   species                = "text[]",
   wsg_upstream           = "text[]",
@@ -1013,7 +1020,8 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
                                mapping_code = FALSE,
                                run_uid = NA_character_,
                                run_label = NA_character_,
-                               notes = NA_character_) {
+                               notes = NA_character_,
+                               tokens = lnk_vocabulary_resolve(cfg)) {
   schema <- .lnk_table_names(cfg)$schema
   .lnk_log_create_tables(conn, schema)
 
@@ -1035,6 +1043,7 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
             "crate_version", "fwapg_sha", "bcfishobs_sha",
             "arg_dams", "arg_mapping_code", "arg_cleanup_working",
             "discharge_fill", "discharge_source", "near_river",
+            "token_cut", "token_acc", "token_grad", "token_flow",
             "schema_persist", "wsg_upstream",
             "bcfp_model_run_id", "bcfp_model_version", "bcfp_pin_source",
             "notes")
@@ -1065,6 +1074,10 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
     .lnk_log_lit(conn, .lnk_discharge_fill_applied(cfg, aoi)),
     .lnk_log_lit(conn, .lnk_discharge_source(cfg)),
     .lnk_log_lit(conn, .lnk_near_river_logged(cfg, aoi)),
+    .lnk_log_lit(conn, tokens[["cut"]]),
+    .lnk_log_lit(conn, tokens[["acc"]]),
+    .lnk_log_lit(conn, tokens[["grad"]]),
+    .lnk_log_lit(conn, tokens[["flow"]]),
     .lnk_log_lit(conn, schema),
     .lnk_log_arr(conn, upstream),
     .lnk_log_lit(conn, if (is.null(bcfp)) NA else bcfp$model_run_id),

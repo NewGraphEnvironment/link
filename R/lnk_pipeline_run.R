@@ -15,6 +15,11 @@
 #'
 #' ## Phase order
 #'
+#' Before any phase, [lnk_vocabulary_resolve()] names the output on its four
+#' axes (cut, access, gradient, flow). A config the vocabulary has no live
+#' token for is refused before anything is written, and the tokens go in the
+#' run's `<persist_schema>.log` row.
+#'
 #' 1. [lnk_pipeline_setup()] — create per-WSG working schema.
 #' 2. [lnk_pipeline_load()] — crossings + modelled fixes + PSCIS status.
 #' 3. [lnk_pipeline_prepare()] — falls, definite + control, habitat
@@ -153,6 +158,11 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
     is.logical(log), length(log) == 1L
   )
 
+  # The output's name (#414), before anything writes: a config whose cuts,
+  # access rules, gradient or flow the vocabulary has no live token for is
+  # refused here, logged or not.
+  tokens <- lnk_vocabulary_resolve(cfg, loaded)
+
   # Run provenance (link#127). Opened here, before anything writes, so
   # `wsg_upstream` reflects the cross-WSG state this run actually started
   # from — the pre-persist below mutates it. `on.exit` rather than
@@ -165,7 +175,8 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
                                   cleanup_working = cleanup_working,
                                   mapping_code = mapping_code,
                                   run_uid = run_uid,
-                                  run_label = run_label, notes = notes)
+                                  run_label = run_label, notes = notes,
+                                  tokens = tokens)
     completed <- FALSE
     on.exit({
       if (!completed) {

@@ -27,6 +27,7 @@ renamed.
 | [`default_vs_bcfishpass.md`](default_vs_bcfishpass.md) | The `default` config vs bcfishpass, per WSG, incl. the reverted gradient floor |
 | [`dimensions_audit.md`](dimensions_audit.md) | Audit of the bcfishpass bundle's `dimensions.csv` |
 | [`rule_flexibility.md`](rule_flexibility.md) | Three configs, one pipeline, one CSV (data: `rule_flexibility_data.rds`) |
+| [`output_vocabulary.md`](output_vocabulary.md) | Naming link's outputs: the four token axes (cut, acc, grad, flow), why access is its own axis, what stays out of tokens, and how each shipped config resolves (#414) |
 
 ## Habitat thresholds
 

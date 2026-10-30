@@ -16,6 +16,13 @@ mock_loaded <- function() list(
   )
 )
 
+# The mock overrides above are not a real access rule set, so the phase
+# tests name the output with fixed tokens; the refusal test below uses the
+# real resolver.
+mock_tokens <- function() {
+  c(cut = "cut-x", acc = "acc-x", grad = "grad-x", flow = "q-x")
+}
+
 # ---------------------------------------------------------------------------
 # Argument validation
 # ---------------------------------------------------------------------------
@@ -80,6 +87,7 @@ test_that("lnk_pipeline_run rejects schema with characters outside the SQL ident
 # ---------------------------------------------------------------------------
 
 test_that("lnk_pipeline_run errors before persist when active_species is empty", {
+  local_mocked_bindings(lnk_vocabulary_resolve = function(...) mock_tokens())
   m_setup <- function(...) invisible(NULL)
   m_load <- function(...) invisible(NULL)
   m_prepare <- function(...) invisible(NULL)
@@ -162,6 +170,7 @@ test_that("lnk_pipeline_run errors before persist when active_species is empty",
 })
 
 test_that("lnk_pipeline_run composes phases in expected order", {
+  local_mocked_bindings(lnk_vocabulary_resolve = function(...) mock_tokens())
   calls <- character()
   m_setup <- function(conn, schema, overwrite) {
     calls <<- c(calls, "setup"); invisible(conn)
@@ -282,6 +291,7 @@ test_that("lnk_pipeline_run composes phases in expected order", {
 })
 
 test_that("habitat_gate = FALSE skips the gate; it must be one TRUE or FALSE", {
+  local_mocked_bindings(lnk_vocabulary_resolve = function(...) mock_tokens())
   gated <- 0L
   m_noop <- function(...) invisible(NULL)
   run <- function(habitat_gate) {
@@ -309,6 +319,7 @@ test_that("habitat_gate = FALSE skips the gate; it must be one TRUE or FALSE", {
 })
 
 test_that("lnk_pipeline_run passes NULL conn_tunnel when dams = FALSE", {
+  local_mocked_bindings(lnk_vocabulary_resolve = function(...) mock_tokens())
   prepare_args <- list()
   m_noop <- function(...) invisible(NULL)
   m_prepare <- function(conn, aoi, cfg, loaded, schema, conn_tunnel = NULL,
@@ -353,6 +364,7 @@ test_that("lnk_pipeline_run passes NULL conn_tunnel when dams = FALSE", {
 })
 
 test_that("lnk_pipeline_run drops working schema when cleanup_working = TRUE", {
+  local_mocked_bindings(lnk_vocabulary_resolve = function(...) mock_tokens())
   drop_schema_seen <- FALSE
   m_noop <- function(...) invisible(NULL)
   m_species <- function(...) c("BT")
@@ -400,6 +412,7 @@ test_that("lnk_pipeline_run drops working schema when cleanup_working = TRUE", {
 # ---------------------------------------------------------------------------
 
 test_that("lnk_pipeline_run builds access for both mapping_code values, gates lnk_mapping_code", {
+  local_mocked_bindings(lnk_vocabulary_resolve = function(...) mock_tokens())
   run_once <- function(mapping_code) {
     seen <- list(access = FALSE, mapping = FALSE)
     m_noop <- function(...) invisible(NULL)
@@ -456,4 +469,24 @@ test_that("lnk_pipeline_run builds access for both mapping_code values, gates ln
   # Token assembly is gated.
   expect_false(off$mapping)
   expect_true(on$mapping)
+})
+
+
+test_that("a config with no vocabulary token is refused before anything runs", {
+  cfg <- mock_cfg()
+  cfg$pipeline$break_order <- rev(cfg$pipeline$break_order)
+  started <- FALSE
+  set_up <- FALSE
+  with_mocked_bindings(
+    .lnk_log_run_start = function(...) started <<- TRUE,
+    lnk_pipeline_setup = function(...) set_up <<- TRUE,
+    {
+      expect_error(
+        lnk_pipeline_run(conn = mock_conn(), aoi = "ADMS", cfg = cfg,
+                         loaded = lnk_load_overrides(cfg)),
+        "no cut token")
+    }
+  )
+  expect_false(started)
+  expect_false(set_up)
 })
