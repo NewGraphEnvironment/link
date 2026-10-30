@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.70.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.71.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,9 +32,21 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.70.0/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.71.0" id="link-0710">link 0.71.0<a class="anchor" aria-label="anchor" href="#link-0710"></a></h2>
+<p><strong>A partial run recomputes, or names, the groups outside it that read it</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/274" class="external-link">#274</a>, on <a href="https://github.com/NewGraphEnvironment/link/issues/377" class="external-link">#377</a>). A run rebuilds its groups’ barrier rows, and a group the schema holds outside the run whose recompute walk reads one of them used to keep access, mapping codes and settled habitat computed against the old rows.</p>
+<ul><li>
+<strong>Which groups.</strong> After coverage, <code>run_finish</code> asks <code>data-raw/recompute_readers_check.R</code> for every held group outside the run that reads a group it rebuilt, by <code>recompute_deps.R</code>’s line rule. The map is now computed in <code>--recompute-at-end</code> and <code>--recompute-only</code> runs too.</li>
+<li>
+<strong>Recomputed only when compatible.</strong> A reader joins the recompute when its newest build is closed and carries the config hash, fresh sha and version, crate version and fwapg checkout the recompute would stamp now, from a commit with no change on the recompute’s path, and its downstream check would pass. Anything unknown refuses. The compare stays on the run’s own groups.</li>
+<li>
+<strong>The rest are named</strong>, not failed: <code>&lt;TS&gt;_outside_readers.tsv</code> and a summary WARN list each reader as refused, waiting (it reads a run group that did not finish) or unchecked, with the re-model. A recomputed reader that lifted segments the habitat gate had cleared is named too, and <code>study_area_verify.sql</code> reports it rather than raising.</li>
+<li>
+<strong>Measured.</strong> A six-group North Thompson run has 65 readers (every Fraser group reads LFRA), the 34-group field scope 78. No local schema has a compatible reader today (<code>fresh_default</code> was built at 0.68.0), so until the next provincial run the change names them. Evidence: <code>data-raw/logs/partial_readers_274/</code>. Mechanics: RUNBOOK §8d, “Groups outside a partial run”.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.70.0" id="link-0700">link 0.70.0<a class="anchor" aria-label="anchor" href="#link-0700"></a></h2>
 <p><strong>Every build is named by what it is: how its streams were cut, which access rules decided where, how gradient was measured and where flow came from</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/414" class="external-link">#414</a>). Config names move under a fixed name; the tokens do not.</p>
