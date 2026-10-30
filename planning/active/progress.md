@@ -21,3 +21,9 @@
   precedence, an unknown open row passing, any rule counting) each fail one. The check script
   over three measured runs gives readers.tsv's held counts (32 / 0 / 1), all refused
   (`check_*.tsv`).
+- Phase 3 wiring: `recompute_readers` / `recompute_readers_lifted` (study_area_recompute.sh),
+  called from `run_finish`; `ALL_WSGS` is the union, `CMP_WSGS` the compare's; the map is
+  computed in every recomputing mode, waited on before dispatch only in early mode;
+  `run_readers_report` names refused, waiting, unchecked and lifted readers. Finish tests 277
+  pass; three one-line mutants (compare reads the union, no union, a bad class accepted) each
+  fail a test.

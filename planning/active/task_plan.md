@@ -85,16 +85,16 @@ is Phase 1.
 
 ## Phase 3: Driver wiring
 
-- [ ] Dependency map in every recomputing mode: early as now; at-end in the background with a
+- [x] Dependency map in every recomputing mode: early as now; at-end in the background with a
       non-fatal wait in `run_finish`; `--recompute-only` in the background before
       `run_expected_recompute_only`. Update the pinned text tests deliberately
-- [ ] `run_finish`: after coverage (the empty-coverage branch too, for `waiting`), run the check;
+- [x] `run_finish`: after coverage (the empty-coverage branch too, for `waiting`), run the check;
       `ALL_WSGS` becomes the union (judge, final set, fallback, pool all see it); a new
       `CMP_WSGS=$COV_RECOMPUTE` drives the compare and its report lines
-- [ ] A failed check, or a missing or malformed tsv, is `unchecked`: candidates written from the
+- [x] A failed check, or a missing or malformed tsv, is `unchecked`: candidates written from the
       map in awk (held unknown), or "every group outside the run in <schema> is unchecked" when
       the map is missing; never treated as "no readers"
-- [ ] After the pool: readers' `habitat_gate_lifted` → `recomputed_lifted`. Report: WARN naming
+- [x] After the pool: readers' `habitat_gate_lifted` → `recomputed_lifted`. Report: WARN naming
       refused, waiting, unchecked and lifted readers with the remedy (re-model under this run_uid
       with `LNK_HABITAT_GATE=0 LNK_GUARD_DOWNSTREAM=warn`, then a bare `--recompute-only`; its
       own readers surface on that pass) and the tsv; exit status unchanged for named readers

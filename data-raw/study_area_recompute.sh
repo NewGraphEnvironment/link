@@ -231,3 +231,97 @@ recompute_scheduler() {
 recompute_final_write() {
   printf 'FINAL %s\n' "${1:-}" > "$RC_FINAL.tmp" && mv "$RC_FINAL.tmp" "$RC_FINAL"
 }
+
+# --- groups outside the run that read it (link#274) --------------------------
+# A run rebuilds its groups' barrier rows, and a group the schema holds outside
+# the run whose walk reads one of them keeps access computed against the old
+# rows. recompute_readers asks recompute_readers_check.R which of those may be
+# recomputed now (their last build matches what the recompute would run) and
+# names the rest. Called by run_finish after coverage, before the recompute.
+#
+# Sets READERS_TSV (<TS>_outside_readers.tsv: wsg class reason reads),
+# READERS_RECOMPUTE (CSV of class recompute), READERS_NAMED (CSV of every other
+# class) and READERS_STATE: ok, or unchecked when the check could not run (its
+# candidates are then written from the map with class `unchecked`, never taken
+# as "no readers"), or unmapped when there is no map either. Never fails the
+# run: a failure costs only the readers, named.
+#
+# Globals read: CONFIG SCHEMA RUN_UID LOG_DIR TS REPO_ROOT RUN_WSGS COV_MISSING
+#   RC_DEPS RC_DEPS_PID RUN_WSGS_TSV
+recompute_readers() {
+  local wsgs_tsv out_log drc=0 hdr ok=0 rc=0
+  READERS_TSV="$LOG_DIR/${TS}_outside_readers.tsv"
+  READERS_RECOMPUTE=""
+  READERS_NAMED=""
+  READERS_STATE="unchecked"
+  out_log="$LOG_DIR/${TS}_outside_readers.log"
+  rm -f "$READERS_TSV"
+  if [ -n "${RC_DEPS_PID:-}" ]; then
+    wait "$RC_DEPS_PID" || drc=$?
+    RC_DEPS_PID=""
+  fi
+  if [ "$drc" != "0" ] || [ -z "${RC_DEPS:-}" ] || [ ! -r "$RC_DEPS" ] \
+     || ! IFS= read -r hdr < "$RC_DEPS" || [ "$hdr" != "$(printf 'wsg\trule\tdep')" ]; then
+    READERS_STATE="unmapped"
+    printf 'wsg\tclass\treason\treads\n' > "$READERS_TSV" 2>/dev/null || true
+    echo "  ✗ outside readers NOT checked: no dependency map (exit $drc; see ${RC_DEPS:-<none>})"
+    return 0
+  fi
+  wsgs_tsv="${RUN_WSGS_TSV:-$LOG_DIR/${RUN_UID%-*}_run_wsgs.tsv}"
+  [ -r "$wsgs_tsv" ] || wsgs_tsv="-"
+  ( cd "$REPO_ROOT" || exit 1
+    LNK_LOAD=loadall Rscript data-raw/recompute_readers_check.R "$CONFIG" "$SCHEMA" "$RUN_UID" \
+      "$RC_DEPS" "$wsgs_tsv" "${RUN_WSGS:-}" "${COV_MISSING:-}" "$READERS_TSV" ) \
+    > "$out_log" 2>&1 || rc=$?
+  # The script's exit is not the work: the table must be there, whole.
+  if [ "$rc" = "0" ] && [ -r "$READERS_TSV" ] && IFS= read -r hdr < "$READERS_TSV" \
+     && [ "$hdr" = "$(printf 'wsg\tclass\treason\treads')" ] \
+     && LC_ALL=C awk -F'\t' 'NR > 1 && ($1 !~ /^[A-Z][A-Z][A-Z][A-Z]$/ || $2 !~ /^(recompute|refused|waiting)$/) { bad = 1 }
+                             END { exit bad }' "$READERS_TSV"; then
+    ok=1
+  fi
+  if [ "$ok" = "1" ]; then
+    READERS_STATE="ok"
+    READERS_RECOMPUTE=$(LC_ALL=C awk -F'\t' 'NR > 1 && $2 == "recompute" { print $1 }' "$READERS_TSV" | .hosts_csv)
+    READERS_NAMED=$(LC_ALL=C awk -F'\t' 'NR > 1 && $2 != "recompute" { print $1 }' "$READERS_TSV" | .hosts_csv)
+    echo "  ✓ outside readers: $(.hosts_n "$READERS_RECOMPUTE") to recompute, $(.hosts_n "$READERS_NAMED") named ($READERS_TSV)"
+    return 0
+  fi
+  # Unchecked: every group outside the run that reads a run group under the
+  # line rule, whether or not the schema holds it.
+  { printf 'wsg\tclass\treason\treads\n'
+    LC_ALL=C awk -F'\t' -v run="${RUN_WSGS:-}" -v ws="$wsgs_tsv" '
+      BEGIN {
+        n = split(run, a, ","); for (i = 1; i <= n; i++) if (a[i] != "") R[a[i]] = 1
+        if (ws != "-") { k = 0; while ((getline l < ws) > 0) if (++k > 1) { split(l, f, "\t"); X[f[1]] = 1 } }
+      }
+      NR > 1 && $2 == "line" && ($3 in R) && !($1 in R) && !($1 in X) {
+        r[$1] = (($1 in r) ? r[$1] "," : "") $3
+      }
+      END { for (w in r) print w "\tunchecked\tcheck_failed\t" r[w] }' "$RC_DEPS" | LC_ALL=C sort
+  } > "$READERS_TSV" 2>/dev/null || true
+  READERS_NAMED=$(LC_ALL=C awk -F'\t' 'NR > 1 { print $1 }' "$READERS_TSV" 2>/dev/null | .hosts_csv) || READERS_NAMED=""
+  echo "  ✗ outside readers NOT checked (exit $rc; see $out_log); $(.hosts_n "$READERS_NAMED") candidate(s) named unchecked"
+  return 0
+}
+
+# recompute_readers_lifted: of the readers recomputed, those whose newest
+# recompute of this run lifted segments the habitat gate had blanked (their
+# habitat stays FALSE until a re-model). Sets READERS_LIFTED (CSV); empty when
+# none, or when it cannot be read, which it then says.
+recompute_readers_lifted() {
+  local cond
+  READERS_LIFTED=""
+  [ -n "${READERS_RECOMPUTE:-}" ] || return 0
+  cond="run_uid = '${RUN_UID}' AND habitat_gate_lifted > 0
+    AND watershed_group_code IN ('$(printf '%s' "$READERS_RECOMPUTE" | sed "s/,/','/g")')
+    AND (watershed_group_code, date_start) IN (
+      SELECT watershed_group_code, max(date_start) FROM ${SCHEMA}.log_recompute
+       WHERE run_uid = '${RUN_UID}' GROUP BY 1)"
+  local got
+  if ! got=$(.hosts_query local log_recompute "$cond" 1); then
+    echo "  WARN: could not read whether recomputed outside readers lifted gated segments"
+    return 0
+  fi
+  READERS_LIFTED=$(printf '%s\n' "$got" | .hosts_csv)
+}

@@ -490,7 +490,14 @@ run_finish() {
     echo "        whatever rows they hold, and the run will exit non-zero."
   fi
   phase_end coverage "" "$(.hosts_n "$RUN_WSGS")" "$([ -z "$COV_MISSING" ] && echo ok || echo failed)"
-  ALL_WSGS="$COV_RECOMPUTE"
+  # The compare covers the run's own finished groups; the recompute also the
+  # groups outside the run that read them and may be recomputed now (link#274,
+  # recompute_readers in study_area_recompute.sh). ALL_WSGS is the recompute
+  # set everywhere the pool, the scheduler's final set and the judge read it.
+  CMP_WSGS="$COV_RECOMPUTE"
+  echo "=== groups outside the run that read it ($SCHEMA) ==="
+  recompute_readers
+  ALL_WSGS=$(.hosts_union "$COV_RECOMPUTE" "$READERS_RECOMPUTE")
 
   if [ -z "$ALL_WSGS" ]; then
     # An early scheduler is told there is nothing left and waited for. Any
@@ -510,6 +517,7 @@ run_finish() {
     phase_skip views; phase_skip recompute; phase_skip compare
   else
     run_finish_recompute
+    recompute_readers_lifted
     run_finish_compare
   fi
   run_finish_report
@@ -733,20 +741,21 @@ run_finish_recompute_early() {
 }
 
 # --- compare (tunnel-free) -> CSV ---
-# Over the recomputed groups only: a group this run did not build has nothing
-# of this run's to compare (link#348). A failure no longer exits here: it
+# Over the run's recomputed groups only (CMP_WSGS): a group this run did not
+# build has nothing of this run's to compare (link#348), and neither has an
+# outside reader it recomputed (link#274). A failure no longer exits here: it
 # would hide the report, which names the groups that are missing.
 run_finish_compare() {
   echo "=== compare (tunnel-free) ==="
   phase_begin compare
   if ( cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript data-raw/study_area_compare.R \
-      "$COMPARE_CSV" "$ALL_WSGS" "$CONFIG" ) > "$LOG_DIR/${TS}_compare.log" 2>&1; then
+      "$COMPARE_CSV" "$CMP_WSGS" "$CONFIG" ) > "$LOG_DIR/${TS}_compare.log" 2>&1; then
     echo "  ✓ compare CSV: $COMPARE_CSV"
   else
     echo "  ✗ compare failed; see $LOG_DIR/${TS}_compare.log"
     COMPARE_FAIL=1
   fi
-  phase_end compare "" "$(csv_count "$ALL_WSGS")" "$([ "$COMPARE_FAIL" = "0" ] && echo ok || echo failed)"
+  phase_end compare "" "$(csv_count "$CMP_WSGS")" "$([ "$COMPARE_FAIL" = "0" ] && echo ok || echo failed)"
 }
 
 # run_calibrate_hint: the command that learns host speeds from this run's legs
@@ -762,6 +771,46 @@ run_calibrate_hint() {
   echo "      --phases=$PHASES_TSV [--skip=<name>:<reason>] [--dry-run]"
 }
 
+# run_readers_report: the groups outside the run that read a group it rebuilt
+# and still hold access from before it (link#274), by why: built at another
+# version (refused), reading a run group that did not finish (waiting), not
+# checked, or recomputed with segments lifted that the habitat gate had
+# cleared. A WARN, never the exit status: the run did what it was asked for
+# its own groups. Prints nothing when every reader was recomputed cleanly.
+run_readers_report() {
+  [ -n "${READERS_STATE:-}" ] || return 0
+  local refused waiting unchecked
+  refused=$(LC_ALL=C awk -F'\t' 'NR > 1 && $2 == "refused" { print $1 }' "$READERS_TSV" 2>/dev/null | .hosts_csv) || refused=""
+  waiting=$(LC_ALL=C awk -F'\t' 'NR > 1 && $2 == "waiting" { print $1 }' "$READERS_TSV" 2>/dev/null | .hosts_csv) || waiting=""
+  unchecked=$(LC_ALL=C awk -F'\t' 'NR > 1 && $2 == "unchecked" { print $1 }' "$READERS_TSV" 2>/dev/null | .hosts_csv) || unchecked=""
+  if [ "$READERS_STATE" = "unmapped" ]; then
+    echo "  WARN: groups outside the run were NOT checked (no dependency map): any group"
+    echo "        in $SCHEMA outside the run whose walk reads a run group keeps access"
+    echo "        computed before this run."
+    return 0
+  fi
+  [ -n "$refused$waiting$unchecked${READERS_LIFTED:-}" ] || return 0
+  echo "  WARN: groups outside this run read a group it rebuilt and still hold access"
+  echo "        (and habitat) from before it. Per group and why: $READERS_TSV"
+  [ -z "$refused" ]   || echo "    built at another version (refused):     $refused"
+  [ -z "$waiting" ]   || echo "    read a run group that did not finish:   $waiting"
+  [ -z "$unchecked" ] || echo "    not checked (see ${TS}_outside_readers.log): $unchecked"
+  [ -z "${READERS_LIFTED:-}" ] || \
+    echo "    recomputed, but habitat the gate cleared stays cleared: $READERS_LIFTED"
+  [ -z "$waiting" ] || echo "  A waiting group is taken up by the --recompute-only after its run group is re-modelled."
+  if [ -n "$refused$unchecked${READERS_LIFTED:-}" ]; then
+    echo "  Leave them to the next full run, or re-model each under this run_uid"
+    echo "  (which makes it a run group), then recompute the run; a re-modelled"
+    echo "  group's own readers are named on that pass:"
+    echo "    PGOPTIONS='-c statement_timeout=${RUN_BOUND:-${STATEMENT_TIMEOUT_MIN:-30}min}' \\"
+    echo "    LNK_RUN_UID=$RUN_UID ${RUN_LABEL:+LNK_RUN_LABEL=$RUN_LABEL }LNK_SCHEMA=$SCHEMA \\"
+    echo "      LNK_GUARD_DOWNSTREAM=warn LNK_HABITAT_GATE=0 LNK_LOAD=loadall \\"
+    echo "      Rscript data-raw/wsg_run_one.R <WSG> $CONFIG"
+    echo "    bash data-raw/study_area_run.sh --recompute-only --run-uid=$RUN_UID \\"
+    echo "      --config=$CONFIG --schema=$SCHEMA${RUN_LABEL:+ --run-label=$RUN_LABEL}"
+  fi
+}
+
 run_finish_report() {
   echo "=== summary ==="
   # Before the INCOMPLETE branch below, which exits (link#375).
@@ -769,7 +818,8 @@ run_finish_report() {
   run_calibrate_hint
   echo "  run WSGs:        ${RUN_WSGS:-<none>}"
   echo "  recomputed WSGs: ${ALL_WSGS:-<none>}"
-  if [ -n "$ALL_WSGS" ] && [ "${COMPARE_FAIL:-0}" = "0" ]; then
+  [ -z "${READERS_RECOMPUTE:-}" ] || echo "    of them outside the run (readers of it): $READERS_RECOMPUTE"
+  if [ -n "${CMP_WSGS:-}" ] && [ "${COMPARE_FAIL:-0}" = "0" ]; then
     echo "  compare CSV: $COMPARE_CSV"
     tail -40 "$LOG_DIR/${TS}_compare.log" || true
   fi
@@ -788,6 +838,7 @@ run_finish_report() {
   # was not consolidated, or whose burn did not complete. --keep-cyphers alone is
   # a choice, not a failure; a host it keeps that is ALSO held for cause still
   # counts, so the flag cannot turn an unconsolidated host into an exit 0.
+  run_readers_report
   local hosts_kept=0
   [ "${KEPT_CAUSE_N:-0}" -gt 0 ] && hosts_kept=1
   if [ "${RUN_INCOMPLETE:-0}" != "0" ] || [ "${RECOMPUTE_FAIL:-0}" != "0" ] \
@@ -801,7 +852,7 @@ run_finish_report() {
       echo "  host no longer holds, or holds in part, deletes the dispatcher's copy)."
       if [ "${RECOMPUTE_RAN:-0}" = "1" ]; then
         echo "  The recompute above ran WITHOUT those groups, so recompute each one and"
-        echo "  each run group that reads it afterwards (the wsg of each row of"
+        echo "  each group, in the run or not, that reads it afterwards (the wsg of each row of"
         echo "  ${RC_DEPS:-<TS>_recompute_deps.tsv} whose dep is one of them; without"
         echo "  that file, every group of the run). Then burn the host."
       else
@@ -893,7 +944,7 @@ run_finish_report() {
       echo "  The compare failed (see $LOG_DIR/${TS}_compare.log); the recompute"
       echo "  above stands. Re-run it alone:"
       echo "    LNK_SCHEMA=$SCHEMA LNK_LOAD=loadall Rscript data-raw/study_area_compare.R \\"
-      echo "      $COMPARE_CSV ${ALL_WSGS:-<WSGs>} $CONFIG"
+      echo "      $COMPARE_CSV ${CMP_WSGS:-<WSGs>} $CONFIG"
     fi
     # The early recompute's audit (link#374), then the pool's own failure, if
     # any: RECOMPUTE_FAIL is set by either, RECOMPUTE_FAIL_STAGE only by the
@@ -925,6 +976,9 @@ run_finish_report() {
       else
         echo "  See $RECOMPUTE_LOG (and ${RC_TSV} for per-WSG exit status)."
       fi
+      [ -z "${READERS_RECOMPUTE:-}" ] || {
+        echo "  The recompute set included groups outside the run (in $READERS_TSV);"
+        echo "  a failed one holds the access it had before this run, already rewritten in part."; }
       echo "  Re-run just those, no full run needed:"
       echo "    LNK_RUN_UID=$RUN_UID ${RUN_LABEL:+LNK_RUN_LABEL=$RUN_LABEL }LNK_SCHEMA=$SCHEMA \\"
       echo "      LNK_LOAD=loadall Rscript data-raw/wsg_recompute_one.R <WSG> $CONFIG"
