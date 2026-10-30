@@ -201,18 +201,22 @@ segment only when the record is at least 1 m above the segment's start (fwapg
 (`load_streams_upstr_observations.sql`). Breaks are rounded to the metre, so a break at a
 species' top starts its segment within 0.5 m of the record: that segment reads 1 (barring
 the cases below) and the one ending there reads 2. So code 2 is a property of a segment's start. **What reads 2** is `fwa_upstream()`'s
-clauses (fwapg; each first asks that the record's watershed code descend from the segment's):
+clauses (fwapg; each first asks that the record's watershed code descend from or equal the
+segment's):
 
 1. A record on the segment's own line at least 1 m above its start. This is the only clause
    #399 changed; `TRUE` read `start − 1`.
-2. A record on a tributary: a line whose watershed code puts it above the segment's local
-   code. It ignores measure, so a tributary's records count for every segment of the
-   receiving line below its mouth.
-3. Where the segment's watershed and local codes differ, a record on a line with the same
-   watershed code and a larger local code (fwapg's "capture side channels"). It also ignores
-   measure, and can count a record on the same line below the segment where local codes do
-   not rise with measure: on PARS line 359567332 the segments starting at 182477 and 183194 m
-   read BT 2 from the line's top BT record at 182461 m.
+2. A record on another line, by watershed codes alone. Where the segment's watershed and
+   local codes are equal, any other line whose watershed code descends from or equals the
+   segment's counts, except a distributary carrying the same two codes. Where they differ, a
+   line counts when its watershed code is greater than the segment's local code and does not
+   descend from it (a tributary entering above), or when it has the same watershed code and a
+   larger local code (fwapg's "capture side channels"). None of this reads measure, so a
+   tributary's records count for every segment of the receiving line below its mouth.
+3. Where the segment's two codes differ, the side-channel test also matches the segment's
+   own line, again ignoring measure, wherever local codes there do not rise with measure: on
+   PARS line 359567332 the segments starting at 182477 and 183194 m read BT 2 from the line's
+   top BT record at 182461 m.
 
 Each species' top is a break in both bundles (under `all` every record is), so normally the
 segment starting at the top reads 1, and the boundary sits on the highest record (#399). Clauses 2 and 3 can keep 2 above it. So can a top within 1 m of an FWA
@@ -238,9 +242,10 @@ Until #403 nothing in link told 2 from 1 (every reader tested `IN (1, 2)`, `> 0`
 does on its own tables (`length_naturallyaccessible_obsrvd_<sp>` / `_model_<sp>`).
 
 **The access changes follow from one fact: a segment's codes depend only on where it
-starts.** Both tests in the walk are monotone in the start: a record counts as upstream
-when its measure is at least start + 1, a barrier as downstream when at most start + 1,
-and a segment never spans a confluence (FWA ends cut in every build), so the tributary
+starts.** Both tests in the walk are monotone in the start: the same-line measure test
+counts a record when its measure is at least start + 1 (start − 1 before #399), a barrier
+as downstream when at most start + 1, the code clauses read only codes, which are constant
+within an FWA feature, and a segment never spans a confluence (FWA ends cut in every build), so the tributary
 tests are constant within one: a tributary's records count for every segment of the
 feature below its mouth, whatever its start, and for no segment above. So when a break goes and a segment now starts lower,
 its upper part can only open or gain "observed upstream"; when a segment now starts

@@ -40,3 +40,25 @@ include_equivalents|observed upstream|recorded upstream"` over the repo, excludi
 
 Nothing in the set states where code 2 ends as exhaustive without deriving it from the
 clauses.
+
+## After round 4
+
+Round 4 found three gaps in the set above, one inside round 3's fix:
+
+- **Clause 3 was limited to segments whose two codes differ.** fwapg's other branch (codes
+  equal) counts any other line whose watershed code descends from or equals the segment's,
+  except a same-coded distributary (PARS BT `id_segment` 30623). RUNBOOK §2c's clause 2 is
+  now written per branch, from the SQL text: simple branch (`blue_line_key_b !=
+  blue_line_key_a`, distributary exclusion), other branch (tributary clause, side-channel
+  clause), and the side-channel clause's same-line match is clause 3. Checked against
+  `pg_get_functiondef` line by line.
+- **Sentences stating the record test without the word "same-line".** Added candidate set:
+  `grep -n "monotone"` over RUNBOOK.md, CLAUDE.md and research/observation_breaks.md, 4 hits.
+  RUNBOOK §2c and CLAUDE.md's #396 fact now name the measure test and say the code clauses
+  are constant within an FWA feature; the two research hits state no record test.
+- **Printed output that code 2 feeds.** Added candidate set: `git grep -n -E
+  "accessible_observed|observed_km|_obsrvd|access_[a-z]+ (=|==) 2|access_[a-z]+ IN \(1, 2\)"`
+  outside logs, planning and NEWS: only README.md prints values (PARS BT and GR), now this
+  branch's post-build values (`rollup.csv`, `default` post); the rest are definitions and
+  tests. The README figure reads mapping-code tokens, which did not move. The vignette reads
+  no code 2.
