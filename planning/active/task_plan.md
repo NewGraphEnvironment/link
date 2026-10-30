@@ -60,14 +60,14 @@ What exploration settled:
 
 ## Phase 2: Code
 
-- [ ] `R/lnk_pipeline_run.R`: pass `paste0(schema, ".observations_province")` to
+- [x] `R/lnk_pipeline_run.R`: pass `paste0(schema, ".observations_province")` to
   `lnk_pipeline_access()`; drop it after the call and on the early return (line ~217). Comment
   cites the bcfishpass `spp` CTE.
-- [ ] `R/lnk_pipeline_prepare.R`: remove the drop from `.lnk_pipeline_prep_overrides()`; update the
+- [x] `R/lnk_pipeline_prepare.R`: remove the drop from `.lnk_pipeline_prep_overrides()`; update the
   roxygen of `.lnk_pipeline_prep_observations()` (it says `<schema>.observations` serves code 2).
-- [ ] `R/lnk_pipeline_access.R`: the observation-walk comment names what it is given;
+- [x] `R/lnk_pipeline_access.R`: the observation-walk comment names what it is given;
   `R/lnk_access.R:37` doc if it implies group scope.
-- [ ] `inst/extdata/vocabulary.csv`: retire `acc-v2`, `acc-bcfp-2` at 0.73.0; add `acc-v3`,
+- [x] `inst/extdata/vocabulary.csv`: retire `acc-v2`, `acc-bcfp-2` at 0.73.0; add `acc-v3`,
   `acc-bcfp-3` (definition: as before, but code 2 counts records in every group).
 - [ ] `devtools::document()`, `devtools::test()`, `lintr::lint_package()`.
 

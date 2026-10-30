@@ -272,8 +272,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
 #' present in the WSG count) and (b) `loaded$observation_exclusions`
 #' (rows with `data_error = TRUE` or `release_exclude = TRUE` removed,
 #' keyed on `observation_key`). Result: `<schema>.observations`,
-#' consumed by `prep_overrides` and `lnk_pipeline_break`'s observation
-#' break-source step.
+#' consumed by `lnk_pipeline_break`'s observation break-source step.
 #'
 #' Without this filter, link's barrier-override lift counts QA-flagged
 #' observations and observations of species not present in the WSG —
@@ -293,8 +292,12 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
 #' `fwa_upstream()` in `model_access_*.sql`, `smnorris/bcfishpass@620dbe4`):
 #' a barrier on a line several groups share is lifted by observations upstream
 #' of it wherever they are, not only those inside the group that holds it
-#' (link#349). `<schema>.observations` stays AOI-scoped for the break source
-#' and for access code 2.
+#' (link#349). The access walk reads it too, for code 2: bcfishpass's own walk
+#' joins `bcfishpass.observations` with no group filter
+#' (`load_streams_upstr_observations.sql`), so a segment reads "observed
+#' upstream" from a record in any group (link#401). [lnk_pipeline_run()] drops
+#' it when the run ends. `<schema>.observations` stays AOI-scoped for the break
+#' source.
 #' @noRd
 .lnk_pipeline_prep_observations <- function(conn, aoi, loaded, schema,
                                             observations = "bcfishobs.observations") {
@@ -600,11 +603,8 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
     to = paste0(schema, ".barrier_overrides"),
     verbose = FALSE)
 
-  # Its only reader is the call above. Dropped so a kept working schema (every
-  # wsg_run_one.R run keeps one) does not hold its own ~200 MB province copy.
-  .lnk_db_execute(conn, sprintf(
-    "DROP TABLE IF EXISTS %s.observations_province", schema))
-
+  # Kept: lnk_pipeline_run()'s access walk reads it for code 2 (link#401),
+  # and drops it when the run ends.
   invisible(NULL)
 }
 

@@ -230,7 +230,8 @@ test_that("lnk_pipeline_run composes phases in expected order", {
   drops <- character()
   m_exec <- function(conn, sql) {
     if (grepl("DROP", sql)) {
-      calls <<- c(calls, "exec_drop"); drops <<- c(drops, sql)
+      calls <<- c(calls, "exec_drop")
+      drops <<- c(drops, sql)
     }
     1L
   }

@@ -42,7 +42,10 @@ that lets identical tables share one walk reads (as
 \item{observations}{Character or \code{NULL}. Optional schema-qualified
 observations table with \verb{(observation_key, species_code, ...)} +
 the standard FWA keys. When provided, drives the access code
-distinction between \code{1} (modelled) and \code{2} (observed). Default
+distinction between \code{1} (modelled) and \code{2} (observed). The walk
+scopes segments to \code{aoi}, never these records, so a record in any
+group upstream counts; \code{\link[=lnk_pipeline_run]{lnk_pipeline_run()}} passes every group's
+(\verb{<schema>.observations_province}, link#401). Default
 \code{NULL} collapses observation-distinguishing logic — every
 accessible segment gets \verb{access_<sp> = 1}.}
 

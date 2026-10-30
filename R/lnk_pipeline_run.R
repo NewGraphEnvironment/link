@@ -194,6 +194,14 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
      %1$s.streams_breaks CASCADE", schema))
 
   lnk_pipeline_setup(conn, schema, overwrite = TRUE) # nolint: object_usage_linter
+  # prepare builds <schema>.observations_province (every group's records) for
+  # the barrier lifts and the access walk below. Dropped when the run ends,
+  # however it ends: wsg_run_one.R keeps its working schema, and the copy is
+  # ~200 MB per group.
+  drop_obs_province <- sprintf(
+    "DROP TABLE IF EXISTS %s.observations_province", schema)
+  on.exit(try(DBI::dbExecute(conn, drop_obs_province), silent = TRUE),
+          add = TRUE)
   lnk_pipeline_load(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
                     loaded = loaded, schema = schema)
   lnk_pipeline_prepare(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
@@ -282,6 +290,13 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
   # inputs are province-wide-persisted (barriers + barrier_overrides via
   # the pre-persist above), so the cross-WSG downstream walk is correct in
   # every WSG, not just the run's own. See RUNBOOK.md §5.
+  #
+  # Code 2 (the species recorded upstream) reads every group's records, as
+  # bcfishpass's walk does: the `spp` CTE of
+  # load_streams_upstr_observations.sql joins bcfishpass.observations with no
+  # group filter (smnorris/bcfishpass@620dbe4). The group's own records alone
+  # read a main stem as unobserved up to its group boundary (link#401).
+  # Breaks still read the group's own `<schema>.observations`.
   sp_set <- tolower(active_species)
   barriers_per_sp <- setNames(
     lapply(sp_set, function(sp) paste0(schema, ".barriers_", sp, "_access")),
@@ -292,7 +307,7 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
     aoi             = aoi,
     to              = paste0(schema, ".streams_access"),
     barriers_per_sp = barriers_per_sp,
-    observations    = paste0(schema, ".observations"),
+    observations    = paste0(schema, ".observations_province"),
     presence        = pres,
     barrier_sources = list(
       anthropogenic = paste0(schema, ".barriers_anthropogenic_unified"),

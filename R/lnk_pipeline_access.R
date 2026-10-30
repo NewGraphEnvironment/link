@@ -56,7 +56,10 @@
 #' @param observations Character or `NULL`. Optional schema-qualified
 #'   observations table with `(observation_key, species_code, ...)` +
 #'   the standard FWA keys. When provided, drives the access code
-#'   distinction between `1` (modelled) and `2` (observed). Default
+#'   distinction between `1` (modelled) and `2` (observed). The walk
+#'   scopes segments to `aoi`, never these records, so a record in any
+#'   group upstream counts; [lnk_pipeline_run()] passes every group's
+#'   (`<schema>.observations_province`, link#401). Default
 #'   `NULL` collapses observation-distinguishing logic — every
 #'   accessible segment gets `access_<sp> = 1`.
 #' @param wsg_presence Named logical. One per species (matching
