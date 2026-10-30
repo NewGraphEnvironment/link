@@ -835,7 +835,7 @@ to its `log` row (`token_cut`, `token_acc`, `token_grad`, `token_flow`).
 | Axis | Prefix | What it names | Spec matched |
 |---|---|---|---|
 | cut | `cut-` | break sources in order, `observation_breaks` (when observations cut), gradient classes, and which of the definite-barrier, control and habitat-classification files the bundle declares | canonical string |
-| acc | `acc-` | the modelled species, each species' `access_gradient_max` and `observation_*` lifts, the presence table, and the two access rules held in code (`.lnk_classes_bcfp`, `lnk_presence()`'s groups) | sha256 of the parsed values |
+| acc | `acc-` | the modelled species, each species' `access_gradient_max` and `observation_*` lifts, the presence table, `pipeline: observation_upstream` (resolved; #401), and the two access rules held in code (`.lnk_classes_bcfp`, `lnk_presence()`'s groups) | sha256 of the parsed values |
 | grad | `grad-` | how segment gradient is measured | `gradient=segment` |
 | flow | `q-` | `discharge_source` and `discharge_fill` | canonical string |
 
@@ -867,7 +867,7 @@ The rules:
   definition is a new token, and the old row gets `retired`.
 - Our own access rule sets are numbered (`acc-v1`, `acc-v2`, …), and the definition says
   what changed from the last one. A transcription of bcfishpass's rules is `acc-bcfp`,
-  then `acc-bcfp-2` (#399), `acc-bcfp-3` and so on.
+  then `acc-bcfp-2` (#399), `acc-bcfp-3` (#401) and so on.
 - `test-lnk_vocabulary.R` holds the rules against `origin/main`'s copy, in a checkout
   only. CI's shallow clone and `R CMD check` skip that test, so run it locally before
   merging an edit to the table.
@@ -876,7 +876,8 @@ The rules:
 change to how fresh finds gradient barriers, to `frs_barriers_minimal()`, to the CT
 alias expansion in observation breaks moves cuts with no
 spec change, and a change to how the access walk reads a record moves codes with none
-(#399 retired `acc-v1` and `acc-bcfp` for `acc-v2` and `acc-bcfp-2`). Retire and re-add
+(#399 retired `acc-v1` and `acc-bcfp` for `acc-v2` and `acc-bcfp-2`; #401 retired those for
+`acc-v3` and `acc-bcfp-3`, whose specs also hash `pipeline: observation_upstream`). Retire and re-add
 the affected tokens in the same PR: the retired row and its successor then share a spec,
 and `.lnk_vocabulary_match()` returns the live one. Changing
 `.lnk_vocabulary_canonical()` or the digest inputs re-specs every `acc` token the same
