@@ -51,3 +51,10 @@
   held readers have no log row made the check exit 1 on a scalar beside a 0-row column (old
   rc 1, new names KOTL `refused`/`no_log` on a scratch schema); and the fresh the recompute
   would run is now required clean (`dispatcher_fresh_dirty`).
+- Round 2 (`review-round2.md`): Clean, round-1 fixes included. Round 3 (`review-round3.md`),
+  asked for the mechanism: the check builds "now" separately from the reader's facts, so they
+  agree only where both sides were written, and a "now" can be read from a stand-in. One
+  defect beside round 1's fix: in `--recompute-only` (no pre-flight) fresh's sha came from the
+  `FRESH_GIT_SHA` pin, not the installed fresh. Fixed: a pin the installed `RemoteSha` does not
+  confirm refuses every reader (`dispatcher_fresh_pin_stale`); probed with a fake pin.
+  Its enumeration of every compared fact and every empty value found the rest holding.

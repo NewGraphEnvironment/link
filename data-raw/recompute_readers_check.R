@@ -121,6 +121,13 @@ if (!is.null(attr(dirty, "status")) || length(dirty)) refuse_all <- c(refuse_all
 # The fresh the recompute would run must be the clean commit its sha names; a
 # reader's build is held to the same (readers_classify's fresh_dirty).
 if (!identical(st$software$fresh$dirty, FALSE)) refuse_all <- c(refuse_all, "dispatcher_fresh_dirty")
+# A sha from the FRESH_GIT_SHA pin is a stand-in for the fresh load_all will
+# attach; it counts only where the installed fresh's RemoteSha confirms it.
+# The run's pre-flight refuses a stale pin, but --recompute-only runs none.
+if (identical(st$software$fresh$sha_source, "env") &&
+      !identical(link:::.lnk_pkg_remote_sha("fresh"), st$software$fresh$git_sha)) {
+  refuse_all <- c(refuse_all, "dispatcher_fresh_pin_stale")
+}
 # The run's own groups were built under the hash a reader is compared with.
 run_hash <- q(sprintf(
   "SELECT DISTINCT ON (watershed_group_code) config_hash FROM %s.log
