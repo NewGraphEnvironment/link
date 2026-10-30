@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.71.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.72.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,9 +32,23 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.72.0/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.72.0" id="link-0720">link 0.72.0<a class="anchor" aria-label="anchor" href="#link-0720"></a></h2>
+<p><strong>A fish record at a segment’s start no longer counts as upstream of it</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/399" class="external-link">#399</a>). The access walk’s observation call passes <code>include_equivalents = FALSE</code>, as bcfishpass’s own walk does, so fwapg’s same-line measure test counts a record as upstream of a segment only when it lies at least 1 m above the segment’s start. With each species’ top a break, <code>access_&lt;sp&gt;</code> code 2 now normally ends at the species’ highest record on a line.</p>
+<ul><li>
+<strong>Both configs move,</strong> and there is no bundle key: bcfishpass reads the record the same way (<code>FWA_Upstream(…, False, 1)</code>), so link’s earlier reading was a transcription error.</li>
+<li>
+<strong>The access tokens are new.</strong> <code>acc-v1</code> and <code>acc-bcfp</code> are retired for <code>acc-v2</code> (<code>default</code>, <code>default_tuned</code>) and <code>acc-bcfp-2</code> (<code>bcfishpass</code>), with the same specs: the outputs changed, the specs did not.</li>
+<li>
+<strong>Measured.</strong> On five <code>default</code> groups and two <code>bcfishpass</code> groups built before and after, only code 2 to 1 moved, on segments starting at a record: 0 to 5.4 % of a species’ observed km. Segments, barrier flags, mapping codes and habitat did not move. link’s <code>bcfishpass</code> builds now match bcfishpass’s observed km on BULK and PARS, steelhead excepted.</li>
+<li>
+<strong>What else keeps code 2 above a top</strong> (records on tributaries and fwapg’s side-channel clause, and a top within 1 m of an FWA line end, which does not cut) is in <code>RUNBOOK.md</code> §2c.</li>
+<li>
+<strong>Persisted groups keep the old reading until re-modelled:</strong> the recompute passes no observations.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.71.1" id="link-0711">link 0.71.1<a class="anchor" aria-label="anchor" href="#link-0711"></a></h2>
 <p><strong>The group rollup splits accessible km by whether the species is recorded upstream</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/403" class="external-link">#403</a>). <code><a href="../reference/lnk_rollup_wsg.html">lnk_rollup_wsg()</a></code> reported <code>accessible_km</code> only, and nothing in link told the two accessible codes apart.</p>

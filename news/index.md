@@ -1,5 +1,33 @@
 # Changelog
 
+## link 0.72.0
+
+**A fish record at a segment’s start no longer counts as upstream of
+it** ([\#399](https://github.com/NewGraphEnvironment/link/issues/399)).
+The access walk’s observation call passes `include_equivalents = FALSE`,
+as bcfishpass’s own walk does, so fwapg’s same-line measure test counts
+a record as upstream of a segment only when it lies at least 1 m above
+the segment’s start. With each species’ top a break, `access_<sp>` code
+2 now normally ends at the species’ highest record on a line.
+
+- **Both configs move,** and there is no bundle key: bcfishpass reads
+  the record the same way (`FWA_Upstream(…, False, 1)`), so link’s
+  earlier reading was a transcription error.
+- **The access tokens are new.** `acc-v1` and `acc-bcfp` are retired for
+  `acc-v2` (`default`, `default_tuned`) and `acc-bcfp-2` (`bcfishpass`),
+  with the same specs: the outputs changed, the specs did not.
+- **Measured.** On five `default` groups and two `bcfishpass` groups
+  built before and after, only code 2 to 1 moved, on segments starting
+  at a record: 0 to 5.4 % of a species’ observed km. Segments, barrier
+  flags, mapping codes and habitat did not move. link’s `bcfishpass`
+  builds now match bcfishpass’s observed km on BULK and PARS, steelhead
+  excepted.
+- **What else keeps code 2 above a top** (records on tributaries and
+  fwapg’s side-channel clause, and a top within 1 m of an FWA line end,
+  which does not cut) is in `RUNBOOK.md` §2c.
+- **Persisted groups keep the old reading until re-modelled:** the
+  recompute passes no observations.
+
 ## link 0.71.1
 
 **The group rollup splits accessible km by whether the species is
