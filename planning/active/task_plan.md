@@ -103,7 +103,7 @@ Link starts from bcfishpass's published files and keeps its own changes separate
 - [x] Add a RUNBOOK section: copies, overlays, the sync and its `review` kind, in neutral public wording.
 - [x] Update the CLAUDE.md status and NEWS.
 - [x] Add a Working Conventions entry to CLAUDE.md: a bcfishpass-derived input is a verbatim synced copy, and link's changes go in an overlay with a reason (neutral wording).
-- [ ] Bump `DESCRIPTION` to 0.74.0 as the final commit.
+- [x] Bump `DESCRIPTION` to 0.74.0 as the final commit.
 
 ## Owed at the end (reported, done after merge)
 
@@ -115,8 +115,8 @@ Link starts from bcfishpass's published files and keeps its own changes separate
 
 ## Validation
 
-- [ ] Tests pass (`devtools::test()`; the vocabulary test locally)
-- [ ] `/code-check` clean (once over the branch with `/code-check branch`)
+- [x] Tests pass (`devtools::test()`; the vocabulary test locally)
+- [x] `/code-check` clean (once over the branch with `/code-check branch`)
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
