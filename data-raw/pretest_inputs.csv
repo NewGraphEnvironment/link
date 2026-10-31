@@ -21,6 +21,7 @@ link,^R/lnk_pipeline_break\.R$,segments,cost scales with the group's segments
 link,^R/lnk_pipeline_persist\.R$,segments,cost scales with the group's segments
 link,^R/lnk_persist_init\.R$,segments,cost scales with the group's segments
 link,^R/lnk_pipeline_access\.R$,segments,cost scales with the group's segments
+link,^R/lnk_pipeline_access\.R$,obs_upstream,"the observation walk reads every group's records upstream of the group (#401)"
 link,^R/lnk_pipeline_mapping_code\.R$,segments,cost scales with the group's segments
 link,^R/lnk_mapping_code\.R$,segments,cost scales with the group's segments
 link,^R/lnk_habitat_gate\.R$,segments,cost scales with the group's segments
@@ -104,6 +105,7 @@ fresh,^R/frs_edge_types\.R$,segments,cost scales with the group's segments
 fresh,^R/frs_params\.R$,segments,cost scales with the group's segments
 fresh,^R/frs_break\.R$,segments,cost scales with the group's segments
 fresh,^R/frs_network_features\.R$,segments,cost scales with the group's segments
+fresh,^R/frs_network_features\.R$,obs_upstream,"link's observation walk reads every group's records upstream of the group (link#401)"
 fresh,^R/frs_barriers_minimal\.R$,gradient,reduces barrier positions per flow path
 fresh,^R/frs_candidates_pick\.R$,crossings,picks a modelled crossing per PSCIS crossing
 fresh,^R/frs_wsg_drainage\.R$,dams,the drainage closure the downstream guard walks

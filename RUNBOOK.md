@@ -244,7 +244,8 @@ segment-record pair, and over every group's records a Fraser main-stem segment i
 126,000 above it. The distinct walk over every group's records costs less than the array walk over
 the group's own did (LFRA 65 to 37 s, BULK 21 to 8 s, SETN 47 to 45 s;
 `data-raw/logs/obs_province_401/walk_fresh_distinct.csv`). `lnk_pipeline_run()` drops
-`<schema>.observations_province` in an `on.exit()`, so no kept working schema holds it.
+`<schema>.observations_province` in an `on.exit()`, so a kept working schema holds it only
+after a killed run (no `on.exit()` runs then), until the group's next run replaces it.
 Built before and after on six `default` and three `bcfishpass` groups, only code 1 to 2 moved,
 each piece under a record of the species from another group: 25.98 km under `default` (LNTH BT
 12.25 km, 3.6 % of its observed km, the most) and 0.05 km under `bcfishpass`, whose gate holds
@@ -1658,8 +1659,9 @@ bash data-raw/pretest_run.sh --config=default --schema=fresh_default
   chain. Inputs are queries, `data-raw/pretest/<input>.sql`, each returning
   `(watershed_group_code, value)` for every group: `near_river_conn` (fresh's
   walk prefilter, the longest connector run), `segments`, `gradient`
-  (segments at 15 % or more), `observations`, `crossings` (PSCIS), `dams`
-  (CABD). Three special values: `any` (every pick runs it; alone, the fastest
+  (segments at 15 % or more), `observations`, `obs_upstream` (every group's records
+  upstream of the group's outlet, what the access walk reads since #401), `crossings`
+  (PSCIS), `dams` (CABD). Three special values: `any` (every pick runs it; alone, the fastest
   group is picked), `none` (off the modelling path), `unexercised` (on the
   run's path but not the gate's: the recompute, the consolidate, the habitat
   gate). **A changed file the map does not name refuses the gate (exit 2):**

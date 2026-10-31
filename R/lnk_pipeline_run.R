@@ -195,9 +195,9 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
 
   lnk_pipeline_setup(conn, schema, overwrite = TRUE) # nolint: object_usage_linter
   # prepare builds <schema>.observations_province (every group's records) for
-  # the barrier lifts and the access walk below. Dropped when the run ends,
-  # however it ends: wsg_run_one.R keeps its working schema, and the copy is
-  # ~200 MB per group.
+  # the barrier lifts and the access walk below. Dropped when the run returns
+  # or errors (not when R is killed): wsg_run_one.R keeps its working schema,
+  # and the copy is ~200 MB per group.
   drop_obs_province <- sprintf(
     "DROP TABLE IF EXISTS %s.observations_province", schema)
   on.exit(try(DBI::dbExecute(conn, drop_obs_province), silent = TRUE),
