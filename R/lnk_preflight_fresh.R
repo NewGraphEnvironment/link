@@ -130,7 +130,10 @@ lnk_preflight_fresh <- function(required = .lnk_fresh_required(),
 # R/lnk_pipeline_classify.R: frs_order_child(channel_width_max, gradient_max),
 # passed when a rear rule's bypass sets width_known_below_min (#326).
 # R/lnk_pipeline_access.R: frs_network_features(result), the existence walk
-# of fresh 0.47.0 (fresh#281), for every walk read only for membership (#394).
+# of fresh 0.47.0 (fresh#281), for every walk read only for membership (#394),
+# and its "distinct" value of 0.48.0 (fresh#284) on the observation walk
+# (#401). A new value of an existing argument is invisible to this check, so
+# only the Imports floor guards it.
 .lnk_fresh_required_formals <- function() {
   list(frs_habitat_classify = "params_method",
        frs_habitat_predicates = c("model", "near_river_table"),
