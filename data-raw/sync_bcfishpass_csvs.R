@@ -47,7 +47,7 @@
 # Shape drift is detected two ways (belt + suspenders):
 #   1. First-line shape_checksum mismatch (catches all CSVs)
 #   2. crate::crt_schema_validate() against the canonical schema slug,
-#      for provenance entries that declare `canonical_schema:` (precise
+#      for copies whose `files:` entry declares `canonical_schema:` (precise
 #      missing-required-column errors surfaced in the PR body)
 #
 # Requires (in CI workflow): R deps from DESCRIPTION (httr, jsonlite,
@@ -135,15 +135,18 @@ update_provenance_in_yaml <- function(yaml_path, rel_path,
 
 # Optional canonical-schema gate via crate. Returns NULL on success
 # or an error message string on validation failure (caller decides
-# how to surface it).
+# how to surface it). Ingests the upstream bytes exactly as a run's
+# lnk_load_overrides() does (crate::crt_ingest(): known upstream variant,
+# then conform), so a file the pipeline would refuse is shape drift here.
 validate_canonical_schema <- function(rel, slug, bytes) {
   if (is.null(slug) || !nzchar(slug)) return(NULL)
+  parts <- strsplit(slug, "/", fixed = TRUE)[[1]]
   tryCatch({
-    df <- utils::read.csv(text = rawToChar(bytes),
-                          colClasses = "character",
-                          stringsAsFactors = FALSE)
-    schema <- crate::crt_schema_read(slug)
-    crate::crt_schema_validate(df, schema)
+    if (length(parts) != 2L) stop("canonical_schema must be '<source>/<file_name>'")
+    tmp <- tempfile(fileext = ".csv")
+    on.exit(unlink(tmp), add = TRUE)
+    writeBin(bytes, tmp)
+    crate::crt_ingest(source = parts[1], file_name = parts[2], path = tmp)
     NULL
   }, error = function(e) {
     sprintf("%s (canonical_schema=%s): %s",
@@ -180,8 +183,16 @@ review <- character(0)   # reasons a change needs a person
 redundant <- character(0)
 
 for (bundle in BUNDLES) {
-  prov <- yaml::read_yaml(file.path(bundle, "config.yaml"))$provenance
+  manifest <- yaml::read_yaml(file.path(bundle, "config.yaml"))
+  prov <- manifest$provenance
   targets <- link:::.lnk_sync_targets(prov)
+  # A crate schema is declared on the `files:` entry, not in provenance:
+  # look it up by the copy's path (until #429 the provenance key was read,
+  # which no entry carries, so the schema check never ran).
+  schema_of <- function(rel) {
+    hit <- Filter(function(e) identical(e$path, rel), manifest$files)
+    if (length(hit) == 0L) NULL else hit[[1]]$canonical_schema
+  }
   cat(sprintf("%s: checking %d bcfishpass copies\n", bundle, length(targets)))
   for (rel in targets) {
     upstream_rel <- prov[[rel]]$path  # e.g. data/user_habitat_classification.csv
@@ -192,8 +203,7 @@ for (bundle in BUNDLES) {
     bytes <- fetch(paste0("csvs/", basename(upstream_rel)))
     observed_byte  <- sha256_text(bytes)
     observed_shape <- shape_fingerprint(bytes)
-    schema_err <- validate_canonical_schema(rel, prov[[rel]]$canonical_schema,
-                                            bytes)
+    schema_err <- validate_canonical_schema(rel, schema_of(rel), bytes)
     if (!is.null(schema_err)) schema_errors <- c(schema_errors, schema_err)
 
     if (identical(observed_byte, prov[[rel]]$checksum)) {
@@ -229,7 +239,7 @@ for (bundle in BUNDLES) {
 
   # Overlay rows whose cell the (new) copy already holds: upstream adopted
   # them, so they can be retired.
-  files <- yaml::read_yaml(file.path(bundle, "config.yaml"))$files
+  files <- manifest$files
   for (key in names(files)) {
     ovl <- files[[key]]$overlay
     if (is.null(ovl)) next
