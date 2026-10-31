@@ -657,7 +657,8 @@ groups, elevation, major drainage, the nearest natural barrier below that blocks
 species and KO) with the counting records of its lift pool above it, presence ignored, a rearing
 lake above that barrier for KO, lake and main-stem placement, and a historical distribution zone
 (`data-raw/presence_evidence_load.R`). `.lnk_presence_cell_measures()` rolls them up per cell
-with distinct sites, waterbodies and years, and each tracker story carries them. Lifts are not
+with distinct sites, waterbodies and years, and the story of each cell with records of its own
+species carries them. Lifts are not
 read: `barrier_overrides` counts only records of species a group marks present, so it cannot
 judge an absent cell. FWA lake polygons carry no local code, so a lake is placed upstream of a
 barrier by the stream segments through it. `fwa_downstream(a, b)` is true when b is downstream

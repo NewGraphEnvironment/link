@@ -40,7 +40,7 @@ The review (`review-plan.md`) showed three of the location screens repeat what b
   - `through_main_stem`: the record's blue line continues upstream outside its group;
   - `in_hist_zone`: its 50k code lies in a historical distribution zone of the species (`presence_evidence_load.R`; pre-2001 FISS, so not independent of FISS records, stated as such);
   - `gradient`: the segment's, reported only.
-- [x] Live test (skips without the database): the barrier test's argument order (a point above a falls reads it, one below does not). The golden values became the driver's SQL recount of the measures for PARS, ADMS and ALBN (106 cells, all agree, every run), and the KO lake placement is checked by its counts (235 of 269 barriers below KO records have a lake above; 0 before the fix that places lakes by their segments).
+- [x] Live test (skips without the database): the barrier test's argument order (a point above a falls reads it, one below does not). The golden values became the driver's SQL recount of the measures for PARS, ADMS and ALBN (106 cells, all agree, every run), and the KO lake placement is checked by its counts (of 3,374 counting KO records above a blocking barrier, 42 have no lake above it; every one read no lake before the fix that places lakes by their segments). After code-check round 1 the recount reads bcfishobs and FWA directly and writes the barrier test from the barrier's side, so it no longer reads the measures' own tables.
 
 ## Phase 2: The per-cell table
 
