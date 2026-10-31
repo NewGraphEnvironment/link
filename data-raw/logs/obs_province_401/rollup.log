@@ -1,0 +1,59 @@
+   build  wsg species link_accessible_km bcfp_accessible_km link_observed_km
+1    pre BULK      BT            7676.27            7676.37           519.91
+2    pre BULK      CH            5088.02            5088.02           452.80
+3    pre BULK      CO            5088.02            5088.02           626.79
+4    pre BULK      PK            5088.02            5088.02           288.44
+5    pre BULK      SK            5088.02            5088.02           312.53
+6    pre BULK      ST            6462.74            6462.74           513.38
+7    pre PARS      BT            6821.58            6822.88           815.31
+8    pre UPCE      BT            5260.71            5261.07           467.79
+9   post BULK      BT            7676.27            7676.37           519.91
+10  post BULK      CH            5088.02            5088.02           452.80
+11  post BULK      CO            5088.02            5088.02           626.79
+12  post BULK      PK            5088.02            5088.02           288.44
+13  post BULK      SK            5088.02            5088.02           312.53
+14  post BULK      ST            6462.74            6462.74           513.38
+15  post PARS      BT            6821.58            6822.88           815.31
+16  post UPCE      BT            5260.71            5261.07           467.84
+   bcfp_observed_km link_unobserved_km bcfp_unobserved_km observed_diff_km
+1            519.91            7156.37            7156.47             0.00
+2            452.80            4635.22            4635.22             0.00
+3            626.79            4461.24            4461.24             0.00
+4            288.44            4799.59            4799.59             0.00
+5            312.53            4775.50            4775.50             0.00
+6            312.53            5949.36            6150.21           200.85
+7            815.31            6006.27            6007.57             0.00
+8            467.84            4792.92            4793.22            -0.05
+9            519.91            7156.37            7156.47             0.00
+10           452.80            4635.22            4635.22             0.00
+11           626.79            4461.24            4461.24             0.00
+12           288.44            4799.59            4799.59             0.00
+13           312.53            4775.50            4775.50             0.00
+14           312.53            5949.36            6150.21           200.85
+15           815.31            6006.27            6007.57             0.00
+16           467.84            4792.87            4793.22             0.00
+   accessible_diff_km
+1               -0.10
+2                0.00
+3                0.00
+4                0.00
+5                0.00
+6                0.00
+7               -1.30
+8               -0.36
+9               -0.10
+10               0.00
+11               0.00
+12               0.00
+13               0.00
+14               0.00
+15              -1.30
+16              -0.36
+  build  wsg species      side at_start upstream_group gate      km n_pieces
+1   pre BULK      ST bcfp_only    FALSE          FALSE TRUE   1.036        5
+2   pre BULK      ST link_only    FALSE          FALSE TRUE 187.109      778
+3   pre BULK      ST link_only     TRUE          FALSE TRUE  14.778       55
+4   pre UPCE      BT bcfp_only    FALSE           TRUE TRUE   0.052        2
+5  post BULK      ST bcfp_only    FALSE          FALSE TRUE   1.036        5
+6  post BULK      ST link_only    FALSE          FALSE TRUE 187.109      778
+7  post BULK      ST link_only     TRUE          FALSE TRUE  14.778       55

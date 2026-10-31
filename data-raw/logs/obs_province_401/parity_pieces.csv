@@ -1,0 +1,8 @@
+"build","wsg","species","side","at_start","upstream_group","gate","km","n_pieces"
+"pre","BULK","ST","bcfp_only",FALSE,FALSE,TRUE,1.036,5
+"pre","BULK","ST","link_only",FALSE,FALSE,TRUE,187.109,778
+"pre","BULK","ST","link_only",TRUE,FALSE,TRUE,14.778,55
+"pre","UPCE","BT","bcfp_only",FALSE,TRUE,TRUE,0.052,2
+"post","BULK","ST","bcfp_only",FALSE,FALSE,TRUE,1.036,5
+"post","BULK","ST","link_only",FALSE,FALSE,TRUE,187.109,778
+"post","BULK","ST","link_only",TRUE,FALSE,TRUE,14.778,55

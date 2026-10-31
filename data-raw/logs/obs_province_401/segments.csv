@@ -1,0 +1,10 @@
+"config","wsg","n_segments.pre","n_segments.post","identical"
+"default","LKEL",3312,3312,TRUE
+"default","BULK",42555,42555,TRUE
+"default","UPCE",23792,23792,TRUE
+"default","PARS",46004,46004,TRUE
+"default","ELKR",38601,38601,TRUE
+"default","LNTH",34014,34014,TRUE
+"bcfishpass","BULK",42989,42989,TRUE
+"bcfishpass","PARS",43776,43776,TRUE
+"bcfishpass","UPCE",23233,23233,TRUE

@@ -1,0 +1,47 @@
+#401 builds, m1 local docker fwapg (scratch schemas zz401_*)
+PRE worktree: 47bb3dfa214d4f3594bdab6a8ec1f2d654398f37 (link 0.72.0, origin/main at the branch point), fresh 0.47.0 from the shared library (RemoteSha 2c35e3eb)
+POST worktree: ff6e7ea20cb46d3a802abcb99a39f3e34b52f40b (the change), fresh from a scratch library holding fresh alone, installed with R CMD INSTALL from fresh 1b2d4bc (branch 284-distinct-result; its DESCRIPTION still read 0.47.0, so the log rows say 0.47.0). R/, inst/ and NAMESPACE at 1b2d4bc equal fresh v0.48.0 (cd86c9ae); only DESCRIPTION's Version and Date differ.
+build window (UTC): 2026-10-30 23:17:08 to 2026-10-31 00:17:10 (status.tsv)
+bcfishpass reference: fresh.streams_vw_bcfp on m1, as in record_at_start_399/stamp.txt: smnorris/bcfishpass@v0.7.15-50-g620dbe4, which predates smnorris/bcfishpass@3bd2824c, so steelhead's code 2 there comes from sockeye records.
+bcfishobs.observations: 375,962 rows, the same before and after the builds (bcfishobs.txt, md5 over observation_key)
+analysis run (UTC): build_obs.R 2026-10-31T00:18Z, pre_post_diff.R 00:19Z, rollup.R 00:23Z, at link c70239d3 (pre_post_diff.R re-run after the restore-the-bug edits, between 00:20Z and 00:23Z: its CSV is byte-identical to the first run's)
+
+builds read (newest log row per group):
+                schema  wsg link_version link_sha link_dirty fresh_version
+     zz401_default_pre BULK       0.72.0 47bb3dfa      FALSE        0.47.0
+     zz401_default_pre ELKR       0.72.0 47bb3dfa      FALSE        0.47.0
+     zz401_default_pre LKEL       0.72.0 47bb3dfa      FALSE        0.47.0
+     zz401_default_pre LNTH       0.72.0 47bb3dfa      FALSE        0.47.0
+     zz401_default_pre PARS       0.72.0 47bb3dfa      FALSE        0.47.0
+     zz401_default_pre UPCE       0.72.0 47bb3dfa      FALSE        0.47.0
+    zz401_default_post BULK       0.72.0 ff6e7ea2      FALSE        0.47.0
+    zz401_default_post ELKR       0.72.0 ff6e7ea2      FALSE        0.47.0
+    zz401_default_post LKEL       0.72.0 ff6e7ea2      FALSE        0.47.0
+    zz401_default_post LNTH       0.72.0 ff6e7ea2      FALSE        0.47.0
+    zz401_default_post PARS       0.72.0 ff6e7ea2      FALSE        0.47.0
+    zz401_default_post UPCE       0.72.0 ff6e7ea2      FALSE        0.47.0
+  zz401_bcfishpass_pre BULK       0.72.0 47bb3dfa      FALSE        0.47.0
+  zz401_bcfishpass_pre PARS       0.72.0 47bb3dfa      FALSE        0.47.0
+  zz401_bcfishpass_pre UPCE       0.72.0 47bb3dfa      FALSE        0.47.0
+ zz401_bcfishpass_post BULK       0.72.0 ff6e7ea2      FALSE        0.47.0
+ zz401_bcfishpass_post PARS       0.72.0 ff6e7ea2      FALSE        0.47.0
+ zz401_bcfishpass_post UPCE       0.72.0 ff6e7ea2      FALSE        0.47.0
+ config_hash  token_acc            date_end
+    e826980d     acc-v2 2026-10-30 23:23:56
+    e826980d     acc-v2 2026-10-30 23:45:46
+    e826980d     acc-v2 2026-10-30 23:17:58
+    e826980d     acc-v2 2026-10-30 23:55:00
+    e826980d     acc-v2 2026-10-30 23:37:35
+    e826980d     acc-v2 2026-10-30 23:32:03
+    568b2b75     acc-v3 2026-10-30 23:29:11
+    568b2b75     acc-v3 2026-10-30 23:52:25
+    568b2b75     acc-v3 2026-10-30 23:18:46
+    568b2b75     acc-v3 2026-10-30 23:57:38
+    568b2b75     acc-v3 2026-10-30 23:42:17
+    568b2b75     acc-v3 2026-10-30 23:33:48
+    0d4a152a acc-bcfp-2 2026-10-31 00:02:07
+    0d4a152a acc-bcfp-2 2026-10-31 00:14:10
+    0d4a152a acc-bcfp-2 2026-10-31 00:08:56
+    4be8ae1f acc-bcfp-3 2026-10-31 00:06:39
+    4be8ae1f acc-bcfp-3 2026-10-31 00:17:10
+    4be8ae1f acc-bcfp-3 2026-10-31 00:11:14
