@@ -47,10 +47,11 @@
 #'     dispatch ingest via [crate::crt_ingest()])
 #'   - `pipeline` — named list of pipeline knobs
 #'     (`apply_habitat_overlay`, `break_order`, `observation_breaks`,
-#'     `cluster`, `spawn_connected`, `discharge_fill`, `discharge_source`).
-#'     A `discharge_source` other than `fwapg` or `wet`, or an
-#'     `observation_breaks` other than `all` or `top_per_species`, is an
-#'     error at load.
+#'     `observation_upstream`, `cluster`, `spawn_connected`,
+#'     `discharge_fill`, `discharge_source`). A `discharge_source` other
+#'     than `fwapg` or `wet`, an `observation_breaks` other than `all` or
+#'     `top_per_species`, or an `observation_upstream` other than
+#'     `province` or `group_gated`, is an error at load.
 #'   - `provenance` — named list of per-file provenance metadata,
 #'     keyed by file path relative to `dir`. Drift detection against
 #'     these checksums lives in [lnk_config_verify()].
@@ -393,6 +394,10 @@ print.lnk_config <- function(x, ...) {
   if (!is.null(pipeline[["observation_breaks"]])) {
     .lnk_observation_breaks_check(pipeline[["observation_breaks"]],
                                   paste0("config '", name, "'"))
+  }
+  if (!is.null(pipeline[["observation_upstream"]])) {
+    .lnk_observation_upstream_check(pipeline[["observation_upstream"]],
+                                    paste0("config '", name, "'"))
   }
   v <- pipeline$cabd_additions_barriers
   if (!is.null(v) && !(is.logical(v) && length(v) == 1L && !is.na(v))) {

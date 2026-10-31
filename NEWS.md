@@ -1,3 +1,14 @@
+# link 0.73.0
+
+**Code 2 counts every group's fish records** ([#401](https://github.com/NewGraphEnvironment/link/issues/401)). The access walk's observation call reads `<schema>.observations_province`, every group's records, so a segment reads `access_<sp>` 2 where the species is recorded upstream in any group. Before, a main stem read 1 up to its group boundary whatever was recorded just upstream.
+
+- **A new key, `pipeline: observation_upstream:`.** `province` (`default`, and `default_tuned` by inheritance) counts a record of the species in any group. `group_gated` (the value when absent, so the `bcfishpass` bundle) also needs a record of any species from the segment's own group upstream, which is what bcfishpass computes. Checked when the manifest loads. Breaks still read the group's own records.
+- **One walk, cheaper than before.** It asks fresh for each segment's distinct species upstream (`frs_network_features(result = "distinct")`), so link now needs fresh 0.48.0. Over every group's records it costs less than the old walk over the group's own: LFRA 65 to 37 s, BULK 21 to 8 s.
+- **The access tokens are new.** `acc-v2` and `acc-bcfp-2` are retired for `acc-v3` (`default`, `default_tuned`) and `acc-bcfp-3` (`bcfishpass`).
+- **Measured.** On six `default` groups and three `bcfishpass` groups built before and after, only code 1 to 2 moved, each piece under a record of the species from another group: 25.98 km under `default` (LNTH bull trout 12.25 km the most) and 0.05 km under `bcfishpass`. link's `bcfishpass` builds still match bcfishpass's observed km on BULK, PARS and UPCE, steelhead excepted. Evidence: `data-raw/logs/obs_province_401/`.
+- **The pre-run gate has an input for it,** `obs_upstream`: records upstream of a group's outlet, which picks LFRA.
+- **Persisted groups keep the old reading until re-modelled:** the recompute passes no observations.
+
 # link 0.72.0
 
 **A fish record at a segment's start no longer counts as upstream of it** ([#399](https://github.com/NewGraphEnvironment/link/issues/399)). The access walk's observation call passes `include_equivalents = FALSE`, as bcfishpass's own walk does, so fwapg's same-line measure test counts a record as upstream of a segment only when it lies at least 1 m above the segment's start. With each species' top a break, `access_<sp>` code 2 now normally ends at the species' highest record on a line.

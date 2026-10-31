@@ -20,8 +20,10 @@
 #' access: it is built and gates access only when listed. The other barrier
 #' sources still gate access through classify's breaks table and the access
 #' walk's barrier tables, and `access_<sp>` code 2 ("observed upstream") is
-#' still computed from `<schema>.observations` by [lnk_pipeline_access()], at
-#' the resolution of the segments that remain.
+#' still computed by [lnk_pipeline_access()] from every group's records
+#' (`<schema>.observations_province`, gated by the bundle's
+#' `pipeline: observation_upstream:`), at the resolution of the segments that
+#' remain.
 #'
 #' | name | source table | role | classify label |
 #' |---|---|---|---|
@@ -149,8 +151,9 @@ lnk_pipeline_break <- function(conn, aoi, cfg, loaded, schema,
 #'
 #' - `"all"`: every observation position, as bcfishpass cuts.
 #' - `"top_per_species"`: on each `blue_line_key`, each species' farthest-
-#'   upstream observation (#396). The access walk reads `<schema>.observations`
-#'   itself, not this table, and its same-line measure test counts a record
+#'   upstream observation (#396). The access walk reads every group's records
+#'   itself (`<schema>.observations_province`, #401), not this table, and its
+#'   same-line measure test counts a record
 #'   only at least 1 m above a segment's start (#399), so normally each species' code-2
 #'   boundary on a line is its own top break (`RUNBOOK.md` §2c has the other
 #'   records the walk counts and when a top does not cut).

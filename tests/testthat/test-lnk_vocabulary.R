@@ -94,15 +94,15 @@ test_that("the vocabulary only grows against the default branch", {
 test_that("each shipped config resolves to its tokens", {
   expect_identical(
     lnk_vocabulary_resolve(lnk_config("default")),
-    c(cut = "cut-full-top", acc = "acc-v2", grad = "grad-seg",
+    c(cut = "cut-full-top", acc = "acc-v3", grad = "grad-seg",
       flow = "q-fwapg"))
   expect_identical(
     lnk_vocabulary_resolve(lnk_config("default_tuned")),
-    c(cut = "cut-full-top", acc = "acc-v2", grad = "grad-seg",
+    c(cut = "cut-full-top", acc = "acc-v3", grad = "grad-seg",
       flow = "q-wet-fill"))
   expect_identical(
     lnk_vocabulary_resolve(lnk_config("bcfishpass")),
-    c(cut = "cut-full-ssf-all", acc = "acc-bcfp-2", grad = "grad-seg",
+    c(cut = "cut-full-ssf-all", acc = "acc-bcfp-3", grad = "grad-seg",
       flow = "q-fwapg"))
 })
 
@@ -276,4 +276,16 @@ test_that("a retired match or two live matches refuse", {
   vocab$retired[2] <- "0.2.0"
   expect_identical(link:::.lnk_vocabulary_match(c(cut = "s2"), vocab, "x"),
                    c(cut = "cut-c"))
+})
+
+test_that("the acc digest moves with observation_upstream (#401)", {
+  cfg <- lnk_config("default")
+  loaded <- lnk_load_overrides(cfg)
+  a <- .lnk_vocabulary_spec_acc(cfg, loaded)
+  cfg$pipeline$observation_upstream <- "group_gated"
+  expect_false(identical(a, .lnk_vocabulary_spec_acc(cfg, loaded)))
+  # Absent reads as group_gated, so it is the same rule set.
+  g <- .lnk_vocabulary_spec_acc(cfg, loaded)
+  cfg$pipeline$observation_upstream <- NULL
+  expect_identical(.lnk_vocabulary_spec_acc(cfg, loaded), g)
 })

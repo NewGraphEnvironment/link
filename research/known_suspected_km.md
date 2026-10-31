@@ -1,6 +1,6 @@
 # Accessible km with and without the species recorded upstream
 
-**Verified:** 2026-10-30 · **Issues:** #403 (from #396; blocked by #398, #400, #401; #399 done) · **Produced by:** `data-raw/logs/known_suspected_403/` (its README indexes it): `rollup.R`, `parity_pieces.sql`; after #399, `data-raw/logs/record_at_start_399/` · **Status:** the split ships in `lnk_rollup_wsg()`'s default; the first tables below are a baseline taken before #399, and "After #399" has the same groups since; #401 will move them again
+**Verified:** 2026-10-31 · **Issues:** #403 (from #396; blocked by #398, #400; #399 and #401 done) · **Produced by:** `data-raw/logs/known_suspected_403/` (its README indexes it): `rollup.R`, `parity_pieces.sql`; after #399, `data-raw/logs/record_at_start_399/`; after #401, `data-raw/logs/obs_province_401/` · **Status:** the split ships in `lnk_rollup_wsg()`'s default; the first tables below are a baseline taken before #399, and "After #399" and "After #401" have the same groups since
 
 ## The rule
 
@@ -117,11 +117,34 @@ This reference is a newer bcfishpass build than the one above (`v0.7.15-50-g620d
 it still predates the steelhead fix, so steelhead stays apart. No disagreeing piece needed a
 record from another group, which is where #401 would show.
 
+## After #401
+
+Since #401 code 2 counts a record of the species in any group upstream, not only the
+segment's own group's. `bcfishpass` keeps bcfishpass's gate: a record of any species from the
+segment's own group must also be upstream (RUNBOOK §2c, "Which records count"). The same groups
+plus LNTH, a main stem below five other groups' records, were built before and after on one
+database (`data-raw/logs/obs_province_401/`), and `bcfishpass` added UPCE.
+
+**Only code 1 to 2 moved,** and only on pieces with a record of the species from another group
+upstream and none from their own. Segments, accessible km, barrier flags, mapping codes and
+habitat do not move (`pre_post_diff.csv`).
+
+| config | group-species | moved | observed km gained | largest |
+|---|---|---|---|---|
+| `default` | 31 | 14 | 25.98 | LNTH BT 12.25 km (3.6 %) |
+| `bcfishpass` | 8 | 1 | 0.05 | UPCE BT |
+
+The rest of `default`'s gain is UPCE BT, GR and RB (3.1 km each, at most 0.7 %), LNTH CH, CO
+and RB (1.2 to 1.4 km) and 0.06 km for each of BULK's seven species. LKEL, PARS and ELKR did not
+move. The tables above therefore hold after #401 to within those km.
+
+**Against bcfishpass the observed km still agree,** and UPCE BT now does too: 0.00 km for BULK
+BT, CH, CO, PK and SK, PARS BT and UPCE BT, whose −0.05 km before #401 was two pieces where
+bcfishpass read 2 from a record in another group (`parity_bcfp.csv`, `parity_pieces.csv`).
+Steelhead stays apart, as above.
+
 ## What will move these numbers
 
-- **#401** raises observed km on main stems below a group boundary. Today code 2 reads only
-  the group's own records, so a main stem with the species recorded just upstream, in the
-  next group, reads 1.
 - **#400** decides which records count as "recorded", and can move every row.
 - **#398** gives CT its aliases. None of these five groups models CT under `default`.
 
@@ -149,8 +172,8 @@ anthropogenic barrier downstream) variants.
 ## Not done, and not filed
 
 - **The split in `lnk_scenario_export()`.** Its Parquet carries habitat flags, not access
-  codes. A column there is stored data, and these values still move under #401, so it waits
-  for it.
+  codes. A column there is stored data; it waited for #401, which has landed, so it can be
+  built now.
 - **A habitat split by the user habitat classification,** matching bcfishpass's
   `spawningrearing_obsrvd`. link matches the classification at gate time and persists no flag
   (`R/lnk_habitat_gate.R`), so this needs that flag first.

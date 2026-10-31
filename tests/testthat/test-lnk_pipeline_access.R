@@ -383,7 +383,7 @@ test_that("anthropogenic without dams, and remediations without crossings, are e
   expect_false("dam_dnstr_ind" %in% names(out))
 })
 
-test_that("remediations with a crossings table, and observations, walk as arrays", {
+test_that("remediations with a crossings table walk as arrays; observations as one distinct walk (#401)", {
   local_mocked_bindings(
     dbGetQuery = function(conn, sql, ...) {
       if (grepl("aggregated_crossings_id", sql)) {
@@ -414,7 +414,7 @@ test_that("remediations with a crossings table, and observations, walk as arrays
   log <- w$calls$log
   expect_identical(stats::setNames(log$result, log$features),
                    c("s.barriers_bt_access" = "exists", "s.rem" = "ids",
-                     "s.obs" = "ids"))
+                     "s.obs" = "distinct"))
   expect_identical(out$remediated_dnstr_ind, c(TRUE, FALSE))
   # Present with no barrier rows: FALSE (not NA), and observed upstream at s2.
   expect_identical(out$has_barriers_bt_dnstr, c(FALSE, FALSE))
@@ -693,6 +693,56 @@ test_that("a record at a segment's start is not upstream of that segment (#399)"
                    c(FALSE, FALSE))
 })
 
+test_that("a record in another group upstream makes this group's line read 2 (#401)", {
+  skip_if_no_db()
+  conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
+                      user = "postgres", password = "postgres")
+  on.exit(DBI::dbDisconnect(conn), add = TRUE)
+  ex <- function(sql) DBI::dbExecute(conn, sql)
+  # Group AAAA holds a stretch of line 10; group BBBB holds a tributary
+  # (line 20, coded under line 10) with the only X record. The group-only
+  # table holds AAAA's records (a Y on line 10); the province table holds both.
+  ex("CREATE TEMP TABLE seg401 (id_segment int, watershed_group_code text,
+        blue_line_key int, downstream_route_measure float8,
+        wscode_ltree ltree, localcode_ltree ltree)")
+  ex("INSERT INTO seg401 VALUES (1, 'AAAA', 10, 100, '100.200', '100.200')")
+  ex("CREATE TEMP TABLE obs401_group (watershed_group_code text,
+        species_code text, blue_line_key int, downstream_route_measure float8,
+        wscode ltree, localcode ltree)")
+  ex("INSERT INTO obs401_group VALUES
+        ('AAAA', 'Y', 10, 500, '100.200', '100.200')")
+  ex("CREATE TEMP TABLE obs401_province AS SELECT * FROM obs401_group")
+  ex("INSERT INTO obs401_province VALUES
+        ('BBBB', 'X', 20, 50, '100.200.300', '100.200.300')")
+  ex("CREATE TEMP TABLE barriers_x (barriers_x_id text,
+        watershed_group_code text, blue_line_key int,
+        downstream_route_measure float8, wscode_ltree ltree,
+        localcode_ltree ltree)")
+
+  walk <- function(obs) {
+    # fresh reads results through sf, which warns on a query with no geometry.
+    withCallingHandlers(
+      lnk_pipeline_access(
+        conn,
+        segments = "pg_temp.seg401",
+        aoi = "AAAA",
+        barriers_per_sp = list(x = "pg_temp.barriers_x"),
+        observations = obs,
+        wsg_presence = list(x = TRUE)
+      ),
+      warning = function(w) {
+        if (grepl("simple features geometry column", conditionMessage(w))) {
+          invokeRestart("muffleWarning")
+        }
+      }
+    )
+  }
+  # The walk scopes segments to the AOI, never the records it is given, so
+  # what it counts is decided by the table lnk_pipeline_run() passes.
+  expect_identical(walk("pg_temp.obs401_group")$access_x, 1L)
+  expect_identical(walk("pg_temp.obs401_province")$access_x, 2L)
+})
+
 test_that("the observation walk excludes a record at a segment's start; barrier walks include it (#399)", {
   # bcfishpass's own observation walk calls FWA_Upstream(..., False, 1)
   # (load_streams_upstr_observations.sql); a barrier at a segment's start must
@@ -715,6 +765,7 @@ test_that("the observation walk excludes a record at a segment's start; barrier 
     aoi = "ADMS",
     barriers_per_sp = list(bt = "s.barriers_bt", ch = "s.barriers_ch"),
     observations = "s.observations",
+    observations_gate = "s.observations_own",
     wsg_presence = list(bt = TRUE, ch = TRUE),
     barrier_sources = list(anthropogenic = "s.barriers_anthropogenic",
                            dams = "s.barriers_dams",
@@ -723,8 +774,108 @@ test_that("the observation walk excludes a record at a segment's start; barrier 
   )
   dir <- vapply(calls, function(x) x$direction, character(1))
   ie <- vapply(calls, function(x) x$include_equivalents, logical(1))
-  expect_identical(sum(dir == "upstream"), 1L)
-  expect_identical(unname(ie[dir == "upstream"]), FALSE)
+  # The distinct walk, and the gate.
+  expect_identical(sum(dir == "upstream"), 2L)
+  expect_false(any(ie[dir == "upstream"]))
   expect_length(ie[dir == "downstream"], 5L)
   expect_true(all(ie[dir == "downstream"]))
+})
+
+test_that("observations_gate: a segment reads 2 only where a gate record is also upstream (#401)", {
+  local_mocked_bindings(
+    dbGetQuery = function(conn, sql, ...) mock_segments_aoi(c("s1", "s2", "s3")),
+    .package = "DBI"
+  )
+  w <- mock_walks(list(
+    "s.barriers_bt" = list(),
+    # BT recorded upstream of s1 and s2; the group's own records above s1, s3.
+    "s.prov" = list(s1 = c("BT", "CO"), s2 = "BT"),
+    "s.own" = list(s1 = "CO", s3 = "CO")))
+  local_mocked_bindings(frs_network_features = w$fn, .package = "fresh")
+  run <- function(gate) {
+    lnk_pipeline_access(
+      conn = structure(list(), class = "DBIConnection"),
+      segments = "s.streams", aoi = "ADMS",
+      barriers_per_sp = list(bt = "s.barriers_bt"),
+      observations = "s.prov", observations_gate = gate,
+      wsg_presence = list(bt = TRUE),
+      segment_id_col = "segmented_stream_id")
+  }
+  ungated <- run(NULL)
+  expect_identical(ungated$access_bt, c(2L, 2L, 1L))
+  expect_identical(ungated$obsrvtn_species_codes_upstr,
+                   list(c("BT", "CO"), "BT", character(0)))
+  expect_identical(ungated$has_observation_key_upstr, c(TRUE, TRUE, FALSE))
+  gated <- run("s.own")
+  expect_identical(gated$access_bt, c(2L, 1L, 1L))
+  expect_identical(gated$has_observation_key_upstr, c(TRUE, FALSE, TRUE))
+  log <- w$calls$log
+  expect_identical(unique(log$result[log$features == "s.prov"]), "distinct")
+  expect_identical(log$result[log$features == "s.own"], "exists")
+  expect_identical(log$direction[log$features == "s.own"], "upstream")
+})
+
+test_that("observation_upstream: province for default, group_gated for bcfishpass and when absent", {
+  expect_identical(.lnk_observation_upstream(lnk_config("default")), "province")
+  expect_identical(.lnk_observation_upstream(lnk_config("default_tuned")),
+                   "province")
+  expect_identical(.lnk_observation_upstream(lnk_config("bcfishpass")),
+                   "group_gated")
+  expect_identical(.lnk_observation_upstream(list(pipeline = list())),
+                   "group_gated")
+  expect_error(.lnk_observation_upstream_check("all", "config 'x'"),
+               "config 'x': observation_upstream must be one of province, group_gated")
+  d <- withr::local_tempdir()
+  for (bad in list("PROVINCE", NA_character_, c("province", "province"), 1, "")) {
+    expect_error(.lnk_config_pipeline_check(list(observation_upstream = bad), "x"),
+                 "config 'x': observation_upstream must be one of province, group_gated")
+  }
+  writeLines(c("name: badup", "extends: default",
+               "pipeline:", "  observation_upstream: everywhere"),
+             file.path(d, "config.yaml"))
+  expect_error(lnk_config(d), "config 'badup': observation_upstream must be")
+})
+
+test_that("group_gated reads 2 from another group's record only below an own-group record (live, #401)", {
+  skip_if_no_db()
+  conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
+                      user = "postgres", password = "postgres")
+  on.exit(DBI::dbDisconnect(conn), add = TRUE)
+  ex <- function(sql) DBI::dbExecute(conn, sql)
+  # Line 10 in group AAAA, cut at 100 and 600. An AAAA record of species Y at
+  # 500 is upstream of the first segment only. A BBBB record of X on a
+  # tributary coded under line 10 counts for both by watershed codes.
+  ex("CREATE TEMP TABLE seg401g (id_segment int, watershed_group_code text,
+        blue_line_key int, downstream_route_measure float8,
+        wscode_ltree ltree, localcode_ltree ltree)")
+  ex("INSERT INTO seg401g VALUES
+        (1, 'AAAA', 10, 100, '100.200', '100.200'),
+        (2, 'AAAA', 10, 600, '100.200', '100.200')")
+  ex("CREATE TEMP TABLE own401 (watershed_group_code text, species_code text,
+        blue_line_key int, downstream_route_measure float8,
+        wscode ltree, localcode ltree)")
+  ex("INSERT INTO own401 VALUES ('AAAA', 'Y', 10, 500, '100.200', '100.200')")
+  ex("CREATE TEMP TABLE prov401 AS SELECT * FROM own401")
+  ex("INSERT INTO prov401 VALUES
+        ('BBBB', 'X', 20, 50, '100.200.300', '100.200.300')")
+  ex("CREATE TEMP TABLE barriers_x (barriers_x_id text,
+        watershed_group_code text, blue_line_key int,
+        downstream_route_measure float8, wscode_ltree ltree,
+        localcode_ltree ltree)")
+  walk <- function(gate) {
+    out <- withCallingHandlers(
+      lnk_pipeline_access(
+        conn, segments = "pg_temp.seg401g", aoi = "AAAA",
+        barriers_per_sp = list(x = "pg_temp.barriers_x"),
+        observations = "pg_temp.prov401", observations_gate = gate,
+        wsg_presence = list(x = TRUE)),
+      warning = function(w) {
+        if (grepl("simple features geometry column", conditionMessage(w))) {
+          invokeRestart("muffleWarning")
+        }
+      })
+    out$access_x[match(c(1L, 2L), out$id_segment)]
+  }
+  expect_identical(walk(NULL), c(2L, 2L))
+  expect_identical(walk("pg_temp.own401"), c(2L, 1L))
 })

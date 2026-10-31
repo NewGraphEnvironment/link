@@ -56,9 +56,23 @@
 #' @param observations Character or `NULL`. Optional schema-qualified
 #'   observations table with `(observation_key, species_code, ...)` +
 #'   the standard FWA keys. When provided, drives the access code
-#'   distinction between `1` (modelled) and `2` (observed). Default
+#'   distinction between `1` (modelled) and `2` (observed). The walk
+#'   scopes segments to `aoi`, never these records, so a record in any
+#'   group upstream counts; [lnk_pipeline_run()] passes every group's
+#'   (`<schema>.observations_province`, link#401). Default
 #'   `NULL` collapses observation-distinguishing logic — every
-#'   accessible segment gets `access_<sp> = 1`.
+#'   accessible segment gets `access_<sp> = 1`. Walked once for the
+#'   distinct species upstream of each segment (fresh's
+#'   `result = "distinct"`), so a main stem below many groups' records
+#'   costs one element per species rather than one per record (link#401).
+#' @param observations_gate Character or `NULL`. Optional schema-qualified
+#'   table of the same shape. When given, a segment reads `2` only where a
+#'   record from this table, of any species, is also upstream: bcfishpass's
+#'   reading, whose species array is kept only where a record of the
+#'   segment's own group is upstream (`spp INNER JOIN ids` in
+#'   `load_streams_upstr_observations.sql`). [lnk_pipeline_run()] passes the
+#'   group's own records here under `pipeline: observation_upstream:
+#'   group_gated`, and nothing under `province`.
 #' @param wsg_presence Named logical. One per species (matching
 #'   `barriers_per_sp` keys), `TRUE` when the species is present in
 #'   `aoi`. Sets `access_<sp> = -9` for species marked `FALSE`. Default
@@ -115,6 +129,7 @@ lnk_pipeline_access <- function(
     to = NULL,
     barriers_per_sp = list(),
     observations = NULL,
+    observations_gate = NULL,
     wsg_presence = list(),
     presence = NULL,
     barrier_sources = list(),
@@ -132,6 +147,10 @@ lnk_pipeline_access <- function(
       (is.character(observations) &&
          length(observations) == 1L &&
          nzchar(observations)),
+    is.null(observations_gate) ||
+      (is.character(observations_gate) &&
+         length(observations_gate) == 1L &&
+         nzchar(observations_gate)),
     is.list(wsg_presence),
     is.null(presence) || is.list(presence),
     is.list(barrier_sources),
@@ -268,12 +287,10 @@ lnk_pipeline_access <- function(
     dnstr_per_source[[src]] <- df
   }
 
-  # 2. Upstream observations (optional). One call returns per-segment
-  # arrays of observed species_code. `bcfishpass.observations` uses
-  # the unsuffixed `wscode` / `localcode` columns (vs `_ltree` on
-  # streams), so override the features-side codes. Returns a list-
-  # column of character vectors (fresh#204 v0.29.0+) — the per-species
-  # `observed` boolean is then a clean `%in%` per row.
+  # 2. Upstream observations (optional): which segments have a record of
+  # each species upstream. `bcfishpass.observations` uses the unsuffixed
+  # `wscode` / `localcode` columns (vs `_ltree` on streams), so override
+  # the features-side codes.
   #
   # `include_equivalents = FALSE`, as bcfishpass's own walk calls
   # `FWA_Upstream(..., False, 1)` (load_streams_upstr_observations.sql):
@@ -283,21 +300,40 @@ lnk_pipeline_access <- function(
   # normally reads 1 (#399; RUNBOOK §2c has the other records the walk
   # counts and when a top does not cut). The barrier walks above keep TRUE:
   # a barrier at a segment's start must still block it.
-  obsrvtn_species_per_seg <- NULL
+  #
+  # One walk returning each segment's distinct species (fresh's
+  # result = "distinct", fresh#284), as bcfishpass's `spp` CTE takes
+  # `SELECT DISTINCT segment, species_code` (link#401): the array walk
+  # returns every segment-record pair, and a main stem below every other
+  # group's records (LFRA under the Fraser's) carries ~10^5 of them. Over
+  # every group's records it costs no more than the array walk over the
+  # group's own (LFRA 65 to 37 s, BULK 21 to 8 s;
+  # data-raw/logs/obs_province_401/). Under `observations_gate`, one
+  # existence walk over that table, any species.
+  obs_upstr <- list()
+  obs_gate_ids <- NULL
   if (!is.null(observations)) {
-    obsrvtn_species_per_seg <- fresh::frs_network_features(
-      conn,
-      segments               = segments,
-      features               = observations,
-      segment_id_col         = segment_id_col,
-      feature_id_col         = "species_code",
-      direction              = "upstream",
-      aoi                    = aoi,
-      include_equivalents    = FALSE,
-      features_wscode_col    = "wscode",
-      features_localcode_col = "localcode"
-    )
-    names(obsrvtn_species_per_seg)[2] <- "obsrvtn_species_codes_upstr"
+    obs_walk <- function(features, result) {
+      fresh::frs_network_features(
+        conn,
+        segments               = segments,
+        features               = features,
+        segment_id_col         = segment_id_col,
+        feature_id_col         = "species_code",
+        direction              = "upstream",
+        aoi                    = aoi,
+        include_equivalents    = FALSE,
+        features_wscode_col    = "wscode",
+        features_localcode_col = "localcode",
+        result                 = result
+      )
+    }
+    sp_up <- obs_walk(observations, "distinct")
+    obs_upstr <- setNames(sp_up$feature_ids,
+                          as.character(sp_up[[segment_id_col]]))
+    if (!is.null(observations_gate)) {
+      obs_gate_ids <- obs_walk(observations_gate, "exists")[[segment_id_col]]
+    }
   }
 
   # 3. Start from segments in the AOI to make sure every segment gets
@@ -413,20 +449,20 @@ lnk_pipeline_access <- function(
     }
   }
 
-  # Carry the observations list-column onto `out` so per-species
-  # `%in%` checks work row-wise. Segments with no upstream observations
-  # are absent from the obs tibble (INNER-JOIN semantics) — left-join
-  # leaves their list-column as NULL, which `%in%` treats as logical(0)
-  # falsey → access_<sp> = 1 (modelled accessible).
-  if (!is.null(obsrvtn_species_per_seg)) {
-    obs_lookup <- setNames(
-      obsrvtn_species_per_seg$obsrvtn_species_codes_upstr,
-      as.character(obsrvtn_species_per_seg[[segment_id_col]])
-    )
-    out$obsrvtn_species_codes_upstr <-
-      obs_lookup[as.character(out[[segment_id_col]])]
-    out$has_observation_key_upstr <-
-      out[[segment_id_col]] %in% obsrvtn_species_per_seg[[segment_id_col]]
+  # Carry the observations onto `out`: the species with a record upstream of
+  # each segment, each once (character(0) where none), and whether a record
+  # of `observations_gate` is upstream (any record at all where no gate is
+  # given). Neither is persisted.
+  if (!is.null(observations)) {
+    ids <- as.character(out[[segment_id_col]])
+    sp_seg <- unname(obs_upstr[ids])
+    sp_seg[vapply(sp_seg, is.null, logical(1))] <- list(character(0))
+    out$obsrvtn_species_codes_upstr <- sp_seg
+    out$has_observation_key_upstr <- if (!is.null(observations_gate)) {
+      ids %in% as.character(obs_gate_ids)
+    } else {
+      ids %in% names(obs_upstr)
+    }
   }
 
   # 4. Per-species access integer codes.
@@ -439,10 +475,11 @@ lnk_pipeline_access <- function(
       rep(-9L, nrow(out))
     } else {
       blocked <- out[[paste0("has_barriers_", sp, "_dnstr")]]
-      observed <- if (!is.null(obsrvtn_species_per_seg)) {
-        vapply(out$obsrvtn_species_codes_upstr, function(x) {
+      observed <- if (!is.null(observations)) {
+        o <- vapply(out$obsrvtn_species_codes_upstr, function(x) {
           sp_upper %in% x
         }, logical(1))
+        if (!is.null(observations_gate)) o & out$has_observation_key_upstr else o
       } else {
         rep(FALSE, nrow(out))
       }
@@ -535,4 +572,31 @@ lnk_pipeline_access <- function(
          " rows for ", length(tables), " tables", call. = FALSE)
   }
   stats::setNames(keys, tables)
+}
+
+
+#' Which fish records make a segment read "observed upstream"
+#'
+#' The bundle's `pipeline: observation_upstream:` value:
+#' - `province`: a record of the species in any watershed group upstream
+#'   (link#401).
+#' - `group_gated` (also when absent): as `province`, but only where a record
+#'   of the segment's own group, of any species, is also upstream. That is
+#'   what bcfishpass computes (`spp INNER JOIN ids`,
+#'   `load_streams_upstr_observations.sql`, `smnorris/bcfishpass@620dbe4`).
+#' @noRd
+.lnk_observation_upstream <- function(cfg) {
+  v <- cfg$pipeline[["observation_upstream"]] %||% "group_gated"
+  .lnk_observation_upstream_check(v, paste0("cfg '", cfg$name %||% "", "'"))
+}
+
+#' Validate an observation_upstream value
+#' @noRd
+.lnk_observation_upstream_check <- function(v, what = "observation_upstream") {
+  ok <- c("province", "group_gated")
+  if (!is.character(v) || length(v) != 1L || is.na(v) || !v %in% ok) {
+    stop(what, ": observation_upstream must be one of ",
+         paste(ok, collapse = ", "), call. = FALSE)
+  }
+  v
 }

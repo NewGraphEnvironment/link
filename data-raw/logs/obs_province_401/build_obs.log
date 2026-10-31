@@ -1,0 +1,53 @@
+NOTICE:  table "observations_province" does not exist, skipping
+
+NOTICE:  table "observations" does not exist, skipping
+
+NOTICE:  table "default_lkel" does not exist, skipping
+
+default LKEL: 511 records; own-only 0, province-only 0
+NOTICE:  table "observations" does not exist, skipping
+
+NOTICE:  table "default_bulk" does not exist, skipping
+
+default BULK: 2887 records; own-only 0, province-only 0
+NOTICE:  table "observations" does not exist, skipping
+
+NOTICE:  table "default_upce" does not exist, skipping
+
+default UPCE: 3609 records; own-only 0, province-only 0
+NOTICE:  table "observations" does not exist, skipping
+
+NOTICE:  table "default_pars" does not exist, skipping
+
+default PARS: 1018 records; own-only 0, province-only 0
+NOTICE:  table "observations" does not exist, skipping
+
+NOTICE:  table "default_elkr" does not exist, skipping
+
+default ELKR: 3563 records; own-only 0, province-only 0
+NOTICE:  table "observations" does not exist, skipping
+
+NOTICE:  table "default_lnth" does not exist, skipping
+
+default LNTH: 5249 records; own-only 0, province-only 0
+NOTICE:  table "province_default" does not exist, skipping
+
+NOTICE:  table "observations_province" does not exist, skipping
+
+NOTICE:  table "observations" does not exist, skipping
+
+NOTICE:  table "bcfishpass_bulk" does not exist, skipping
+
+bcfishpass BULK: 2887 records; own-only 0, province-only 0
+NOTICE:  table "observations" does not exist, skipping
+
+NOTICE:  table "bcfishpass_pars" does not exist, skipping
+
+bcfishpass PARS: 1018 records; own-only 0, province-only 0
+NOTICE:  table "observations" does not exist, skipping
+
+NOTICE:  table "bcfishpass_upce" does not exist, skipping
+
+bcfishpass UPCE: 3609 records; own-only 0, province-only 0
+NOTICE:  table "province_bcfishpass" does not exist, skipping
+

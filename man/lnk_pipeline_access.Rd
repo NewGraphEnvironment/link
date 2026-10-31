@@ -11,6 +11,7 @@ lnk_pipeline_access(
   to = NULL,
   barriers_per_sp = list(),
   observations = NULL,
+  observations_gate = NULL,
   wsg_presence = list(),
   presence = NULL,
   barrier_sources = list(),
@@ -42,9 +43,23 @@ that lets identical tables share one walk reads (as
 \item{observations}{Character or \code{NULL}. Optional schema-qualified
 observations table with \verb{(observation_key, species_code, ...)} +
 the standard FWA keys. When provided, drives the access code
-distinction between \code{1} (modelled) and \code{2} (observed). Default
+distinction between \code{1} (modelled) and \code{2} (observed). The walk
+scopes segments to \code{aoi}, never these records, so a record in any
+group upstream counts; \code{\link[=lnk_pipeline_run]{lnk_pipeline_run()}} passes every group's
+(\verb{<schema>.observations_province}, link#401). Default
 \code{NULL} collapses observation-distinguishing logic — every
-accessible segment gets \verb{access_<sp> = 1}.}
+accessible segment gets \verb{access_<sp> = 1}. Walked once for the
+distinct species upstream of each segment (fresh's
+\code{result = "distinct"}), so a main stem below many groups' records
+costs one element per species rather than one per record (link#401).}
+
+\item{observations_gate}{Character or \code{NULL}. Optional schema-qualified
+table of the same shape. When given, a segment reads \code{2} only where a
+record from this table, of any species, is also upstream: bcfishpass's
+reading, whose species array is kept only where a record of the
+segment's own group is upstream (\verb{spp INNER JOIN ids} in
+\code{load_streams_upstr_observations.sql}). \code{\link[=lnk_pipeline_run]{lnk_pipeline_run()}} passes the
+group's own records here under \code{pipeline: observation_upstream: group_gated}, and nothing under \code{province}.}
 
 \item{wsg_presence}{Named logical. One per species (matching
 \code{barriers_per_sp} keys), \code{TRUE} when the species is present in

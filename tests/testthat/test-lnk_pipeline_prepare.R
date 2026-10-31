@@ -1137,7 +1137,7 @@ test_that("prep_observations builds observations_province from every group's pre
   expect_match(aoi, "o.watershed_group_code = 'UPCE'", fixed = TRUE)
 })
 
-test_that("prep_overrides counts lifts over observations_province, then drops it", {
+test_that("prep_overrides counts lifts over observations_province and keeps it", {
   captured <- list()
   sent <- character(0)
   local_mocked_bindings(
@@ -1152,10 +1152,9 @@ test_that("prep_overrides counts lifts over observations_province, then drops it
     loaded = list(parameters_fresh = data.frame(species_code = "BT")),
     schema = "working_bulk")
   expect_equal(captured$args$observations, "working_bulk.observations_province")
-  # Dropped after the count, never before it: a kept working schema must not
-  # hold a province-wide copy per group.
-  expect_equal(sent, c("overrides",
-    "DROP TABLE IF EXISTS working_bulk.observations_province"))
+  # Kept: the access walk reads it for code 2 (link#401), and
+  # lnk_pipeline_run() drops it when the run ends.
+  expect_equal(sent, "overrides")
 })
 
 test_that("study_area_run.sh models with the gate off on both legs (#349)", {

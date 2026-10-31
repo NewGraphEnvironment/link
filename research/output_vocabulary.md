@@ -1,6 +1,6 @@
 # Naming link's outputs: what a token covers
 
-**Verified:** 2026-10-29 · **Issues:** #414 (consumers: #415 and a downstream tuning archive) · **Produced by:** reading the five config bundles under `inst/extdata/configs/` and the code paths below; the specs in `inst/extdata/vocabulary.csv` are written by `lnk_vocabulary_resolve()`'s helpers · **Status:** four axes; seven live tokens (nine rows since #399); `default_extrabreaks` and `default_rearbreaks` have none and refuse
+**Verified:** 2026-10-29 · **Issues:** #414 (consumers: #415 and a downstream tuning archive) · **Produced by:** reading the five config bundles under `inst/extdata/configs/` and the code paths below; the specs in `inst/extdata/vocabulary.csv` are written by `lnk_vocabulary_resolve()`'s helpers · **Status:** four axes; seven live tokens (eleven rows since #401); `default_extrabreaks` and `default_rearbreaks` have none and refuse
 
 ## The question
 
@@ -49,7 +49,7 @@ So access is its own axis, and the cut axis keeps naming the method:
 | Axis | Prefix | Covers | Spec |
 |---|---|---|---|
 | cut | `cut-` | break sources in order; `observation_breaks` when observations are a source; gradient classes (name and value); whether the run has the definite-barrier, control and habitat-classification files | canonical string |
-| acc | `acc-` | species the rules model; each species' access gradient and observation lifts (`parameters_fresh.csv`); the presence table | sha256 of the parsed values |
+| acc | `acc-` | species the rules model; each species' access gradient and observation lifts (`parameters_fresh.csv`); the presence table; which records make code 2 (`pipeline: observation_upstream`, resolved, since #401) | sha256 of the parsed values |
 | grad | `grad-` | how a segment's gradient is measured | `gradient=segment` |
 | flow | `q-` | `discharge_source` and `discharge_fill` | canonical string |
 
@@ -57,9 +57,9 @@ With these axes, five configs take seven live tokens:
 
 | Config | cut | acc | grad | flow |
 |---|---|---|---|---|
-| `default` | `cut-full-top` | `acc-v2` | `grad-seg` | `q-fwapg` |
-| `default_tuned` | `cut-full-top` | `acc-v2` | `grad-seg` | `q-wet-fill` |
-| `bcfishpass` | `cut-full-ssf-all` | `acc-bcfp-2` | `grad-seg` | `q-fwapg` |
+| `default` | `cut-full-top` | `acc-v3` | `grad-seg` | `q-fwapg` |
+| `default_tuned` | `cut-full-top` | `acc-v3` | `grad-seg` | `q-wet-fill` |
+| `bcfishpass` | `cut-full-ssf-all` | `acc-bcfp-3` | `grad-seg` | `q-fwapg` |
 | `default_extrabreaks` | none | none | `grad-seg` | `q-fwapg` |
 | `default_rearbreaks` | none | none | `grad-seg` | `q-fwapg` |
 
@@ -67,13 +67,19 @@ The two stale bundles get no rows (operator, 2026-10-29). A build of either refu
 someone names it.
 
 `acc-bcfp` is named for its source, because bcfishpass is the one rule set defined outside
-us. link's own access rules are numbered revisions (`acc-v1`, then `acc-v2`), not named
+us. link's own access rules are numbered revisions (`acc-v1`, `acc-v2`, `acc-v3`), not named
 after the company (operator, 2026-10-29).
 
 **The first code change that needed new tokens** was #399 (link 0.72.0): the access walk
 stopped counting a record at a segment's start as upstream of it, which moves code 2 with
 no change to any spec. `acc-v1` and `acc-bcfp` were retired for `acc-v2` and `acc-bcfp-2`
 with the same specs, and `.lnk_vocabulary_match()` returns the live row of a shared spec.
+
+**The first bundle key on the `acc` axis** came with #401 (link 0.73.0):
+`pipeline: observation_upstream:` (`province` or `group_gated`) decides which records make
+code 2, so its resolved value is hashed into the `acc` digest (absent and `group_gated` hash
+alike). `acc-v2` and `acc-bcfp-2` were retired for `acc-v3` and `acc-bcfp-3`, which carry new
+specs; nothing else in the digest moved.
 
 ## What stays out of tokens
 

@@ -188,10 +188,19 @@ code or habitat flag moved (`data-raw/logs/record_at_start_399/pre_post_diff.csv
 tops now do what #396 chose them for: each species' boundary is at its highest record on each
 line, except where RUNBOOK §2c's other records or an uncut top keep 2 above it. The measurements above this section were made under the earlier reading.
 
+## Since #401
+
+Code 2 now counts a record of the species in any group upstream (`default`), or in any group
+with one of the segment's own group upstream as well (`bcfishpass`, bcfishpass's gate). Breaks
+still read the group's own records, so the tops above, and every segment, do not move: built
+before and after on #396's five groups plus LNTH, segment counts and starts are identical, and
+only code 1 to 2 moved, 25.98 km under `default` and 0.05 km under `bcfishpass`
+(`data-raw/logs/obs_province_401/`).
+
 ## Owed
 
 - Every persisted `default` group re-segments again at the next provincial run, stacked on
   #326's owed re-model. The `bcfishpass` schema does not.
 - Known-vs-suspected fish under `default`, #398 to #403: #398 (CT aliases), #399 (a record at a
-  segment's start; done, above), #400 (what counts as known), #401 (every group's records), #402
+  segment's start; done, above), #400 (what counts as known), #401 (every group's records; done, above), #402
   (presence checked against the records), #403 (the rollup).

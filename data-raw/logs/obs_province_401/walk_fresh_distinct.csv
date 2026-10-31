@@ -1,0 +1,13 @@
+"wsg","rep","shape","seconds","segments","elements","load_start","load_end"
+"SETN",1,"ids_group",47.66,6201,2220960,2.58,2.58
+"SETN",1,"distinct_province",44.28,6202,20055,2.58,2.43
+"SETN",2,"ids_group",46.84,6201,2220960,2.43,2.35
+"SETN",2,"distinct_province",46.4,6202,20055,2.35,2.37
+"LFRA",1,"ids_group",65.48,7191,3177744,2.35,2.67
+"LFRA",1,"distinct_province",38.93,7192,35987,2.67,2.75
+"LFRA",2,"ids_group",63.64,7191,3177744,2.75,2.6
+"LFRA",2,"distinct_province",36.57,7192,35987,2.6,2.53
+"BULK",1,"ids_group",20.54,6759,1047520,2.74,2.87
+"BULK",1,"distinct_province",8.03,6760,21957,2.87,2.81
+"BULK",2,"ids_group",20.53,6759,1047520,2.81,2.8
+"BULK",2,"distinct_province",7.9,6760,21957,2.8,2.79

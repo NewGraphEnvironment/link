@@ -1,0 +1,39 @@
+# Progress — Count every group's fish records when asking whether a species is observed upstream (#401)
+
+## Session 2026-10-30
+
+- Plan-mode exploration — phases approved by user
+- Created branch `401-count-every-group-s-fish-records-when-as` off origin/main (`47bb3dfa`)
+- Scaffolded PWF baseline from issue #401 with approved phases
+- Next: start Phase 1
+- Phase 1: tests written. Red as expected in run (access gets the province table; drop at exit, also on the no-species stop), prepare (no drop) and the token tests. The DB fixture in `test-lnk_pipeline_access.R` passes before the change: the walk never filtered records by group, so the property lives in what `lnk_pipeline_run()` passes; the fixture pins that the walk counts a record from another group.
+- Deviation from the plan: the drop is an `on.exit()` in `lnk_pipeline_run()` rather than two explicit drops. The "early return" is a `stop()`, and any error between prepare and access would otherwise leave the province copy in a kept working schema. `DROP TABLE IF EXISTS` on a schema `cleanup_working` already dropped is a NOTICE (checked on m1's fwapg).
+- Phase 2: `lnk_pipeline_run()` passes `observations_province` to the access walk and drops it in an `on.exit()`; `prep_overrides` keeps it; docs on `.lnk_pipeline_prep_observations()` and `lnk_pipeline_access(observations =)` say which table serves code 2; `acc-v2` / `acc-bcfp-2` retire at 0.73.0 for `acc-v3` / `acc-bcfp-3` (same specs). The five touched test files pass (access 69, run 32, prepare 230, vocabulary 48, log 323). Restore-the-bug: the group-only table fails the phase-order test; removing the `on.exit()` fails both run tests. Lints on changed lines: one, the file's own `sprintf(` hanging indent, kept to match it. Full suite next, in the background.
+- Plan review (unnamed Plan agent, findings in `review-plan.md`): two blockers, both reproduced. (1) bcfishpass's code 2 is gated on an own-group record upstream (`spp INNER JOIN ids`); the operator chose to reproduce it in the `bcfishpass` bundle and to file the draft in our fork: NewGraphEnvironment/bcfishpass#16. (2) The array walk's output is every segment-record pair; LFRA has 287 Fraser main-stem segments and bcfishobs 126,371 records under `100`. Plan revised: a `pipeline: observation_upstream:` key, per-species existence walks, measured on LFRA and SETN first (Phase 2b).
+- Phase 2b: `pipeline: observation_upstream:` (`province` | `group_gated`, absent = `group_gated`) checked at load, hashed into the `acc` digest (`acc-v3` `sha256:926cb26b…`, `acc-bcfp-3` `sha256:5dd6a201…`); `lnk_pipeline_access(observations_gate =)`; `default` sets `province`. Walk: one existence walk per present species over a temp view, plus the gate. Tests pass (access 92, run 33, prepare 230, vocabulary 50, log 323, break 56, config 162).
+- Walk cost (`data-raw/logs/obs_province_401/walk_time.csv`, `walk_distinct.csv`; m1, fresh 0.47.0, `fresh_default` segments copied per group; another session's R scripts loaded the CPU from 4 to 28 during `walk_time.R`, so read ratios). Per-species existence walks cost 3 to 7× today's array walk (SETN 320 s vs 48 s, LFRA 205 vs 65, BULK 55 vs 21). One `SELECT DISTINCT segment, species_code` over every group's records, as bcfishpass's `spp` CTE, is as fast or faster than today's walk, twice each at load 4 to 8: LFRA 65 → 32/35 s, BULK 21 → 9 s, SETN 48 → 46 s. So the shape to ship is a distinct-result walk, which fresh does not offer. Stopped for the user (plan, Phase 2b).
+- Walk shape (user, 2026-10-30): fresh mode first. Filed fresh#284; fresh branch `284-distinct-result` adds `result = "distinct"` (aabba77). fresh's own call over every group's records against today's group-only array walk, twice each at load ~2.5 (`walk_fresh_distinct.csv`): LFRA 65 → 37–39 s, BULK 21 → 8 s, SETN 47 → 44–46 s. link now makes one distinct walk plus, under the gate, one existence walk; tests pass with fresh installed from the branch into a scratch library (access 90, run 33, preflight 43). `/code-check` round 1 on fresh spawned 23:01 UTC.
+- Harness written (`data-raw/logs/obs_province_401/`): `run.sh` (PRE worktree on the shared fresh 0.47.0, POST on a scratch library holding only fresh#284's branch), `build_obs.R` (rebuilds the record sets and checks each group's slice of the province table equals its own table), `pre_post_diff.R` (recomputes code 2 for every POST segment with bcfishpass's join, independent of fresh; PRE and POST must each equal their rule, and only 1 → 2 may move). LNTH confirmed: records from BRID, CLWR, MAHD, MURT and UNTH lie upstream of its lowest main-stem segment (RB 6,157, KO 811, CO 200, BT 147, CH 84, SK 11, ST 1).
+- fresh `/code-check branch` round 1: Clean; its note on the live test comparing ids through a double fixed (b3557d0). Round 2 spawned 23:05 UTC.
+- fresh `/code-check branch`: rounds 2 and 3 Clean (round 2's note on a roxygen sentence fixed in 1b2d4bc; round 3 enumerated the diff's ten claims about the result and ran each). Review record archived in fresh (`planning/archive/2026-10-issue-284-distinct-result/`). PR NewGraphEnvironment/fresh#285 open; the merge and release wait on the user.
+- Builds launched ~23:12 UTC (`run.sh`; PRE worktree at 47bb3dfa, POST at ff6e7ea2, POST's fresh from a scratch library at fresh 1b2d4bc).
+
+## Session 2026-10-31 (UTC)
+
+- fresh PR #285 merged (`3477123`) on the user's word; fresh v0.48.0 released (`cd86c9a`, GitHub
+  release published), fresh#284 body revised to match what landed. Post-merge CI green; gh-pages
+  built from `cd86c9a`.
+- Builds: 18 of 18 closed on the first try (23:17 to 00:17 UTC), `RUN401_DONE`.
+- `build_obs.R`: each group's slice of the province table equals its own, 0 rows either way in nine.
+- `pre_post_diff.R`: 39 rows, `n_violation` 0. `default` 25.98 km 1 to 2 over 114 pieces in 14
+  group-species (LNTH BT 12.25 km the most), `bcfishpass` 0.05 km (UPCE BT). Restore-the-bug: a
+  planted 1 to 2 (LKEL BT) and a planted mapping code (bcfishpass PARS BT) each stopped it; reverted,
+  the CSV was byte-identical.
+- `rollup.R`: parity 0.00 km for BULK BT/CH/CO/PK/SK, PARS BT and UPCE BT (−0.05 before, a record
+  in another group); steelhead 200.85 km as in #399.
+- link pins fresh v0.48.0 (`9245726c`). Evidence README, stamp, RUNBOOK §2c, research files and
+  CLAUDE.md written.
+- `/code-check branch`, four rounds (review-round1..4.md): round 1 the pre-run gate's map (new
+  `obs_upstream` input), round 2 clean, round 3 prepare's "Writes to" and the drop's wording (a
+  defect inside round 1's wording fix), round 4 an enumeration of every lifetime and cost claim:
+  five false (126,000 raw vs about 79,000 kept above LFRA; a provenance note), corrected.

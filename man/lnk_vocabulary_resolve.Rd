@@ -30,7 +30,8 @@ declares (their rows are data, which the build record carries).
 \item \strong{acc:} a sha256 digest of the access rules, which decide where
 gradient barriers cut streams as well as what is accessible: the
 species the rules model, each species' \code{access_gradient_max} and
-\verb{observation_*} lift parameters, the species presence table, and the
+\verb{observation_*} lift parameters, the species presence table, which fish
+records make code 2 (\code{pipeline: observation_upstream}, resolved), and the
 two access rules held in code (the gradient class each access label
 maps to, and \code{\link[=lnk_presence]{lnk_presence()}}'s species groups). The
 digest is over the parsed values, so a change in quoting or column

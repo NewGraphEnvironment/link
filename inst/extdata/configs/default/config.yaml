@@ -129,6 +129,16 @@ pipeline:
   # observations point against point and need no break (link#396; RUNBOOK
   # §2c has where code 2 moves under this value).
   observation_breaks: top_per_species
+  # observation_upstream — which fish records make a segment read code 2
+  # ("accessible, observed upstream"):
+  #   province     — a record of the species in any watershed group upstream
+  #   group_gated  — as province, but only where a record of the segment's own
+  #                  group (any species) is also upstream: what bcfishpass
+  #                  computes (absent = group_gated)
+  # Under group_gated a main stem reads 1 below a group boundary until the
+  # group holds a record above it, whatever is recorded upstream (link#401;
+  # RUNBOOK §2c).
+  observation_upstream: province
   # cabd_additions_barriers — the dams cabd_additions.csv places on BC lines
   # for dams outside BC (Grand Coulee / Chief Joseph on the Columbia, the
   # Kettle and the Sheep creeks; Ross on the Skagit) count as barriers where
