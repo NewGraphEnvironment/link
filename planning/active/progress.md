@@ -7,3 +7,4 @@
 - Scaffolded PWF baseline from issue #402 with approved phases
 - Next: start Phase 1
 - Plan review folded in (review-plan.md); operator chose measures now, verdicts in the decision session; verdict function removed; historical zones fetched (16,525 reaches, 74 species)
+- Measures in R/lnk_presence_measures.R: province-wide in 56 s; 2,574 records filed under a group their own 50k code does not run through (the review's count); cell aggregation tested; live test of the barrier direction
