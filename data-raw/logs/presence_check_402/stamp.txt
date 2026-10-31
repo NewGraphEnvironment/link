@@ -1,5 +1,5 @@
-date: 2026-10-31 02:42 UTC
-link: 0.73.0 @ feaa408c
+date: 2026-10-31 03:09 UTC
+link: 0.73.0 @ 6aabb6f0
 config: default; presence table /Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/wsg_species_presence.csv
 db: docker fwapg localhost:5432
 bcfishobs.observations rows: 375962; newest observation_date not after today 2026-10-10
@@ -8,4 +8,4 @@ groups: 246; cells: 3198; flagged: 351 (present_unsupported 24, absent_recorded 
 records under codes the table has no column for (not counted, as in the pipeline): 132502 records, 157 codes (per group in groups.csv); of them, codes naming a table species: SST 404 -> ST; WST 358 -> ST; ADV 79 -> DV; BT/DV 57 -> BT; DV/BT 52 -> DV; RB/CT 23 -> RB; ABT 12 -> BT; RB 1 -> RB
 alias sensitivity: 4 cells would change flag if those codes counted (alias_sensitivity.csv)
 SQL cross-check: PARS, ADMS, ALBN, 39 cells, 5423 records, all counts agree
-tracker: 351 added, 0 pending refreshed, 0 no longer flagged
+tracker: 0 added, 351 pending refreshed, 0 no longer flagged
