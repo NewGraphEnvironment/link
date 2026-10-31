@@ -48,10 +48,10 @@ scopes segments to \code{aoi}, never these records, so a record in any
 group upstream counts; \code{\link[=lnk_pipeline_run]{lnk_pipeline_run()}} passes every group's
 (\verb{<schema>.observations_province}, link#401). Default
 \code{NULL} collapses observation-distinguishing logic — every
-accessible segment gets \verb{access_<sp> = 1}. Walked once per present
-species, as an existence walk over that species' records, so a main
-stem below many groups' records costs one yes or no per segment
-rather than one array element per record (link#401).}
+accessible segment gets \verb{access_<sp> = 1}. Walked once for the
+distinct species upstream of each segment (fresh's
+\code{result = "distinct"}), so a main stem below many groups' records
+costs one element per species rather than one per record (link#401).}
 
 \item{observations_gate}{Character or \code{NULL}. Optional schema-qualified
 table of the same shape. When given, a segment reads \code{2} only where a

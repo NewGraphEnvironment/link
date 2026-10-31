@@ -80,7 +80,9 @@ What exploration settled:
   `R/lnk_access.R:37` doc if it implies group scope.
 - [x] `inst/extdata/vocabulary.csv`: retire `acc-v2`, `acc-bcfp-2` at 0.73.0; add `acc-v3`,
   `acc-bcfp-3` (definition: as before, but code 2 counts records in every group).
-- [ ] `devtools::document()`, `devtools::test()`, `lintr::lint_package()`.
+- [x] `devtools::document()`, `devtools::test()`, `lintr::lint_package()`. At fresh 0.48.0:
+  4,866 pass, 0 fail; lints on added lines only match the files' existing indentation and the
+  stale-install `object_usage` warnings main's helpers also get; two Rd files regenerated.
 
 ## Phase 2b: The bcfishpass gate and the walk's shape (added after the plan review)
 
