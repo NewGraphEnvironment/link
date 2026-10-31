@@ -244,8 +244,9 @@ segment-record pair, and over every group's records a Fraser main-stem segment i
 126,000 above it. The distinct walk over every group's records costs less than the array walk over
 the group's own did (LFRA 65 to 37 s, BULK 21 to 8 s, SETN 47 to 45 s;
 `data-raw/logs/obs_province_401/walk_fresh_distinct.csv`). `lnk_pipeline_run()` drops
-`<schema>.observations_province` in an `on.exit()`, so a kept working schema holds it only
-after a killed run (no `on.exit()` runs then), until the group's next run replaces it.
+`<schema>.observations_province` in an `on.exit()`. A kept working schema holds it after a
+killed run (no `on.exit()` runs) or a failed DROP (a lost connection, inside `try()`), until the
+group's next run replaces it. A direct caller of `lnk_pipeline_prepare()` owns the drop.
 Built before and after on six `default` and three `bcfishpass` groups, only code 1 to 2 moved,
 each piece under a record of the species from another group: 25.98 km under `default` (LNTH BT
 12.25 km, 3.6 % of its observed km, the most) and 0.05 km under `bcfishpass`, whose gate holds
