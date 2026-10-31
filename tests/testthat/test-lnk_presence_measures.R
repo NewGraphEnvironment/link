@@ -116,19 +116,22 @@ test_that("live: the barrier test reads a falls below, not one above", {
     FROM fresh_default.barriers b
     WHERE b.barrier_source = 'FALLS' AND b.downstream_route_measure > 1000
     ORDER BY b.blue_line_key, b.downstream_route_measure LIMIT 1")
-  q <- function(m) DBI::dbGetQuery(conn, sprintf("
-    SELECT whse_basemapping.fwa_downstream(%d, %f, '%s'::ltree, '%s'::ltree,
-                                           %d, %f, '%s'::ltree, '%s'::ltree) d",
-    f$blue_line_key, m, f$ws, f$lc, f$blue_line_key, f$m, f$ws, f$lc))$d
+  sql <- "SELECT whse_basemapping.fwa_downstream(%d, %f, '%s'::ltree, '%s'::ltree,
+                                                %d, %f, '%s'::ltree, '%s'::ltree) d"
+  q <- function(m) {
+    DBI::dbGetQuery(conn, sprintf(sql, f$blue_line_key, m, f$ws, f$lc,
+                                  f$blue_line_key, f$m, f$ws, f$lc))$d
+  }
   expect_true(q(f$m + 100))
   expect_false(q(f$m - 100))
 })
 
 test_that("the measure story says what holds and skips what does not", {
   cm <- .lnk_presence_cell_measures(meas_rec(1))
-  expect_equal(.lnk_presence_measure_story(cm), paste0(
-    "Own records: 1 site on 1 waterbody in 1 year; none on a stream with a ",
-    "historical distribution zone of the species; at 500 m."))
+  want <- paste0("Own records: 1 site on 1 waterbody in 1 year; none on a ",
+                 "stream with a historical distribution zone of the species; ",
+                 "at 500 m.")
+  expect_equal(.lnk_presence_measure_story(cm), want)
   m <- meas_rec(3, site = c("a", "b", "c"), waterbody_identifier = c("w1", "w1", "w2"),
                 yr = c(1990L, 2001L, 2001L), barrier_below = c("FALLS", "GRADIENT", NA),
                 n_class_above = c(1L, 4L, NA), code_other_group = c(TRUE, FALSE, FALSE),

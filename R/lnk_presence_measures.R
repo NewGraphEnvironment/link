@@ -345,9 +345,10 @@ LEFT JOIN LATERAL (
         sprintf("%d to %d", as.integer(r$min_class_above),
                 as.integer(r$max_class_above))
       }
-      out <- c(out, sprintf(
-        "%s above a natural barrier that blocks it (%s), with %s counting records of its class above",
-        of(r$n_above_barrier), gsub(";", ", ", tolower(r$above_kinds)), cls))
+      fmt <- paste0("%s above a natural barrier that blocks it (%s), with %s ",
+                    "counting records of its class above")
+      out <- c(out, sprintf(fmt, of(r$n_above_barrier),
+                            gsub(";", ", ", tolower(r$above_kinds)), cls))
     } else if (!isTRUE(r$barriers_known)) {
       out <- c(out, "no barrier rows in the group")
     }
