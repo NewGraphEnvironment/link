@@ -631,8 +631,10 @@ a falls and a gradient barrier that round to one metre), and each copy joins the
 ### The presence table is checked against the records (link#402)
 
 Every observation table above starts from `wsg_species_presence.csv`: a record survives only
-where its own group marks its species `t` (as written; `lnk_presence()`'s promotion feeds the
-barrier sets and mapping code, not the filter). So an unmarked cell silently discards that
+where its own group marks its species `t` (as written). `lnk_presence()`'s promotion reaches
+only `.lnk_pipeline_prep_minimal()`, where a promoted species the bundle models breaks the streams
+at its barriers; classification, access and mapping code follow the cell as written
+(`lnk_pipeline_species()`). So an unmarked cell silently discards that
 species' records for breaks, code 2 and every group's lifts. `data-raw/wsg_species_presence_check.R`
 judges `default`'s table cell by cell (`.lnk_presence_check()`: at least one record since 1950,
 releases tagged as bcfishpass tags them and `observation_exclusions.csv` out, CT aliases folded,

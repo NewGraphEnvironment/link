@@ -38,12 +38,16 @@
 #' @param year_recent Year from which `n_since_recent` counts.
 #' @param year_now Latest valid year.
 #' @param regions Passed to [lnk_species_pooling()].
+#' @param species_modelled Species the bundle models (`cfg$species`), or
+#'   `NULL` if not known. Decides what promotion does for an absent cell: it
+#'   breaks the streams at a modelled species' barriers
+#'   (`.lnk_pipeline_prep_minimal()`) and does nothing for any other.
 #' @return A data frame, one row per group and species column.
 #' @noRd
 .lnk_presence_check <- function(records, loaded, n_min = 1L, year_min = 1950L,
                                 year_recent = 1990L,
                                 year_now = as.integer(format(Sys.Date(), "%Y")),
-                                regions = NULL) {
+                                regions = NULL, species_modelled = NULL) {
   need <- c("observation_key", "watershed_group_code", "species_code",
             "observation_date", "source", "source_ref")
   miss <- setdiff(need, names(records))
@@ -158,6 +162,7 @@
   cells$year_newest <- yr_by(kept, max)
   wild_dated <- is_own & ev$wild & !is.na(ev$year)
   cells$year_newest_any <- yr_by(wild_dated, max)
+  cells$year_newest_before <- yr_by(wild_dated & ev$year < year_min, max)
   per_cell <- function(v, keep, f) {
     unname(vapply(split(v[keep], factor(key[keep], levels = ck)), f,
                   character(1)))
@@ -202,6 +207,11 @@
   cells$promoted_by <- mapply(promoter, cells$watershed_group_code,
                               cells$species_code, cells$present_raw,
                               cells$present_promoted, USE.NAMES = FALSE)
+
+  cells$modelled <- NA
+  if (!is.null(species_modelled)) {
+    cells$modelled <- cells$species_code %in% toupper(species_modelled)
+  }
 
   notes <- pres[["notes"]] %||% rep(NA_character_, length(wsgs))
   notes <- trimws(as.character(notes))
@@ -270,7 +280,7 @@
                               r$species_code))
       } else {
         before <- sprintf("%d before %d (newest %d)", r$n_before_floor,
-                          year_min, r$year_newest_any)
+                          year_min, r$year_newest_before)
         why <- c(
           if (r$n_releases > 0L) rel(r$n_releases),
           if (r$n_excluded > 0L) sprintf("%d excluded", r$n_excluded),
@@ -319,10 +329,18 @@
                       "lifts of %s.")
         out <- c(out, sprintf(fmt, r$species_code, r$lift_readers))
       }
-      if (!is.na(r$promoted_by)) {
-        fmt <- paste0("The %s group makes it present, so its barriers and ",
-                      "mapping code are built.")
+      # Promotion reaches only the break positions of a modelled species
+      # (.lnk_pipeline_prep_minimal()); classification, access and mapping
+      # code follow the cell as written (lnk_pipeline_species()).
+      if (!is.na(r$promoted_by) && isTRUE(r$modelled)) {
+        fmt <- paste0("The %s group makes it present only where streams ",
+                      "break: its barriers cut the network, but it is not ",
+                      "classified and gets no access or mapping code.")
         out <- c(out, sprintf(fmt, r$promoted_by))
+      } else if (!is.na(r$promoted_by) && isFALSE(r$modelled)) {
+        fmt <- paste0("The %s group makes it present, which changes nothing: ",
+                      "the bundle does not model %s.")
+        out <- c(out, sprintf(fmt, r$promoted_by, r$species_code))
       }
       extra <- c(
         if (r$n_releases > 0L) rel(r$n_releases),

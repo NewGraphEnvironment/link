@@ -6,7 +6,7 @@
 
 `default`'s `overrides/wsg_species_presence.csv` (246 groups × 13 species, plus a `notes` column with one cell per group) is hand-authored, and no rule produces or checks it. A row decides whether a species is modelled in a group at all. The pipeline reads it two ways:
 - **Raw:** the observation filter (`.lnk_pipeline_break_obs_species()` → `.lnk_wsg_species_present()`, `R/lnk_pipeline_break.R:230`) and `lnk_pipeline_species()` read it as written.
-- **Promoted:** the barrier sets (`R/lnk_pipeline_prepare.R:645`) and the mapping code (`R/lnk_pipeline_run.R:257`) read it through `lnk_presence()`, where any salmon present makes all salmon present, and any of ct/dv/rb makes all three present.
+- **Promoted:** only the break positions (`.lnk_pipeline_prep_minimal()`, `R/lnk_pipeline_prepare.R:645`) read it through `lnk_presence()`, where any salmon present makes all salmon present, and any of ct/dv/rb makes all three present. (Corrected after code-check round 3: the plan first said the mapping code reads it too; `lnk_pipeline_run.R:257` passes promoted presence to the mapping code, but the mapping code is built only for `lnk_pipeline_species()`, the cell as written.)
 
 Done, every present/absent cell is judged against a stated rule on the fish records. Each disagreement goes into a tracker in the bundle, with a drafted story of what that group's records show and a decision for the operator to make. Nothing edits the presence table automatically.
 

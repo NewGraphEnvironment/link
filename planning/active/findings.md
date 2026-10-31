@@ -61,3 +61,9 @@ Related: #292, #153, #290, #400.
 - KO: marked in 4 groups, recorded in 137 more; 92 of the 156 large cells.
 - The pipeline's exact-code filter drops SST 404 and WST 358 steelhead records, ADV 79, ABT 12, BT/DV 57, DV/BT 52, RB/CT 23 and one ' RB'. Counted as their species they would change 4 flags. Follow-up candidate: the steelhead and char counterpart of #398.
 - Lifts need 5 records since 1990 for CH, CM, CO, PK, SK, ST, GR and KO in default's parameters_fresh.csv (1 for BT, RB, WCT): a single salmon above a falls gives code 2 and does not lift it (raised by the operator; not in #402's scope).
+
+## Code-check round 3 (2026-10-31)
+
+- **Promotion reaches only the breaks.** `lnk_pipeline_run()` builds access, classification and mapping code for `lnk_pipeline_species()` (cfg$species x the cell as written); `lnk_presence()`'s promotion is read only by `.lnk_pipeline_prep_minimal()` (break positions, modelled species only) and passed to the mapping-code build, where it can only blank a species already absent as written. `fresh_default` ADMS PK (promoted by CH, CO, SK): `access_pk` and `mapping_code_pk` NULL on all 39,425 segments.
+- **Lift date test differs from bcfishpass.** link `observation_date >= '1990-01-01'` (`R/lnk_barrier_overrides.R:209`); bcfishpass `obs_dt > date('1990-01-01')` (`model_access_ch_cm_co_pk_sk.sql:86`, `model_access_st.sql:86` at 620dbe43). 569 salmon and steelhead records are dated exactly 1990-01-01 (CH 60, CM 43, CO 134, PK 44, SK 47, ST 241). Affects the `bcfishpass` bundle's parity too; outside #402 (follow-up candidate).
+- RUNBOOK §5 says RB lifts have "no date floor"; `lnk_barrier_overrides()` substitutes 1900-01-01 for an NA date. Pre-existing line, not changed here.

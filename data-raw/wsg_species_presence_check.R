@@ -68,7 +68,8 @@ records <- dbGetQuery(conn, "
 stopifnot(inherits(records$observation_date, "Date"))
 
 res <- .lnk_presence_check(records, loaded, n_min = n_min, year_min = year_min,
-                           year_now = year_now, regions = regions)
+                           year_now = year_now, regions = regions,
+                           species_modelled = cfg$species)
 other <- attr(res, "other_codes")
 fl <- res[!is.na(res$flag), , drop = FALSE]
 fl$story <- .lnk_presence_story(fl)
@@ -136,7 +137,8 @@ hit_alias <- rec_alias$species_code %in% names(alias)
 rec_alias$species_code[hit_alias] <- unname(alias[rec_alias$species_code[hit_alias]])
 res_alias <- .lnk_presence_check(rec_alias, loaded, n_min = n_min,
                                  year_min = year_min, year_now = year_now,
-                                 regions = regions)
+                                 regions = regions,
+                                 species_modelled = cfg$species)
 sens <- merge(res[, c("watershed_group_code", "species_code", "flag", "n_kept")],
               res_alias[, c("watershed_group_code", "species_code", "flag", "n_kept")],
               by = c("watershed_group_code", "species_code"),
@@ -161,7 +163,8 @@ cols_out <- c("watershed_group_code", "species_code", "flag", "region",
               "n_kept", "n_kept_own", "n_kept_pooled", "pooled_from",
               "n_since_recent", "year_oldest", "year_newest", "sources",
               "n_records", "n_releases", "n_excluded", "n_undated",
-              "n_before_floor", "year_newest_any", "lift_readers",
+              "n_before_floor", "year_newest_any", "year_newest_before",
+              "modelled", "lift_readers",
               "group_notes", "story")
 fl <- merge(fl, reg, by = "watershed_group_code", all.x = TRUE)
 utils::write.csv(ord(fl)[, cols_out], file.path(dir_out, "disagreements.csv"),

@@ -167,17 +167,44 @@ test_that("records outside the table's groups and species are ignored", {
 test_that("stories name the evidence and the group note", {
   r <- rbind(rec("k1", "W2", "CO", date = "2019-07-01", source = "FDIS Database: a"),
              rec("k2", "W1", "DV", source = "Releases Database: x"))
-  res <- check(r)
+  res <- check(r, species_modelled = c("BT", "CH", "CO"))
   fl <- res[!is.na(res$flag), , drop = FALSE]
   st <- .lnk_presence_story(fl)
   co <- st[fl$watershed_group_code == "W2" & fl$species_code == "CO"]
   expect_match(co, "a single record (2019; FDIS Database)", fixed = TRUE)
-  expect_match(co, "The salmon (CH) group makes it present", fixed = TRUE)
+  expect_match(co, paste0("The salmon (CH) group makes it present only where ",
+                          "streams break: its barriers cut the network, but ",
+                          "it is not classified and gets no access or mapping ",
+                          "code."), fixed = TRUE)
   expect_match(co, "Group note: \"Kenny Dam\".", fixed = TRUE)
   dv <- st[fl$watershed_group_code == "W1" & fl$species_code == "DV"]
   expect_match(dv, "1 record of DV, none counting: 1 release.", fixed = TRUE)
   bt <- st[fl$watershed_group_code == "W2" & fl$species_code == "DV"]
   expect_match(bt, "no record of DV in the group", fixed = TRUE)
+})
+
+test_that("promotion of a species the bundle does not model changes nothing", {
+  # CT is promoted by the ct_dv_rb group from W2's marked DV.
+  res <- check(rec("k1", "W2", "CT"), species_modelled = c("BT", "CH"))
+  ct <- cell(res, "W2", "CT")
+  expect_identical(ct$promoted_by, "ct_dv_rb (DV)")
+  expect_false(ct$modelled)
+  st <- .lnk_presence_story(ct)
+  expect_match(st, "makes it present, which changes nothing: the bundle does not model CT.",
+               fixed = TRUE)
+  expect_no_match(st, "barriers cut")
+  # Without the modelled set, the story says nothing about promotion.
+  expect_no_match(.lnk_presence_story(cell(check(rec("k1", "W2", "CT")), "W2", "CT")),
+                  "makes it present")
+})
+
+test_that("the pre-floor clause names the newest record before the floor", {
+  r <- rbind(rec("k1", "W1", "BT", date = "1940-01-01"),
+             rec("k2", "W1", "BT", date = "2001-01-01"),
+             rec("k3", "W1", "BT", date = "2002-01-01"))
+  bt <- cell(check(r, n_min = 3L), "W1", "BT")
+  expect_identical(bt$year_newest_before, 1940L)
+  expect_match(.lnk_presence_story(bt), "1 before 1950 (newest 1940)", fixed = TRUE)
 })
 
 test_that("a story above n_min = 1 says how many records count", {
