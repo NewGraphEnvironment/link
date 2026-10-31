@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.73.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.73.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,9 +32,18 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.73.2/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.73.2" id="link-0732">link 0.73.2<a class="anchor" aria-label="anchor" href="#link-0732"></a></h2>
+<p><strong>Each fish record is measured before it counts toward a presence cell</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/402" class="external-link">#402</a>). The presence check now gives every record whether its own 50k code runs through the group it is filed under, its elevation, the nearest natural barrier below that blocks it with the records of its species above that barrier, a rearing lake for kokanee, lake and main-stem placement, and a historical distribution zone. It rolls them up per cell with distinct sites, waterbodies and years. Nothing is judged: the rules come from these numbers in a review session. No output moves.</p>
+<ul><li>
+<strong>Two measures catch 46 of the 67 records already marked as errors:</strong> a blocking barrier below with at most 2 records of the class above, and elevation above 1,400 m. The other 21 show no geometric tell.</li>
+<li>
+<strong>Many flagged cells are thin:</strong> 117 of the 327 cells not marked present but recorded rest on a single waterbody.</li>
+<li>Each review story in <code>configs/default/wsg_species_presence_review.csv</code> for a cell with its own records carries the cell’s measures; <code>data-raw/logs/presence_check_402/</code> adds <code>measures.csv</code>, <code>recall.csv</code> and the evidence it read.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.73.1" id="link-0731">link 0.73.1<a class="anchor" aria-label="anchor" href="#link-0731"></a></h2>
 <p><strong><code>default</code>’s species presence table is checked against the fish records</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/402" class="external-link">#402</a>). <code>data-raw/wsg_species_presence_check.R</code> judges every cell of <code>wsg_species_presence.csv</code> on the operator’s rule: one record dated 1950 or later supports a cell, with releases (tagged as bcfishpass tags them) and <code>observation_exclusions.csv</code> left out, cutthroat aliases folded and <code>species_pooling.csv</code> applied. The check never edits the presence table, and no output moves.</p>

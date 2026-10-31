@@ -1,5 +1,27 @@
 # Changelog
 
+## link 0.73.2
+
+**Each fish record is measured before it counts toward a presence cell**
+([\#402](https://github.com/NewGraphEnvironment/link/issues/402)). The
+presence check now gives every record whether its own 50k code runs
+through the group it is filed under, its elevation, the nearest natural
+barrier below that blocks it with the records of its species above that
+barrier, a rearing lake for kokanee, lake and main-stem placement, and a
+historical distribution zone. It rolls them up per cell with distinct
+sites, waterbodies and years. Nothing is judged: the rules come from
+these numbers in a review session. No output moves.
+
+- **Two measures catch 46 of the 67 records already marked as errors:**
+  a blocking barrier below with at most 2 records of the class above,
+  and elevation above 1,400 m. The other 21 show no geometric tell.
+- **Many flagged cells are thin:** 117 of the 327 cells not marked
+  present but recorded rest on a single waterbody.
+- Each review story in `configs/default/wsg_species_presence_review.csv`
+  for a cell with its own records carries the cell’s measures;
+  `data-raw/logs/presence_check_402/` adds `measures.csv`, `recall.csv`
+  and the evidence it read.
+
 ## link 0.73.1
 
 **`default`’s species presence table is checked against the fish
