@@ -10,3 +10,4 @@
 - Plan review (Plan agent) landed: `planning/active/review-plan.md`, with its disposition. The tracker stays out of `files:` (config_hash).
 - Phase 1 done: `R/lnk_presence_check.R` (check, rule, story, tracker merge), `.lnk_observation_exclusion_keys()` shared by prep and the validator, 22 tests; prep SQL identical before and after; `pretest_inputs.csv` rows for the new file and the tracker.
 - Phase 2 done: empty tracker `inst/extdata/configs/default/wsg_species_presence_review.csv` (seeded in Phase 3), its dictionary, tests by path (undeclared).
+- Phase 3 done: run at `feaa408c` flagged 351 cells (24 present_unsupported, 327 absent_recorded); SQL cross-check agrees (PARS, ADMS, ALBN, 39 cells, 5,423 records); a second run reproduced every output byte for byte and left the tracker unchanged. Tracker seeded, all pending. Added an alias sensitivity (SST/WST/ADV/ABT/BT-DV/RB-CT codes the pipeline drops): 4 cells would change.

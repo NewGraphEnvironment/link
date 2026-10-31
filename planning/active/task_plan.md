@@ -43,9 +43,9 @@ Sized on today's local records (before pooling and exclusions): about 24 present
 
 ## Phase 3: The check script, run on all groups
 
-- [ ] `data-raw/wsg_species_presence_check.R [--config=default] [--n-min=1] [--year-min=1950] [--seed-tracker] [--out=]`. It reads `bcfishobs.observations` from local fwapg and calls Phase 1. It writes `data-raw/logs/presence_check_402/`: `disagreements.csv` (every flagged cell with its counts and story), `groups.csv` (flags per group, with region and notes), `summary.csv` (flags by species and direction) and `stamp.txt` (link sha, bcfishobs row count and newest date, rule). `--seed-tracker` merges the flags into the tracker. The script never writes `wsg_species_presence.csv`.
-- [ ] Cross-check: for three groups (one Mackenzie, one Fraser, one coastal), count independently in psql and match the script's counts exactly; the script stops on a mismatch.
-- [ ] Run on all 246 groups, seed the tracker (every row `pending`, story drafted), and commit the logs and the tracker, with a README in the log directory.
+- [x] `data-raw/wsg_species_presence_check.R [--config=default] [--n-min=1] [--year-min=1950] [--seed-tracker] [--out=]`. It reads `bcfishobs.observations` from local fwapg and calls Phase 1. It writes `data-raw/logs/presence_check_402/`: `disagreements.csv` (every flagged cell with its counts and story), `groups.csv` (flags per group, with region and notes), `summary.csv` (flags by species and direction) and `stamp.txt` (link sha, bcfishobs row count and newest date, rule). `--seed-tracker` merges the flags into the tracker. The script never writes `wsg_species_presence.csv`.
+- [x] Cross-check: for three groups (one Mackenzie, one Fraser, one coastal), count independently in psql and match the script's counts exactly; the script stops on a mismatch.
+- [x] Run on all 246 groups, seed the tracker (every row `pending`, story drafted), and commit the logs and the tracker, with a README in the log directory.
 
 ## Phase 4: Write-up
 

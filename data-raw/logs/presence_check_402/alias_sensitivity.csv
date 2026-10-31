@@ -1,0 +1,5 @@
+"watershed_group_code","species_code","flag","n_kept","flag_with_aliases","n_kept_with_aliases"
+"FINA","ST",,0,"absent_recorded",1
+"MFRA","BT",,0,"absent_recorded",1
+"UFRT","ST",,0,"absent_recorded",1
+"VICT","DV","present_unsupported",0,,1

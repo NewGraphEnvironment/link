@@ -54,3 +54,10 @@ Related: #292, #153, #290, #400.
 - The prep refactor (`.lnk_observation_exclusion_keys()`) produces SQL identical to the pre-refactor function from `git show HEAD:R/lnk_pipeline_prepare.R`, captured with `.lnk_db_execute` mocked, for three inputs: the shipped exclusions read as character, a logical/NA mix, and no exclusions (7 statements each, 33,134 / 27,246 / 27,168 characters).
 - The validator (`R/lnk_habitat_validate.R`) also reads the helper now. `data-raw/access_disagree_349.R` and `data-raw/query_habitat_thresholds_obs.R` keep their own copies (one-off evidence scripts; not changed).
 - bcfishpass's own filter tests the raw species code (`array[o.species_code] && wsg_spp.species_codes`), so it does not admit the CT aliases; the check folds them as link's pipeline does (relates to #398).
+
+## Phase 3 run (2026-10-31, link feaa408c)
+
+- 351 of 3,198 cells flagged: 24 present_unsupported (12 with no record at all, 8 releases only, 4 undated only), 327 absent_recorded (82 with one record, 89 with two to four, 156 with five or more; 238 with a record since 1990; 114 present anyway through their group).
+- KO: marked in 4 groups, recorded in 137 more; 92 of the 156 large cells.
+- The pipeline's exact-code filter drops SST 404 and WST 358 steelhead records, ADV 79, ABT 12, BT/DV 57, DV/BT 52, RB/CT 23 and one ' RB'. Counted as their species they would change 4 flags. Follow-up candidate: the steelhead and char counterpart of #398.
+- Lifts need 5 records since 1990 for CH, CM, CO, PK, SK, ST, GR and KO in default's parameters_fresh.csv (1 for BT, RB, WCT): a single salmon above a falls gives code 2 and does not lift it (raised by the operator; not in #402's scope).
