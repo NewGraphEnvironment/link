@@ -225,6 +225,10 @@
                        "present_unsupported",
                        ifelse(!cells$present_raw & cells$n_kept >= n_min,
                               "absent_recorded", NA_character_))
+  # The rule rides on every row, so a story or a subset never restates it.
+  cells$n_min <- as.integer(n_min)
+  cells$year_min <- as.integer(year_min)
+  cells$year_recent <- as.integer(year_recent)
   rownames(cells) <- NULL
   attr(cells, "other_codes") <- other
   cells
@@ -246,12 +250,19 @@
 #' One plain sentence group per row of `.lnk_presence_check()` output, for
 #' the operator to read and correct in the tracker.
 #' @noRd
-.lnk_presence_story <- function(x, n_min = 1L, year_min = 1950L,
-                                year_recent = 1990L) {
+.lnk_presence_story <- function(x) {
+  miss <- setdiff(c("n_min", "year_min", "year_recent"), names(x))
+  if (length(miss) > 0L) {
+    stop("x lacks the rule columns .lnk_presence_check() writes: ",
+         paste(miss, collapse = ", "), call. = FALSE)
+  }
   rec <- function(n) sprintf("%d record%s", n, ifelse(n == 1L, "", "s"))
   rel <- function(n) sprintf("%d release%s", n, ifelse(n == 1L, "", "s"))
   vapply(seq_len(nrow(x)), function(i) {
     r <- x[i, , drop = FALSE]
+    n_min <- r$n_min
+    year_min <- r$year_min
+    year_recent <- r$year_recent
     out <- character(0)
     if (identical(r$flag, "present_unsupported")) {
       if (r$n_records == 0L && r$n_kept_pooled == 0L) {
@@ -297,11 +308,13 @@
                         r$n_kept_pooled, r$pooled_from, r$species_code)
       }
       out <- c(out, paste0(lead, "."))
-      if (!is.na(r$lift_readers)) {
-        fmt <- paste0("While it reads absent, its records are dropped before ",
-                      "the observation breaks and from the barrier lifts of ",
-                      "%s.")
-        out <- c(out, sprintf(fmt, r$lift_readers))
+      # Only the cell's own records are dropped while it reads absent;
+      # pooled records belong to a species whose own cell keeps them.
+      if (r$n_kept_own > 0L && !is.na(r$lift_readers)) {
+        fmt <- paste0("While it reads absent, its own %s records are dropped ",
+                      "before the observation breaks and from the barrier ",
+                      "lifts of %s.")
+        out <- c(out, sprintf(fmt, r$species_code, r$lift_readers))
       }
       if (!is.na(r$promoted_by)) {
         fmt <- paste0("The %s group makes it present, so its barriers and ",

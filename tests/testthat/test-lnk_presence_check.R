@@ -186,15 +186,20 @@ test_that("a story above n_min = 1 says how many records count", {
   res <- check(r, n_min = 3L)
   bt <- cell(res, "W1", "BT")
   expect_identical(bt$flag, "present_unsupported")
-  st <- .lnk_presence_story(bt, n_min = 3L)
+  st <- .lnk_presence_story(bt)
   expect_identical(st, paste0("Marked present; 2 counting records, fewer ",
                               "than the 3 the rule asks for (also 1 release, ",
                               "not counted)."))
-  two <- rbind(rec("k1", "W2", "CO", date = "1980-01-01"),
+  # The story reads the year the count was taken at, from the row.
+  two <- rbind(rec("k1", "W2", "CO", date = "1995-01-01"),
                rec("k2", "W2", "CO", date = "2001-01-01"))
-  co <- cell(check(two), "W2", "CO")
-  expect_match(.lnk_presence_story(co, year_recent = 2000L),
-               "1 since 2000 (", fixed = TRUE)
+  co <- cell(check(two, year_recent = 2000L), "W2", "CO")
+  expect_identical(co$n_since_recent, 1L)
+  expect_match(.lnk_presence_story(co), "1 since 2000 (", fixed = TRUE)
+  expect_match(.lnk_presence_story(cell(check(two), "W2", "CO")),
+               "2 since 1990 (", fixed = TRUE)
+  expect_error(.lnk_presence_story(co[, setdiff(names(co), "year_recent")]),
+               "year_recent")
 })
 
 test_that("a pooled-only flag says its records are another species'", {
@@ -204,8 +209,15 @@ test_that("a pooled-only flag says its records are another species'", {
   res <- check(rec("k1", "W2", "DV", date = "1999-01-01"), loaded_pc(pooling = p))
   bt <- cell(res, "W2", "BT")
   expect_identical(bt$pooled_from, "DV")
-  expect_match(.lnk_presence_story(bt),
-               "all of them DV records pooled into BT", fixed = TRUE)
+  ld <- loaded_pc(pooling = p)
+  ld$parameters_fresh <- data.frame(species_code = "BT",
+                                    observation_species = "BT;DV",
+                                    stringsAsFactors = FALSE)
+  bt <- cell(check(rec("k1", "W2", "DV", date = "1999-01-01"), ld), "W2", "BT")
+  st <- .lnk_presence_story(bt)
+  expect_match(st, "all of them DV records pooled into BT", fixed = TRUE)
+  # DV's own cell keeps those records, so nothing is dropped: no lift sentence.
+  expect_no_match(st, "dropped")
 })
 
 test_that("the story names the species whose lifts read the cell", {
@@ -217,7 +229,9 @@ test_that("the story names the species whose lifts read the cell", {
   res <- check(rec("k1", "W2", "CO"), ld)
   co <- cell(res, "W2", "CO")
   expect_identical(co$lift_readers, "CH, CO")
-  expect_match(.lnk_presence_story(co), "barrier lifts of CH, CO.", fixed = TRUE)
+  expect_match(.lnk_presence_story(co),
+               "its own CO records are dropped before the observation breaks and from the barrier lifts of CH, CO.",
+               fixed = TRUE)
   expect_true(is.na(cell(res, "W1", "CT")$lift_readers))
 })
 

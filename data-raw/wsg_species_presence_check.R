@@ -71,8 +71,8 @@ res <- .lnk_presence_check(records, loaded, n_min = n_min, year_min = year_min,
                            year_now = year_now, regions = regions)
 other <- attr(res, "other_codes")
 fl <- res[!is.na(res$flag), , drop = FALSE]
-fl$story <- .lnk_presence_story(fl, n_min = n_min, year_min = year_min)
-rule <- .lnk_presence_rule(n_min, year_min)
+fl$story <- .lnk_presence_story(fl)
+rule <- .lnk_presence_rule(res$n_min[1], res$year_min[1])
 
 # -- independent count in SQL for three groups -------------------------------
 check_wsgs <- c("PARS", "ADMS", "ALBN")
