@@ -71,6 +71,7 @@ link,^R/lnk_preflight_parity\.R$,none,not reached from wsg_run_one.R's entry poi
 link,^R/lnk_preflight_stamp\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^R/lnk_preflight_vintage\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^R/lnk_presence_check\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_presence_measures\.R$,none,"the presence review's record measures (#402): not reached from wsg_run_one.R's entry points (test-pretest.R checks)"
 link,^R/lnk_rollup_wsg\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^R/lnk_rules_build\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^R/lnk_scenario_export\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml

@@ -1,6 +1,6 @@
 # Species presence: which groups each species is modelled in
 
-**Verified:** 2026-10-31 · **Issues:** #402 (this), #292 and #153 (the presence groups), #290 (pooling), #398 (CT aliases in code 2) · **Produced by:** `.lnk_presence_check()` (`R/lnk_presence_check.R`) through `data-raw/wsg_species_presence_check.R` on local fwapg, bcfishobs 375,962 rows (newest valid date 2026-10-10), link `83e45a71` → `data-raw/logs/presence_check_402/` · **Status:** 351 cells flagged and seeded into `configs/default/wsg_species_presence_review.csv`, every one pending the operator's review
+**Verified:** 2026-10-31 · **Issues:** #402 (this), #292 and #153 (the presence groups), #290 (pooling), #398 (CT aliases in code 2), #425 to #427 (follow-ups) · **Produced by:** `.lnk_presence_check()` (`R/lnk_presence_check.R`) and `.lnk_presence_measures()` (`R/lnk_presence_measures.R`) through `data-raw/wsg_species_presence_check.R` on local fwapg, bcfishobs 375,962 rows (newest valid date 2026-10-10) → `data-raw/logs/presence_check_402/`; historical zones from `data-raw/presence_evidence_load.R` (retrieved 2026-10-31) · **Status:** 351 cells flagged and seeded into `configs/default/wsg_species_presence_review.csv` with their measures, every one pending; the rules that judge a record are set in the decision session
 
 ## What a presence cell decides
 
@@ -73,6 +73,29 @@ The check judges each cell as written and reports, beside it, whether promotion 
 | ` RB` | (leading space) | 1 | RB |
 
 The check mirrors the pipeline, so it judges what the model reads. Counted as their species, they would change 4 flags (`alias_sensitivity.csv`): FINA ST, UFRT ST and MFRA BT would become absent but recorded, and VICT DV would become supported. Whether the pipeline should read these codes is the steelhead and char counterpart of #398, filed as #425; it is not part of #402.
+
+## Measures before a record counts
+
+The operator's first review of the flags (2026-10-31) set out what a record must survive before it counts: a salmon above a barrier that was never passable, with no lake to rear in, is an error; Kootenay Lake is the counter-example (fish reached above Bonnington Falls before the end of the last ice age); a lone record means different things by species and place (a lone cutthroat in the Elk is an error, a lone DV in KOTL is a bull trout); many UTMs were typed wrong; fish rarely live above certain elevations or on 25 to 30 % gradients; and loneliness is a reason only after the rest. A plan review showed which of those the data can test and which it cannot, so the check now **measures** each record and **judges** none. The rules are set in a decision session from these numbers.
+
+What each measure is, per record (`.lnk_presence_measures()`), and what it cannot see:
+
+| Measure | What it is | Limits |
+|---|---|---|
+| Filed under another group's code | The record's own 50k watershed code runs through no part of the group it is filed under (`fwa_streams_20k_50k`). 2,574 records. | Comparing the record's code with the matched stream's repeats bcfishobs's own matching (A, C and D are matched by that code), so this is the location test left. A UTM typo large enough to move a record off its stream leaves it unmatched, outside bcfishobs; a UTM zone test is tautological (bcfishobs builds the point from the record's own zone; the 98 records whose zone disagrees with their longitude all sit within about a degree of a zone edge). |
+| Elevation | The point's Z, the matched stream's elevation (0 read as NA). | A lake record carries the lake surface; a misplaced record carries the wrong stream's. One ceiling for the province ignores geography, and a ceiling from the records' own percentiles flags a fixed share whether or not any are errors. |
+| Natural barrier below | For CH, CM, CO, PK, SK, ST and KO: the kind of the nearest falls, gradient or user-definite barrier below that blocks the species, and the counting records of the species' lift pool above it, presence ignored. | Lifts are not read: they count only records of species a group marks present, so they cannot judge an absent cell. Bonnington Falls is not a falls row (the lower Kootenay holds dams and salmon-class gradient rows), and barriers outside BC (Kootenai Falls, Grand Coulee) are absent, so historic access needs a native-range table, not geometry. CHUK, HAYR, KCHL, SAHT and SHEK hold no barrier rows (`barriers_known`). |
+| Rearing lake (KO) | The largest lake above that barrier, a lake placed by the stream segments through it (FWA lake polygons carry no local code). 235 of the 269 barriers below KO records have one. | The minimum lake size is the operator's, not the data's. |
+| Lake, known sockeye lake | bcfishobs matched the record to a lake; its lake is in `dfo_known_sockeye_lakes.csv`. | |
+| Main stem | The record's blue line continues upstream outside its group: a fish possibly passing through. | Side channels carry their own blue line and read as tributaries. |
+| Historical zone | The record's 50k code carries a "BC Historical Fish Distribution - Zones (50,000)" reach of the species. | Pre-2001 FISS, the same source as bcfishobs's FISS records, so not independent; 49 of the 67 known errors sit on a zoned stream. |
+| Sites, waterbodies, years | Distinct per cell. | Repeat surveys put many records on one site: 375,962 records sit on 180,221 species-locations, so a count of records overstates the evidence. |
+
+**What the measures see of known errors.** `recall.csv` holds the 67 `data_error` records of `observation_exclusions.csv`. 36 sit above a blocking natural barrier with at most 2 records of their class above it, 21 above 1,400 m, 6 on a segment gradient of 0.25 or more: 47 are caught by any of the three. The other 20 have no geometric tell: steelhead that were likely misidentified rainbow, and points the source places elsewhere within reachable water (SETN records that belong in the Yalakom or the Fraser delta). Every one of the 67 has its own code in its own group. So these three measures are the candidates for rules; the rest are context.
+
+**What the flagged cells look like.** Of the 327 absent-recorded cells, 153 rest on a single waterbody and 94 on a single site. Of the 168 anadromous ones, 12 have every record above a blocking barrier (6 of them with at most 2 records of the class above), 21 are recorded only on a main stem flowing through the group, 59 have no record on a zoned stream, and 21 lie in the Columbia (11), Mackenzie (7) and Yukon (3), where native range decides. Of the 137 kokanee cells, 123 have lake records and none has every record above a barrier with no lake. Each cell's story in the tracker carries its measures.
+
+**Still to come** (a second PR): McPhail (2007) and the zoogeography literature through the Zotero skills, "Provincial Fish Ranges - Watersheds" (a BC Geographic Warehouse custom download whose codes 1, 2 and 8 were overwritten from the records), the E-Fauna probe, and a native-or-introduced table per species by major drainage.
 
 ## The tracker
 

@@ -51,7 +51,7 @@ The review (`review-plan.md`) showed three of the location screens repeat what b
 
 ## Phase 3: Write-up
 
-- [ ] `research/species_presence.md`: each measure, what it can and cannot see (the review's findings), the per-class picture for the decision session (KO, salmon and steelhead, single waterbodies, the 24 present cells). RUNBOOK §5 extended; CLAUDE.md status entry; NEWS line.
+- [x] `research/species_presence.md`: each measure, what it can and cannot see (the review's findings), the per-class picture for the decision session (KO, salmon and steelhead, single waterbodies, the 24 present cells). RUNBOOK §5 extended; CLAUDE.md status entry; the NEWS line and version are `/gh-pr-merge`'s, as in part 1.
 
 ## Decided at the gate (operator, 2026-10-31)
 

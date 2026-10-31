@@ -9,6 +9,11 @@
 | `groups.csv` | Per group: region, the flagged species each way, the group's note, and records under codes the table has no column for |
 | `summary.csv` | Flags by species |
 | `alias_sensitivity.csv` | The 4 cells whose flag would change if SST, WST, ADV, ABT, BT/DV, DV/BT, RB/CT and ` RB` counted toward the species they name; diagnostic, not used for any flag |
-| `stamp.txt` | Environment, rule, totals, the SQL cross-check (PARS, ADMS, ALBN: 39 cells, 5,423 records, all counts agree) |
+| `measures.csv` | Per group and species with a counting record (6,111 cells): `.lnk_presence_cell_measures()` of the record measures (part 2): distinct sites, waterbodies and years; records filed under another group's 50k code; records above a blocking natural barrier and the fewest and most counting records of the species' lift pool above one; kokanee above a barrier with no lake above it; lake and known-sockeye-lake records; main-stem records; records on a stream with a historical distribution zone; elevation range; major drainages; the cell's flag. No record is judged |
+| `recall.csv` | The 67 `data_error` records of `observation_exclusions.csv` with their measures: what each measure sees of known errors |
+| `evidence/` | `hist_zones.csv` ("BC Historical Fish Distribution - Zones (50,000)", from `data-raw/presence_evidence_load.R`) and its `stamp.txt` |
+| `stamp.txt` | Environment, rule, totals, the SQL cross-check (PARS, ADMS, ALBN: 39 cells, 5,423 records, all counts agree) and the SQL recount of the measures for the same groups (106 cells, all agree) |
+
+Part 2 (the record measures, operator's choice of measures before verdicts) added `measures.csv`, `recall.csv`, `evidence/`, the measure columns of `disagreements.csv` and a measure sentence in each story; the flags and counts did not move.
 
 The flags were merged into `inst/extdata/configs/default/wsg_species_presence_review.csv`, every row `pending`. Write-up: `research/species_presence.md`.
