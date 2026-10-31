@@ -95,8 +95,8 @@ Link starts from bcfishpass's published files and keeps its own changes separate
 
 ## Phase 6: Dam rows, parity by query
 
-- [ ] Add `data-raw/logs/csv_sync_429/dams.sql` and its output, for both databases (acceptance 2).
-- [ ] Draft (not post) the Keogh `cabd_id` note for upstream, in `findings.md`.
+- [x] Add `data-raw/logs/csv_sync_429/dams.sql` and its output, for both databases (acceptance 2).
+- [x] Draft (not post) the Keogh `cabd_id` note for upstream, in `findings.md`.
 
 ## Phase 7: Docs and version
 

@@ -51,3 +51,16 @@
 | Error | Resolution |
 |-------|------------|
 | `PG_*_SHARE` not in the Bash tool's shell | Query the reference DB through `lnk_db_conn()` in Rscript |
+
+## Dam rows, checked (Phase 6, 2026-10-31 19:23Z)
+
+`data-raw/logs/csv_sync_429/dams.txt` (from `dams.sql` via `dams_run.R`) and `dams_cabd_api.txt`:
+
+- `cabd.dams` holds 2,592 rows in both local fwapg and the bcfishpass reference (`v0.7.15-51-g3bd2824c`). Neither updated id is among them; Keogh Dam `242fa0e4…` is, at status 1.
+- `bcfishpass.dams` and `bcfishpass.crossings` hold Keogh Dam as status 1 / `BARRIER` in NIMP, in the very build whose CSVs carry the two rows.
+- CABD API: `298b0f7e…` returns no feature. `1c16395b…` is a dam at -119.658, 50.946 (south end of Adams Lake), "NA - Decommissioned/ Removed", modified 2026-10-02; the loaded table predates that or leaves removed dams out.
+- So the rows change no crossing in either build; bcfishpass parity cannot move. No re-model.
+
+## Draft upstream note (NOT posted; for the operator's word)
+
+> Thanks for the Keogh and Adams passability rows (`cabd_passability_status_updates.csv`, 2026-09-29). A small thing we noticed while syncing: neither `cabd_id` matches a row in `cabd.dams` as loaded at `v0.7.15-51-g3bd2824`, so the updates don't reach `bcfishpass.crossings` yet. Keogh Dam's CABD id looks to be `242fa0e4-82ff-4ff6-9fa1-a2d892d4b41f` (still `BARRIER` in NIMP); `298b0f7e-41d5-479a-95d7-af685224cf3f` returns nothing from the CABD API. The Adams row's `1c16395b-…` is in CABD as decommissioned (code 6, modified 2026-10-02), which may already cover it once CABD reloads. Happy to send a one-line PR swapping the Keogh id if that's useful. (Found with help from Claude Code.)
