@@ -32,7 +32,7 @@ Mid-plan, the operator moved `ko` into an overlay rather than comparing around i
 
 ## Owed
 
-- Draft the link issue "`default` presence as copy plus overlay; #402 decisions as overlay rows", for your word.
+- Draft the link issue "`default` presence as copy plus overlay; #402 decisions as overlay rows", for your word. Filed as #431 (2026-10-31).
 - Re-model UTRE and QUES in the `fresh` (bcfishpass) schema at the next provincial run (#377's runs row).
 - Post the Keogh `cabd_id` note upstream, on your word only.
 - Report, unchanged: the older copies in `default_extrabreaks` and `default_rearbreaks`. (The dead `user_modelled_crossing_fixes_20240825.csv` was deleted from `bcfishpass` and `default` instead, Plan review B3.)
