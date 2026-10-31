@@ -41,9 +41,10 @@
 #'   `year_now`, as the presence check counts a record.
 #' - `yr`, `waterbody` and `site` (blue line and measure to the metre), for
 #'   counting distinct years, waterbodies and sites. A waterbody is a lake's
-#'   own identifier, otherwise the record's own 50k stream code, otherwise
-#'   its blue line: bcfishobs gives every stream and wetland record in a
-#'   group one shared `waterbody_identifier` (`00000<group>`).
+#'   or wetland's own `waterbody_identifier`, otherwise the blue line the
+#'   record is matched to: bcfishobs gives every stream record in a group
+#'   one shared identifier (`00000<group>`), and a record's own 50k code can
+#'   name the main river it was filed under rather than the stream it is on.
 #'
 #' Cutthroat aliases (`CCT`, `ACT`, `CT/RB`) read as `CT`, as the presence
 #' check reads them.
@@ -123,9 +124,9 @@ SELECT o.observation_key,
                  OR i.observation_key IS NOT NULL)
         AND extract(year FROM o.observation_date) BETWEEN %d AND %d) AS counting,
        extract(year FROM o.observation_date)::int AS yr,
-       CASE WHEN o.waterbody_type = 'Lake' THEN 'lake:' || o.waterbody_identifier
-            WHEN nullif(rtrim(replace(o.new_watershed_code, '-', ''), '0'), '') IS NOT NULL
-              THEN 'code:' || rtrim(replace(o.new_watershed_code, '-', ''), '0')
+       CASE WHEN o.waterbody_type IN ('Lake', 'Wetland')
+                 AND o.waterbody_identifier IS NOT NULL
+              THEN 'wb:' || o.waterbody_identifier
             ELSE 'line:' || o.blue_line_key END AS waterbody,
        o.blue_line_key, o.downstream_route_measure, o.wscode, o.localcode
 FROM bcfishobs.observations o

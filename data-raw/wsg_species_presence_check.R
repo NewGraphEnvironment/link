@@ -63,10 +63,21 @@ dir_out <- arg("out", file.path("data-raw", "logs", "presence_check_402"))
 fs::dir_create(dir_out)
 year_now <- as.integer(format(Sys.Date(), "%Y"))
 # Read before anything is written: the run rewrites tracked outputs itself.
-code_dirty <- system2("git", c("status", "--porcelain", "--untracked-files=no",
-                               "--", "R", "data-raw/wsg_species_presence_check.R",
-                               "data-raw/presence_evidence_load.R"),
-                      stdout = TRUE)
+# Untracked files count (load_all() loads a new file under R/), and so do the
+# bundle's data inputs; a git failure reads as unknown, never as clean.
+code_dirty <- suppressWarnings(system2(
+  "git", shQuote(c("status", "--porcelain", "--", "R", "inst/extdata",
+                   "data-raw/wsg_species_presence_check.R",
+                   "data-raw/presence_evidence_load.R",
+                   ":(exclude)inst/extdata/configs/default/wsg_species_presence_review.csv")),
+  stdout = TRUE))
+code_state <- if (!is.null(attr(code_dirty, "status"))) {
+  " (git status failed: whether the code had uncommitted changes is unknown)"
+} else if (length(code_dirty) > 0L) {
+  " plus uncommitted changes to R/, inst/extdata/ or the drivers"
+} else {
+  ""
+}
 
 cfg <- lnk_config(config)
 loaded <- lnk_load_overrides(cfg)
@@ -169,17 +180,24 @@ for (v in c("n_records", "n_excluded", "n_releases", "n_kept_own")) {
 n_cmp_cells <- nrow(cmp)
 n_cmp_records <- sum(cmp$n_records)
 
-# The measures, counted again in SQL for the same groups, from bcfishobs and
-# FWA rather than from the measures' own tables, and each written another way:
-# the barrier test from the barrier's side (fwa_upstream), the main stem as the
-# line reaching higher outside the group than inside it.
+# The measures, counted again in SQL for the same groups, from bcfishobs, FWA
+# and the zones CSV (loaded and folded here, not from the measures' tables).
+# The barrier test is written from the barrier's side (fwa_upstream). Not
+# recounted: main stem, lakes, kokanee lakes, class above, elevation.
+zr <- zones[, c("species_code", "code50")]
+dbWriteTable(conn, "pc_zones_raw", zr, temporary = TRUE, overwrite = TRUE)
 sqm <- dbGetQuery(conn, sprintf("
   WITH o AS (
     SELECT o.observation_key, o.watershed_group_code,
            CASE WHEN o.species_code IN ('CCT', 'ACT', 'CT/RB') THEN 'CT'
                 ELSE o.species_code END AS species_code,
            o.blue_line_key, o.downstream_route_measure, o.wscode, o.localcode,
-           replace(o.new_watershed_code, '-', '') AS code_full
+           replace(o.new_watershed_code, '-', '') AS code_full,
+           CASE WHEN o.waterbody_type IN ('Lake', 'Wetland')
+                     AND o.waterbody_identifier IS NOT NULL
+                  THEN o.waterbody_identifier
+                ELSE o.blue_line_key::text END AS wb,
+           extract(year FROM o.observation_date) AS yr
     FROM bcfishobs.observations o
     LEFT JOIN pg_temp.pc_excl x ON x.observation_key = o.observation_key
     LEFT JOIN (SELECT DISTINCT observation_key FROM pg_temp.pc_incl) i
@@ -195,6 +213,8 @@ sqm <- dbGetQuery(conn, sprintf("
   SELECT o.watershed_group_code, o.species_code,
          count(*)::int AS n_counting,
          count(DISTINCT (o.blue_line_key, round(o.downstream_route_measure)))::int AS n_sites,
+         count(DISTINCT o.wb)::int AS n_waterbodies,
+         count(DISTINCT o.yr)::int AS n_years,
          count(*) FILTER (WHERE
            EXISTS (SELECT 1 FROM whse_basemapping.fwa_streams_20k_50k l
                    WHERE l.watershed_code_50k = o.code_full)
@@ -211,15 +231,10 @@ sqm <- dbGetQuery(conn, sprintf("
                    b.blue_line_key, b.downstream_route_measure, b.wscode_ltree, b.localcode_ltree,
                    o.blue_line_key, o.downstream_route_measure, o.wscode, o.localcode)))::int
            AS n_above_barrier,
-         count(*) FILTER (WHERE (
-           SELECT max(s.upstream_route_measure) FROM whse_basemapping.fwa_stream_networks_sp s
-           WHERE s.blue_line_key = o.blue_line_key
-             AND s.watershed_group_code <> o.watershed_group_code
-             AND s.downstream_route_measure > o.downstream_route_measure) IS NOT NULL)::int
-           AS n_main_stem,
          count(*) FILTER (WHERE EXISTS (
-           SELECT 1 FROM pg_temp.pm_zones z
-           WHERE z.species_code = o.species_code
+           SELECT 1 FROM pg_temp.pc_zones_raw z
+           WHERE (CASE WHEN z.species_code IN ('CCT', 'ACT', 'CT/RB') THEN 'CT'
+                       ELSE z.species_code END) = o.species_code
              AND z.code50 = nullif(rtrim(o.code_full, '0'), '')))::int AS n_hist_zone
   FROM o GROUP BY 1, 2",
   paste(sprintf("'%s'", check_wsgs), collapse = ", "), year_min, year_now,
@@ -370,8 +385,7 @@ valid_dates <- records$observation_date[!is.na(records$observation_date) &
 writeLines(c(
   sprintf("date: %s", format(Sys.time(), "%Y-%m-%d %H:%M %Z", tz = "UTC")),
   sprintf("link: %s @ %s%s", utils::packageVersion("link"),
-          system("git rev-parse --short HEAD", intern = TRUE),
-          if (length(code_dirty) > 0L) " plus uncommitted changes to R/ or the drivers" else ""),
+          system("git rev-parse --short HEAD", intern = TRUE), code_state),
   sprintf("config: %s; presence table %s", config,
           cfg$files$wsg_species_presence$path),
   "db: docker fwapg localhost:5432",
