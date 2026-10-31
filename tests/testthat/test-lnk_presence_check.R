@@ -170,7 +170,7 @@ test_that("stories name the evidence and the group note", {
   st <- .lnk_presence_story(fl)
   co <- st[fl$watershed_group_code == "W2" & fl$species_code == "CO"]
   expect_match(co, "a single record (2019; FDIS Database)", fixed = TRUE)
-  expect_match(co, "salmon (CH) group", fixed = TRUE)
+  expect_match(co, "The salmon (CH) group makes it present", fixed = TRUE)
   expect_match(co, "Group note: \"Kenny Dam\".", fixed = TRUE)
   dv <- st[fl$watershed_group_code == "W1" & fl$species_code == "DV"]
   expect_match(dv, "1 record of DV, none counting: 1 release.", fixed = TRUE)

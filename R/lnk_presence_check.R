@@ -287,9 +287,8 @@
       }
       if (!is.na(r$promoted_by)) {
         out <- c(out, sprintf(paste0(
-          "Present through the %s group, so its barriers and mapping code are ",
-          "built, but its records are dropped by the observation filter."),
-          r$promoted_by))
+          "The %s group makes it present, so its barriers and mapping code ",
+          "are built."), r$promoted_by))
       }
       extra <- c(
         if (r$n_releases > 0L) sprintf("%d release%s", r$n_releases,
