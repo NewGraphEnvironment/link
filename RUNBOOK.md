@@ -241,7 +241,8 @@ The walk asks fresh for each segment's distinct species (`result = "distinct"`, 
 bcfishpass's `SELECT DISTINCT segment, species_code`, and under `group_gated` one existence walk
 over `<schema>.observations` for the gate. The array walk it replaced returned every
 segment-record pair, and over every group's records a Fraser main-stem segment in LFRA has about
-126,000 above it. The distinct walk over every group's records costs less than the array walk over
+79,000 above it (126,371 raw bcfishobs records under wscode `100`, 79,300 once each is kept by its
+group's presence). The distinct walk over every group's records costs less than the array walk over
 the group's own did (LFRA 65 to 37 s, BULK 21 to 8 s, SETN 47 to 45 s;
 `data-raw/logs/obs_province_401/walk_fresh_distinct.csv`). `lnk_pipeline_run()` drops
 `<schema>.observations_province` in an `on.exit()`. A kept working schema holds it after a
@@ -1660,8 +1661,9 @@ bash data-raw/pretest_run.sh --config=default --schema=fresh_default
   chain. Inputs are queries, `data-raw/pretest/<input>.sql`, each returning
   `(watershed_group_code, value)` for every group: `near_river_conn` (fresh's
   walk prefilter, the longest connector run), `segments`, `gradient`
-  (segments at 15 % or more), `observations`, `obs_upstream` (every group's records
-  upstream of the group's outlet, what the access walk reads since #401), `crossings`
+  (segments at 15 % or more), `observations`, `obs_upstream` (raw bcfishobs records
+  upstream of the group's outlet, every group's: a ranking proxy for what the access walk reads
+  since #401, which keeps each by its group's presence), `crossings`
   (PSCIS), `dams` (CABD). Three special values: `any` (every pick runs it; alone, the fastest
   group is picked), `none` (off the modelling path), `unexercised` (on the
   run's path but not the gate's: the recompute, the consolidate, the habitat

@@ -20,9 +20,9 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Facts not worth re-deriving:**
 - **Small where measured:** six `default` groups and three `bcfishpass` groups built before and after on m1: only code 1 to 2 moved, each piece under a record of the species from another group and none from its own; 25.98 km under `default` (LNTH BT 12.25 km, 3.6 %, the most; LKEL, PARS, ELKR none) and 0.05 km under `bcfishpass` (UPCE BT). `pre_post_diff.R` recomputes code 2 independently of fresh with bcfishpass's join and stopped on two hand edits.
 - **`bcfishpass` parity holds and UPCE BT joins it:** 0.00 km observed for BULK BT, CH, CO, PK, SK, PARS BT and UPCE BT (−0.05 km before, a record in another group); steelhead still apart.
-- **The walk got cheaper, not dearer:** a distinct walk over every group's records costs less than the array walk over the group's own (LFRA 64–65 → 37–39 s, BULK 20.5 → 8, SETN 47–48 → 44–46). One existence walk per species cost 3 to 7 times more and was dropped for the fresh mode. A Fraser main-stem segment in LFRA has about 126,000 records upstream.
+- **The walk got cheaper, not dearer:** a distinct walk over every group's records costs less than the array walk over the group's own (LFRA 64–65 → 37–39 s, BULK 20.5 → 8, SETN 47–48 → 44–46). One existence walk per species cost 3 to 7 times more and was dropped for the fresh mode. A Fraser main-stem segment in LFRA has about 79,000 records upstream once each is kept by its group's presence (126,371 raw).
 - **A new value of an existing fresh argument is invisible to `lnk_preflight_fresh()`'s formals check;** only the `Imports:` floor guards `"distinct"`.
-- **A temp view depending on a table blocks that table's `DROP`** (found dropping `observations_province` in `on.exit()`).
+- **A temp view depending on a table blocks that table's `DROP`** (found rebuilding `observations_province` under a measurement script's temp view).
 
 ## Status (2026-10-30, latest) — a fish record at a segment's start is not upstream of it (#399)
 
