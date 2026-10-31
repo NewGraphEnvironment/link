@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.73.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.73.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,9 +32,22 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.73.1/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.73.1" id="link-0731">link 0.73.1<a class="anchor" aria-label="anchor" href="#link-0731"></a></h2>
+<p><strong><code>default</code>’s species presence table is checked against the fish records</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/402" class="external-link">#402</a>). <code>data-raw/wsg_species_presence_check.R</code> judges every cell of <code>wsg_species_presence.csv</code> on the operator’s rule: one record dated 1950 or later supports a cell, with releases (tagged as bcfishpass tags them) and <code>observation_exclusions.csv</code> left out, cutthroat aliases folded and <code>species_pooling.csv</code> applied. The check never edits the presence table, and no output moves.</p>
+<ul><li>
+<strong>351 of 3,198 cells disagree.</strong> 24 are marked present with no counting record (12 with no record at all, 8 with releases only, 4 undated only), and 327 are not marked though records exist (137 of them kokanee).</li>
+<li>
+<strong>Each disagreement waits in a review tracker,</strong> <code>configs/default/wsg_species_presence_review.csv</code>, with decision <code>pending</code> and a story drafted from the evidence: counts, years, sources, which lifts read the cell, what promotion does and the group’s note. It is not declared under <code>files:</code>, so review edits do not move <code>config_hash</code>.</li>
+<li>
+<strong>Promotion does less than it looks.</strong> <code><a href="../reference/lnk_presence.html">lnk_presence()</a></code> adds a promoted species’ barriers to where streams break, for species the bundle models; access, classification and mapping code still follow the cell as written. 114 of the 327 absent cells are promoted and still unmodelled.</li>
+<li>
+<strong>One exclusion rule,</strong> <code>.lnk_observation_exclusion_keys()</code>, now serves prep, the validator and the check; prep’s SQL is unchanged.</li>
+<li>Changing presence cells is a later release, with a new <code>acc</code> vocabulary row. Follow-ups: <a href="https://github.com/NewGraphEnvironment/link/issues/425" class="external-link">#425</a>, <a href="https://github.com/NewGraphEnvironment/link/issues/426" class="external-link">#426</a>, <a href="https://github.com/NewGraphEnvironment/link/issues/427" class="external-link">#427</a>.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.73.0" id="link-0730">link 0.73.0<a class="anchor" aria-label="anchor" href="#link-0730"></a></h2>
 <p><strong>Code 2 counts every group’s fish records</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/401" class="external-link">#401</a>). The access walk’s observation call reads <code>&lt;schema&gt;.observations_province</code>, every group’s records, so a segment reads <code>access_&lt;sp&gt;</code> 2 where the species is recorded upstream in any group. Before, a main stem read 1 up to its group boundary whatever was recorded just upstream.</p>

@@ -1,5 +1,41 @@
 # Changelog
 
+## link 0.73.1
+
+**`default`’s species presence table is checked against the fish
+records**
+([\#402](https://github.com/NewGraphEnvironment/link/issues/402)).
+`data-raw/wsg_species_presence_check.R` judges every cell of
+`wsg_species_presence.csv` on the operator’s rule: one record dated 1950
+or later supports a cell, with releases (tagged as bcfishpass tags them)
+and `observation_exclusions.csv` left out, cutthroat aliases folded and
+`species_pooling.csv` applied. The check never edits the presence table,
+and no output moves.
+
+- **351 of 3,198 cells disagree.** 24 are marked present with no
+  counting record (12 with no record at all, 8 with releases only, 4
+  undated only), and 327 are not marked though records exist (137 of
+  them kokanee).
+- **Each disagreement waits in a review tracker,**
+  `configs/default/wsg_species_presence_review.csv`, with decision
+  `pending` and a story drafted from the evidence: counts, years,
+  sources, which lifts read the cell, what promotion does and the
+  group’s note. It is not declared under `files:`, so review edits do
+  not move `config_hash`.
+- **Promotion does less than it looks.**
+  [`lnk_presence()`](https://newgraphenvironment.github.io/link/reference/lnk_presence.md)
+  adds a promoted species’ barriers to where streams break, for species
+  the bundle models; access, classification and mapping code still
+  follow the cell as written. 114 of the 327 absent cells are promoted
+  and still unmodelled.
+- **One exclusion rule,** `.lnk_observation_exclusion_keys()`, now
+  serves prep, the validator and the check; prep’s SQL is unchanged.
+- Changing presence cells is a later release, with a new `acc`
+  vocabulary row. Follow-ups:
+  [\#425](https://github.com/NewGraphEnvironment/link/issues/425),
+  [\#426](https://github.com/NewGraphEnvironment/link/issues/426),
+  [\#427](https://github.com/NewGraphEnvironment/link/issues/427).
+
 ## link 0.73.0
 
 **Code 2 counts every group’s fish records**
