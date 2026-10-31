@@ -1188,6 +1188,71 @@ crate's shape); the webmap (#335).
 | Dam / anthropogenic blocking | **nowhere** — universal `all species` in `lnk_barriers_unify` | `blocks_species` (§2a). Not rules-driven. |
 | What each config column means | `configs/dictionary_dimensions.csv`, `configs/dictionary_parameters_fresh.csv`, `configs/dictionary_parameters_habitat_thresholds.csv` | data dictionaries — per-column type, group, default, description, and (for `parameters_fresh`) `owner` + `consumed_by` file:line |
 
+### Copies and overlays: the bcfishpass files a bundle carries (link#429)
+
+A bundle file whose provenance `source` is `https://github.com/smnorris/bcfishpass`
+is a **copy**: bcfishpass's file byte for byte, as of the commit in `upstream_sha`.
+Link never edits a copy. Where link departs from it, the change is an **overlay**: a
+link-owned CSV declared on the copy's `files:` entry.
+
+```yaml
+wsg_species_presence:
+  path: overrides/wsg_species_presence.csv            # the copy
+  overlay: overrides/wsg_species_presence_overlay.csv # link's cells on it
+```
+
+```
+watershed_group_code,column,value,reason,issue
+PARS,ko,t,link models kokanee; bcfishpass's presence table has no KO column,#106
+```
+
+- **One row per cell, each with a reason.** The first column is named for the
+  copy's key and holds its values. `.lnk_overlay_apply()` refuses a key the copy
+  lacks, a repeated (key, column), a row with no reason, or a row that targets the
+  key column. A `column` the copy lacks is added, empty elsewhere, before the first
+  column that sorts after it, so the bcfishpass presence table's `ko` sits where it
+  always has: column order reaches readers (species order, and the observation
+  `VALUES` list in `.lnk_pipeline_prep_obs_province()`).
+- **The loader applies it** (`lnk_load_overrides()`, local reads only; an overlay on
+  a `canonical_schema` entry is refused). The copy is read as text, the overlay
+  set, then each column typed as `read.csv()` types it, so every reader sees one
+  table. The overlay enters `config_hash` and the export with the copy.
+- **A copy that reads badly is fixed in the reader, not the file.** The local read
+  muffles only R's "incomplete final line" warning, which a short copy with no
+  final newline raises (`cabd_blkey_xref.csv`; #347 had added a newline to it).
+- **Inheritance:** an overlay path resolves against the bundle that declares it,
+  like `path:`. A child that re-declares the `files:` entry replaces it whole, so it
+  drops the parent's overlay unless it repeats it.
+- **Overlay rows are the upstream candidates.** When bcfishpass adopts one, the
+  sync reports the row as redundant; delete it. A row that stays is a departure
+  with its reason already written.
+
+**Which files are copies.** In `bcfishpass` and `default`: every CSV under
+`overrides/` except link's own (`default`'s presence table, the overlay).
+`test-lnk_csv_sync.R` checks that every CSV there has a provenance entry, that every
+`files:` entry with `source: bcfp` is a sync target, and that the fourteen known
+copies are targets in both bundles. `default`'s presence table is link's, under
+#402's review.
+The parameters files are frozen derived copies (`derived_from`), not synced.
+`default_extrabreaks` and `default_rearbreaks` hold older copies of their own and
+are not synced.
+
+**The weekly sync** (`data-raw/sync_bcfishpass_csvs.R`, `.github/workflows/sync-bcfishpass-csvs.yml`,
+Wednesdays) compares each bundle's copies with `s3://fresh-bc/bcfishpass/csvs/` and
+writes a drifted copy only into the bundle that declares it. A fetch that fails
+stops the run. Before writing, it writes the changes into a temporary copy of the
+bundle, loaded by path, and compares the four output token specs:
+
+| Kind | When | Workflow |
+|---|---|---|
+| `byte` | bytes moved, shape and every token spec held | PR, merged by the workflow |
+| `review` | a token spec moved (a presence cell), or the bundle no longer loads (an overlay row whose key upstream dropped) | `token-review` PR, not merged, red run; the body names the axis and the new spec for `vocabulary.csv` |
+| `shape` | a header moved, or a canonical schema refused the file | `schema-drift` PR, not merged, red run |
+
+The worst kind wins. A `review` PR needs the new vocabulary row, the old one
+retired and a version bump before it merges (§6b, "Output vocabulary"). The dry run
+(`--dry-run`) does all of this but the writes.
+
 ### Who owns which `parameters_fresh` column
 
 **Do not re-derive this.** `parameters_fresh.csv` is co-owned, and the split is
@@ -1263,9 +1328,10 @@ next dispatch.**
   `streams_habitat` digests identical against main on fresh 0.33.0 and 0.36.2,
   `data-raw/logs/params_method_286/`).
 - **Frozen, not csv-synced.** Its provenance `source` is deliberately not the
-  bcfishpass URL: `sync_bcfishpass_csvs.R` syncs and auto-merges any entry with
-  that exact source, which would let an upstream `cw` → `mad` flip change
-  `default` unreviewed (and miss the two `default_*breaks` bundles).
+  bcfishpass URL: `sync_bcfishpass_csvs.R` syncs any entry with that exact source
+  and auto-merges it unless an output token moves, and the method table is in no
+  token spec, so an upstream `cw` → `mad` flip would change `default` unreviewed
+  (and miss the two `default_*breaks` bundles).
   `derived_from` carries the upstream path. Moving a group is a reviewed row edit,
   which moves `config_hash`.
 - **Fallback and override** mirror the thresholds: no declaration means fresh's

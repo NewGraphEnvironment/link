@@ -102,7 +102,7 @@ test_that("each shipped config resolves to its tokens", {
       flow = "q-wet-fill"))
   expect_identical(
     lnk_vocabulary_resolve(lnk_config("bcfishpass")),
-    c(cut = "cut-full-ssf-all", acc = "acc-bcfp-3", grad = "grad-seg",
+    c(cut = "cut-full-ssf-all", acc = "acc-bcfp-4", grad = "grad-seg",
       flow = "q-fwapg"))
 })
 

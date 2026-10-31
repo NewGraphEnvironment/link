@@ -397,8 +397,10 @@ writeLines(c(
   sprintf("date: %s", format(Sys.time(), "%Y-%m-%d %H:%M %Z", tz = "UTC")),
   sprintf("link: %s @ %s%s", utils::packageVersion("link"),
           system("git rev-parse --short HEAD", intern = TRUE), code_state),
-  sprintf("config: %s; presence table %s", config,
-          cfg$files$wsg_species_presence$path),
+  sprintf("config: %s; presence table %s%s", config,
+          cfg$files$wsg_species_presence$path,
+          if (is.null(cfg$files$wsg_species_presence$overlay)) "" else
+            paste0(" + overlay ", cfg$files$wsg_species_presence$overlay)),
   "db: docker fwapg localhost:5432",
   sprintf("bcfishobs.observations rows: %d; newest observation_date not after today %s",
           nrow(records), format(max(valid_dates))),

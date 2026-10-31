@@ -87,7 +87,8 @@
     file.path(chain, "config.yaml"),
     cfg$rules,
     cfg$dimensions,
-    unlist(lapply(cfg$files, function(f) f$path), use.names = FALSE),
+    unlist(lapply(cfg$files, function(f) c(f$path, f$overlay)),
+           use.names = FALSE),
     vapply(names(cfg$provenance), function(rel) .lnk_provenance_path(cfg, rel),
            character(1), USE.NAMES = FALSE)
   )

@@ -11,7 +11,20 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
-## Status (2026-10-31, latest) — each fish record is measured before it counts toward presence (#402, part 2)
+## Status (2026-10-31, latest) — every bcfishpass copy is synced, and link's changes to one are an overlay (#429)
+
+**A bundle file whose provenance names bcfishpass is a byte-for-byte copy the weekly sync checks; link's changes to it live in an overlay** (`files: <key>: overlay:`, one row per cell with a reason, applied by `lnk_load_overrides()`). The `bcfishpass` bundle's presence table is bcfishpass's again, and its `ko` column is `overrides/wsg_species_presence_overlay.csv`. The sync now runs per bundle (writes only where declared), stops on a failed fetch, and covers `cabd_*`, `dfo_known_sockeye_lakes`, `wcrp_watersheds` and `observation_exclusions` too. A change that moves an output token spec, or leaves a bundle unloadable, is the `review` kind: a `token-review` PR, not merged. Pulled at `3bd2824`: CH in UTRE and ST in QUES (bcfishpass bundle only, so `acc-bcfp-4` replaces `acc-bcfp-3`), the Keogh and Adams passability rows, three wcrp lines. Mechanics: RUNBOOK §7, "Copies and overlays". Evidence: `data-raw/logs/csv_sync_429/`.
+
+**Owed:** the `fresh` (bcfishpass) schema's UTRE and QUES re-model with CH and ST at the next provincial run (#377's runs row); the pre-run gate (#372) runs again (`R/` and `inst/extdata/` changed); `default`'s presence table as the copy plus an overlay, so #402's decisions land as overlay rows with reasons (#431); the Keogh `cabd_id` note to bcfishpass (drafted in the archive, on the operator's word).
+
+**Facts not worth re-deriving:**
+- **The Keogh and Adams rows reach no crossing in either build.** Neither `cabd_id` is in `cabd.dams` (2,592 rows) in local fwapg or in bcfishpass's reference at `v0.7.15-51-g3bd2824c`; Keogh Dam is `242fa0e4…`, still `BARRIER` in NIMP there. The CABD API has no `298b0f7e…`, and lists `1c16395b…` as a decommissioned dam (2026-10-02). Parity cannot move from them.
+- **An overlay-added column goes before the first column that sorts after it,** so `ko` sits where it did: column order reaches readers (species order; the observation `VALUES` list). With it, the loaded tables of all three bundles were `identical()` before and after the move.
+- **The sync compares token specs on a temporary copy of the bundle, loaded by path:** `lnk_config("<name>")` reads the installed package, which in CI is installed before the script writes.
+- **`config_hash` moved for `bcfishpass`, `default` and `default_tuned`** (new provenance entries, the copies, the overlay), so earlier builds read as another bundle in `recompute_readers_check.R` and the export until re-modelled.
+- **`user_modelled_crossing_fixes_20240825.csv` is gone from both bundles:** no reader, no `files:` entry, not in the dump.
+
+## Status (2026-10-31, later still) — each fish record is measured before it counts toward presence (#402, part 2)
 
 **`.lnk_presence_measures()` (`R/lnk_presence_measures.R`) measures every bcfishobs record for the presence review and judges none; the operator sets the rules from the numbers.** Per record: whether its own 50k code runs through the group it is filed under, elevation (point Z), major drainage, the nearest natural barrier below that blocks it (CH, CM, CO, PK, SK, ST, KO) with the counting records of its lift pool above it (presence ignored), a rearing lake above that barrier for KO, lake and known-sockeye-lake records, main stem, and a historical distribution zone ("BC Historical Fish Distribution - Zones (50,000)", `data-raw/presence_evidence_load.R`). `.lnk_presence_cell_measures()` rolls them up per cell with distinct sites, waterbodies and years, and the story of every cell with records of its own species carries them (319 of the 351 tracker rows). Mechanics: RUNBOOK §5, "The presence table is checked against the records". Write-up: `research/species_presence.md`, "Measures before a record counts". Evidence: `data-raw/logs/presence_check_402/` (`measures.csv`, `recall.csv`, `evidence/`).
 
@@ -1469,6 +1482,14 @@ The two persist schemas are **not interchangeable**: TABR sits in both at 14,652
 vs 12,948 segments. Explicitly not wanted: a standing "always use X" rule — the
 ask is awareness per run, not a fixed answer. Fix tracked in #278, the fleet
 sweep in soul, and the bug class is now a row in soul's `code-check.md`.
+
+### A bcfishpass file is a verbatim copy; link's changes are an overlay
+
+A bundle file copied from bcfishpass stays byte for byte as published, and the weekly sync checks it. Where link departs from it, write the change as a row in an overlay beside the copy (`files: <key>: overlay:`), with the reason and the issue, never as an edit to the copy.
+
+**Why:** an edit inside a copy hides what link adds and makes the sync either report drift forever or overwrite link's work. As separate rows with reasons, link's departures can be read at a glance, offered upstream one by one, and retired when bcfishpass adopts them (operator, 2026-10-31, link#429).
+
+**How to apply:** a copy that reads badly is fixed in link's reader, not the file. A new link column or cell goes in the overlay. A parameter or presence position link takes is a candidate for an overlay rather than a forked file; `default`'s presence table is the next to convert. Mechanics: RUNBOOK §7, "Copies and overlays".
 
 ### Groom inputs before the engine; never add a switch inside it
 
