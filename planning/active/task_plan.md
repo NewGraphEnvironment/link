@@ -41,7 +41,7 @@ Link starts from bcfishpass's published files and keeps its own changes separate
 - **`observation_exclusions.csv` is a synced copy** (operator, 2026-10-31). Link-only exclusions, if #402 makes any, go in an overlay.
 - **Presence: `ko` moves into an overlay** (operator, 2026-10-31, revised at the gate from comparing past it). The copy stays verbatim.
 - **`cabd_blkey_xref.csv` returns to upstream's bytes.** The 'incomplete final line' warning is fixed in the loader's local read path (`readLines(warn = FALSE)`).
-- **A token input never auto-merges.** A synced file whose provenance says `token_input: acc` drifts as the `review` kind: labelled PR, red run.
+- **A token input never auto-merges.** The sync computes the vocabulary specs on each bundle path before and after writing; a changed spec, or a bundle that no longer loads (an overlay row whose key upstream dropped), is the `review` kind: labelled PR, red run, the new spec in the body (revised after the Plan review, which replaced a hand-set `token_input` flag).
 - **Mechanism, decided without asking:**
   - per-bundle sync (each bundle syncs only what its own provenance declares);
   - a fetch failure stops the run;
@@ -75,18 +75,18 @@ Link starts from bcfishpass's published files and keeps its own changes separate
   - add the `review` kind, with the `acc` row to add named in the PR body;
   - report overlay rows that upstream now equals.
 - [ ] Teach `.github/workflows/sync-bcfishpass-csvs.yml` the `review` kind.
-- [ ] Map the new `R/` files `none` in `data-raw/pretest_inputs.csv`.
+- [x] Map `R/lnk_overlay.R` `any` and the overlay CSV with the presence row in `data-raw/pretest_inputs.csv` (Plan review B2, G4); sync-only helpers, if any, `none`.
 
 ## Phase 3: Provenance entries
 
 - [ ] Both bundles get bcfishpass-sourced entries for `cabd_additions`, `cabd_exclusions`, `cabd_blkey_xref`, `cabd_passability_status_updates`, `dfo_known_sockeye_lakes`, `wcrp_watersheds` and `observation_exclusions`.
-- [ ] The bcfishpass bundle's presence entry gets `token_input: acc`; its overlay is link-owned.
+- [ ] The bcfishpass bundle's presence entry points at bcfishpass; its overlay stays link-owned.
 - [ ] Dry run: drift on exactly passability, wcrp, blkey_xref (both bundles) and presence (bcfishpass, `review`). That meets acceptance 1. Record it in `data-raw/logs/csv_sync_429/`.
 
 ## Phase 4: Pull the drift
 
-- [ ] Run the sync for real.
-- [ ] Check: the dry run then reports no drift, `lnk_config_verify()` is clean on both bundles, `default`'s presence is byte-unchanged, and no group logs the final-line warning.
+- [ ] Run the sync for real, in the same commit as Phase 5 (Plan review O2).
+- [ ] Check: the loaded presence table differs from before at exactly UTRE/ch and QUES/st (Plan review O3); the dry run then reports no drift, `lnk_config_verify()` is clean on both bundles, `default`'s presence is byte-unchanged, and no group logs the final-line warning.
 
 ## Phase 5: Token
 
@@ -110,7 +110,8 @@ Link starts from bcfishpass's published files and keeps its own changes separate
 - [ ] Draft the link issue "`default` presence as copy plus overlay; #402 decisions as overlay rows", for your word.
 - [ ] Re-model UTRE and QUES in the `fresh` (bcfishpass) schema at the next provincial run (#377's runs row).
 - [ ] Post the Keogh `cabd_id` note upstream, on your word only.
-- [ ] Report, unchanged: the dead `user_modelled_crossing_fixes_20240825.csv`, and the older copies in `default_extrabreaks` and `default_rearbreaks`.
+- [ ] Report, unchanged: the older copies in `default_extrabreaks` and `default_rearbreaks`. (The dead `user_modelled_crossing_fixes_20240825.csv` was deleted from `bcfishpass` and `default` instead, Plan review B3.)
+- [ ] Re-run the pre-run gate (#372) before the next provincial run: `R/` and `inst/extdata/` changed (Plan review G4).
 
 ## Validation
 

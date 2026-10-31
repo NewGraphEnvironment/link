@@ -27,7 +27,9 @@ test_that("an overlay sets a cell and adds a column", {
   # The added column holds the overlay's value where set, and the empty
   # field a CSV would give elsewhere.
   expect_identical(out$ko, c("", "t"))
-  expect_identical(names(out), c("watershed_group_code", "bt", "ch", "notes", "ko"))
+  # Inserted before the first column that sorts after it (notes), not
+  # appended: column order reaches readers.
+  expect_identical(names(out), c("watershed_group_code", "bt", "ch", "ko", "notes"))
   expect_identical(out$notes, c("", "a note"))
 })
 
@@ -130,6 +132,9 @@ test_that("the bcfishpass bundle's presence copy is verbatim and ko is an overla
   expect_false("ko" %in% names(copy))
   loaded <- lnk_load_overrides(cfg)
   expect_true("ko" %in% names(loaded$wsg_species_presence))
+  nm <- names(loaded$wsg_species_presence)
+  expect_identical(match("ko", nm), match("gr", nm) + 1L)
+  expect_true(all(loaded$wsg_species_presence$ko %in% c("t", "")))
 })
 
 test_that("a bundle extending one with an overlay applies the parent's overlay", {

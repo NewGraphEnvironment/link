@@ -10,7 +10,8 @@
 #
 # The first column is named for the base table's key and holds its values;
 # `column` may name a column the base lacks, which is then added (empty
-# elsewhere, as a CSV gives an empty field). The loader applies the overlay
+# elsewhere, as a CSV gives an empty field) before the first non-key column
+# that sorts after it. The loader applies the overlay
 # before typing, so every reader sees one table.
 
 # Apply an overlay file to a base table read with every column character.
@@ -62,8 +63,20 @@
          paste(unknown, collapse = ", "), call. = FALSE)
   }
 
-  for (col in setdiff(unique(ovl$column), names(base))) {
+  # An added column goes before the first non-key column that sorts after
+  # it, so a column the copy lacks lands where a sorted table would hold it
+  # (the presence table's ko before pk): column order reaches readers.
+  for (col in sort(setdiff(unique(ovl$column), names(base)), method = "radix")) {
+    nm <- names(base)
+    after <- which(nm != key_col &
+                     vapply(nm, function(x) {
+                       sort(c(x, col), method = "radix")[[1]] == col
+                     }, logical(1)))
     base[[col]] <- rep("", nrow(base))
+    if (length(after) > 0L) {
+      at <- after[[1]]
+      base <- base[, append(nm, col, after = at - 1L), drop = FALSE]
+    }
   }
   rows <- match(ovl[[key_col]], base[[key_col]])
   for (i in seq_len(nrow(ovl))) {

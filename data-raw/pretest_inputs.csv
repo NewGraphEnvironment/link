@@ -7,6 +7,7 @@ link,^R/lnk_config\.R$,any,"runs once per group whatever the group holds (config
 link,^R/lnk_db_conn\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
 link,^R/lnk_inputs_verify\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
 link,^R/lnk_load_overrides\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
+link,^R/lnk_overlay\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
 link,^R/lnk_log\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
 link,^R/lnk_stamp\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
 link,^R/utils\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
@@ -93,7 +94,7 @@ link,^inst/extdata/configs/{config}/overrides/(user_modelled_crossing_fixes[_0-9
 link,^inst/extdata/configs/{config}/overrides/(cabd_[a-z_]+)\.csv$,dams,"dam additions, exclusions and passability"
 link,^inst/extdata/configs/{config}/overrides/(user_barriers_definite|user_barriers_definite_control|observation_exclusions)\.csv$,observations,barrier controls and observation exclusions
 link,^inst/extdata/configs/{config}/overrides/(user_barriers_definite|user_barriers_definite_control|observation_exclusions)\.csv$,gradient,barrier controls and observation exclusions
-link,^inst/extdata/configs/{config}/overrides/(user_habitat_classification|dfo_known_sockeye_lakes|wsg_species_presence|wcrp_watersheds)\.csv$,segments,habitat overlays and species presence
+link,^inst/extdata/configs/{config}/overrides/(user_habitat_classification|dfo_known_sockeye_lakes|wsg_species_presence|wsg_species_presence_overlay|wcrp_watersheds)\.csv$,segments,habitat overlays and species presence
 link,^inst/extdata/configs/{config}/(.*/)?README\.md$,none,documentation
 fresh,^R/frs_near_river\.R$,near_river_conn,the near-river walk; its prefilter is distance_max plus the longest connector run
 fresh,^R/frs_habitat_classify\.R$,segments,habitat classification; calls the near-river walk when a rule asks
