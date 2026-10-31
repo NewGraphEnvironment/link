@@ -29,7 +29,16 @@
 #                      calls) counted toward it. Not used for any flag: the
 #                      pipeline drops those codes, and the check judges what
 #                      the model reads.
+#   measures.csv       per group x species with a counting record: the
+#                      record measures of .lnk_presence_measures() rolled up
+#                      by .lnk_presence_cell_measures() (no record is judged)
+#   recall.csv         the data_error rows of observation_exclusions.csv with
+#                      their measures: what each measure sees of known errors
 #   stamp.txt
+#
+# The measures read evidence/hist_zones.csv (data-raw/presence_evidence_load.R)
+# and the bundle's overrides/dfo_known_sockeye_lakes.csv. They are counted
+# again in SQL for the same three groups.
 
 pkgload::load_all(quiet = TRUE)
 suppressPackageStartupMessages(library(DBI))
@@ -49,10 +58,29 @@ n_min <- as.integer(arg("n-min", "1"))
 year_min <- as.integer(arg("year-min", "1950"))
 if (is.na(n_min) || n_min < 1L) stop("--n-min must be a whole number >= 1")
 if (is.na(year_min)) stop("--year-min must be a year")
+# .lnk_presence_check() reads a year before 1850 as undated; the measures' SQL
+# would count it. One floor keeps the two definitions of counting equal.
+if (year_min < 1850L) stop("--year-min must be 1850 or later")
 seed <- "--seed-tracker" %in% args
 dir_out <- arg("out", file.path("data-raw", "logs", "presence_check_402"))
 fs::dir_create(dir_out)
 year_now <- as.integer(format(Sys.Date(), "%Y"))
+# Read before anything is written: the run rewrites tracked outputs itself.
+# Untracked files count (load_all() loads a new file under R/), and so do the
+# bundle's data inputs; a git failure reads as unknown, never as clean.
+code_dirty <- suppressWarnings(system2(
+  "git", shQuote(c("status", "--porcelain", "--", "R", "inst/extdata",
+                   "data-raw/wsg_species_presence_check.R",
+                   "data-raw/presence_evidence_load.R",
+                   ":(exclude)inst/extdata/configs/default/wsg_species_presence_review.csv")),
+  stdout = TRUE))
+code_state <- if (!is.null(attr(code_dirty, "status"))) {
+  " (git status failed: whether the code had uncommitted changes is unknown)"
+} else if (length(code_dirty) > 0L) {
+  " plus uncommitted changes to R/, inst/extdata/ or the drivers"
+} else {
+  ""
+}
 
 cfg <- lnk_config(config)
 loaded <- lnk_load_overrides(cfg)
@@ -74,6 +102,42 @@ other <- attr(res, "other_codes")
 fl <- res[!is.na(res$flag), , drop = FALSE]
 fl$story <- .lnk_presence_story(fl)
 rule <- .lnk_presence_rule(res$n_min[1], res$year_min[1])
+
+# -- record measures (link#402, part 2) ---------------------------------------
+zones_path <- file.path(dir_out, "evidence", "hist_zones.csv")
+if (!file.exists(zones_path)) {
+  stop(zones_path, " missing: run data-raw/presence_evidence_load.R first")
+}
+zones <- utils::read.csv(zones_path, colClasses = "character")
+sockeye <- utils::read.csv(file.path(cfg$dir, "overrides",
+                                     "dfo_known_sockeye_lakes.csv"))$waterbody_poly_id
+if (length(sockeye) == 0L) stop("no known sockeye lakes read")
+sp_barrier <- c("CH", "CM", "CO", "PK", "SK", "ST", "KO")
+pf <- loaded$parameters_fresh
+pools <- stats::setNames(lapply(sp_barrier, function(s) {
+  v <- pf$observation_species[pf$species_code == s]
+  if (length(v) != 1L || is.na(v)) stop("no observation_species for ", s)
+  trimws(strsplit(v, ";")[[1]])
+}), sp_barrier)
+excl_all <- loaded$observation_exclusions
+meas <- .lnk_presence_measures(
+  conn, zones, sp_barrier, pools, sockeye,
+  excl_keys = .lnk_observation_exclusion_keys(loaded),
+  incl_keys = excl_all$observation_key[excl_all$release_include %in% c(TRUE, "t")],
+  year_min = year_min, year_now = year_now)
+if (nrow(meas) != nrow(records)) stop("measures do not cover every record")
+cm <- .lnk_presence_cell_measures(meas)
+# The measures count records by their own SQL; the check by R. They must agree.
+both <- merge(cm[, c("watershed_group_code", "species_code", "n_counting")],
+              res[, c("watershed_group_code", "species_code", "n_kept_own")],
+              by = c("watershed_group_code", "species_code"))
+if (!identical(as.integer(both$n_counting), as.integer(both$n_kept_own))) {
+  stop("the measures and the check count different records in ",
+       sum(both$n_counting != both$n_kept_own), " cells")
+}
+fl <- merge(fl, cm, by = c("watershed_group_code", "species_code"), all.x = TRUE)
+ms <- .lnk_presence_measure_story(fl)
+fl$story <- ifelse(nzchar(ms), paste(fl$story, ms), fl$story)
 
 # -- independent count in SQL for three groups -------------------------------
 check_wsgs <- c("PARS", "ADMS", "ALBN")
@@ -127,6 +191,76 @@ for (v in c("n_records", "n_excluded", "n_releases", "n_kept_own")) {
 n_cmp_cells <- nrow(cmp)
 n_cmp_records <- sum(cmp$n_records)
 
+# The measures, counted again in SQL for the same groups, from bcfishobs, FWA
+# and the zones CSV (loaded and folded here, not from the measures' tables).
+# The barrier test is written from the barrier's side (fwa_upstream). Not
+# recounted: main stem, lakes, kokanee lakes, class above, elevation.
+zr <- zones[, c("species_code", "code50")]
+dbWriteTable(conn, "pc_zones_raw", zr, temporary = TRUE, overwrite = TRUE)
+sqm <- dbGetQuery(conn, sprintf("
+  WITH o AS (
+    SELECT o.observation_key, o.watershed_group_code,
+           CASE WHEN o.species_code IN ('CCT', 'ACT', 'CT/RB') THEN 'CT'
+                ELSE o.species_code END AS species_code,
+           o.blue_line_key, o.downstream_route_measure, o.wscode, o.localcode,
+           replace(o.new_watershed_code, '-', '') AS code_full,
+           CASE WHEN o.waterbody_type IN ('Lake', 'Wetland')
+                     AND o.waterbody_identifier IS NOT NULL
+                  THEN o.waterbody_identifier
+                ELSE o.blue_line_key::text END AS wb,
+           extract(year FROM o.observation_date) AS yr
+    FROM bcfishobs.observations o
+    LEFT JOIN pg_temp.pc_excl x ON x.observation_key = o.observation_key
+    LEFT JOIN (SELECT DISTINCT observation_key FROM pg_temp.pc_incl) i
+      ON i.observation_key = o.observation_key
+    WHERE o.watershed_group_code IN (%s)
+      AND x.observation_key IS NULL
+      AND NOT (coalesce(substring(o.source FROM 1 FOR position(':' IN o.source)), '')
+                 = 'Releases Database:'
+               OR coalesce(o.source_ref ILIKE '%%BC RELEASE RECORDS DATABASE%%', false)
+               OR coalesce(o.source_ref ILIKE '%%STOCKING%%', false)
+               OR i.observation_key IS NOT NULL)
+      AND extract(year FROM o.observation_date) BETWEEN %d AND %d)
+  SELECT o.watershed_group_code, o.species_code,
+         count(*)::int AS n_counting,
+         count(DISTINCT (o.blue_line_key, round(o.downstream_route_measure)))::int AS n_sites,
+         count(DISTINCT o.wb)::int AS n_waterbodies,
+         count(DISTINCT o.yr)::int AS n_years,
+         count(*) FILTER (WHERE
+           EXISTS (SELECT 1 FROM whse_basemapping.fwa_streams_20k_50k l
+                   WHERE l.watershed_code_50k = o.code_full)
+           AND NOT EXISTS (SELECT 1 FROM whse_basemapping.fwa_streams_20k_50k l
+                           WHERE l.watershed_code_50k = o.code_full
+                             AND l.watershed_group_code_20k = o.watershed_group_code))::int
+           AS n_code_other_group,
+         count(*) FILTER (WHERE o.species_code IN (%s) AND EXISTS (
+           SELECT 1 FROM fresh_default.barriers b
+           WHERE b.barrier_source IN ('FALLS', 'GRADIENT', 'USER_DEFINITE')
+             AND o.species_code = ANY (b.blocks_species)
+             AND o.wscode <@ b.wscode_ltree
+             AND whse_basemapping.fwa_upstream(
+                   b.blue_line_key, b.downstream_route_measure, b.wscode_ltree, b.localcode_ltree,
+                   o.blue_line_key, o.downstream_route_measure, o.wscode, o.localcode)))::int
+           AS n_above_barrier,
+         count(*) FILTER (WHERE EXISTS (
+           SELECT 1 FROM pg_temp.pc_zones_raw z
+           WHERE (CASE WHEN z.species_code IN ('CCT', 'ACT', 'CT/RB') THEN 'CT'
+                       ELSE z.species_code END) = o.species_code
+             AND z.code50 = nullif(rtrim(o.code_full, '0'), '')))::int AS n_hist_zone
+  FROM o GROUP BY 1, 2",
+  paste(sprintf("'%s'", check_wsgs), collapse = ", "), year_min, year_now,
+  paste(sprintf("'%s'", sp_barrier), collapse = ", ")))
+mine_m <- cm[cm$watershed_group_code %in% check_wsgs, names(sqm)]
+cmp_m <- merge(mine_m, sqm, by = c("watershed_group_code", "species_code"),
+               all = TRUE, suffixes = c("", "_sql"))
+for (v in setdiff(names(sqm), c("watershed_group_code", "species_code"))) {
+  if (!identical(as.integer(cmp_m[[v]]), as.integer(cmp_m[[paste0(v, "_sql")]]))) {
+    print(cmp_m)
+    stop("SQL recount of the measures disagrees on ", v)
+  }
+}
+n_cmp_m <- nrow(cmp_m)
+
 # -- sensitivity: codes that name a table species -----------------------------
 # Diagnostic only, never a flag: the pipeline's observation filter matches
 # codes exactly, so these records reach no break, lift or code 2 today.
@@ -167,11 +301,29 @@ cols_out <- c("watershed_group_code", "species_code", "flag", "region",
               "modelled", "lift_readers",
               "group_notes", "story")
 fl <- merge(fl, reg, by = "watershed_group_code", all.x = TRUE)
-utils::write.csv(ord(fl)[, cols_out], file.path(dir_out, "disagreements.csv"),
-                 row.names = FALSE, na = "")
+cols_measure <- setdiff(names(cm), c("watershed_group_code", "species_code"))
+utils::write.csv(ord(fl)[, c(setdiff(cols_out, "story"), cols_measure, "story")],
+                 file.path(dir_out, "disagreements.csv"), row.names = FALSE, na = "")
 cells <- merge(res, reg, by = "watershed_group_code", all.x = TRUE)
 utils::write.csv(ord(cells)[, setdiff(cols_out, "story")],
                  file.path(dir_out, "cells.csv"), row.names = FALSE, na = "")
+cm_out <- merge(cm, reg, by = "watershed_group_code", all.x = TRUE)
+cm_out <- merge(cm_out, res[, c("watershed_group_code", "species_code", "flag",
+                                "present_raw")],
+                by = c("watershed_group_code", "species_code"), all.x = TRUE)
+utils::write.csv(ord(cm_out), file.path(dir_out, "measures.csv"),
+                 row.names = FALSE, na = "")
+errs <- excl_all[excl_all$data_error %in% c(TRUE, "t"),
+                 c("observation_key", "notes")]
+recall <- merge(errs, meas, by = "observation_key", all.x = TRUE)
+recall <- recall[order(recall$watershed_group_code, recall$species_code,
+                       recall$observation_key, method = "radix"), ]
+utils::write.csv(recall[, c("observation_key", "watershed_group_code",
+                            "species_code", "code_other_group", "elevation_m",
+                            "gradient", "major_drainage", "barrier_below",
+                            "n_class_above", "rearing_lake_ha", "lake_record",
+                            "through_main_stem", "in_hist_zone", "notes")],
+                 file.path(dir_out, "recall.csv"), row.names = FALSE, na = "")
 
 pres <- loaded$wsg_species_presence
 grp <- data.frame(watershed_group_code = pres$watershed_group_code,
@@ -243,8 +395,8 @@ valid_dates <- records$observation_date[!is.na(records$observation_date) &
                                           records$observation_date <= Sys.Date()]
 writeLines(c(
   sprintf("date: %s", format(Sys.time(), "%Y-%m-%d %H:%M %Z", tz = "UTC")),
-  sprintf("link: %s @ %s", utils::packageVersion("link"),
-          system("git rev-parse --short HEAD", intern = TRUE)),
+  sprintf("link: %s @ %s%s", utils::packageVersion("link"),
+          system("git rev-parse --short HEAD", intern = TRUE), code_state),
   sprintf("config: %s; presence table %s", config,
           cfg$files$wsg_species_presence$path),
   "db: docker fwapg localhost:5432",
@@ -264,6 +416,16 @@ writeLines(c(
           nrow(sens)),
   sprintf("SQL cross-check: %s, %d cells, %d records, all counts agree",
           paste(check_wsgs, collapse = ", "), n_cmp_cells, n_cmp_records),
+  sprintf(paste0("measures: %d records; %d cells with a counting record (measures.csv), ",
+                 "each counting the records the check counts (%d cells compared); SQL recount ",
+                 "of %s, %d cells, all agree on: %s"),
+          nrow(meas), nrow(cm), nrow(both), paste(check_wsgs, collapse = ", "), n_cmp_m,
+          paste(setdiff(names(sqm), c("watershed_group_code", "species_code")),
+                collapse = ", ")),
+  sprintf("evidence: %s", paste(readLines(file.path(dir_out, "evidence", "stamp.txt"))[1:3],
+                                collapse = "; ")),
+  sprintf("recall set: %d data_error records in observation_exclusions.csv (recall.csv), %d of them in bcfishobs",
+          nrow(errs), sum(!is.na(recall$watershed_group_code))),
   sprintf("tracker: %s", if (is.null(merged)) "not seeded" else sprintf(
     "%d added, %d pending refreshed, %d no longer flagged",
     nrow(merged$added), nrow(merged$refreshed), nrow(merged$stale)))),
