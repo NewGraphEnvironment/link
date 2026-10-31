@@ -58,6 +58,9 @@ n_min <- as.integer(arg("n-min", "1"))
 year_min <- as.integer(arg("year-min", "1950"))
 if (is.na(n_min) || n_min < 1L) stop("--n-min must be a whole number >= 1")
 if (is.na(year_min)) stop("--year-min must be a year")
+# .lnk_presence_check() reads a year before 1850 as undated; the measures' SQL
+# would count it. One floor keeps the two definitions of counting equal.
+if (year_min < 1850L) stop("--year-min must be 1850 or later")
 seed <- "--seed-tracker" %in% args
 dir_out <- arg("out", file.path("data-raw", "logs", "presence_check_402"))
 fs::dir_create(dir_out)
@@ -124,6 +127,14 @@ meas <- .lnk_presence_measures(
   year_min = year_min, year_now = year_now)
 if (nrow(meas) != nrow(records)) stop("measures do not cover every record")
 cm <- .lnk_presence_cell_measures(meas)
+# The measures count records by their own SQL; the check by R. They must agree.
+both <- merge(cm[, c("watershed_group_code", "species_code", "n_counting")],
+              res[, c("watershed_group_code", "species_code", "n_kept_own")],
+              by = c("watershed_group_code", "species_code"))
+if (!identical(as.integer(both$n_counting), as.integer(both$n_kept_own))) {
+  stop("the measures and the check count different records in ",
+       sum(both$n_counting != both$n_kept_own), " cells")
+}
 fl <- merge(fl, cm, by = c("watershed_group_code", "species_code"), all.x = TRUE)
 ms <- .lnk_presence_measure_story(fl)
 fl$story <- ifelse(nzchar(ms), paste(fl$story, ms), fl$story)
@@ -405,8 +416,12 @@ writeLines(c(
           nrow(sens)),
   sprintf("SQL cross-check: %s, %d cells, %d records, all counts agree",
           paste(check_wsgs, collapse = ", "), n_cmp_cells, n_cmp_records),
-  sprintf("measures: %d records; %d cells with a counting record (measures.csv); SQL recount of %s, %d cells, all agree",
-          nrow(meas), nrow(cm), paste(check_wsgs, collapse = ", "), n_cmp_m),
+  sprintf(paste0("measures: %d records; %d cells with a counting record (measures.csv), ",
+                 "each counting the records the check counts (%d cells compared); SQL recount ",
+                 "of %s, %d cells, all agree on: %s"),
+          nrow(meas), nrow(cm), nrow(both), paste(check_wsgs, collapse = ", "), n_cmp_m,
+          paste(setdiff(names(sqm), c("watershed_group_code", "species_code")),
+                collapse = ", ")),
   sprintf("evidence: %s", paste(readLines(file.path(dir_out, "evidence", "stamp.txt"))[1:3],
                                 collapse = "; ")),
   sprintf("recall set: %d data_error records in observation_exclusions.csv (recall.csv), %d of them in bcfishobs",

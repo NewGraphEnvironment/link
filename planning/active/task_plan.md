@@ -29,8 +29,8 @@ The review (`review-plan.md`) showed three of the location screens repeat what b
 
 ## Phase 1: Per-record measures (SQL in R/)
 
-- [x] `R/lnk_presence_measures.R`: `.lnk_presence_measures(conn, zones, species_barrier, lift_pools, year_min)` builds session temp tables and returns one row per bcfishobs record with:
-  - `code_group`: the group of the record's own 50k code (`fwa_streams_20k_50k.watershed_group_code_20k`), and `code_other_group` (TRUE where it is not the group the record is filed under; NA where the code is not in the lookup);
+- [x] `R/lnk_presence_measures.R`: `.lnk_presence_measures(conn, zones, species_barrier, lift_pools, sockeye_lakes, excl_keys, incl_keys, year_min, year_now)` builds session temp tables and returns one row per bcfishobs record with:
+  - `code_other_group`, from the groups the record's own 50k code runs through (`fwa_streams_20k_50k.watershed_group_code_20k`): TRUE where it is not the group the record is filed under; NA where the code is not in the lookup);
   - `elevation_m`: `ST_Z(geom)` (the stream's Z at the match; 0 read as NA);
   - `major_drainage`: the first segment of the record's watershed code;
   - `barrier_below`: kind of the nearest natural barrier below (FALLS, GRADIENT, USER_DEFINITE) that blocks the species, for anadromous species and KO; NA where none, and NA too in groups holding no barrier rows (flagged `barriers_known` FALSE);
@@ -44,10 +44,10 @@ The review (`review-plan.md`) showed three of the location screens repeat what b
 
 ## Phase 2: The per-cell table
 
-- [x] `.lnk_presence_cell_measures(measures, records)` (pure R, tested on fixtures): per group and species, distinct sites, waterbodies and years among counting records; records whose code lies in another group; records above a blocking barrier and the most records of the class above any one of them; KO records with and without a rearing lake; lake and main-stem records; records in a historical zone; elevation range.
-- [x] The driver joins it to every cell (`cells.csv`, `disagreements.csv`), extends the story ("1 waterbody", "2 records, both filed under another group's code", "above a falls with 1 record of its class above it"), and re-seeds pending tracker stories (decided rows untouched).
+- [x] `.lnk_presence_cell_measures(m)` (pure R, tested on fixtures): per group and species, distinct sites, waterbodies and years among counting records; records whose code lies in another group; records above a blocking barrier and the most records of the class above any one of them; KO records with and without a rearing lake; lake and main-stem records; records in a historical zone; elevation range.
+- [x] The driver joins it to the flagged cells (`disagreements.csv`) and writes every cell with a counting record (`measures.csv`), extends the story ("1 waterbody", "2 records, both filed under another group's code", "above a falls with 1 record of its class above it"), and re-seeds pending tracker stories (decided rows untouched).
 - [x] Recall set: the 67 `data_error` rows in `observation_exclusions.csv` with their measures (`recall.csv`): which measures would have caught each, so the session sets rules knowing what they catch.
-- [x] SQL recount of three groups' measures, independent of the R aggregation.
+- [x] SQL recount of three groups' measures, independent of the R aggregation: seven measures, from bcfishobs, FWA and the zones CSV (after code-check rounds 1 to 3).
 
 ## Phase 3: Write-up
 

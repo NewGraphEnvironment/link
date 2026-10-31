@@ -29,7 +29,11 @@
 #'   carry no local code).
 #' - `lake_record`: bcfishobs matched the record to a lake; `lake_ha` and
 #'   `known_sockeye_lake` (its lake's `waterbody_poly_id` is in
-#'   `sockeye_lakes`) for those.
+#'   `sockeye_lakes`) for those. The lake is found by the record's own
+#'   `waterbody_identifier` (the lake's 50k key; several polygons can share
+#'   one, so area is the largest and sockeye any), else by the lake polygon
+#'   of the segment it was matched to: many lake records are snapped to a
+#'   river or construction line outside the polygon.
 #' - `through_main_stem`: the record's blue line continues upstream outside
 #'   its group.
 #' - `in_hist_zone`: its 50k code carries a historical distribution zone of
@@ -42,9 +46,10 @@
 #' - `yr`, `waterbody` and `site` (blue line and measure to the metre), for
 #'   counting distinct years, waterbodies and sites. A waterbody is a lake's
 #'   or wetland's own `waterbody_identifier`, otherwise the blue line the
-#'   record is matched to: bcfishobs gives every stream record in a group
-#'   one shared identifier (`00000<group>`), and a record's own 50k code can
-#'   name the main river it was filed under rather than the stream it is on.
+#'   record is matched to: bcfishobs gives stream records a group-level
+#'   identifier (`00000<group>`, not always the record's own group), not one
+#'   per stream, and a record's own 50k code can name the main river it was
+#'   filed under rather than the stream it is on.
 #'
 #' Cutthroat aliases (`CCT`, `ACT`, `CT/RB`) read as `CT`, as the presence
 #' check reads them.
@@ -128,6 +133,7 @@ SELECT o.observation_key,
                  AND o.waterbody_identifier IS NOT NULL
               THEN 'wb:' || o.waterbody_identifier
             ELSE 'line:' || o.blue_line_key END AS waterbody,
+       o.waterbody_identifier,
        o.blue_line_key, o.downstream_route_measure, o.wscode, o.localcode
 FROM bcfishobs.observations o
 LEFT JOIN whse_basemapping.fwa_stream_networks_sp s
@@ -207,6 +213,26 @@ JOIN whse_basemapping.fwa_stream_networks_sp s
 JOIN whse_basemapping.fwa_lakes_poly l ON l.waterbody_key = s.waterbody_key
 GROUP BY 1, 2",
 
+    # A lake record's lake: first by its own waterbody_identifier (the lake's
+    # 50k key, not unique across polygons, so aggregated), else by the
+    # polygon of the segment it was matched to.
+    "DROP TABLE IF EXISTS pg_temp.pm_lake50",
+    "
+CREATE TEMP TABLE pm_lake50 AS
+SELECT l.waterbody_key_group_code_50k AS wb_id, max(l.area_ha) AS area_ha,
+       bool_or(l.waterbody_poly_id IN (SELECT waterbody_poly_id FROM pg_temp.pm_sockeye)) AS sockeye
+FROM whse_basemapping.fwa_lakes_poly l
+WHERE l.waterbody_key_group_code_50k IN
+      (SELECT DISTINCT waterbody_identifier FROM pg_temp.pm_rec WHERE lake_record)
+GROUP BY 1",
+    "DROP TABLE IF EXISTS pg_temp.pm_lakekey",
+    "
+CREATE TEMP TABLE pm_lakekey AS
+SELECT l.waterbody_key, max(l.area_ha) AS area_ha,
+       bool_or(l.waterbody_poly_id IN (SELECT waterbody_poly_id FROM pg_temp.pm_sockeye)) AS sockeye
+FROM whse_basemapping.fwa_lakes_poly l
+WHERE l.waterbody_key IN (SELECT DISTINCT waterbody_key FROM pg_temp.pm_rec WHERE lake_record)
+GROUP BY 1",
     "DROP TABLE IF EXISTS pg_temp.pm_out",
     "
 CREATE TEMP TABLE pm_out AS
@@ -227,8 +253,8 @@ SELECT o.observation_key, o.watershed_group_code, o.species_code, o.counting,
             ELSE coalesce(a.n_class_above, 0) END AS n_class_above,
        k.rearing_lake_ha,
        o.lake_record,
-       lp.area_ha AS lake_ha,
-       (lp.waterbody_poly_id IN (SELECT waterbody_poly_id FROM pg_temp.pm_sockeye)) AS known_sockeye_lake,
+       CASE WHEN o.lake_record THEN coalesce(lw.area_ha, ls.area_ha) END AS lake_ha,
+       CASE WHEN o.lake_record THEN coalesce(lw.sockeye, ls.sockeye, false) END AS known_sockeye_lake,
        EXISTS (SELECT 1 FROM whse_basemapping.fwa_stream_networks_sp s
                WHERE s.blue_line_key = o.blue_line_key
                  AND s.watershed_group_code <> o.watershed_group_code
@@ -243,10 +269,8 @@ LEFT JOIN pg_temp.pm_above a
   ON a.b_blk = b.b_blk AND a.b_drm = b.b_drm AND a.species_code = b.species_code
 LEFT JOIN pg_temp.pm_lake k
   ON k.b_blk = b.b_blk AND k.b_drm = b.b_drm AND b.species_code = 'KO'
-LEFT JOIN LATERAL (
-  SELECT l.waterbody_poly_id, l.area_ha FROM whse_basemapping.fwa_lakes_poly l
-  WHERE o.lake_record AND l.waterbody_key = o.waterbody_key
-  ORDER BY l.area_ha DESC LIMIT 1) lp ON TRUE"
+LEFT JOIN pg_temp.pm_lake50 lw ON lw.wb_id = o.waterbody_identifier
+LEFT JOIN pg_temp.pm_lakekey ls ON ls.waterbody_key = o.waterbody_key"
   )
 }
 
