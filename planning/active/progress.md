@@ -6,3 +6,4 @@
 - Created branch `402-check-each-group-s-species-presence-agai` off origin/main
 - Scaffolded PWF baseline from issue #402 with approved phases
 - Next: start Phase 1
+- Rule revised before any code (operator): one record since 1950 counts, for every species, salmon and bull trout included; the count is shown, not judged. Flags renamed `present_unsupported` / `absent_recorded`.

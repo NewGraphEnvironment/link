@@ -12,7 +12,7 @@ Done, every present/absent cell is judged against a stated rule on the fish reco
 
 ## Decided at the gate (operator, 2026-10-30)
 
-1. **Rule:** at least 5 records dated 1950 or later, one rule for every species. Each row also carries its total count, its count since 1990 and its newest year, so you can see how close it sits to the line.
+1. **Rule:** one record dated 1950 or later counts, for every species (salmon and bull trout included; operator, 2026-10-30, revised from the first answer of 5: a single fish caught above where the species was recorded before is real evidence, and while the row reads absent the pipeline drops it). A present cell is flagged when it has no such record, an absent cell when it has any. The count is shown, not judged: each row carries its total count, its count since 1990, its newest year and its sources, so a single stray reads differently from a run.
 2. **Releases left out**, by bcfishpass's own tagging (`smnorris/bcfishpass@620dbe4` `load_observations.sql`): `source` starts `Releases Database:`, `source_ref` ilike `%BC RELEASE RECORDS DATABASE%` or `%STOCKING%`, or the record's `observation_exclusions.csv` row has `release_include`. Each row still shows its release count.
 3. **DV pooled into BT** where `species_pooling.csv` pools (#290), with the year limit applied. The `dv` column is judged on DV records alone, and each row shows its unpooled BT count.
 4. **Exclusions first:** records marked `data_error` or `release_exclude` are dropped before counting, as in the pipeline.
@@ -25,15 +25,15 @@ Also settled in exploration (mechanism, not asked):
 - `lnk_species_pooling()` yields rows only where the model species is present, so the check resolves pooling against a copy of the table with every species marked present. Without that, DV could never count toward an absent BT.
 - The PR relates to #402 and does not close it: acceptance item 2 (a note on every row the operator changes) is the operator's.
 
-Sized on today's local records: about 223 present cells fall short of the rule and about 153 absent cells meet it, so roughly 380 tracker rows.
+Sized on today's local records (before pooling and exclusions): about 24 present cells have no record since 1950 and about 319 absent cells have at least one, so roughly 340 tracker rows.
 
 ## Phase 1: Check logic in R/, tested without a database
 
 - [ ] `.lnk_observation_exclusion_keys(loaded)`: the `data_error` / `release_exclude` key list, moved out of `.lnk_pipeline_prep_observations()` (`R/lnk_pipeline_prepare.R:319`). Prep calls it, so the pipeline and the check apply one rule. A test asserts prep's SQL is unchanged.
-- [ ] `.lnk_presence_check(records, loaded, n_min = 5, year_min = 1950, regions = NULL)`: takes a records data frame (`observation_key`, `watershed_group_code`, `species_code`, `observation_date`, `source`, `source_ref`), applies the CT remap, exclusions, release tag, date validity and pooling, and returns one row per group × species: counts (all, kept, since the floor, since 1990, releases, excluded, pooled DV, unpooled own), oldest and newest year, the raw and promoted presence, `promoted_by`, and `flag` (`present_few` | `absent_enough` | NA).
+- [ ] `.lnk_presence_check(records, loaded, n_min = 1L, year_min = 1950, regions = NULL)`: takes a records data frame (`observation_key`, `watershed_group_code`, `species_code`, `observation_date`, `source`, `source_ref`), applies the CT remap, exclusions, release tag, date validity and pooling, and returns one row per group × species: counts (all, kept, since the floor, since 1990, releases, excluded, pooled DV, unpooled own), oldest and newest year, the raw and promoted presence, `promoted_by`, and `flag` (`present_unsupported` | `absent_recorded` | NA).
 - [ ] `.lnk_presence_story(row)`: a story drafted from the evidence and the group's `notes` cell. For example: "all 7 records are releases", "newest record 1968", "3 records, none since 1990", "existing note: Kenny Dam", "absent, but modelled through the salmon group".
 - [ ] `.lnk_presence_review_merge(tracker, flagged)`: appends new flags as `pending`, never touches a row that carries a decision, and reports tracker rows the check no longer flags.
-- [ ] Tests (`tests/testthat/test-lnk_presence_check.R`): CT aliases; each of the four release conditions; exclusions; pooling only in pooled regions, including a group where BT is absent; the year limit on pooling; undated and impossible years; both flag directions at the boundary (4 and 5 records); a promoted-only species; merge keeps decided rows. Then restore each defect and watch its test fail.
+- [ ] Tests (`tests/testthat/test-lnk_presence_check.R`): CT aliases; each of the four release conditions; exclusions; pooling only in pooled regions, including a group where BT is absent; the year limit on pooling; undated and impossible years; both flag directions at the boundary (0 and 1 kept record, and a record dated 1949 against 1950); a promoted-only species; merge keeps decided rows. Then restore each defect and watch its test fail.
 
 ## Phase 2: The tracker in the bundle
 
@@ -43,7 +43,7 @@ Sized on today's local records: about 223 present cells fall short of the rule a
 
 ## Phase 3: The check script, run on all groups
 
-- [ ] `data-raw/wsg_species_presence_check.R [--config=default] [--n-min=5] [--year-min=1950] [--seed-tracker] [--out=]`. It reads `bcfishobs.observations` from local fwapg and calls Phase 1. It writes `data-raw/logs/presence_check_402/`: `disagreements.csv` (every flagged cell with its counts and story), `groups.csv` (flags per group, with region and notes), `summary.csv` (flags by species and direction) and `stamp.txt` (link sha, bcfishobs row count and newest date, rule). `--seed-tracker` merges the flags into the tracker. The script never writes `wsg_species_presence.csv`.
+- [ ] `data-raw/wsg_species_presence_check.R [--config=default] [--n-min=1] [--year-min=1950] [--seed-tracker] [--out=]`. It reads `bcfishobs.observations` from local fwapg and calls Phase 1. It writes `data-raw/logs/presence_check_402/`: `disagreements.csv` (every flagged cell with its counts and story), `groups.csv` (flags per group, with region and notes), `summary.csv` (flags by species and direction) and `stamp.txt` (link sha, bcfishobs row count and newest date, rule). `--seed-tracker` merges the flags into the tracker. The script never writes `wsg_species_presence.csv`.
 - [ ] Cross-check: for three groups (one Mackenzie, one Fraser, one coastal), count independently in psql and match the script's counts exactly; the script stops on a mismatch.
 - [ ] Run on all 246 groups, seed the tracker (every row `pending`, story drafted), and commit the logs and the tracker, with a README in the log directory.
 
