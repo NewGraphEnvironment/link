@@ -69,14 +69,14 @@ The review (`review-plan.md`) showed three of the location screens repeat what b
 - [ ] A separate PR applies the decisions to `wsg_species_presence.csv` (notes naming the rule on each changed cell), with a new `acc` vocabulary row, a version bump and a provenance re-stamp; the groups re-model at the next provincial run (#377).
 - [ ] Whether the screen should also gate the pipeline's records (breaks, code 2, lifts): an issue, since it moves outputs.
 - [ ] The pre-run gate (#372) re-runs if `R/` files on the modelling path change (this plan adds a new file only; `pretest_inputs.csv` gets a `none` row).
-- [ ] The evidence and any later parameter file stay undeclared under `files:` (config_hash; review AC2).
+- [x] The evidence and any later parameter file stay undeclared under `files:` (config_hash; review AC2).
 
 ## Validation
 
-- [x] Tests pass (`devtools::test()` at `2e531774`: 79 files, 0 failed, 0 errors), new files lint clean, `devtools::document()` writes nothing
+- [x] Tests pass (`devtools::test()` at `2e531774` and again at `ba81dc33`: 79 files, 0 failed, 0 errors), new files lint clean, `devtools::document()` writes nothing
 - [x] `/code-check branch`: three rounds (review-round1.md to review-round3.md), ended by round 3's enumeration; its five findings fixed in 0041fd12 and verified by direct reads, not by a fourth round
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
 
 Verification: unit tests on the cell aggregation with defects restored; live golden tests on one group for the SQL; the 67-row recall set; an SQL recount of three groups; rerun reproducibility.
 
