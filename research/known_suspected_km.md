@@ -173,7 +173,7 @@ anthropogenic barrier downstream) variants.
 
 - **The split in `lnk_scenario_export()`.** Its Parquet carries habitat flags, not access
   codes. A column there is stored data; it waited for #401, which has landed, so it can be
-  built now.
+  built now: filed as #423.
 - **A habitat split by the user habitat classification,** matching bcfishpass's
   `spawningrearing_obsrvd`. link matches the classification at gate time and persists no flag
   (`R/lnk_habitat_gate.R`), so this needs that flag first.
