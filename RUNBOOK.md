@@ -782,6 +782,24 @@ never count; the check mirrors it and reports what counting them would
 change (`alias_sensitivity.csv`). Findings:
 `research/species_presence.md`.
 
+Before a record counts, it is measured, not judged (operator,
+2026-10-31): `.lnk_presence_measures()` (`R/lnk_presence_measures.R`)
+gives each record its own 50k code’s groups, elevation, major drainage,
+the nearest natural barrier below that blocks it (anadromous species and
+KO) with the counting records of its lift pool above it, presence
+ignored, a rearing lake above that barrier for KO, lake and main-stem
+placement, and a historical distribution zone
+(`data-raw/presence_evidence_load.R`). `.lnk_presence_cell_measures()`
+rolls them up per cell with distinct sites, waterbodies and years, and
+the story of each cell with records of its own species carries them.
+Lifts are not read: `barrier_overrides` counts only records of species a
+group marks present, so it cannot judge an absent cell. FWA lake
+polygons carry no local code, so a lake is placed upstream of a barrier
+by the stream segments through it. `fwa_downstream(a, b)` is true when b
+is downstream of a: the record goes first. The rules that would fail a
+record are the operator’s, set from `measures.csv` and `recall.csv`
+(what each measure sees of the 67 known `data_error` records).
+
 ## 6. Gotchas that have cost real time
 
 - **Persist column changes are a matched pair.** Adding a column to
