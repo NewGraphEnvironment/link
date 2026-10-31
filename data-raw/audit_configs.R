@@ -67,7 +67,8 @@ drifted <- all_drift |> dplyr::filter(byte_drift | shape_drift)
 cat(sprintf("  %d drifted entries across %d bundles\n",
             nrow(drifted), length(bundles)))
 if (nrow(drifted) > 0) {
-  print(drifted |> dplyr::select(bundle, file, byte_drift, shape_drift), n = Inf)
+  print(as.data.frame(dplyr::select(drifted, bundle, file, byte_drift,
+                                     shape_drift)))
   for (i in seq_len(nrow(drifted))) {
     kinds <- c(if (drifted$byte_drift[i]) "byte", if (drifted$shape_drift[i]) "shape")
     flag(sprintf("1 %s", drifted$bundle[i]),
@@ -136,15 +137,15 @@ cat("\n--- 3. Species axis consistency per bundle ---\n")
 for (b in bundles) {
   dim_csv  <- repo_path(sprintf("inst/extdata/configs/%s/dimensions.csv", b))
   pf_csv   <- repo_path(sprintf("inst/extdata/configs/%s/parameters_fresh.csv", b))
-  wsg_csv  <- repo_path(sprintf("inst/extdata/configs/%s/overrides/wsg_species_presence.csv", b))
   yaml_path <- repo_path(sprintf("inst/extdata/configs/%s/rules.yaml", b))
 
   dim_sp  <- gsub('"', '', utils::read.csv(dim_csv, stringsAsFactors = FALSE,
                                             check.names = FALSE)[[1]])
   pf_sp   <- gsub('"', '', utils::read.csv(pf_csv,  stringsAsFactors = FALSE,
                                             check.names = FALSE)[[1]])
-  wsg_hdr <- names(utils::read.csv(wsg_csv, stringsAsFactors = FALSE,
-                                    check.names = FALSE, nrows = 1))
+  # Through the loader, so an overlay's added columns (the bcfishpass
+  # bundle's ko, #429) count as the bundle's species.
+  wsg_hdr <- names(lnk_load_overrides(lnk_config(b))$wsg_species_presence)
   wsg_sp  <- toupper(setdiff(wsg_hdr, c("watershed_group_code", "notes")))
   yaml_sp <- names(yaml::read_yaml(yaml_path))
 
@@ -347,7 +348,9 @@ for (b in bundles) {
   # Declared paths are bundle-relative (e.g. "parameters_fresh.csv" at root,
   # "overrides/foo.csv"). Resolve each against bundle_dir — basename-matching
   # only the overrides/ dir is what mis-flagged root-level parameters_fresh.csv.
-  declared_paths <- vapply(cfg$files, \(x) x$path, character(1))
+  # An overlay (link's cells on a copied file, #429) is declared too.
+  declared_paths <- unlist(lapply(cfg$files, \(x) c(x$path, x$overlay)),
+                           use.names = FALSE)
   missing <- declared_paths[!file.exists(file.path(bundle_dir, declared_paths))]
 
   # Undeclared: override-dir csvs not in the declared set (compare full

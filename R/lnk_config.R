@@ -264,6 +264,9 @@ print.lnk_config <- function(x, ...) {
     if (!is.null(entry$path) && !.lnk_path_is_absolute(entry$path)) {
       entry$path <- file.path(dir, entry$path)
     }
+    if (!is.null(entry$overlay) && !.lnk_path_is_absolute(entry$overlay)) {
+      entry$overlay <- file.path(dir, entry$overlay)
+    }
     entry
   })
 }
@@ -289,6 +292,17 @@ print.lnk_config <- function(x, ...) {
     if (!file.exists(entry$path)) {
       stop("config.yaml `files$", key, "$path` references missing file: ",
            entry$path, call. = FALSE)
+    }
+    # An overlay is link's cell changes on a copied file (#429), resolved
+    # like the path it changes.
+    if (!is.null(entry$overlay)) {
+      if (!.lnk_path_is_absolute(entry$overlay)) {
+        entry$overlay <- file.path(dir, entry$overlay)
+      }
+      if (!file.exists(entry$overlay)) {
+        stop("config.yaml `files$", key, "$overlay` references missing ",
+             "file: ", entry$overlay, call. = FALSE)
+      }
     }
     entry
   }) |> stats::setNames(names(files))

@@ -46,6 +46,10 @@ lnk_load_overrides <- function(cfg) {
 # Dispatch a single file entry. canonical_schema -> crate; else local.
 .lnk_load_entry <- function(key, entry) {
   if (!is.null(entry$canonical_schema)) {
+    if (!is.null(entry$overlay)) {
+      stop("`files$", key, "` declares both canonical_schema and an overlay; ",
+           "an overlay applies only to a local read", call. = FALSE)
+    }
     parts <- strsplit(entry$canonical_schema, "/", fixed = TRUE)[[1]]
     if (length(parts) != 2L) {
       stop("`files$", key, "$canonical_schema` must be '<source>/<file_name>': ",
@@ -57,17 +61,43 @@ lnk_load_overrides <- function(cfg) {
       path = entry$path
     ))
   }
-  .lnk_load_local(key, entry$path)
+  .lnk_load_local(key, entry$path, overlay = entry$overlay)
 }
 
 # Local-read fallback. Dispatch on extension. Add cases here as new
 # formats arrive (parquet, geojson, sqlite, ...). Keep scope minimal
 # until a real consumer needs more.
-.lnk_load_local <- function(key, path) {
+#
+# A copied upstream file is kept byte for byte (#429), so a short one with
+# no final newline is read as it is: the "incomplete final line" warning is
+# muffled here, and no other warning is.
+#
+# With an overlay (link's cell changes on the copy, .lnk_overlay_apply()),
+# the file is read as text, changed, and then typed column by column as
+# read.csv() types it, so a table with an empty overlay reads exactly as it
+# does without one.
+.lnk_load_local <- function(key, path, overlay = NULL) {
   ext <- tolower(tools::file_ext(path))
   if (ext == "csv") {
-    df <- utils::read.csv(path, stringsAsFactors = FALSE)
+    muffle_final_line <- function(w) {
+      if (grepl("incomplete final line", conditionMessage(w), fixed = TRUE)) {
+        invokeRestart("muffleWarning")
+      }
+    }
+    read <- function(...) {
+      withCallingHandlers(utils::read.csv(path, stringsAsFactors = FALSE, ...),
+                          warning = muffle_final_line)
+    }
+    if (is.null(overlay)) {
+      return(tibble::as_tibble(read()))
+    }
+    df <- .lnk_overlay_apply(read(colClasses = "character"), overlay, key)
+    df[] <- lapply(df, utils::type.convert, as.is = TRUE, na.strings = "NA")
     return(tibble::as_tibble(df))
+  }
+  if (!is.null(overlay)) {
+    stop("`files$", key, "$overlay` is set but '", ext, "' files take no ",
+         "overlay", call. = FALSE)
   }
   stop("Unsupported file extension '", ext, "' for entry '", key,
        "' (path: ", path, "). Add an explicit `canonical_schema` ",

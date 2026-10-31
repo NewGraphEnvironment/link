@@ -51,17 +51,17 @@ Link starts from bcfishpass's published files and keeps its own changes separate
 
 ## Phase 1: Overlay mechanism, token-neutral
 
-- [ ] Write tests first (`test-lnk_overlay.R`):
+- [x] Write tests first (`test-lnk_overlay.R`):
   - an overlay sets a cell and adds a column;
   - a key missing from the base refuses;
   - a duplicate (key, column) refuses;
   - every row must carry a reason.
-- [ ] Add `R/lnk_overlay.R` (internal `.lnk_overlay_apply()`).
-- [ ] Make `lnk_load_overrides()` apply a `files:` entry's `overlay:` path.
-- [ ] Fix the local read path's final-line warning.
-- [ ] Write `overrides/wsg_species_presence_overlay.csv` for the bcfishpass bundle (its `ko` cells, with reason and issue), and drop `ko` from the copy.
-- [ ] Repoint the three `data-raw/` path readers at the loader.
-- [ ] Prove it changed nothing: the loaded presence table is `identical()` before and after, and `lnk_vocabulary_resolve(lnk_config("bcfishpass"))` still gives `acc-bcfp-3`.
+- [x] Add `R/lnk_overlay.R` (internal `.lnk_overlay_apply()`).
+- [x] Make `lnk_load_overrides()` apply a `files:` entry's `overlay:` path.
+- [x] Fix the local read path's final-line warning.
+- [x] Write `overrides/wsg_species_presence_overlay.csv` for the bcfishpass bundle (its `ko` cells, with reason and issue), and drop `ko` from the copy.
+- [x] Repoint the `data-raw/` path readers at the loader. Only `audit_configs.R` read the table by path; `wsg_species_presence_check.R` already loads it and only prints the path, and `regen_provenance.R` hashes the file as a provenance entry, which is right for the copy.
+- [x] Prove it changed nothing: the loaded presence table is `identical()` before and after, and `lnk_vocabulary_resolve(lnk_config("bcfishpass"))` still gives `acc-bcfp-3`.
 
 ## Phase 2: Sync script
 
