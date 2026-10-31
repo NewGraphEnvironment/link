@@ -154,6 +154,8 @@ test_that("promotion is reported beside the cell, not judged", {
   expect_identical(co$promoted_by, "salmon (CH)")
   expect_identical(co$flag, "absent_recorded")
   expect_true(is.na(cell(res, "W1", "BT")$promoted_by))
+  # Marked as written, so nothing promotes it, even inside a group.
+  expect_true(is.na(cell(res, "W2", "CH")$promoted_by))
 })
 
 test_that("records outside the table's groups and species are ignored", {

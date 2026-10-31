@@ -151,8 +151,10 @@ utils::write.csv(sens, file.path(dir_out, "alias_sensitivity.csv"),
                  row.names = FALSE, na = "")
 
 # -- outputs ------------------------------------------------------------------
-ord <- function(d) d[order(d$watershed_group_code, d$species_code,
-                           method = "radix"), , drop = FALSE]
+ord <- function(d) {
+  d[order(d$watershed_group_code, d$species_code, method = "radix"), ,
+    drop = FALSE]
+}
 reg <- regions[, c("watershed_group_code", "region", "subregion")]
 cols_out <- c("watershed_group_code", "species_code", "flag", "region",
               "subregion", "present_raw", "present_promoted", "promoted_by",
@@ -172,16 +174,19 @@ pres <- loaded$wsg_species_presence
 grp <- data.frame(watershed_group_code = pres$watershed_group_code,
                   stringsAsFactors = FALSE)
 grp <- merge(grp, reg, by = "watershed_group_code", all.x = TRUE)
-per <- function(f) vapply(grp$watershed_group_code, function(w) {
-  s <- fl$species_code[fl$watershed_group_code == w & fl$flag == f]
-  paste(sort(s, method = "radix"), collapse = " ")
-}, character(1))
+per <- function(f) {
+  vapply(grp$watershed_group_code, function(w) {
+    s <- fl$species_code[fl$watershed_group_code == w & fl$flag == f]
+    paste(sort(s, method = "radix"), collapse = " ")
+  }, character(1))
+}
 grp$present_unsupported <- unname(per("present_unsupported"))
 grp$absent_recorded <- unname(per("absent_recorded"))
 grp$n_flags <- vapply(grp$watershed_group_code,
                       function(w) sum(fl$watershed_group_code == w), integer(1))
-grp$n_other_codes <- vapply(grp$watershed_group_code, function(w)
-  as.integer(sum(other$n[other$watershed_group_code == w])), integer(1))
+grp$n_other_codes <- vapply(grp$watershed_group_code, function(w) {
+  as.integer(sum(other$n[other$watershed_group_code == w]))
+}, integer(1))
 grp$other_codes <- vapply(grp$watershed_group_code, function(w) {
   o <- other[other$watershed_group_code == w, , drop = FALSE]
   o <- o[order(-o$n, o$species_code, method = "radix"), , drop = FALSE]
@@ -194,14 +199,20 @@ utils::write.csv(grp[order(grp$watershed_group_code, method = "radix"), ],
                  file.path(dir_out, "groups.csv"), row.names = FALSE, na = "")
 
 sp_all <- sort(unique(res$species_code), method = "radix")
+n_by_species <- function(keep) {
+  vapply(sp_all, function(s) sum(fl$species_code == s & keep), integer(1))
+}
+ar <- fl$flag == "absent_recorded"
 summ <- data.frame(
   species_code = sp_all,
-  cells_present = vapply(sp_all, function(s) sum(res$present_raw[res$species_code == s]), integer(1)),
-  present_unsupported = vapply(sp_all, function(s) sum(fl$species_code == s & fl$flag == "present_unsupported"), integer(1)),
-  absent_recorded = vapply(sp_all, function(s) sum(fl$species_code == s & fl$flag == "absent_recorded"), integer(1)),
-  absent_recorded_single = vapply(sp_all, function(s) sum(fl$species_code == s & fl$flag == "absent_recorded" & fl$n_kept == 1L), integer(1)),
-  absent_recorded_promoted = vapply(sp_all, function(s) sum(fl$species_code == s & fl$flag == "absent_recorded" & fl$present_promoted), integer(1)),
-  absent_recorded_pooled_only = vapply(sp_all, function(s) sum(fl$species_code == s & fl$flag == "absent_recorded" & fl$n_kept_own == 0L), integer(1)),
+  cells_present = vapply(sp_all, function(s) {
+    sum(res$present_raw[res$species_code == s])
+  }, integer(1)),
+  present_unsupported = n_by_species(fl$flag == "present_unsupported"),
+  absent_recorded = n_by_species(ar),
+  absent_recorded_single = n_by_species(ar & fl$n_kept == 1L),
+  absent_recorded_promoted = n_by_species(ar & fl$present_promoted),
+  absent_recorded_pooled_only = n_by_species(ar & fl$n_kept_own == 0L),
   stringsAsFactors = FALSE)
 stopifnot(sum(summ$present_unsupported) + sum(summ$absent_recorded) == nrow(fl))
 utils::write.csv(summ, file.path(dir_out, "summary.csv"), row.names = FALSE)

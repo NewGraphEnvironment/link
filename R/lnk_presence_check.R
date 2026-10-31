@@ -71,8 +71,8 @@
   r <- records[records$watershed_group_code %in% wsgs, need, drop = FALSE]
   r$species_code <- ifelse(r$species_code %in% c("CCT", "ACT", "CT/RB"),
                            "CT", r$species_code)
-  other <- r[!r$species_code %in% sp_all, c("watershed_group_code",
-                                              "species_code"), drop = FALSE]
+  other_cols <- c("watershed_group_code", "species_code")
+  other <- r[!r$species_code %in% sp_all, other_cols, drop = FALSE]
   other <- if (nrow(other) == 0L) {
     data.frame(watershed_group_code = character(0),
                species_code = character(0), n = integer(0))
@@ -81,16 +81,19 @@
   }
   r <- r[r$species_code %in% sp_all, , drop = FALSE]
   excl <- loaded$observation_exclusions
-  keys_incl <- if (is.null(excl) || nrow(excl) == 0L) character(0) else
-    excl$observation_key[excl$release_include %in% c(TRUE, "t")]
+  keys_incl <- character(0)
+  if (!is.null(excl) && nrow(excl) > 0L) {
+    keys_incl <- excl$observation_key[excl$release_include %in% c(TRUE, "t")]
+  }
   r$excluded <- r$observation_key %in% .lnk_observation_exclusion_keys(loaded)
   src_head <- ifelse(is.na(r$source), NA_character_,
                      sub(":.*$", ":", r$source))
-  r$release <- !r$excluded & (
-    src_head %in% "Releases Database:" |
-      grepl("BC RELEASE RECORDS DATABASE", r$source_ref, ignore.case = TRUE) |
-      grepl("STOCKING", r$source_ref, ignore.case = TRUE) |
-      r$observation_key %in% keys_incl)
+  ref_release <- grepl("BC RELEASE RECORDS DATABASE", r$source_ref,
+                       ignore.case = TRUE) |
+    grepl("STOCKING", r$source_ref, ignore.case = TRUE)
+  r$release <- !r$excluded & (src_head %in% "Releases Database:" |
+                                ref_release |
+                                r$observation_key %in% keys_incl)
   yr <- as.integer(format(r$observation_date, "%Y"))
   yr[!is.na(yr) & (yr < 1850L | yr > year_now)] <- NA_integer_
   r$year <- yr
@@ -102,16 +105,18 @@
   # -- pooling, resolved as if every species were present -------------------
   all_present <- pres
   for (cc in cols) all_present[[cc]] <- "t"
-  pool <- lnk_species_pooling(
-    utils::modifyList(loaded, list(wsg_species_presence = all_present)),
-    aoi = wsgs, species = sp_all, regions = regions)
+  loaded_all <- loaded
+  loaded_all$wsg_species_presence <- all_present
+  pool <- lnk_species_pooling(loaded_all, aoi = wsgs, species = sp_all,
+                              regions = regions)
   pool <- pool[pool$scope_level != "self", , drop = FALSE]
 
   # -- evidence: each record against each cell it supports ------------------
   own <- r
   own$target <- own$species_code
   own$pooled <- rep(FALSE, nrow(own))
-  pooled <- if (nrow(pool) == 0L) own[0, , drop = FALSE] else {
+  pooled <- own[0, , drop = FALSE]
+  if (nrow(pool) > 0L) {
     p <- data.frame(watershed_group_code = pool$watershed_group_code,
                     species_code = pool$obs_species,
                     target = pool$species_code,
@@ -121,7 +126,7 @@
                by = c("watershed_group_code", "species_code"))
     m <- m[is.na(m$obs_year_max) | m$year <= m$obs_year_max, , drop = FALSE]
     m$pooled <- rep(TRUE, nrow(m))
-    m[, names(own), drop = FALSE]
+    pooled <- m[, names(own), drop = FALSE]
   }
   ev <- rbind(own, pooled)
   key <- paste(ev$watershed_group_code, ev$target, sep = "|")
@@ -153,19 +158,21 @@
   cells$year_newest <- yr_by(kept, max)
   wild_dated <- is_own & ev$wild & !is.na(ev$year)
   cells$year_newest_any <- yr_by(wild_dated, max)
-  pooled_keys <- key[ev$pooled]
-  cells$pooled_from <- unname(vapply(
-    split(ev$species_code[ev$pooled], factor(pooled_keys, levels = ck)),
-    function(s) if (length(s) == 0L) NA_character_ else
-      paste(sort(unique(s), method = "radix"), collapse = ", "),
-    character(1)))
-  cells$sources <- unname(vapply(split(ev$source_name[kept],
-                                       factor(key[kept], levels = ck)),
-    function(s) {
-      if (length(s) == 0L) return(NA_character_)
-      t <- sort(table(s), decreasing = TRUE)
-      paste0(names(t), " (", as.integer(t), ")", collapse = "; ")
-    }, character(1)))
+  per_cell <- function(v, keep, f) {
+    unname(vapply(split(v[keep], factor(key[keep], levels = ck)), f,
+                  character(1)))
+  }
+  codes <- function(s) {
+    if (length(s) == 0L) return(NA_character_)
+    paste(sort(unique(s), method = "radix"), collapse = ", ")
+  }
+  tabled <- function(s) {
+    if (length(s) == 0L) return(NA_character_)
+    t <- sort(table(s), decreasing = TRUE)
+    paste0(names(t), " (", as.integer(t), ")", collapse = "; ")
+  }
+  cells$pooled_from <- per_cell(ev$species_code, ev$pooled, codes)
+  cells$sources <- per_cell(ev$source_name, kept, tabled)
 
   # -- presence as written and as promoted ----------------------------------
   grp_default <- eval(formals(lnk_presence)$groups)
@@ -181,36 +188,35 @@
   cells$present_promoted <- mapply(function(w, s) s %in% prom[[w]],
                                    cells$watershed_group_code,
                                    cells$species_code, USE.NAMES = FALSE)
-  cells$promoted_by <- mapply(function(w, s, rp, pp) {
+  promoter <- function(w, s, rp, pp) {
     if (rp || !pp) return(NA_character_)
     for (g in names(grp_default)) {
       mem <- toupper(grp_default[[g]])
-      if (s %in% mem) {
-        by <- intersect(mem, raw[[w]])
-        if (length(by) > 0L) {
-          return(sprintf("%s (%s)", g, paste(by, collapse = ", ")))
-        }
+      by <- intersect(mem, raw[[w]])
+      if (s %in% mem && length(by) > 0L) {
+        return(sprintf("%s (%s)", g, paste(by, collapse = ", ")))
       }
     }
     NA_character_
-  }, cells$watershed_group_code, cells$species_code, cells$present_raw,
-  cells$present_promoted, USE.NAMES = FALSE)
+  }
+  cells$promoted_by <- mapply(promoter, cells$watershed_group_code,
+                              cells$species_code, cells$present_raw,
+                              cells$present_promoted, USE.NAMES = FALSE)
 
-  notes <- if ("notes" %in% names(pres)) pres$notes else rep(NA_character_, length(wsgs))
+  notes <- pres[["notes"]] %||% rep(NA_character_, length(wsgs))
   notes <- trimws(as.character(notes))
   notes[!is.na(notes) & !nzchar(notes)] <- NA_character_
   cells$group_notes <- notes[match(cells$watershed_group_code, wsgs)]
 
   pf <- loaded$parameters_fresh
   cells$lift_readers <- NA_character_
-  if (is.data.frame(pf) && all(c("species_code", "observation_species") %in% names(pf))) {
-    reads <- strsplit(ifelse(is.na(pf$observation_species), "",
-                             pf$observation_species), ";", fixed = TRUE)
+  pf_cols <- c("species_code", "observation_species")
+  if (is.data.frame(pf) && all(pf_cols %in% names(pf))) {
+    obs_sp <- pf$observation_species
+    reads <- strsplit(ifelse(is.na(obs_sp), "", obs_sp), ";", fixed = TRUE)
     readers <- vapply(sp_all, function(s) {
-      who <- pf$species_code[vapply(reads, function(x) s %in% trimws(x),
-                                    logical(1))]
-      if (length(who) == 0L) NA_character_ else
-        paste(sort(unique(who), method = "radix"), collapse = ", ")
+      hit <- vapply(reads, function(x) s %in% trimws(x), logical(1))
+      codes(pf$species_code[hit])
     }, character(1))
     cells$lift_readers <- unname(readers[cells$species_code])
   }
@@ -228,10 +234,10 @@
 #' The rule `.lnk_presence_check()` judged by, as a sentence for the tracker
 #' @noRd
 .lnk_presence_rule <- function(n_min = 1L, year_min = 1950L) {
-  sprintf(paste0(
-    "at least %d record%s dated %d or later; releases and excluded records ",
-    "out; pooled per species_pooling.csv"),
-    as.integer(n_min), if (n_min == 1) "" else "s", as.integer(year_min))
+  fmt <- paste0("at least %d record%s dated %d or later; releases and ",
+                "excluded records out; pooled per species_pooling.csv")
+  sprintf(fmt, as.integer(n_min), if (n_min == 1) "" else "s",
+          as.integer(year_min))
 }
 
 
@@ -242,6 +248,7 @@
 #' @noRd
 .lnk_presence_story <- function(x, year_min = 1950L) {
   rec <- function(n) sprintf("%d record%s", n, ifelse(n == 1L, "", "s"))
+  rel <- function(n) sprintf("%d release%s", n, ifelse(n == 1L, "", "s"))
   vapply(seq_len(nrow(x)), function(i) {
     r <- x[i, , drop = FALSE]
     out <- character(0)
@@ -250,26 +257,26 @@
         out <- c(out, sprintf("Marked present with no record of %s in the group.",
                               r$species_code))
       } else {
+        before <- sprintf("%d before %d (newest %d)", r$n_before_floor,
+                          year_min, r$year_newest_any)
         why <- c(
-          if (r$n_releases > 0L) sprintf("%d release%s", r$n_releases,
-                                         if (r$n_releases == 1L) "" else "s"),
+          if (r$n_releases > 0L) rel(r$n_releases),
           if (r$n_excluded > 0L) sprintf("%d excluded", r$n_excluded),
           if (r$n_undated > 0L) sprintf("%d undated", r$n_undated),
-          if (r$n_before_floor > 0L) sprintf(
-            "%d before %d (newest %d)", r$n_before_floor, year_min,
-            r$year_newest_any))
-        out <- c(out, sprintf(
-          "Marked present; %s of %s, none counting: %s.",
-          rec(r$n_records), r$species_code, paste(why, collapse = ", ")))
+          if (r$n_before_floor > 0L) before
+        )
+        out <- c(out, sprintf("Marked present; %s of %s, none counting: %s.",
+                              rec(r$n_records), r$species_code,
+                              paste(why, collapse = ", ")))
       }
     } else if (identical(r$flag, "absent_recorded")) {
       if (r$n_kept == 1L) {
         lead <- sprintf("Not marked present; a single record (%d; %s)",
                         r$year_newest, sub(" \\(1\\)$", "", r$sources))
       } else {
-        lead <- sprintf("Not marked present; %s since %d, %d to %d, %d since 1990 (%s)",
-                        rec(r$n_kept), year_min, r$year_oldest, r$year_newest,
-                        r$n_since_recent, r$sources)
+        fmt <- "Not marked present; %s since %d, %d to %d, %d since 1990 (%s)"
+        lead <- sprintf(fmt, rec(r$n_kept), year_min, r$year_oldest,
+                        r$year_newest, r$n_since_recent, r$sources)
       }
       if (r$n_kept_pooled > 0L && r$n_kept_own == 0L) {
         lead <- sprintf("%s, all of them %s records pooled into %s", lead,
@@ -280,22 +287,23 @@
       }
       out <- c(out, paste0(lead, "."))
       if (!is.na(r$lift_readers)) {
-        out <- c(out, sprintf(paste0(
-          "While it reads absent, its records are dropped before the ",
-          "observation breaks and from the barrier lifts of %s."),
-          r$lift_readers))
+        fmt <- paste0("While it reads absent, its records are dropped before ",
+                      "the observation breaks and from the barrier lifts of ",
+                      "%s.")
+        out <- c(out, sprintf(fmt, r$lift_readers))
       }
       if (!is.na(r$promoted_by)) {
-        out <- c(out, sprintf(paste0(
-          "The %s group makes it present, so its barriers and mapping code ",
-          "are built."), r$promoted_by))
+        fmt <- paste0("The %s group makes it present, so its barriers and ",
+                      "mapping code are built.")
+        out <- c(out, sprintf(fmt, r$promoted_by))
       }
       extra <- c(
-        if (r$n_releases > 0L) sprintf("%d release%s", r$n_releases,
-                                       if (r$n_releases == 1L) "" else "s"),
-        if (r$n_excluded > 0L) sprintf("%d excluded", r$n_excluded))
+        if (r$n_releases > 0L) rel(r$n_releases),
+        if (r$n_excluded > 0L) sprintf("%d excluded", r$n_excluded)
+      )
       if (length(extra) > 0L) {
-        out <- c(out, sprintf("Also %s, not counted.", paste(extra, collapse = ", ")))
+        out <- c(out, sprintf("Also %s, not counted.",
+                              paste(extra, collapse = ", ")))
       }
     }
     if (!is.na(r$group_notes)) {
