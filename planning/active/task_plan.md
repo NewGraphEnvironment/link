@@ -73,7 +73,7 @@ The review (`review-plan.md`) showed three of the location screens repeat what b
 
 ## Validation
 
-- [ ] Tests pass (`devtools::test()`), `lintr::lint_package()`, `devtools::document()`
+- [x] Tests pass (`devtools::test()` at `2e531774`: 79 files, 0 failed, 0 errors), new files lint clean, `devtools::document()` writes nothing
 - [ ] `/code-check` clean (once over the branch with `/code-check branch`)
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
