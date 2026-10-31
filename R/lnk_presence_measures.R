@@ -33,13 +33,17 @@
 #' - `through_main_stem`: the record's blue line continues upstream outside
 #'   its group.
 #' - `in_hist_zone`: its 50k code carries a historical distribution zone of
-#'   the species (`zones`; pre-2001 FISS, the same source as bcfishobs's FISS
+#'   the species (`zones`, cutthroat aliases folded as for the records;
+#'   pre-2001 FISS, the same source as bcfishobs's FISS
 #'   records, so not independent of them).
 #' - `gradient`: the matched segment's.
 #' - `counting`: not excluded, not a release, dated `year_min` to
 #'   `year_now`, as the presence check counts a record.
-#' - `yr`, `waterbody_identifier` and `site` (blue line and measure to the
-#'   metre), for counting distinct years, waterbodies and sites.
+#' - `yr`, `waterbody` and `site` (blue line and measure to the metre), for
+#'   counting distinct years, waterbodies and sites. A waterbody is a lake's
+#'   own identifier, otherwise the record's own 50k stream code, otherwise
+#'   its blue line: bcfishobs gives every stream and wetland record in a
+#'   group one shared `waterbody_identifier` (`00000<group>`).
 #'
 #' Cutthroat aliases (`CCT`, `ACT`, `CT/RB`) read as `CT`, as the presence
 #' check reads them.
@@ -74,7 +78,11 @@
   tmp <- function(name, df) {
     DBI::dbWriteTable(conn, name, df, temporary = TRUE, overwrite = TRUE)
   }
-  tmp("pm_zones", unique(zones[, c("species_code", "code50")]))
+  # Fold cutthroat aliases in the zones as in the records.
+  z <- zones[, c("species_code", "code50")]
+  z$species_code <- ifelse(z$species_code %in% c("CCT", "ACT", "CT/RB"), "CT",
+                           z$species_code)
+  tmp("pm_zones", unique(z))
   tmp("pm_pools", pools)
   tmp("pm_sockeye", data.frame(waterbody_poly_id = as.numeric(sockeye_lakes)))
   tmp("pm_excl", data.frame(observation_key = as.character(excl_keys)))
@@ -115,7 +123,10 @@ SELECT o.observation_key,
                  OR i.observation_key IS NOT NULL)
         AND extract(year FROM o.observation_date) BETWEEN %d AND %d) AS counting,
        extract(year FROM o.observation_date)::int AS yr,
-       o.waterbody_identifier,
+       CASE WHEN o.waterbody_type = 'Lake' THEN 'lake:' || o.waterbody_identifier
+            WHEN nullif(rtrim(replace(o.new_watershed_code, '-', ''), '0'), '') IS NOT NULL
+              THEN 'code:' || rtrim(replace(o.new_watershed_code, '-', ''), '0')
+            ELSE 'line:' || o.blue_line_key END AS waterbody,
        o.blue_line_key, o.downstream_route_measure, o.wscode, o.localcode
 FROM bcfishobs.observations o
 LEFT JOIN whse_basemapping.fwa_stream_networks_sp s
@@ -199,7 +210,7 @@ GROUP BY 1, 2",
     "
 CREATE TEMP TABLE pm_out AS
 SELECT o.observation_key, o.watershed_group_code, o.species_code, o.counting,
-       o.yr, o.waterbody_identifier,
+       o.yr, o.waterbody,
        o.blue_line_key || ':' || round(o.downstream_route_measure)::bigint AS site,
        o.code50,
        CASE WHEN NOT EXISTS (SELECT 1 FROM pg_temp.pm_codegrp c
@@ -256,7 +267,7 @@ LEFT JOIN LATERAL (
 #' @noRd
 .lnk_presence_cell_measures <- function(m) {
   need <- c("watershed_group_code", "species_code", "counting", "yr",
-            "waterbody_identifier", "site", "code_other_group", "elevation_m",
+            "waterbody", "site", "code_other_group", "elevation_m",
             "major_drainage", "barriers_known", "barrier_below",
             "n_class_above", "rearing_lake_ha", "lake_record",
             "known_sockeye_lake", "through_main_stem", "in_hist_zone")
@@ -281,7 +292,7 @@ LEFT JOIN LATERAL (
       species_code = d$species_code[1],
       n_counting = nrow(d),
       n_sites = ndist(d$site),
-      n_waterbodies = ndist(d$waterbody_identifier),
+      n_waterbodies = ndist(d$waterbody),
       n_years = ndist(as.character(d$yr)),
       n_code_other_group = yes(d$code_other_group),
       barriers_known = any(d$barriers_known %in% TRUE),

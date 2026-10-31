@@ -62,6 +62,11 @@ seed <- "--seed-tracker" %in% args
 dir_out <- arg("out", file.path("data-raw", "logs", "presence_check_402"))
 fs::dir_create(dir_out)
 year_now <- as.integer(format(Sys.Date(), "%Y"))
+# Read before anything is written: the run rewrites tracked outputs itself.
+code_dirty <- system2("git", c("status", "--porcelain", "--untracked-files=no",
+                               "--", "R", "data-raw/wsg_species_presence_check.R",
+                               "data-raw/presence_evidence_load.R"),
+                      stdout = TRUE)
 
 cfg <- lnk_config(config)
 loaded <- lnk_load_overrides(cfg)
@@ -164,18 +169,61 @@ for (v in c("n_records", "n_excluded", "n_releases", "n_kept_own")) {
 n_cmp_cells <- nrow(cmp)
 n_cmp_records <- sum(cmp$n_records)
 
-# The measures, counted again in SQL from the record table for the same groups.
+# The measures, counted again in SQL for the same groups, from bcfishobs and
+# FWA rather than from the measures' own tables, and each written another way:
+# the barrier test from the barrier's side (fwa_upstream), the main stem as the
+# line reaching higher outside the group than inside it.
 sqm <- dbGetQuery(conn, sprintf("
-  SELECT watershed_group_code, species_code,
+  WITH o AS (
+    SELECT o.observation_key, o.watershed_group_code,
+           CASE WHEN o.species_code IN ('CCT', 'ACT', 'CT/RB') THEN 'CT'
+                ELSE o.species_code END AS species_code,
+           o.blue_line_key, o.downstream_route_measure, o.wscode, o.localcode,
+           replace(o.new_watershed_code, '-', '') AS code_full
+    FROM bcfishobs.observations o
+    LEFT JOIN pg_temp.pc_excl x ON x.observation_key = o.observation_key
+    LEFT JOIN (SELECT DISTINCT observation_key FROM pg_temp.pc_incl) i
+      ON i.observation_key = o.observation_key
+    WHERE o.watershed_group_code IN (%s)
+      AND x.observation_key IS NULL
+      AND NOT (coalesce(substring(o.source FROM 1 FOR position(':' IN o.source)), '')
+                 = 'Releases Database:'
+               OR coalesce(o.source_ref ILIKE '%%BC RELEASE RECORDS DATABASE%%', false)
+               OR coalesce(o.source_ref ILIKE '%%STOCKING%%', false)
+               OR i.observation_key IS NOT NULL)
+      AND extract(year FROM o.observation_date) BETWEEN %d AND %d)
+  SELECT o.watershed_group_code, o.species_code,
          count(*)::int AS n_counting,
-         count(DISTINCT site)::int AS n_sites,
-         count(*) FILTER (WHERE code_other_group)::int AS n_code_other_group,
-         count(*) FILTER (WHERE barrier_below IS NOT NULL)::int AS n_above_barrier,
-         count(*) FILTER (WHERE through_main_stem)::int AS n_main_stem,
-         count(*) FILTER (WHERE in_hist_zone)::int AS n_hist_zone
-  FROM pg_temp.pm_out
-  WHERE counting AND watershed_group_code IN (%s)
-  GROUP BY 1, 2", paste(sprintf("'%s'", check_wsgs), collapse = ", ")))
+         count(DISTINCT (o.blue_line_key, round(o.downstream_route_measure)))::int AS n_sites,
+         count(*) FILTER (WHERE
+           EXISTS (SELECT 1 FROM whse_basemapping.fwa_streams_20k_50k l
+                   WHERE l.watershed_code_50k = o.code_full)
+           AND NOT EXISTS (SELECT 1 FROM whse_basemapping.fwa_streams_20k_50k l
+                           WHERE l.watershed_code_50k = o.code_full
+                             AND l.watershed_group_code_20k = o.watershed_group_code))::int
+           AS n_code_other_group,
+         count(*) FILTER (WHERE o.species_code IN (%s) AND EXISTS (
+           SELECT 1 FROM fresh_default.barriers b
+           WHERE b.barrier_source IN ('FALLS', 'GRADIENT', 'USER_DEFINITE')
+             AND o.species_code = ANY (b.blocks_species)
+             AND o.wscode <@ b.wscode_ltree
+             AND whse_basemapping.fwa_upstream(
+                   b.blue_line_key, b.downstream_route_measure, b.wscode_ltree, b.localcode_ltree,
+                   o.blue_line_key, o.downstream_route_measure, o.wscode, o.localcode)))::int
+           AS n_above_barrier,
+         count(*) FILTER (WHERE (
+           SELECT max(s.upstream_route_measure) FROM whse_basemapping.fwa_stream_networks_sp s
+           WHERE s.blue_line_key = o.blue_line_key
+             AND s.watershed_group_code <> o.watershed_group_code
+             AND s.downstream_route_measure > o.downstream_route_measure) IS NOT NULL)::int
+           AS n_main_stem,
+         count(*) FILTER (WHERE EXISTS (
+           SELECT 1 FROM pg_temp.pm_zones z
+           WHERE z.species_code = o.species_code
+             AND z.code50 = nullif(rtrim(o.code_full, '0'), '')))::int AS n_hist_zone
+  FROM o GROUP BY 1, 2",
+  paste(sprintf("'%s'", check_wsgs), collapse = ", "), year_min, year_now,
+  paste(sprintf("'%s'", sp_barrier), collapse = ", ")))
 mine_m <- cm[cm$watershed_group_code %in% check_wsgs, names(sqm)]
 cmp_m <- merge(mine_m, sqm, by = c("watershed_group_code", "species_code"),
                all = TRUE, suffixes = c("", "_sql"))
@@ -321,8 +369,9 @@ valid_dates <- records$observation_date[!is.na(records$observation_date) &
                                           records$observation_date <= Sys.Date()]
 writeLines(c(
   sprintf("date: %s", format(Sys.time(), "%Y-%m-%d %H:%M %Z", tz = "UTC")),
-  sprintf("link: %s @ %s", utils::packageVersion("link"),
-          system("git rev-parse --short HEAD", intern = TRUE)),
+  sprintf("link: %s @ %s%s", utils::packageVersion("link"),
+          system("git rev-parse --short HEAD", intern = TRUE),
+          if (length(code_dirty) > 0L) " plus uncommitted changes to R/ or the drivers" else ""),
   sprintf("config: %s; presence table %s", config,
           cfg$files$wsg_species_presence$path),
   "db: docker fwapg localhost:5432",

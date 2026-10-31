@@ -2,7 +2,7 @@ meas_rec <- function(n = 1L, ...) {
   x <- data.frame(
     observation_key = paste0("k", seq_len(n)),
     watershed_group_code = "AAAA", species_code = "CH", counting = TRUE,
-    yr = 2000L, waterbody_identifier = "00001AAAA", site = "1:100",
+    yr = 2000L, waterbody = "lake:00001AAAA", site = "1:100",
     code_other_group = FALSE, elevation_m = 500, major_drainage = "100",
     barriers_known = TRUE, barrier_below = NA_character_,
     n_class_above = NA_integer_, rearing_lake_ha = NA_real_,
@@ -16,7 +16,7 @@ meas_rec <- function(n = 1L, ...) {
 
 test_that("distinct sites, waterbodies and years are counted, not records", {
   m <- meas_rec(4, site = c("1:100", "1:100", "1:200", "2:5"),
-                waterbody_identifier = c("w1", "w1", "w1", "w2"),
+                waterbody = c("w1", "w1", "w1", "w2"),
                 yr = c(2000L, 2000L, 2001L, NA))
   out <- .lnk_presence_cell_measures(m)
   expect_equal(out$n_counting, 4L)
@@ -132,7 +132,7 @@ test_that("the measure story says what holds and skips what does not", {
                  "stream with a historical distribution zone of the species; ",
                  "at 500 m.")
   expect_equal(.lnk_presence_measure_story(cm), want)
-  m <- meas_rec(3, site = c("a", "b", "c"), waterbody_identifier = c("w1", "w1", "w2"),
+  m <- meas_rec(3, site = c("a", "b", "c"), waterbody = c("w1", "w1", "w2"),
                 yr = c(1990L, 2001L, 2001L), barrier_below = c("FALLS", "GRADIENT", NA),
                 n_class_above = c(1L, 4L, NA), code_other_group = c(TRUE, FALSE, FALSE),
                 in_hist_zone = c(TRUE, TRUE, TRUE), elevation_m = c(400, 800, 1200))
