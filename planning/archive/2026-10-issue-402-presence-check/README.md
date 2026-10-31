@@ -10,11 +10,11 @@ What was learned, and the wrong turns kept: the plan rested on a premise that wa
 
 On local fwapg (bcfishobs 375,962 records, newest valid date 2026-10-10), 351 of 3,198 cells are flagged: 24 marked present with no counting record (12 with no record at all, 8 releases only, 4 undated only) and 327 not marked with records (82 with one record, 89 with two to four, 156 with five or more; 238 with a record since 1990). Kokanee are 137 of the 327 and 92 of the 156 large cells. 114 absent cells are promoted by their group and still unmodelled. An SQL recount of PARS, ADMS and ALBN (39 cells, 5,423 records) agrees exactly. Reruns reproduce every count and flag; the stories changed only by the review fixes.
 
-Found on the way and left outside #402 (follow-up candidates, not filed):
-- The pipeline's exact-code filter drops summer and winter steelhead (`SST` 404, `WST` 358), `ADV` 79, `ABT` 12, `BT/DV` 57, `DV/BT` 52 and `RB/CT` 23 records; counted, they would change 4 flags. The steelhead and char counterpart of #398.
-- link lifts on `observation_date >= '1990-01-01'`, bcfishpass on `> '1990-01-01'` (`smnorris/bcfishpass@620dbe4`): 561 lift-readable salmon and steelhead records sit on that date, which bears on the `bcfishpass` bundle's parity.
-- The operator noted that lifting a natural barrier needs 5 records since 1990 for salmon, steelhead, GR and KO in `default`, so one salmon above a falls gives code 2 and no lift.
-- RUNBOOK §5 says RB lifts have "no date floor"; `lnk_barrier_overrides()` substitutes 1900-01-01.
+Found on the way and left outside #402, filed after the PR opened:
+- The pipeline's exact-code filter drops summer and winter steelhead (`SST` 404, `WST` 358), `ADV` 79, `ABT` 12, `BT/DV` 57, `DV/BT` 52 and `RB/CT` 23 records; counted, they would change 4 flags. The steelhead and char counterpart of #398: #425.
+- link lifts on `observation_date >= '1990-01-01'`, bcfishpass on `> '1990-01-01'` (`smnorris/bcfishpass@620dbe4`): 561 lift-readable salmon and steelhead records sit on that date, which bears on the `bcfishpass` bundle's parity: #426.
+- The operator noted that lifting a natural barrier needs 5 records since 1990 for salmon, steelhead, GR and KO in `default`, so one salmon above a falls gives code 2 and no lift: #427.
+- RUNBOOK §5 says RB lifts have "no date floor"; `lnk_barrier_overrides()` substitutes 1900-01-01. Folded into #426.
 
 ## Evidence
 
