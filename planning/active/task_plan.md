@@ -85,13 +85,13 @@ Link starts from bcfishpass's published files and keeps its own changes separate
 
 ## Phase 4: Pull the drift
 
-- [ ] Run the sync for real, in the same commit as Phase 5 (Plan review O2).
-- [ ] Check: the loaded presence table differs from before at exactly UTRE/ch and QUES/st (Plan review O3); the dry run then reports no drift, `lnk_config_verify()` is clean on both bundles, `default`'s presence is byte-unchanged, and no group logs the final-line warning.
+- [x] Run the sync for real, in the same commit as Phase 5 (Plan review O2).
+- [x] Check: the loaded presence table differs from before at exactly UTRE/ch and QUES/st (Plan review O3); the dry run then reports no drift, `lnk_config_verify()` is clean on both bundles, `default`'s presence is byte-unchanged, and no group logs the final-line warning.
 
 ## Phase 5: Token
 
-- [ ] Add a row `acc-bcfp-4` ("As acc-bcfp-3, but the presence table follows bcfishpass at `3bd2824`: UTRE CH and QUES ST present"), introduced at 0.74.0, and retire `acc-bcfp-3`.
-- [ ] Update `test-lnk_vocabulary.R`, and run the append-only test locally.
+- [x] Add a row `acc-bcfp-4` ("As acc-bcfp-3, but the presence table follows bcfishpass at `3bd2824`: UTRE CH and QUES ST present"), introduced at 0.74.0, and retire `acc-bcfp-3`.
+- [x] Update `test-lnk_vocabulary.R`, and run the append-only test locally.
 
 ## Phase 6: Dam rows, parity by query
 

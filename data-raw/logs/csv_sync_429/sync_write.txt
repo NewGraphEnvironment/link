@@ -1,0 +1,43 @@
+Upstream build: v0.7.15-51-g3bd2824 (head_sha=3bd2824, completed=2026-10-28T04:44:44Z)
+inst/extdata/configs/bcfishpass: checking 15 bcfishpass copies
+  overrides/user_habitat_classification.csv: clean
+  overrides/observation_exclusions.csv: clean
+  overrides/wsg_species_presence.csv: byte DRIFT
+  overrides/user_modelled_crossing_fixes.csv: clean
+  overrides/user_pscis_barrier_status.csv: clean
+  overrides/pscis_modelledcrossings_streams_xref.csv: clean
+  overrides/user_barriers_definite.csv: clean
+  overrides/user_barriers_definite_control.csv: clean
+  overrides/user_crossings_misc.csv: clean
+  overrides/cabd_additions.csv: clean
+  overrides/cabd_blkey_xref.csv: byte DRIFT
+  overrides/cabd_exclusions.csv: clean
+  overrides/cabd_passability_status_updates.csv: byte DRIFT
+  overrides/dfo_known_sockeye_lakes.csv: clean
+  overrides/wcrp_watersheds.csv: byte DRIFT
+inst/extdata/configs/default: checking 14 bcfishpass copies
+  overrides/user_habitat_classification.csv: clean
+  overrides/observation_exclusions.csv: clean
+  overrides/user_modelled_crossing_fixes.csv: clean
+  overrides/user_pscis_barrier_status.csv: clean
+  overrides/pscis_modelledcrossings_streams_xref.csv: clean
+  overrides/user_barriers_definite.csv: clean
+  overrides/user_barriers_definite_control.csv: clean
+  overrides/user_crossings_misc.csv: clean
+  overrides/cabd_additions.csv: clean
+  overrides/cabd_blkey_xref.csv: byte DRIFT
+  overrides/cabd_exclusions.csv: clean
+  overrides/cabd_passability_status_updates.csv: byte DRIFT
+  overrides/dfo_known_sockeye_lakes.csv: clean
+  overrides/wcrp_watersheds.csv: byte DRIFT
+Drift kind: review (-> /tmp/sync_drift_kind)
+  note: `bcfishpass`'s `acc` spec moves, so it needs a new vocabulary row (and the old one retired): `sha256:970ea40bcda8ac3df0337b237b4f73a8ba5677a2b7ddd17a696069f839378bed` 
+  bcfishpass/overrides/wsg_species_presence.csv: wrote (sha 3bd2824)
+  bcfishpass/overrides/cabd_blkey_xref.csv: wrote (sha 3bd2824)
+  bcfishpass/overrides/cabd_passability_status_updates.csv: wrote (sha 3bd2824)
+  bcfishpass/overrides/wcrp_watersheds.csv: wrote (sha 3bd2824)
+  default/overrides/cabd_blkey_xref.csv: wrote (sha 3bd2824)
+  default/overrides/cabd_passability_status_updates.csv: wrote (sha 3bd2824)
+  default/overrides/wcrp_watersheds.csv: wrote (sha 3bd2824)
+Appended row to data-raw/logs/bcfp_baselines.csv
+Wrote summary to /tmp/sync_summary.md

@@ -1,0 +1,6 @@
+bcfishpass wsg_species_presence : rows 246 -> 246 | cols same: TRUE 
+    UTRE ch '' -> 't' 
+    QUES st '' -> 't' 
+bcfishpass cabd_passability_status_updates : rows 12 -> 14 | cols same: TRUE 
+default cabd_passability_status_updates : rows 12 -> 14 | cols same: TRUE 
+default_tuned cabd_passability_status_updates : rows 12 -> 14 | cols same: TRUE 
