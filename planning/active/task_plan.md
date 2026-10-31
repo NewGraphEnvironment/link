@@ -39,7 +39,7 @@ Sized on today's local records (before pooling and exclusions): about 24 present
 
 - [x] `inst/extdata/configs/default/wsg_species_presence_review.csv` with columns `watershed_group_code, species_code, flag, rule, story, decision (pending|keep|add|remove), reviewer, review_date, issue`.
 - [x] `configs/dictionary_wsg_species_presence_review.csv`, and the stem added to `test-dictionaries.R`'s tracker loop (line 248).
-- [x] **Not** declared under `files:` (changed after the plan review, `review-plan.md` Q1): a declared file enters `config_hash`, so each tracker edit after a run would make `recompute_readers` refuse that run's groups, stop `.lnk_export_bundle()` publishing it, and redden the provenance test until re-stamped. It sits in the bundle directory beside the presence table; `data-raw/pretest_inputs.csv` maps it `none`, and the dictionary is tested by path.
+- [x] **Not** declared under `files:` (changed after the plan review, `review-plan.md` Q1): a declared file enters `config_hash`, so after each tracker edit `recompute_readers_check.R` would refuse an earlier partial run's outside readers, an export of an earlier build would leave out its bundle files, and the provenance test would redden until re-stamped (wording corrected after code-check round 4). It sits in the bundle directory beside the presence table; `data-raw/pretest_inputs.csv` maps it `none`, and the dictionary is tested by path.
 
 ## Phase 3: The check script, run on all groups
 
@@ -62,7 +62,7 @@ Sized on today's local records (before pooling and exclusions): about 24 present
 ## Validation
 
 - [ ] Tests pass (`devtools::test()`), `lintr::lint_package()`, `devtools::document()`
-- [ ] `/code-check` clean (once over the branch with `/code-check branch`)
+- [x] `/code-check` over the branch: four rounds; ended by round 4's enumeration (13 story sentence forms true on all 351 rows; every prose claim with a source). Round 4's four doc findings were fixed and checked by direct reads, not by a fifth round
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 

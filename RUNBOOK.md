@@ -642,8 +642,11 @@ releases tagged as bcfishpass tags them and `observation_exclusions.csv` out, CT
 `configs/default/wsg_species_presence_review.csv` as `pending`. The operator decides each row;
 an `add` or `remove` is an edit to the presence table, whose `notes` cell names the rule, and it
 moves the `acc` token (§6b). The tracker is **not** declared under `files:`: a declared file
-enters `config_hash`, and a review edit after a run would then make `recompute_readers` and the
-export refuse that run. The pipeline's filter matches codes exactly, so summer and winter
+enters `config_hash`, so after a review edit link reads every earlier build as another bundle:
+`recompute_readers_check.R` refuses to recompute the groups outside a partial run that read it
+(`config_changed_since_run`; the run's own groups still recompute), and an export of an earlier
+build ships its habitat without the bundle files ("bundle has changed since the build"). The
+pipeline's filter matches codes exactly, so summer and winter
 steelhead (`SST`, `WST`), anadromous char (`ADV`, `ABT`) and the uncertain `BT/DV`, `DV/BT` and
 `RB/CT` calls never count; the check mirrors it and reports what counting them would change
 (`alias_sensitivity.csv`). Findings: `research/species_presence.md`.

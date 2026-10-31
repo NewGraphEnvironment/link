@@ -300,8 +300,9 @@ test_that("species_pooling / species_groups consumed_by refs land on their colum
 # -- dictionary_wsg_species_presence_review (#402) ---------------------------
 
 # The tracker is not declared under `files:` (a declared file enters
-# config_hash, and every review edit would then refuse earlier runs'
-# recomputes and exports), so it is found by path, not through lnk_config().
+# config_hash, so a review edit would make recompute_readers_check.R refuse an
+# earlier partial run's outside readers, and an export of an earlier build
+# leave out the bundle files), so it is found by path, not lnk_config().
 test_that("dictionary_wsg_species_presence_review matches the tracker", {
   d <- dict_read("wsg_species_presence_review")
   expect_true(all(c("column", "type", "group", "owner", "consumed_by",

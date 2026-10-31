@@ -1,6 +1,6 @@
 # presence_check_402
 
-`default`'s `wsg_species_presence.csv` judged against bcfishobs, cell by cell (#402). Produced by `Rscript data-raw/wsg_species_presence_check.R --seed-tracker` on local fwapg at link `83e45a71` (`stamp.txt` has the run, the rule, the counts and the cross-check; its date and tracker line differ on every run). The first run, at `feaa408c`, flagged the same 351 cells. The code-check rounds after it rewrote the stories and added the `year_newest_before` and `modelled` columns; the flags, the counts and `groups.csv`, `summary.csv` and `alias_sensitivity.csv` did not move.
+`default`'s `wsg_species_presence.csv` judged against bcfishobs, cell by cell (#402). Produced by `Rscript data-raw/wsg_species_presence_check.R --seed-tracker` on local fwapg at link `83e45a71` (`stamp.txt` has the run, the rule, the counts and the cross-check; its `date:` and `link:` lines differ between runs, and its tracker line between a first and a later seeding). The first run, at `feaa408c`, flagged the same 351 cells. The code-check rounds after it rewrote the stories and added the `year_newest_before` and `modelled` columns; the flags, the counts and `groups.csv`, `summary.csv` and `alias_sensitivity.csv` did not move.
 
 | File | Holds |
 |---|---|
