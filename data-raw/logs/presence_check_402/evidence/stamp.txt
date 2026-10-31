@@ -1,0 +1,6 @@
+retrieved: 2026-10-31T15:42:07Z
+hist_zones: b665c14f-3d29-414b-b232-cba2a9c3cc55 (BC Historical Fish Distribution - Zones (50,000))
+hist_zones_wfs_rows: 19094
+hist_zones_rows_written: 16525 (unique species, code, activity, stock, type)
+hist_zones_species: 74
+bcdata: 0.5.3

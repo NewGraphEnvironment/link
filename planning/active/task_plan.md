@@ -23,34 +23,40 @@ This branch builds the screen and the evidence table. Deciding cells happens aft
 - FWA: `fwa_stream_networks_sp` (Z in geometry, gradient, `gnis_name`, `stream_order`), `fwa_lakes_poly` / `fwa_manmade_waterbodies_poly` (lake area for KO rearing).
 - BC Data Catalogue: "Provincial Fish Ranges - Watersheds" (`4e66ac86-aec6-4d79-8462-9e8daf0c0339`), "BC Historical Fish Distribution - Zones (50,000)" (`b665c14f-3d29-414b-b232-cba2a9c3cc55`), via `bcdata`.
 
-## Phase 1: A per-record screen
+## Revised after the plan review (operator, 2026-10-31)
 
-- [ ] `.lnk_obs_screen()` in a new `R/lnk_obs_screen.R`: given records (the check's columns plus geometry-derived fields from the driver), returns one row per record with a flag per screen and a single `screen` verdict (`pass` | `doubt` | `fail`) with its reasons. Pure R over a data frame, so it is tested without a database. The screens:
-  - **Location:** weak match (`match_type` C/D/E, `distance_to_stream` above a set distance); the record's own `new_watershed_code` disagrees with the matched stream's 50k code; `gazetted_name` disagrees with the matched stream's `gnis_name` (normalised).
-  - **Transcription:** UTM zone inconsistent with the point's longitude; isolation (distance to the nearest other record of the species) beyond a set distance, reported, not failed, on its own.
-  - **Reachability:** a natural barrier blocking the species lies downstream, with no lift (`barrier_overrides`), counted by kind (falls, gradient, user-definite). For KO, also whether a lake of at least a set area lies at or upstream of that barrier and downstream of the record's catchment (rearing lake).
-  - **Place:** record elevation (stream Z at the measure) and segment gradient against per-species ceilings.
-  - **Living there or passing through:** on a line that flows into the group from another group (through-flowing main stem) or on a tributary.
-- [ ] The thresholds live in a bundle CSV, `configs/default/obs_screen_parameters.csv` (species, elevation ceiling, gradient ceiling, isolation distance, KO lake minimum ha, match distance), each row with its source. First values derived from the records' own distribution (for example the 99.5th percentile of elevation for records that pass every other screen) and flagged `provisional`, for the operator to set.
-- [ ] Tests on fixtures: each screen in both directions, verdict combination, NA handling (no geometry, no 50k code), a known DV-in-pooled-region record reading as BT evidence; then restore each defect and watch its test fail.
+The review (`review-plan.md`) showed three of the location screens repeat what bcfishobs's matching already did, that "above an unlifted barrier" is circular for absent cells, that Bonnington Falls is not in the barrier table, and that percentile ceilings are circular. The operator chose: **measures now, verdicts later.** This PR adds per-record measures and a per-cell table, with no pass/fail rules. The rules are set in the decision session from these numbers. Literature, range layers and a native-range table by major drainage go in a second PR. The verdict function first committed (`53ae5cd7`) is removed.
 
-## Phase 2: Evidence beyond bcfishobs
+## Phase 1: Per-record measures (SQL in R/)
 
-- [ ] `data-raw/presence_evidence_load.R`: load "Provincial Fish Ranges - Watersheds" and "BC Historical Fish Distribution - Zones (50,000)" into a local schema with `bcdata`, recording dataset id, retrieval date and row count; summarise per group and species (in range, not in range, no data). If the layers prove too coarse or empty for some species, say so in the research file rather than force them.
-- [ ] Per group and species: user habitat classification rows and FISS sites (where `LNK_KNOWLEDGE_DIR` covers the group).
-- [ ] Probe E-Fauna BC for a downloadable fish atlas; record what is and is not obtainable.
-- [ ] Literature through the Zotero skills, not the MCP (`/zotero-api` Web API with `~/.zotero-api-key`; `/lit-search` for a ragnar store over the PDFs). The group library already holds McPhail & Baxter 1996 (`SUENJEU8`, bull trout), McPhail & Carveth 1993 (`44PTFGQ3`, field key), Roberge et al. 2002 (`B3TYJ9I9`, life history of BC and Yukon fishes) and Ericksen et al. 2009 (`XBVCXFAG`, Kootenay kokanee; two duplicates `BCBNSQ7B`, `WZJXVVJL`). Add McPhail 2007 *The Freshwater Fishes of British Columbia* (absent) and the zoogeography literature on post-glacial access, build a store over them, and record per species the native range limits and known historic-access cases (Kootenay above Bonnington Falls) in `research/species_presence.md`, each with its citation key.
+- [ ] `R/lnk_presence_measures.R`: `.lnk_presence_measures(conn, zones, species_barrier, lift_pools, year_min)` builds session temp tables and returns one row per bcfishobs record with:
+  - `code_group`: the group of the record's own 50k code (`fwa_streams_20k_50k.watershed_group_code_20k`), and `code_other_group` (TRUE where it is not the group the record is filed under; NA where the code is not in the lookup);
+  - `elevation_m`: `ST_Z(geom)` (the stream's Z at the match; 0 read as NA);
+  - `major_drainage`: the first segment of the record's watershed code;
+  - `barrier_below`: kind of the nearest natural barrier below (FALLS, GRADIENT, USER_DEFINITE) that blocks the species, for anadromous species and KO; NA where none, and NA too in groups holding no barrier rows (flagged `barriers_known` FALSE);
+  - `n_class_above`: records since `year_min` of the species' lift pool (`parameters_fresh.csv` `observation_species`), presence ignored, exclusions and releases out, above that barrier;
+  - `rearing_lake_ha` (KO): the largest lake above that barrier, lakes placed by their stream segments;
+  - `lake_record` (record matched to a lake, `waterbody_type`), `known_sockeye_lake` (its lake is in `dfo_known_sockeye_lakes.csv`);
+  - `through_main_stem`: the record's blue line continues upstream outside its group;
+  - `in_hist_zone`: its 50k code lies in a historical distribution zone of the species (`presence_evidence_load.R`; pre-2001 FISS, so not independent of FISS records, stated as such);
+  - `gradient`: the segment's, reported only.
+- [ ] Live tests (skip without the database): a golden value set for one group, the argument order of the barrier test (a record above a known falls reads it, one below does not), and the KO lake placement.
 
-## Phase 3: The cell table for the discussion
+## Phase 2: The per-cell table
 
-- [ ] Extend the driver: screen every record, then run `.lnk_presence_check()` on records that pass, and write per cell the counts by verdict and reason, the reachability and main-stem split, and the evidence columns. Extend the story with the screen's reasons ("2 records, both above Bonnington-type falls with no rearing lake"; "1 record, its 50k code is another stream").
-- [ ] Re-seed the tracker's pending stories (decided rows untouched); report how many of the 351 flags change once failed records are dropped.
-- [ ] `research/species_presence.md`: the screen, its thresholds, what each evidence source covers, and the per-class picture for the discussion (KO, salmon and steelhead, single records, the 24 present cells).
-- [ ] RUNBOOK §5 subsection extended; CLAUDE.md status entry; NEWS line.
+- [ ] `.lnk_presence_cell_measures(measures, records)` (pure R, tested on fixtures): per group and species, distinct sites, waterbodies and years among counting records; records whose code lies in another group; records above a blocking barrier and the most records of the class above any one of them; KO records with and without a rearing lake; lake and main-stem records; records in a historical zone; elevation range.
+- [ ] The driver joins it to every cell (`cells.csv`, `disagreements.csv`), extends the story ("1 waterbody", "2 records, both filed under another group's code", "above a falls with 1 record of its class above it"), and re-seeds pending tracker stories (decided rows untouched).
+- [ ] Recall set: the 67 `data_error` rows in `observation_exclusions.csv` with their measures (`recall.csv`): which measures would have caught each, so the session sets rules knowing what they catch.
+- [ ] SQL recount of three groups' measures, independent of the R aggregation.
+
+## Phase 3: Write-up
+
+- [ ] `research/species_presence.md`: each measure, what it can and cannot see (the review's findings), the per-class picture for the decision session (KO, salmon and steelhead, single waterbodies, the 24 present cells). RUNBOOK §5 extended; CLAUDE.md status entry; NEWS line.
 
 ## Decided at the gate (operator, 2026-10-31)
 
 - Screen records before deciding cells: historic access, species range, transcription, elevation and gradient, then loneliness as a reason only after the others.
+- After the plan review: measures now, verdict rules set in the decision session; literature, range layers and the native-range table in a second PR.
 - Measure for salmon and steelhead: reachability, main stem against tributary, independent evidence (UHC, FISS, range layers, E-Fauna if possible, literature).
 - KO: decided after the historic-access homework, not added wholesale.
 - Single pre-1990 records: species-dependent; likely absent with a note, decided after the screen.
@@ -58,10 +64,12 @@ This branch builds the screen and the evidence table. Deciding cells happens aft
 
 ## Owed at the end (reported, done after merge)
 
-- [ ] The decision session: the operator decides each class and the residue rows in the tracker, with the screened table in hand.
+- [ ] The decision session: the operator sets the screen's rules from the measures and decides each class and the residue rows in the tracker.
+- [ ] Second PR: literature (McPhail 2007 into Zotero, `/lit-search` store), "Provincial Fish Ranges - Watersheds" (BCGW custom download; codes 0/4/5/6/9, with 1/2/8 overwritten from records), E-Fauna probe, and a native-or-introduced table per species by major drainage.
 - [ ] A separate PR applies the decisions to `wsg_species_presence.csv` (notes naming the rule on each changed cell), with a new `acc` vocabulary row, a version bump and a provenance re-stamp; the groups re-model at the next provincial run (#377).
 - [ ] Whether the screen should also gate the pipeline's records (breaks, code 2, lifts): an issue, since it moves outputs.
 - [ ] The pre-run gate (#372) re-runs if `R/` files on the modelling path change (this plan adds a new file only; `pretest_inputs.csv` gets a `none` row).
+- [ ] The evidence and any later parameter file stay undeclared under `files:` (config_hash; review AC2).
 
 ## Validation
 
@@ -70,7 +78,7 @@ This branch builds the screen and the evidence table. Deciding cells happens aft
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
-Verification: unit tests with mutation checks on every screen; an SQL recount of three groups' screened counts (as the first PR did); hand-checked samples per reason (ten records each for watershed-code disagreement, UTM zone, above-barrier, elevation) read against their source records to confirm the screen catches errors and not real fish; rerun reproducibility of every count.
+Verification: unit tests on the cell aggregation with defects restored; live golden tests on one group for the SQL; the 67-row recall set; an SQL recount of three groups; rerun reproducibility.
 
 Branch: `402-screen-fish-records` (the first PR's branch name is taken by its merged history).
 

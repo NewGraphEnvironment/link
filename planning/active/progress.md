@@ -6,3 +6,4 @@
 - Created branch `402-screen-fish-records` off origin/main (`ba5fef36`)
 - Scaffolded PWF baseline from issue #402 with approved phases
 - Next: start Phase 1
+- Plan review folded in (review-plan.md); operator chose measures now, verdicts in the decision session; verdict function removed; historical zones fetched (16,525 reaches, 74 species)
