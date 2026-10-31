@@ -275,7 +275,8 @@ test_that("species_pooling / species_groups consumed_by refs land on their colum
   src <- testthat::test_path("..", "..", "R")
   skip_if_not(dir.exists(src), "R/ source not available")
   n_refs <- 0L
-  for (stem in c("species_pooling", "species_groups")) {
+  for (stem in c("species_pooling", "species_groups",
+                "wsg_species_presence_review")) {
     d <- dict_read(stem)
     for (i in seq_len(nrow(d))) {
       refs <- regmatches(d$consumed_by[i],
@@ -294,4 +295,32 @@ test_that("species_pooling / species_groups consumed_by refs land on their colum
     }
   }
   expect_gt(n_refs, 0)
+})
+
+# -- dictionary_wsg_species_presence_review (#402) ---------------------------
+
+# The tracker is not declared under `files:` (a declared file enters
+# config_hash, and every review edit would then refuse earlier runs'
+# recomputes and exports), so it is found by path, not through lnk_config().
+test_that("dictionary_wsg_species_presence_review matches the tracker", {
+  d <- dict_read("wsg_species_presence_review")
+  expect_true(all(c("column", "type", "group", "owner", "consumed_by",
+                    "default_when_absent", "description",
+                    "related") %in% names(d)))
+  expect_false(any(duplicated(d$column)))
+  expect_true(all(filled(d$description)))
+  expect_true(all(d$owner == "link"))
+  tracker <- file.path(cfg_dir(), "default", "wsg_species_presence_review.csv")
+  expect_true(file.exists(tracker))
+  expect_identical(names(read_csv_plain(tracker)), d$column)
+  expect_null(lnk_config("default")$files$wsg_species_presence_review)
+})
+
+test_that("the tracker's rows are unique and their decisions known", {
+  tracker <- read_csv_plain(file.path(cfg_dir(), "default",
+                                      "wsg_species_presence_review.csv"))
+  k <- paste(tracker$watershed_group_code, tracker$species_code)
+  expect_false(any(duplicated(k)))
+  expect_true(all(tracker$decision %in% c("pending", "keep", "add", "remove")))
+  expect_true(all(tracker$flag %in% c("present_unsupported", "absent_recorded")))
 })

@@ -37,9 +37,9 @@ Sized on today's local records (before pooling and exclusions): about 24 present
 
 ## Phase 2: The tracker in the bundle
 
-- [ ] `inst/extdata/configs/default/wsg_species_presence_review.csv` with columns `watershed_group_code, species_code, flag, rule, story, decision (pending|keep|add|remove), reviewer, review_date, issue`.
-- [ ] `configs/dictionary_wsg_species_presence_review.csv`, and the stem added to `test-dictionaries.R`'s tracker loop (line 248).
-- [ ] **Not** declared under `files:` (changed after the plan review, `review-plan.md` Q1): a declared file enters `config_hash`, so each tracker edit after a run would make `recompute_readers` refuse that run's groups, stop `.lnk_export_bundle()` publishing it, and redden the provenance test until re-stamped. It sits in the bundle directory beside the presence table; `data-raw/pretest_inputs.csv` maps it `none`, and the dictionary is tested by path.
+- [x] `inst/extdata/configs/default/wsg_species_presence_review.csv` with columns `watershed_group_code, species_code, flag, rule, story, decision (pending|keep|add|remove), reviewer, review_date, issue`.
+- [x] `configs/dictionary_wsg_species_presence_review.csv`, and the stem added to `test-dictionaries.R`'s tracker loop (line 248).
+- [x] **Not** declared under `files:` (changed after the plan review, `review-plan.md` Q1): a declared file enters `config_hash`, so each tracker edit after a run would make `recompute_readers` refuse that run's groups, stop `.lnk_export_bundle()` publishing it, and redden the provenance test until re-stamped. It sits in the bundle directory beside the presence table; `data-raw/pretest_inputs.csv` maps it `none`, and the dictionary is tested by path.
 
 ## Phase 3: The check script, run on all groups
 
