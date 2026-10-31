@@ -17,3 +17,19 @@
 - fresh `/code-check branch` round 1: Clean; its note on the live test comparing ids through a double fixed (b3557d0). Round 2 spawned 23:05 UTC.
 - fresh `/code-check branch`: rounds 2 and 3 Clean (round 2's note on a roxygen sentence fixed in 1b2d4bc; round 3 enumerated the diff's ten claims about the result and ran each). Review record archived in fresh (`planning/archive/2026-10-issue-284-distinct-result/`). PR NewGraphEnvironment/fresh#285 open; the merge and release wait on the user.
 - Builds launched ~23:12 UTC (`run.sh`; PRE worktree at 47bb3dfa, POST at ff6e7ea2, POST's fresh from a scratch library at fresh 1b2d4bc).
+
+## Session 2026-10-31 (UTC)
+
+- fresh PR #285 merged (`3477123`) on the user's word; fresh v0.48.0 released (`cd86c9a`, GitHub
+  release published), fresh#284 body revised to match what landed. Post-merge CI green; gh-pages
+  built from `cd86c9a`.
+- Builds: 18 of 18 closed on the first try (23:17 to 00:17 UTC), `RUN401_DONE`.
+- `build_obs.R`: each group's slice of the province table equals its own, 0 rows either way in nine.
+- `pre_post_diff.R`: 39 rows, `n_violation` 0. `default` 25.98 km 1 to 2 over 114 pieces in 14
+  group-species (LNTH BT 12.25 km the most), `bcfishpass` 0.05 km (UPCE BT). Restore-the-bug: a
+  planted 1 to 2 (LKEL BT) and a planted mapping code (bcfishpass PARS BT) each stopped it; reverted,
+  the CSV was byte-identical.
+- `rollup.R`: parity 0.00 km for BULK BT/CH/CO/PK/SK, PARS BT and UPCE BT (−0.05 before, a record
+  in another group); steelhead 200.85 km as in #399.
+- link pins fresh v0.48.0 (`9245726c`). Evidence README, stamp, RUNBOOK §2c, research files and
+  CLAUDE.md written.

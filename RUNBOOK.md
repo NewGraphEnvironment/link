@@ -245,6 +245,10 @@ segment-record pair, and over every group's records a Fraser main-stem segment i
 the group's own did (LFRA 65 to 37 s, BULK 21 to 8 s, SETN 47 to 45 s;
 `data-raw/logs/obs_province_401/walk_fresh_distinct.csv`). `lnk_pipeline_run()` drops
 `<schema>.observations_province` in an `on.exit()`, so no kept working schema holds it.
+Built before and after on six `default` and three `bcfishpass` groups, only code 1 to 2 moved,
+each piece under a record of the species from another group: 25.98 km under `default` (LNTH BT
+12.25 km, 3.6 % of its observed km, the most) and 0.05 km under `bcfishpass`, whose gate holds
+most of it back (`data-raw/logs/obs_province_401/`).
 
 Each species' top is a break in both bundles (under `all` every record is), so normally the
 segment starting at the top reads 1, and the boundary sits on the highest record (#399). Clauses 2 and 3 can keep 2 above it. So can a top within 1 m of an FWA

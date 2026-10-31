@@ -105,8 +105,9 @@ What exploration settled:
 - [x] link: one `"distinct"` walk over `observations`, one `"exists"` walk over `observations_gate`;
   the per-species views are gone. Tests pass against the fresh branch (scratch library).
 - [x] `/code-check branch` on fresh (three rounds, Clean), PR NewGraphEnvironment/fresh#285.
-- [ ] Merge and release fresh (0.48.0, on the user's word); then link's `Imports:`
+- [x] Merge and release fresh (0.48.0, on the user's word); then link's `Imports:`
   floor and `Remotes:` pin move to it (the formals check cannot see a new value of `result`).
+  fresh PR #285 merged as `3477123`, v0.48.0 tagged at `cd86c9a` with a GitHub release; link pin `9245726c`.
 
 ## Phase 3: Measure before and after (scratch schemas only, m1 local fwapg)
 
@@ -114,34 +115,35 @@ Run decision written into the evidence README before any build: host, scratch sc
 `zz401_*`, PRE = origin/main at the branch point, POST = the Phase 2 commit, each from its own
 worktree under `load_all`, fresh 0.47.0, `PGPASSWORD` set for the quiet-database gate.
 
-- [ ] Walk cost, standalone (`data-raw/logs/obs_province_401/walk_time.R`): each group's
+- [x] Walk cost, standalone (`data-raw/logs/obs_province_401/walk_time.R`): each group's
   segments copied from `fresh_default` into a temp table; time the walk shapes above, alternating
   order, with load, element counts and R peak memory recorded (as `prefilter_409/rerun.R`). Groups:
-  LKEL, BULK, UPCE, PARS, ELKR, LNTH, SETN, LFRA.
-- [ ] Builds PRE and POST (`run.sh` adapted from `record_at_start_399/`): `default` on #396's
+  LKEL, BULK, UPCE, PARS, ELKR, LNTH, SETN, LFRA. Done as `walk_time.csv` and
+  `walk_fresh_distinct.csv`; R peak memory was not recorded.
+- [x] Builds PRE and POST (`run.sh` adapted from `record_at_start_399/`): `default` on #396's
   five groups (LKEL, BULK, UPCE, PARS, ELKR) plus LNTH (confirmed by counting out-of-group
   records upstream of its lowest segment), and `bcfishpass` on BULK, PARS and UPCE. Speed read from
   the PRE/POST pairs; #396's `minutes.csv` is context only (other host state, other data).
-- [ ] `pre_post_diff.R` adapted from #399: segments and starts identical, `access_<sp>` moves
+- [x] `pre_post_diff.R` adapted from #399: segments and starts identical, `access_<sp>` moves
   1 → 2 only, each moved piece has a qualifying out-of-group record upstream (the walk's own
   `fwa_upstream(..., false, 1)` against the rebuilt province table), nothing else moves. Checks that
   can fail: completeness (no POST piece at 1 with a qualifying record upstream, under the bundle's
   rule), the AOI slice of the province table equals `<schema>.observations`, bcfishobs unchanged
   between PRE and POST. Restore-the-bug: hand-edit one piece in POST and see it stop.
-- [ ] `bcfishpass` parity against bcfishpass's observed km (reuse #399's `parity_pieces.sql`):
+- [x] `bcfishpass` parity against bcfishpass's observed km (reuse #399's `parity_pieces.sql`):
   BULK, PARS and UPCE match (0.00 km), steelhead excepted.
-- [ ] `data-raw/logs/obs_province_401/README.md` indexes it all.
+- [x] `data-raw/logs/obs_province_401/README.md` indexes it all.
 
 ## Phase 4: Docs
 
-- [ ] RUNBOOK §2c and §5 (~586): which table code 2 reads, the key, the gate; breaks read the
+- [x] RUNBOOK §2c and §5 (~586): which table code 2 reads, the key, the gate; breaks read the
   group's own. `R/lnk_pipeline_break.R:23,152`; `research/access_columns.md:80` (the table lives
   longer).
-- [ ] `research/known_suspected_km.md` "After #401" (CLAUDE.md says #401 revises it);
+- [x] `research/known_suspected_km.md` "After #401" (CLAUDE.md says #401 revises it);
   `research/observation_breaks.md`, `research/access_columns.md`, `research/output_vocabulary.md`.
-- [ ] CLAUDE.md: new status entry; correct #396's "Code 2 reads only the group's own records";
+- [x] CLAUDE.md: new status entry; correct #396's "Code 2 reads only the group's own records";
   the #403 owed export column now unblocked.
-- [ ] Grep for `acc-v2` / `acc-bcfp-2` and "own records" across the tree.
+- [x] Grep for `acc-v2` / `acc-bcfp-2` and "own records" across the tree.
 
 ## Owed at the end (reported, done after merge)
 
