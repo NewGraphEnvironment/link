@@ -628,6 +628,29 @@ The count is of distinct records (`count(DISTINCT o.observation_key)`, link#367)
 `natural_barriers` can hold one position twice (a point where two FWA segments overlap, or
 a falls and a gradient barrier that round to one metre), and each copy joins the same records.
 
+### The presence table is checked against the records (link#402)
+
+Every observation table above starts from `wsg_species_presence.csv`: a record survives only
+where its own group marks its species `t` (as written). `lnk_presence()`'s promotion reaches
+only `.lnk_pipeline_prep_minimal()`, where a promoted species the bundle models breaks the streams
+at its barriers; classification, access and mapping code follow the cell as written
+(`lnk_pipeline_species()`). So an unmarked cell silently discards that
+species' records for breaks, code 2 and every group's lifts. `data-raw/wsg_species_presence_check.R`
+judges `default`'s table cell by cell (`.lnk_presence_check()`: at least one record since 1950,
+releases tagged as bcfishpass tags them and `observation_exclusions.csv` out, CT aliases folded,
+`species_pooling.csv` applied) and merges each disagreement into
+`configs/default/wsg_species_presence_review.csv` as `pending`. The operator decides each row;
+an `add` or `remove` is an edit to the presence table, whose `notes` cell names the rule, and it
+moves the `acc` token (§6b). The tracker is **not** declared under `files:`: a declared file
+enters `config_hash`, so after a review edit link reads every earlier build as another bundle:
+`recompute_readers_check.R` refuses to recompute the groups outside a partial run that read it
+(`config_changed_since_run`; the run's own groups still recompute), and an export of an earlier
+build ships its habitat without the bundle files ("bundle has changed since the build"). The
+pipeline's filter matches codes exactly, so summer and winter
+steelhead (`SST`, `WST`), anadromous char (`ADV`, `ABT`) and the uncertain `BT/DV`, `DV/BT` and
+`RB/CT` calls never count; the check mirrors it and reports what counting them would change
+(`alias_sensitivity.csv`). Findings: `research/species_presence.md`.
+
 ## 6. Gotchas that have cost real time
 
 - **Persist column changes are a matched pair.** Adding a column to

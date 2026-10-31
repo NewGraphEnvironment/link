@@ -70,6 +70,7 @@ link,^R/lnk_preflight_fresh\.R$,none,not reached from wsg_run_one.R's entry poin
 link,^R/lnk_preflight_parity\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^R/lnk_preflight_stamp\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^R/lnk_preflight_vintage\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_presence_check\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^R/lnk_rollup_wsg\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^R/lnk_rules_build\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^R/lnk_scenario_export\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
@@ -86,6 +87,7 @@ link,^inst/extdata/configs/{config}/config\.yaml$,segments,"pipeline knobs (brea
 link,^inst/extdata/configs/{config}/config\.yaml$,observations,"pipeline knobs (break sources, observation breaks, dams, discharge)"
 link,^inst/extdata/configs/{config}/config\.yaml$,dams,"pipeline knobs (break sources, observation breaks, dams, discharge)"
 link,^inst/extdata/configs/{config}/(species_groups|species_pooling)\.csv$,observations,which observation species count
+link,^inst/extdata/configs/{config}/wsg_species_presence_review\.csv$,none,"the presence review tracker (#402): not declared under files:, so no run reads it"
 link,^inst/extdata/configs/{config}/overrides/(user_modelled_crossing_fixes[_0-9]*|user_pscis_barrier_status|pscis_modelledcrossings_streams_xref|user_crossings_misc)\.csv$,crossings,crossing corrections
 link,^inst/extdata/configs/{config}/overrides/(cabd_[a-z_]+)\.csv$,dams,"dam additions, exclusions and passability"
 link,^inst/extdata/configs/{config}/overrides/(user_barriers_definite|user_barriers_definite_control|observation_exclusions)\.csv$,observations,barrier controls and observation exclusions

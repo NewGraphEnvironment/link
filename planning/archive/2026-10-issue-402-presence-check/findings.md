@@ -1,0 +1,69 @@
+# Findings — Check each group's species presence against its fish records (#402)
+
+## Issue context
+
+**If done:** every row of `default`'s `wsg_species_presence.csv` is checked against a stated rule on the fish records, for example at least 5 records dated 1950 or later in the group. Each disagreement is listed for review. **If never:** a species can be modelled in a group on the strength of one old record, or left out where the records say it is there, and nobody is told.
+
+## Today
+
+- **The table is hand-authored,** with a notes column (`source: link (hand-authored)` in `configs/default/config.yaml`, link@43e34096). No rule produces or checks it.
+- **A presence row decides whether a species is modelled in the group at all.** Records of a species not present are dropped before the breaks and the access walk (`R/lnk_pipeline_prepare.R:346`), and `access_<sp>` reads -9. So an absent species gets no observation cut, no code 2, no access and no habitat there.
+- **Presence is promoted by species group** (`lnk_presence()`: any salmon present means all salmon present; #292, #153). A rule that drops CH where CO is present would be undone by promotion. The check has to read the table both before and after promotion, and say which one it judged.
+
+## Proposed
+
+A `data-raw/` script that counts records per group and species under the rule, and writes the disagreements in both directions:
+- **present with too few records,** such as one CH record from 1945;
+- **enough records but not present.**
+
+The operator edits rows with a note. Nothing edits the table automatically:
+- no records is not no fish, since some groups are barely sampled;
+- some presence comes from knowledge outside bcfishobs.
+
+## Decisions (operator)
+
+1. **The rule.** The count, the date floor, and whether either differs between anadromous and resident species.
+2. **Pooling.** Whether DV records count toward BT where `species_pooling.csv` pools (#290).
+3. **Exclusions first.** Whether `observation_exclusions.csv` is applied before counting (recommended, so a record already ruled bad does not count).
+
+## Acceptance
+
+- The disagreement list for all groups is committed under `data-raw/logs/`, with each row's counts and dates.
+- Every row the operator changes carries a note naming the rule.
+
+Related: #292, #153, #290, #400.
+
+
+## Exploration (2026-10-30)
+
+- Presence is read raw by the observation filter (`.lnk_wsg_species_present()`, which tests `identical(x, "t")`) and by `lnk_pipeline_species()`, and promoted through `lnk_presence()` by the barrier sets (`R/lnk_pipeline_prepare.R:645`) and the mapping code (`R/lnk_pipeline_run.R:257`).
+- `lnk_species_pooling()` returns rows only where the model species is present, so the check resolves pooling against a copy of the presence table with every species marked present.
+- bcfishpass (`smnorris/bcfishpass@620dbe4` `model/01_access/sql/load_observations.sql`) tags releases rather than dropping them: `source` starting `Releases Database:`, `source_ref` ilike `%BC RELEASE RECORDS DATABASE%` or `%STOCKING%`, or the exclusions row's `release_include`. Its note says the Releases Database source was absent from bcfishobs as of 2026-01-05, but local fwapg still holds 74,495 such records of 375,962.
+- `bcfishobs.observations.observation_date` runs from 1007-08-03 to 9999-11-01; 5,510 records are undated.
+- The presence table is in the `acc` vocabulary spec (species columns only; `notes` is excluded by `.lnk_presence_species_cols()`), so changing a cell moves the `acc` token but editing a note does not.
+- Rough size, over the 13 species columns, CT aliases folded and releases counted: at least 5 records (any date) gives 206 present-too-few and 187 absent-enough; at least 5 non-release records dated 1950 or later gives 223 and 153. Absent-enough under the latter is led by KO (92); present-too-few by DV (53), BT (48) and CT (35), before DV pooling.
+- The `notes` column holds 65 "Mackenzie basin" rows and 8 "No target species observations".
+
+## Errors Encountered
+
+| Error | Resolution |
+|-------|------------|
+
+## Phase 1 (2026-10-30)
+
+- The prep refactor (`.lnk_observation_exclusion_keys()`) produces SQL identical to the pre-refactor function from `git show HEAD:R/lnk_pipeline_prepare.R`, captured with `.lnk_db_execute` mocked, for three inputs: the shipped exclusions read as character, a logical/NA mix, and no exclusions (7 statements each, 33,134 / 27,246 / 27,168 characters).
+- The validator (`R/lnk_habitat_validate.R`) also reads the helper now. `data-raw/access_disagree_349.R` and `data-raw/query_habitat_thresholds_obs.R` keep their own copies (one-off evidence scripts; not changed).
+- bcfishpass's own filter tests the raw species code (`array[o.species_code] && wsg_spp.species_codes`), so it does not admit the CT aliases; the check folds them as link's pipeline does (relates to #398).
+
+## Phase 3 run (2026-10-31, link feaa408c)
+
+- 351 of 3,198 cells flagged: 24 present_unsupported (12 with no record at all, 8 releases only, 4 undated only), 327 absent_recorded (82 with one record, 89 with two to four, 156 with five or more; 238 with a record since 1990; 114 present anyway through their group).
+- KO: marked in 4 groups, recorded in 137 more; 92 of the 156 large cells.
+- The pipeline's exact-code filter drops SST 404 and WST 358 steelhead records, ADV 79, ABT 12, BT/DV 57, DV/BT 52, RB/CT 23 and one ' RB'. Counted as their species they would change 4 flags. Follow-up candidate: the steelhead and char counterpart of #398.
+- Lifts need 5 records since 1990 for CH, CM, CO, PK, SK, ST, GR and KO in default's parameters_fresh.csv (1 for BT, RB, WCT): a single salmon above a falls gives code 2 and does not lift it (raised by the operator; not in #402's scope).
+
+## Code-check round 3 (2026-10-31)
+
+- **Promotion reaches only the breaks.** `lnk_pipeline_run()` builds access, classification and mapping code for `lnk_pipeline_species()` (cfg$species x the cell as written); `lnk_presence()`'s promotion is read only by `.lnk_pipeline_prep_minimal()` (break positions, modelled species only) and passed to the mapping-code build, where it can only blank a species already absent as written. `fresh_default` ADMS PK (promoted by CH, CO, SK): `access_pk` and `mapping_code_pk` NULL on all 39,425 segments.
+- **Lift date test differs from bcfishpass.** link `observation_date >= '1990-01-01'` (`R/lnk_barrier_overrides.R:209`); bcfishpass `obs_dt > date('1990-01-01')` (`model_access_ch_cm_co_pk_sk.sql:86`, `model_access_st.sql:86` at 620dbe43). 569 salmon and steelhead records are dated exactly 1990-01-01 (CH 60, CM 43, CO 134, PK 44, SK 47, ST 241). Affects the `bcfishpass` bundle's parity too; outside #402 (follow-up candidate).
+- RUNBOOK §5 says RB lifts have "no date floor"; `lnk_barrier_overrides()` substitutes 1900-01-01 for an NA date. Pre-existing line, not changed here.

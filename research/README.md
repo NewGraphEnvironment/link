@@ -37,6 +37,7 @@ renamed.
 | [`habitat_thresholds.md`](habitat_thresholds.md) | CH and BT gradient and channel-width thresholds, and the MAD (discharge) ranges for BT, GR, KO and RB (#302): observation evidence, literature, scoring and the `default_tuned` values; `default`'s ranges converted from its width minima (#307) |
 | [`habitat_validation.md`](habitat_validation.md) | Scoring a run against fish observations (`lnk_habitat_validate()`): capture, cost, miss reasons, absences; `default` vs `bcfishpass` baseline |
 | [`species_pooling.md`](species_pooling.md) | Which observation species count as evidence for which model species, by region: the state of knowledge behind `species_pooling.csv` |
+| [`species_presence.md`](species_presence.md) | Which groups each species is modelled in: what a presence cell decides, the rule it is checked by (one record since 1950, releases and exclusions out, pooling applied), the 351 flags and their patterns, the codes the pipeline drops, and the review tracker (#402) |
 
 ## Runs, scope and infrastructure
 

@@ -316,18 +316,13 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
   sp <- .lnk_pipeline_break_obs_species(loaded, aoi)
 
   excl_filter <- ""
-  excl_df <- loaded$observation_exclusions
-  if (!is.null(excl_df) && nrow(excl_df) > 0) {
-    is_excl <- excl_df$data_error %in% c(TRUE, "t") |
-               excl_df$release_exclude %in% c(TRUE, "t")
-    keys <- excl_df$observation_key[is_excl]
-    if (length(keys) > 0) {
-      keys_sql <- paste0(
-        vapply(keys, .lnk_quote_literal, character(1)),
-        collapse = ", ")
-      excl_filter <- sprintf(
-        "AND o.observation_key NOT IN (%s)", keys_sql)
-    }
+  keys <- .lnk_observation_exclusion_keys(loaded)
+  if (length(keys) > 0) {
+    keys_sql <- paste0(
+      vapply(keys, .lnk_quote_literal, character(1)),
+      collapse = ", ")
+    excl_filter <- sprintf(
+      "AND o.observation_key NOT IN (%s)", keys_sql)
   }
 
   .lnk_pipeline_prep_obs_province(conn, loaded, schema, observations,
@@ -357,6 +352,21 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
     schema, observations, .lnk_quote_literal(aoi), sp_sql, excl_filter))
 
   invisible(NULL)
+}
+
+
+#' Observation keys `observation_exclusions` removes from every count
+#'
+#' Rows with `data_error` or `release_exclude` set (`TRUE` or `"t"`). One rule
+#' for the pipeline's observation tables and the presence check
+#' (`.lnk_presence_check()`), so the two cannot count different records.
+#' @noRd
+.lnk_observation_exclusion_keys <- function(loaded) {
+  excl_df <- loaded$observation_exclusions
+  if (is.null(excl_df) || nrow(excl_df) == 0) return(character(0))
+  is_excl <- excl_df$data_error %in% c(TRUE, "t") |
+             excl_df$release_exclude %in% c(TRUE, "t")
+  excl_df$observation_key[is_excl]
 }
 
 
