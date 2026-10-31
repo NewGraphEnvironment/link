@@ -116,3 +116,18 @@ test_that("an overlay row upstream now agrees with is reported redundant", {
   expect_identical(red$watershed_group_code, "ADMS")
   expect_identical(red$column, "ko")
 })
+
+test_that("a trial write that loads only with a warning is reported", {
+  # read.csv() truncates at a stray quote and only warns: a copy that loads
+  # short must not pass as clean (code-check round 3).
+  src <- bundle_dir("bcfishpass")
+  rel <- "overrides/observation_exclusions.csv"
+  lines <- readLines(file.path(src, rel))
+  n <- length(lines)
+  lines <- c(lines[seq_len(n - 3L)],
+             paste0(lines[[n - 3L]], "\"unterminated"),
+             lines[(n - 2L):n])
+  new <- charToRaw(paste0(paste(lines, collapse = "\n"), "\n"))
+  tr <- link:::.lnk_sync_trial(src, stats::setNames(list(new), rel))
+  expect_match(tr$error, "warned:")
+})

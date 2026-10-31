@@ -27,13 +27,27 @@
 
 # Token specs of the bundle at `dir`, loaded by path (never by name, which
 # would read the installed package). NULL specs with the error message when
-# the bundle does not load.
+# the bundle does not load. A warning while loading counts as not loading:
+# read.csv() truncates a file at a stray quote with only a warning, and
+# crate reads a value that no longer parses as NA with only a warning, so a
+# copy that loads short would otherwise pass as clean.
 .lnk_sync_specs <- function(dir) {
-  tryCatch({
+  warned <- character(0)
+  out <- tryCatch(withCallingHandlers({
     cfg <- lnk_config(dir)
     specs <- .lnk_vocabulary_specs(cfg, lnk_load_overrides(cfg))
     list(specs = specs, error = NULL)
-  }, error = function(e) list(specs = NULL, error = conditionMessage(e)))
+  }, warning = function(w) {
+    warned <<- c(warned, conditionMessage(w))
+    invokeRestart("muffleWarning")
+  }), error = function(e) list(specs = NULL, error = conditionMessage(e)))
+  if (length(warned) > 0L) {
+    out$error <- paste(c(out$error, paste("warned:",
+                                          paste(unique(warned),
+                                                collapse = " | "))),
+                       collapse = "; ")
+  }
+  out
 }
 
 # Write `files` (named list: bundle-relative path -> raw bytes) into a copy
