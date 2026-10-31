@@ -19,9 +19,9 @@ A record counts when it:
 
 - is of the species, with `CCT`, `ACT` and `CT/RB` read as `CT`, as in link's pipeline (bcfishpass's own filter tests the raw code and so does not admit them);
 - is not excluded by `observation_exclusions.csv` (`data_error` or `release_exclude`), the one helper the pipeline and the validator also use (`.lnk_observation_exclusion_keys()`);
-- is not a release, tagged as bcfishpass tags one (`smnorris/bcfishpass@620dbe4`, `load_observations.sql`): its `source` up to the first colon is `Releases Database:`, its `source_ref` names the BC release records database or stocking, or its exclusions row sets `release_include`. A stocking record shows fish were put there, not that a population lives there. Releases are 74,495 of the 375,962 records, and bcfishpass tags them without dropping them;
+- is not a release, tagged as bcfishpass tags one (`smnorris/bcfishpass@620dbe4`, `load_observations.sql`): its `source` up to the first colon is `Releases Database:`, its `source_ref` names the BC release records database or stocking, or its exclusions row sets `release_include`. A stocking record shows fish were put there, not that a population lives there. The source test alone marks 74,495 of the 375,962 records, and the `source_ref` tests bring it to 75,739 before the `release_include` rows; bcfishpass tags them without dropping them;
 - is dated 1950 or later; a year before 1850 or after the current year (the source holds 1007 and 9999) is undated, and an undated record does not count;
-- or is a record of another species that `species_pooling.csv` pools into it in that group (DV into BT in the Fraser, Mackenzie, Columbia and the Skeena above Hazelton), with the row's year limit. The pipeline itself never pools, so a BT flag resting on DV records alone would, if accepted, model BT in a group with no BT record; its story says so.
+- or is a record of another species that `species_pooling.csv` pools into it in that group (DV into BT in the Fraser, Mackenzie, Columbia and the Skeena above Hazelton), with the row's year limit. The pipeline does not apply `species_pooling.csv`: its observation filter keeps a DV record only where DV is marked, and counts it toward no BT cell (the BT barrier lifts do count DV records, through `parameters_fresh.csv`'s `observation_species`). So a BT flag resting on DV records alone would, if accepted, model BT in a group with no BT record; its story says so.
 
 The check judges each cell as written and reports, beside it, whether promotion makes the species present and through which members.
 
@@ -52,9 +52,9 @@ The check judges each cell as written and reports, beside it, whether promotion 
 **Absent with records (327).**
 - **The count runs from one to hundreds.** 82 cells have one record, 89 have two to four, and 156 have five or more. 238 have a record since 1990.
 - **Kokanee are most of the large cells.** KO is marked in four groups and recorded in 137 more (median 11 records), and they are 92 of the 156 cells with five records or more. 52 of the 137 also hold release records, which do not count, so each flag rests on fish caught or seen; whether a lake holds a population is the review's call.
-- **114 absent cells are present through their group anyway.** All 32 PK cells, 34 SK, 17 CM, 17 CO and 12 CH are made present by another salmon member, so their barriers and mapping code are built, while the filter still drops their records.
+- **114 absent cells are present through their group anyway.** All 32 PK cells, 34 SK, 17 CM, 17 CO and 12 CH are made present by another salmon member, and 2 CT cells through the CT, DV and RB group, so their barriers and mapping code are built, while the filter still drops their records.
 - **Steelhead's 34 are not made present by any group.** In 17 of them a single record is all there is.
-- **The Mackenzie keeps its notes' story.** Of its 26 flags, 7 are salmon or steelhead, every one from one or two records from 1980 to 1998 (CM in BEAV, LIAR, LMUS and ULRD; SK in MESI; ST in TURN; CH in ULRD). These are rows the "Mackenzie basin" note leaves absent on purpose; the review decides whether a record stands.
+- **The Mackenzie keeps its notes' story.** Of its 29 flags (26 absent with records), 7 are salmon or steelhead, every one from one or two records dated 1969 to 1998 (CM in BEAV, LIAR, LMUS and ULRD; SK in MESI; ST in TURN; CH in ULRD). These are rows the "Mackenzie basin" note leaves absent on purpose; the review decides whether a record stands.
 - BT's 8 flags all rest on pooled DV records alone.
 
 ## What the check does not count

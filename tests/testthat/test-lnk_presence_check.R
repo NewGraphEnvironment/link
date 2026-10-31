@@ -180,6 +180,23 @@ test_that("stories name the evidence and the group note", {
   expect_match(bt, "no record of DV in the group", fixed = TRUE)
 })
 
+test_that("a story above n_min = 1 says how many records count", {
+  r <- rbind(rec("k1", "W1", "BT"), rec("k2", "W1", "BT"),
+             rec("k3", "W1", "BT", source = "Releases Database: x"))
+  res <- check(r, n_min = 3L)
+  bt <- cell(res, "W1", "BT")
+  expect_identical(bt$flag, "present_unsupported")
+  st <- .lnk_presence_story(bt, n_min = 3L)
+  expect_identical(st, paste0("Marked present; 2 counting records, fewer ",
+                              "than the 3 the rule asks for (also 1 release, ",
+                              "not counted)."))
+  two <- rbind(rec("k1", "W2", "CO", date = "1980-01-01"),
+               rec("k2", "W2", "CO", date = "2001-01-01"))
+  co <- cell(check(two), "W2", "CO")
+  expect_match(.lnk_presence_story(co, year_recent = 2000L),
+               "1 since 2000 (", fixed = TRUE)
+})
+
 test_that("a pooled-only flag says its records are another species'", {
   p <- data.frame(species_code = "BT", species_obs = "DV",
                   scope_level = "region", scope = "South", pool = "yes",

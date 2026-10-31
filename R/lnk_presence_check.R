@@ -246,7 +246,8 @@
 #' One plain sentence group per row of `.lnk_presence_check()` output, for
 #' the operator to read and correct in the tracker.
 #' @noRd
-.lnk_presence_story <- function(x, year_min = 1950L) {
+.lnk_presence_story <- function(x, n_min = 1L, year_min = 1950L,
+                                year_recent = 1990L) {
   rec <- function(n) sprintf("%d record%s", n, ifelse(n == 1L, "", "s"))
   rel <- function(n) sprintf("%d release%s", n, ifelse(n == 1L, "", "s"))
   vapply(seq_len(nrow(x)), function(i) {
@@ -265,18 +266,28 @@
           if (r$n_undated > 0L) sprintf("%d undated", r$n_undated),
           if (r$n_before_floor > 0L) before
         )
-        out <- c(out, sprintf("Marked present; %s of %s, none counting: %s.",
-                              rec(r$n_records), r$species_code,
-                              paste(why, collapse = ", ")))
+        why <- paste(why, collapse = ", ")
+        if (r$n_kept == 0L) {
+          out <- c(out, sprintf("Marked present; %s of %s, none counting: %s.",
+                                rec(r$n_records), r$species_code, why))
+        } else {
+          # only when n_min > 1: some records count, too few to support it
+          lead <- sprintf("Marked present; %d counting %s, fewer than the %d %s",
+                          r$n_kept, if (r$n_kept == 1L) "record" else "records",
+                          as.integer(n_min), "the rule asks for")
+          if (nzchar(why)) lead <- sprintf("%s (also %s, not counted)", lead, why)
+          out <- c(out, paste0(lead, "."))
+        }
       }
     } else if (identical(r$flag, "absent_recorded")) {
       if (r$n_kept == 1L) {
         lead <- sprintf("Not marked present; a single record (%d; %s)",
                         r$year_newest, sub(" \\(1\\)$", "", r$sources))
       } else {
-        fmt <- "Not marked present; %s since %d, %d to %d, %d since 1990 (%s)"
+        fmt <- "Not marked present; %s since %d, %d to %d, %d since %d (%s)"
         lead <- sprintf(fmt, rec(r$n_kept), year_min, r$year_oldest,
-                        r$year_newest, r$n_since_recent, r$sources)
+                        r$year_newest, r$n_since_recent,
+                        as.integer(year_recent), r$sources)
       }
       if (r$n_kept_pooled > 0L && r$n_kept_own == 0L) {
         lead <- sprintf("%s, all of them %s records pooled into %s", lead,
