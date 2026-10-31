@@ -49,9 +49,9 @@ Sized on today's local records (before pooling and exclusions): about 24 present
 
 ## Phase 4: Write-up
 
-- [ ] `research/species_presence.md` (new topic file, with a provenance line): the rule, what it counts, the flags by species and region, and the patterns found (for example: KO absent but with records in many groups, Mackenzie salmon rows noted as absent, present rows held up only by releases). Add it to `research/README.md`.
-- [ ] RUNBOOK: a short paragraph on the check and tracker where presence is described (the §2c / acc neighbourhood).
-- [ ] CLAUDE.md status entry, NEWS line.
+- [x] `research/species_presence.md` (new topic file, with a provenance line): the rule, what it counts, the flags by species and region, and the patterns found (for example: KO absent but with records in many groups, Mackenzie salmon rows noted as absent, present rows held up only by releases). Add it to `research/README.md`.
+- [x] RUNBOOK: a short paragraph on the check and tracker where presence is described (the §2c / acc neighbourhood).
+- [x] CLAUDE.md status entry. NEWS line and version bump left to `/gh-pr-merge` (no token retires, so the bump need not land in the PR).
 
 ## Owed at the end (reported, done after merge)
 
