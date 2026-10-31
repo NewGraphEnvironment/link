@@ -2,9 +2,13 @@
 #
 # Syncs bcfishpass-sourced override CSVs into the bundled
 # `inst/extdata/configs/{bcfishpass,default}/overrides/` directories.
-# Updates the `provenance:` block in each bundle's `config.yaml`
-# (synced date, upstream_sha, checksum) for any file whose upstream
-# content differs from the recorded checksum.
+# Each bundle syncs the files its own `provenance:` block names as copies
+# (`source: https://github.com/smnorris/bcfishpass`), and only into itself:
+# `default`'s presence table is link's own, the `bcfishpass` bundle's is a
+# copy (#429). A copy is kept byte for byte; link's changes to it live in
+# an overlay beside it (`files: <key>: overlay:`, R/lnk_overlay.R).
+# Updates the `provenance:` entry (synced date, upstream_sha, checksum)
+# of any copy whose upstream content differs from the recorded checksum.
 #
 # Source: `s3://fresh-bc/bcfishpass/csvs/` -- populated weekly by
 # NewGraphEnvironment/db_newgraph (workflow dump-bcfishpass-csvs.yaml).
@@ -25,11 +29,20 @@
 # a markdown summary of changed files to /tmp/sync_summary.md for the
 # auto-PR body and a drift kind to /tmp/sync_drift_kind.
 #
-# Drift kinds:
-#   none  -- exit clean
-#   byte  -- bytes changed but column shape stable; auto-merge byte PR
-#   shape -- column rename / add / remove / reshape; halt + halt with
-#            schema-drift label for coordinated review
+# Drift kinds (the worst present wins: shape, review, byte, none):
+#   none   -- exit clean
+#   byte   -- bytes changed, column shape and every output token stable;
+#             auto-merge byte PR
+#   review -- an output token's spec moved (a presence cell, say), or a
+#             bundle no longer loads after the write (an overlay row whose
+#             key upstream dropped); PR with token-review label, not merged.
+#             The PR body names the axis and the new spec for the
+#             vocabulary row (inst/extdata/vocabulary.csv)
+#   shape  -- column rename / add / remove / reshape; halt with
+#             schema-drift label for coordinated review
+#
+# A fetch that fails stops the run: a copy that cannot be compared is not
+# clean.
 #
 # Shape drift is detected two ways (belt + suspenders):
 #   1. First-line shape_checksum mismatch (catches all CSVs)
@@ -41,21 +54,26 @@
 # crate, yaml, digest). No GH_TOKEN needed -- s3://fresh-bc is public
 # read.
 
-library(link)
+# The source tree, never a stale installed copy (code-check-r). In CI the
+# workflow installs link from this checkout and has no pkgload, so the
+# installed package is the source tree there.
+if (requireNamespace("pkgload", quietly = TRUE)) {
+  pkgload::load_all(".", quiet = TRUE)
+} else {
+  library(link)
+}
 
 args <- commandArgs(trailingOnly = TRUE)
 dry_run <- "--dry-run" %in% args
 
-UPSTREAM_REPO <- "smnorris/bcfishpass"  # for is_bcfp_sourced filter only
 S3_PREFIX <- "https://fresh-bc.s3.us-west-2.amazonaws.com/bcfishpass"
-BUNDLE_BCFP <- "inst/extdata/configs/bcfishpass"
-BUNDLE_DEF  <- "inst/extdata/configs/default"
+BUNDLES <- c("inst/extdata/configs/bcfishpass",
+             "inst/extdata/configs/default")
 SUMMARY_PATH <- "/tmp/sync_summary.md"
 DRIFT_KIND_PATH <- "/tmp/sync_drift_kind"
 BASELINE_LEDGER <- "data-raw/logs/bcfp_baselines.csv"
 
-stopifnot(file.exists(file.path(BUNDLE_BCFP, "config.yaml")),
-          file.exists(file.path(BUNDLE_DEF, "config.yaml")))
+stopifnot(all(file.exists(file.path(BUNDLES, "config.yaml"))))
 
 # --- Helpers ---------------------------------------------------------------
 
@@ -115,13 +133,6 @@ update_provenance_in_yaml <- function(yaml_path, rel_path,
   writeLines(lines, yaml_path)
 }
 
-# Filter: only sync entries whose origin is the bcfishpass repo.
-# (Source field is descriptive, not prescriptive -- still valid even
-# now that we fetch via S3 rather than GitHub API.)
-is_bcfp_sourced <- function(entry) {
-  isTRUE(entry$source == sprintf("https://github.com/%s", UPSTREAM_REPO))
-}
-
 # Optional canonical-schema gate via crate. Returns NULL on success
 # or an error message string on validation failure (caller decides
 # how to surface it).
@@ -147,89 +158,108 @@ sha_short <- substr(log$head_sha, 1, 7)
 cat(sprintf("Upstream build: %s (head_sha=%s, completed=%s)\n",
             log$model_version, sha_short, log$date_completed))
 
-# --- Discover files to sync from bcfishpass bundle's manifest --------------
-
-manifest <- yaml::read_yaml(file.path(BUNDLE_BCFP, "config.yaml"))
-prov <- manifest$provenance
-if (is.null(prov)) stop("bcfishpass config.yaml has no provenance block")
-
-target_files <- names(prov)[vapply(prov, is_bcfp_sourced, logical(1))]
-if (length(target_files) == 0L) {
-  cat("No bcfishpass-sourced files found in provenance -- nothing to do\n")
-  quit(status = 0)
-}
-cat(sprintf("Checking %d bcfishpass-sourced files for drift...\n",
-            length(target_files)))
-
-# --- Diff loop -------------------------------------------------------------
+# --- Compare each bundle's copies with the dump ----------------------------
 
 today <- format(Sys.Date(), "%Y-%m-%d")
-changes <- list()
+fetched <- list()  # bucket key -> raw bytes, fetched once for both bundles
+fetch <- function(bucket_key) {
+  if (is.null(fetched[[bucket_key]])) {
+    fetched[[bucket_key]] <<- tryCatch(
+      lnk_bucket_get(bucket_key, prefix = S3_PREFIX),
+      error = function(e) {
+        stop("fetch of ", bucket_key, " failed (", conditionMessage(e),
+             "): a copy that cannot be compared is not clean", call. = FALSE)
+      })
+  }
+  fetched[[bucket_key]]
+}
+
+changes <- list()        # one entry per bundle x file
 schema_errors <- character(0)
+review <- character(0)   # reasons a change needs a person
+redundant <- character(0)
 
-for (rel in target_files) {
-  upstream_rel <- prov[[rel]]$path  # e.g. data/user_habitat_classification.csv
-  if (is.null(upstream_rel)) {
-    cat(sprintf("  %s: skipping (no upstream path in provenance)\n", rel))
-    next
+for (bundle in BUNDLES) {
+  prov <- yaml::read_yaml(file.path(bundle, "config.yaml"))$provenance
+  targets <- link:::.lnk_sync_targets(prov)
+  cat(sprintf("%s: checking %d bcfishpass copies\n", bundle, length(targets)))
+  for (rel in targets) {
+    upstream_rel <- prov[[rel]]$path  # e.g. data/user_habitat_classification.csv
+    if (is.null(upstream_rel)) {
+      stop(bundle, ": provenance entry ", rel, " names bcfishpass but no ",
+           "upstream path", call. = FALSE)
+    }
+    bytes <- fetch(paste0("csvs/", basename(upstream_rel)))
+    observed_byte  <- sha256_text(bytes)
+    observed_shape <- shape_fingerprint(bytes)
+    schema_err <- validate_canonical_schema(rel, prov[[rel]]$canonical_schema,
+                                            bytes)
+    if (!is.null(schema_err)) schema_errors <- c(schema_errors, schema_err)
+
+    if (identical(observed_byte, prov[[rel]]$checksum)) {
+      cat(sprintf("  %s: clean\n", rel))
+      next
+    }
+    shape_drift <- !is.null(prov[[rel]]$shape_checksum) &&
+      !identical(observed_shape, prov[[rel]]$shape_checksum)
+    cat(sprintf("  %s: %s DRIFT\n", rel, if (shape_drift) "SHAPE" else "byte"))
+    changes[[paste(bundle, rel)]] <- list(
+      bundle = bundle, rel = rel, bytes = bytes,
+      old_checksum = prov[[rel]]$checksum, new_checksum = observed_byte,
+      new_shape = observed_shape, shape_drift = shape_drift)
   }
-  bucket_key <- paste0("csvs/", basename(upstream_rel))
-  expected_byte  <- prov[[rel]]$checksum
-  expected_shape <- prov[[rel]]$shape_checksum
-  canonical_slug <- prov[[rel]]$canonical_schema
 
-  upstream_bytes <- tryCatch(lnk_bucket_get(bucket_key, prefix = S3_PREFIX),
-    error = function(e) {
-      cat(sprintf("  %s: WARNING fetch failed (%s) -- skipping\n",
-                  rel, conditionMessage(e)))
-      NULL
-    })
-  if (is.null(upstream_bytes)) next
-
-  observed_byte  <- sha256_text(upstream_bytes)
-  observed_shape <- shape_fingerprint(upstream_bytes)
-
-  # Crate canonical-schema gate (only if entry declares one).
-  schema_err <- validate_canonical_schema(rel, canonical_slug, upstream_bytes)
-  if (!is.null(schema_err)) {
-    schema_errors <- c(schema_errors, schema_err)
+  # Write the bundle's changes into a copy of it and compare output token
+  # specs: a moved spec, or a bundle that no longer loads, needs a person.
+  mine <- Filter(function(ch) ch$bundle == bundle, changes)
+  if (length(mine) > 0L) {
+    tr <- link:::.lnk_sync_trial(
+      bundle, stats::setNames(lapply(mine, `[[`, "bytes"),
+                              vapply(mine, `[[`, "", "rel")))
+    if (!is.null(tr$error)) {
+      review <- c(review, sprintf(
+        "`%s` does not load after the sync: %s", basename(bundle), tr$error))
+    }
+    for (axis in tr$moved) {
+      review <- c(review, sprintf(
+        "`%s`'s `%s` spec moves, so it needs a new vocabulary row (and the old one retired): `%s`",
+        basename(bundle), axis, tr$after[[axis]]))
+    }
   }
 
-  if (identical(observed_byte, expected_byte)) {
-    cat(sprintf("  %s: clean\n", rel))
-    next
+  # Overlay rows whose cell the (new) copy already holds: upstream adopted
+  # them, so they can be retired.
+  files <- yaml::read_yaml(file.path(bundle, "config.yaml"))$files
+  for (key in names(files)) {
+    ovl <- files[[key]]$overlay
+    if (is.null(ovl)) next
+    rel <- files[[key]]$path
+    ch <- changes[[paste(bundle, rel)]]
+    base <- file.path(bundle, rel)
+    if (!is.null(ch)) {
+      base <- tempfile(fileext = ".csv")
+      writeBin(ch$bytes, base)
+    }
+    red <- link:::.lnk_sync_overlay_redundant(base, file.path(bundle, ovl))
+    if (nrow(red) > 0L) {
+      redundant <- c(redundant, sprintf(
+        "`%s` %s: %s now matches upstream; retire the row",
+        basename(bundle), ovl,
+        paste(red[[1]], red$column, sep = "/", collapse = ", ")))
+    }
   }
-  shape_drift <- !is.null(expected_shape) &&
-                  !identical(observed_shape, expected_shape)
-  cat(sprintf("  %s: %s DRIFT -- recording change\n",
-              rel, if (shape_drift) "SHAPE" else "byte"))
-  changes[[rel]] <- list(
-    rel = rel,
-    upstream_rel = upstream_rel,
-    bytes = upstream_bytes,
-    old_checksum  = expected_byte,
-    new_checksum  = observed_byte,
-    old_shape     = expected_shape,
-    new_shape     = observed_shape,
-    shape_drift   = shape_drift
-  )
 }
 
-# Determine overall drift kind for the workflow gate. Schema-validation
-# failures escalate to "shape" even if first-line fingerprint matched.
-drift_kind <- if (length(changes) == 0L && length(schema_errors) == 0L) {
-  "none"
-} else if (length(schema_errors) > 0L ||
-           any(vapply(changes, function(ch) isTRUE(ch$shape_drift),
-                       logical(1)))) {
-  "shape"
-} else {
-  "byte"
-}
+drift_kind <- link:::.lnk_sync_drift_kind(
+  byte = length(changes) > 0L,
+  shape = length(schema_errors) > 0L ||
+    any(vapply(changes, function(ch) isTRUE(ch$shape_drift), logical(1))),
+  review = length(review) > 0L)
 writeLines(drift_kind, DRIFT_KIND_PATH)
 cat(sprintf("Drift kind: %s (-> %s)\n", drift_kind, DRIFT_KIND_PATH))
+for (r in c(review, redundant)) cat("  note:", r, "\n")
 
-if (length(changes) == 0L && length(schema_errors) == 0L) {
+if (drift_kind == "none") {
   cat("No drift detected -- exit clean\n")
   if (file.exists(SUMMARY_PATH)) file.remove(SUMMARY_PATH)
   quit(status = 0)
@@ -238,7 +268,7 @@ if (length(changes) == 0L && length(schema_errors) == 0L) {
 # --- Write changes ---------------------------------------------------------
 
 if (dry_run) {
-  cat(sprintf("\n[dry-run] would update %d files; skipping writes\n",
+  cat(sprintf("\n[dry-run] would update %d bundle files; skipping writes\n",
               length(changes)))
   if (length(schema_errors) > 0L) {
     cat("\n[dry-run] schema validation errors:\n")
@@ -247,24 +277,18 @@ if (dry_run) {
   quit(status = 0)
 }
 
-for (rel in names(changes)) {
-  ch <- changes[[rel]]
-  for (bundle in c(BUNDLE_BCFP, BUNDLE_DEF)) {
-    out_path <- file.path(bundle, rel)
-    # writeBin (NOT writeLines) -- preserves bytes verbatim so the
-    # sync-time sha256 of `ch$bytes` matches the runtime sha256 of
-    # the on-disk file (lnk_config_verify hashes by file path).
-    writeBin(ch$bytes, out_path)
-    update_provenance_in_yaml(file.path(bundle, "config.yaml"),
-      rel_path = rel,
-      new_sha = sha_short,
-      new_synced = today,
-      new_checksum = ch$new_checksum,
-      new_shape_checksum = ch$new_shape)
-  }
-  cat(sprintf("  %s: wrote (sha %s%s)\n",
-              rel, sha_short,
-              if (ch$shape_drift) " -- SHAPE DRIFT, do NOT auto-merge" else ""))
+for (ch in changes) {
+  # writeBin (NOT writeLines) -- preserves bytes verbatim so the sync-time
+  # sha256 matches the runtime sha256 of the on-disk file.
+  writeBin(ch$bytes, file.path(ch$bundle, ch$rel))
+  update_provenance_in_yaml(file.path(ch$bundle, "config.yaml"),
+    rel_path = ch$rel,
+    new_sha = sha_short,
+    new_synced = today,
+    new_checksum = ch$new_checksum,
+    new_shape_checksum = ch$new_shape)
+  cat(sprintf("  %s/%s: wrote (sha %s)\n", basename(ch$bundle), ch$rel,
+              sha_short))
 }
 
 # --- Append baseline ledger row --------------------------------------------
@@ -273,22 +297,22 @@ lnk_baseline_append(
   log,
   run_label = paste0("csv-sync-", format(Sys.Date(), "%Y%m%d")),
   notes = paste0("auto-append by csv-sync; head_sha=", sha_short,
-                 if (drift_kind == "shape") "; SHAPE DRIFT" else ""),
+                 if (drift_kind != "byte") paste0("; ", toupper(drift_kind))),
   path = BASELINE_LEDGER
 )
 cat(sprintf("Appended row to %s\n", BASELINE_LEDGER))
 
 # --- Markdown summary for PR body ------------------------------------------
 
-any_shape_drift <- drift_kind == "shape"
 md_lines <- c(
   sprintf("# CSV sync -- %s%s", today,
-          if (any_shape_drift) " -- SHAPE DRIFT" else ""),
+          switch(drift_kind, shape = " -- SHAPE DRIFT",
+                 review = " -- TOKEN REVIEW", "")),
   "",
   sprintf("Pinned to bcfp build `%s` (head_sha `%s`, completed `%s`).",
           log$model_version, sha_short, log$date_completed),
   "",
-  if (any_shape_drift) c(
+  if (drift_kind == "shape") c(
     "> :warning: One or more files changed shape (column rename / add /",
     "> remove / reshape) OR failed canonical-schema validation. This",
     "> PR is **not** auto-merged -- the link pipeline and downstream",
@@ -298,32 +322,45 @@ md_lines <- c(
     "> + crate's adapter for the recommended workflow.",
     ""
   ) else character(0),
+  if (length(review) > 0L) c(
+    "## Needs review before merging",
+    "",
+    "A run of the bundle below refuses until each item is resolved:",
+    "a moved spec needs a row in `inst/extdata/vocabulary.csv` (and the",
+    "row it replaces retired, with a version bump); a bundle that does not",
+    "load needs its overlay fixed.",
+    "",
+    paste0("- ", review),
+    ""
+  ) else character(0),
+  if (length(redundant) > 0L) c(
+    "## Overlay rows upstream now holds",
+    "",
+    paste0("- ", redundant),
+    ""
+  ) else character(0),
   if (length(schema_errors) > 0L) c(
     "## Canonical-schema validation errors",
     "",
     paste0("- ", schema_errors),
     ""
   ) else character(0),
-  if (length(changes) > 0L) c(
-    sprintf("Synced %d file(s) from `s3://fresh-bc/bcfishpass/csvs/`:",
-            length(changes)),
-    "",
-    "| file | drift | old byte | new byte |",
-    "|---|---|---|---|"
-  ) else character(0)
-)
-for (rel in names(changes)) {
-  ch <- changes[[rel]]
+  sprintf("Synced %d bundle file(s) from `s3://fresh-bc/bcfishpass/csvs/`:",
+          length(changes)),
+  "",
+  "| bundle | file | drift | old byte | new byte |",
+  "|---|---|---|---|---|")
+for (ch in changes) {
   md_lines <- c(md_lines,
-    sprintf("| `%s` | %s | `%s` | `%s` |",
-            rel,
+    sprintf("| `%s` | `%s` | %s | `%s` | `%s` |",
+            basename(ch$bundle), ch$rel,
             if (ch$shape_drift) "**shape**" else "byte",
-            substr(ch$old_checksum, 1, 14),
+            substr(ch$old_checksum %||% "none", 1, 14),
             substr(ch$new_checksum, 1, 14)))
 }
 md_lines <- c(md_lines,
   "",
-  "Both `bcfishpass` and `default` bundles updated identically. Run",
+  "Each bundle syncs only the copies its own provenance declares. Run",
   "`Rscript -e 'devtools::load_all(\".\"); lnk_config_verify(lnk_config(\"bcfishpass\"))'`",
   "after pulling to confirm clean state.")
 

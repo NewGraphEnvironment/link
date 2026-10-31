@@ -65,23 +65,23 @@ Link starts from bcfishpass's published files and keeps its own changes separate
 
 ## Phase 2: Sync script
 
-- [ ] Write tests first:
+- [x] Write tests first:
   - a static guard: every CSV under each bundle's `overrides/` has a provenance entry, and every `source: bcfp` entry points at the bcfishpass repo (the old selector must turn it red);
   - drift kinds `none`, `byte`, `shape` and `review`;
   - the overlay-redundant report.
-- [ ] Change `data-raw/sync_bcfishpass_csvs.R`:
+- [x] Change `data-raw/sync_bcfishpass_csvs.R`:
   - iterate per bundle and write only into the declaring bundle;
   - stop on a fetch failure;
   - add the `review` kind, with the `acc` row to add named in the PR body;
   - report overlay rows that upstream now equals.
-- [ ] Teach `.github/workflows/sync-bcfishpass-csvs.yml` the `review` kind.
+- [x] Teach `.github/workflows/sync-bcfishpass-csvs.yml` the `review` kind.
 - [x] Map `R/lnk_overlay.R` `any` and the overlay CSV with the presence row in `data-raw/pretest_inputs.csv` (Plan review B2, G4); sync-only helpers, if any, `none`.
 
 ## Phase 3: Provenance entries
 
-- [ ] Both bundles get bcfishpass-sourced entries for `cabd_additions`, `cabd_exclusions`, `cabd_blkey_xref`, `cabd_passability_status_updates`, `dfo_known_sockeye_lakes`, `wcrp_watersheds` and `observation_exclusions`.
-- [ ] The bcfishpass bundle's presence entry points at bcfishpass; its overlay stays link-owned.
-- [ ] Dry run: drift on exactly passability, wcrp, blkey_xref (both bundles) and presence (bcfishpass, `review`). That meets acceptance 1. Record it in `data-raw/logs/csv_sync_429/`.
+- [x] Both bundles get bcfishpass-sourced entries for `cabd_additions`, `cabd_exclusions`, `cabd_blkey_xref`, `cabd_passability_status_updates`, `dfo_known_sockeye_lakes`, `wcrp_watersheds` and `observation_exclusions`.
+- [x] The bcfishpass bundle's presence entry points at bcfishpass; its overlay stays link-owned.
+- [x] Dry run: drift on exactly passability, wcrp, blkey_xref (both bundles) and presence (bcfishpass, `review`). That meets acceptance 1. Record it in `data-raw/logs/csv_sync_429/`.
 
 ## Phase 4: Pull the drift
 

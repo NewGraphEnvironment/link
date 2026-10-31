@@ -13,6 +13,10 @@
 #            label, NOT auto-merged. Workflow exits non-zero so the
 #            Actions tab shows red. Coordinated review across link /
 #            fresh / crate is required before merging -- see link#64.
+#   review -- an output token's spec moved (a presence cell, say) or a
+#            bundle no longer loads after the write. Auto-PR opens with
+#            `token-review` label, NOT auto-merged, red run. The PR body
+#            names the vocabulary row to add (link#429).
 #   none  -- no drift, exit clean.
 #
 # Cadence rationale: bcfishpass tunnel rebuilds Tuesdays ~13:25 PDT
@@ -79,7 +83,7 @@ jobs:
               echo "No drift -- exit clean"
               exit 0
               ;;
-            byte|shape)
+            byte|shape|review)
               # fallthrough to PR creation
               ;;
             *)
@@ -104,6 +108,8 @@ jobs:
           git add inst/extdata/configs/ data-raw/logs/bcfp_baselines.csv
           if [[ "$DRIFT_KIND" == "shape" ]]; then
             git commit -m "csv-sync: SHAPE DRIFT -- pull bcfishpass overrides ${DATESTAMP}"
+          elif [[ "$DRIFT_KIND" == "review" ]]; then
+            git commit -m "csv-sync: TOKEN REVIEW -- pull bcfishpass overrides ${DATESTAMP}"
           else
             git commit -m "csv-sync: pull bcfishpass overrides ${DATESTAMP}"
           fi
@@ -128,6 +134,19 @@ jobs:
               --label schema-drift)
             echo "Created shape-drift PR (NOT auto-merged): $PR_URL"
             # Fail loud so the Actions tab shows red and someone notices.
+            exit 2
+          elif [[ "$DRIFT_KIND" == "review" ]]; then
+            gh label create token-review \
+              --color FBCA04 \
+              --description "A synced bcfishpass CSV moves an output token or breaks a bundle's overlay -- add the vocabulary row or fix the overlay before merging" \
+              || true
+            PR_URL=$(gh pr create \
+              --base main \
+              --head "$BRANCH" \
+              --title "csv-sync: TOKEN REVIEW -- pull bcfishpass overrides ${DATESTAMP}" \
+              --body-file "$BODY_FILE" \
+              --label token-review)
+            echo "Created token-review PR (NOT auto-merged): $PR_URL"
             exit 2
           else
             PR_URL=$(gh pr create \

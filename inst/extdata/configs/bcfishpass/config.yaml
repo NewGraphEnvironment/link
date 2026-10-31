@@ -163,14 +163,16 @@ provenance:
     checksum: sha256:80b69d0954563660c13bc481b2e955000748e0597d4e10ce0c16462d9a5df966
     shape_checksum: sha256:35604598f352c0cc958e8330e80627ec65154e4eaba9dbba8cac92c8516706a0
   overrides/observation_exclusions.csv:
-    source: link (hand-authored)
-    upstream_sha: 8f1890564b9148573535a679f2e5563aebe74207
-    synced: '2026-04-26'
+    source: https://github.com/smnorris/bcfishpass
+    path: data/observation_exclusions.csv
+    upstream_sha: 3bd2824
+    synced: '2026-10-31'
     checksum: sha256:ad901c57ca42e71e4affffd6e583045a2ce423f15088c211c9c2f72976f5d36a
     shape_checksum: sha256:c0c0c5a6e478bae9d98c0251870fb73ef12ec5033de08589bad08ed03be02a31
   overrides/wsg_species_presence.csv:
-    source: link (hand-authored)
-    upstream_sha: 8f1890564b9148573535a679f2e5563aebe74207
+    source: https://github.com/smnorris/bcfishpass
+    path: data/wsg_species_presence.csv
+    upstream_sha: unrecorded
     synced: '2026-10-31'
     checksum: sha256:3c3dc66d1b9b299d91e73d6edcccb56cc827641be494e26981ed580ff51e15ec
     shape_checksum: sha256:161bef58151083d80bd226022a46aed5a35a5acd1526dfc3deac42cb6ae952fc
@@ -221,3 +223,45 @@ provenance:
     synced: 2026-07-01
     checksum: sha256:e569fdfcf8c98eb0c7928b52a3de894a3c46e2599cafb04e746d4f858dffc711
     shape_checksum: sha256:463bc63156786be38c39d5479bfe07ce7b593e1174ecba6f7d9e5ac52c2c6bfd
+  overrides/cabd_additions.csv:
+    source: https://github.com/smnorris/bcfishpass
+    path: data/cabd_additions.csv
+    upstream_sha: 3bd2824
+    synced: '2026-10-31'
+    checksum: sha256:75022b62d83d8a3dafd3d19e7cc8871948818e4b75e84af8e775b1199786e930
+    shape_checksum: sha256:cca1f4ecdd08ae9acfaa968767f2d911ce23115500ea2aa595b393c0e76b2cb9
+  overrides/cabd_blkey_xref.csv:
+    source: https://github.com/smnorris/bcfishpass
+    path: data/cabd_blkey_xref.csv
+    upstream_sha: unrecorded
+    synced: '2026-10-31'
+    checksum: sha256:3a0771ab83a3e66600502e44fa4ffd908e46938c1796ca7ea41ab7a53538d91c
+    shape_checksum: sha256:62169e677bf9a7e50893f2407408a573a8137011e7797685a14d979d27e0d171
+  overrides/cabd_exclusions.csv:
+    source: https://github.com/smnorris/bcfishpass
+    path: data/cabd_exclusions.csv
+    upstream_sha: 3bd2824
+    synced: '2026-10-31'
+    checksum: sha256:fa22681c9dd0a881b4a4ba7f03c46cee20393faf0d77ce3bc30f759772e8efa6
+    shape_checksum: sha256:6f13d737481c9e94be585861490fe8c35a81cc026875b5e873345e47ec59ad0e
+  overrides/cabd_passability_status_updates.csv:
+    source: https://github.com/smnorris/bcfishpass
+    path: data/cabd_passability_status_updates.csv
+    upstream_sha: unrecorded
+    synced: '2026-10-31'
+    checksum: sha256:dd69c2add0ba43be0abedc513b21d1bd676d864955f26c1da35e58ac7e0910c9
+    shape_checksum: sha256:0975cea50456c610de6a229949f2e6d7233613ec57e1aa7dfdb51d05c1216ef8
+  overrides/dfo_known_sockeye_lakes.csv:
+    source: https://github.com/smnorris/bcfishpass
+    path: data/dfo_known_sockeye_lakes.csv
+    upstream_sha: 3bd2824
+    synced: '2026-10-31'
+    checksum: sha256:4a8d7d1a3a3697d1536c5463364805916077aa171bd1e4d19fc8a9e2250979f7
+    shape_checksum: sha256:33ac6f1f2766d6b4d138782b549d4f7156d7fe05485d8f66b4a9a55a431f88cb
+  overrides/wcrp_watersheds.csv:
+    source: https://github.com/smnorris/bcfishpass
+    path: data/wcrp_watersheds.csv
+    upstream_sha: unrecorded
+    synced: '2026-10-31'
+    checksum: sha256:acadc8d3be2d699d535e933428386dd66a00ab5deb881af2c268561001cb4879
+    shape_checksum: sha256:2b0eaf185855f06731bfb8f98294a0c7938aef26a5c7265beec167ce0bb46f41
