@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.73.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.74.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,7 +32,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="logo.png" class="logo" alt=""><h1>link RUNBOOK — how the system actually works</h1>
-      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.73.2/RUNBOOK.md" class="external-link"><code>RUNBOOK.md</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/RUNBOOK.md" class="external-link"><code>RUNBOOK.md</code></a></small>
     </div>
 
 <div id="link-runbook--how-the-system-actually-works" class="section level1">
@@ -633,6 +633,43 @@ The bucket is versioned but cannot be listed (<code>?versions</code> is AccessDe
 <td>data dictionaries — per-column type, group, default, description, and (for <code>parameters_fresh</code>) <code>owner</code> + <code>consumed_by</code> <a href="file:line" class="uri">file:line</a>
 </td>
 </tr></tbody></table><div class="section level3">
+<h3 id="copies-and-overlays-the-bcfishpass-files-a-bundle-carries-link429">Copies and overlays: the bcfishpass files a bundle carries (link#429)<a class="anchor" aria-label="anchor" href="#copies-and-overlays-the-bcfishpass-files-a-bundle-carries-link429"></a></h3>
+<p>A bundle file whose provenance <code>source</code> is <code>https://github.com/smnorris/bcfishpass</code> is a <strong>copy</strong>: bcfishpass’s file byte for byte, as of the commit in <code>upstream_sha</code>. Link never edits a copy. Where link departs from it, the change is an <strong>overlay</strong>: a link-owned CSV declared on the copy’s <code>files:</code> entry.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">wsg_species_presence</span><span class="kw">:</span></span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="at">  </span><span class="fu">path</span><span class="kw">:</span><span class="at"> overrides/wsg_species_presence.csv</span><span class="co">            # the copy</span></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="at">  </span><span class="fu">overlay</span><span class="kw">:</span><span class="at"> overrides/wsg_species_presence_overlay.csv</span><span class="co"> # link's cells on it</span></span></code></pre></div>
+<pre><code>watershed_group_code,column,value,reason,issue
+PARS,ko,t,link models kokanee; bcfishpass's presence table has no KO column,#106</code></pre>
+<ul><li>
+<strong>One row per cell, each with a reason.</strong> The first column is named for the copy’s key and holds its values. <code>.lnk_overlay_apply()</code> refuses a key the copy lacks, a repeated (key, column), a row with no reason, or a row that targets the key column. A <code>column</code> the copy lacks is added, empty elsewhere, before the first column that sorts after it, so the bcfishpass presence table’s <code>ko</code> sits where it always has: column order reaches readers (species order, and the observation <code>VALUES</code> list in <code>.lnk_pipeline_prep_obs_province()</code>).</li>
+<li>
+<strong>The loader applies it</strong> (<code><a href="reference/lnk_load_overrides.html">lnk_load_overrides()</a></code>, local reads only; an overlay on a <code>canonical_schema</code> entry is refused). The copy is read as text, the overlay set, then each column typed as <code><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv()</a></code> types it, so every reader sees one table. The overlay enters <code>config_hash</code> and the export with the copy.</li>
+<li>
+<strong>A copy that reads badly is fixed in the reader, not the file.</strong> The local read muffles only R’s “incomplete final line” warning, which a short copy with no final newline raises (<code>cabd_blkey_xref.csv</code>; #347 had added a newline to it).</li>
+<li>
+<strong>Inheritance:</strong> an overlay path resolves against the bundle that declares it, like <code>path:</code>. A child that re-declares the <code>files:</code> entry replaces it whole, so it drops the parent’s overlay unless it repeats it.</li>
+<li>
+<strong>Overlay rows are the upstream candidates.</strong> When bcfishpass adopts one, the sync reports the row as redundant; delete it. A row that stays is a departure with its reason already written.</li>
+</ul><p><strong>Which files are copies.</strong> In <code>bcfishpass</code> and <code>default</code>: every CSV under <code>overrides/</code> except link’s own (<code>default</code>’s presence table, the overlay). <code>test-lnk_csv_sync.R</code> checks that every CSV there has a provenance entry, that every <code>files:</code> entry with <code>source: bcfp</code> is a sync target, and that the fourteen known copies are targets in both bundles. <code>default</code>’s presence table is link’s, under #402’s review. The parameters files are frozen derived copies (<code>derived_from</code>), not synced. <code>default_extrabreaks</code> and <code>default_rearbreaks</code> hold older copies of their own and are not synced.</p>
+<p><strong>The weekly sync</strong> (<code>data-raw/sync_bcfishpass_csvs.R</code>, <code>.github/workflows/sync-bcfishpass-csvs.yml</code>, Wednesdays) compares each bundle’s copies with <code>s3://fresh-bc/bcfishpass/csvs/</code> and writes a drifted copy only into the bundle that declares it. A fetch that fails stops the run. Before writing, it writes the changes into a temporary copy of the bundle, loaded by path, and compares the four output token specs:</p>
+<table class="table"><colgroup><col width="33%"><col width="33%"><col width="33%"></colgroup><thead><tr><th>Kind</th>
+<th>When</th>
+<th>Workflow</th>
+</tr></thead><tbody><tr><td><code>byte</code></td>
+<td>bytes moved, shape and every token spec held</td>
+<td>PR, merged by the workflow</td>
+</tr><tr><td><code>review</code></td>
+<td>a token spec moved (a presence cell), or the bundle no longer loads (an overlay row whose key upstream dropped)</td>
+<td>
+<code>token-review</code> PR, not merged, red run; the body names the axis and the new spec for <code>vocabulary.csv</code>
+</td>
+</tr><tr><td><code>shape</code></td>
+<td>a header moved, or a canonical schema refused the file</td>
+<td>
+<code>schema-drift</code> PR, not merged, red run</td>
+</tr></tbody></table><p>The worst kind wins. A <code>review</code> PR needs the new vocabulary row, the old one retired and a version bump before it merges (§6b, “Output vocabulary”). The dry run (<code>--dry-run</code>) does all of this but the writes.</p>
+</div>
+<div class="section level3">
 <h3 id="who-owns-which-parameters_fresh-column">Who owns which <code>parameters_fresh</code> column<a class="anchor" aria-label="anchor" href="#who-owns-which-parameters_fresh-column"></a></h3>
 <p><strong>Do not re-derive this.</strong> <code>parameters_fresh.csv</code> is co-owned, and the split is settled:</p>
 <ul><li>
@@ -663,7 +700,7 @@ The bucket is versioned but cannot be listed (<code>?versions</code> is AccessDe
 <ul><li>
 <strong>Every shipped bundle is all <code>cw</code></strong>: a frozen copy of bcfishpass <code>parameters/example_newgraph</code> (188 groups). Outputs did not change (ADMS and BULK <code>streams_habitat</code> digests identical against main on fresh 0.33.0 and 0.36.2, <code>data-raw/logs/params_method_286/</code>).</li>
 <li>
-<strong>Frozen, not csv-synced.</strong> Its provenance <code>source</code> is deliberately not the bcfishpass URL: <code>sync_bcfishpass_csvs.R</code> syncs and auto-merges any entry with that exact source, which would let an upstream <code>cw</code> → <code>mad</code> flip change <code>default</code> unreviewed (and miss the two <code>default_*breaks</code> bundles). <code>derived_from</code> carries the upstream path. Moving a group is a reviewed row edit, which moves <code>config_hash</code>.</li>
+<strong>Frozen, not csv-synced.</strong> Its provenance <code>source</code> is deliberately not the bcfishpass URL: <code>sync_bcfishpass_csvs.R</code> syncs any entry with that exact source and auto-merges it unless an output token moves, and the method table is in no token spec, so an upstream <code>cw</code> → <code>mad</code> flip would change <code>default</code> unreviewed (and miss the two <code>default_*breaks</code> bundles). <code>derived_from</code> carries the upstream path. Moving a group is a reviewed row edit, which moves <code>config_hash</code>.</li>
 <li>
 <strong>Fallback and override</strong> mirror the thresholds: no declaration means fresh’s copy, hashed as <code>fresh:parameters_habitat_method.csv</code>; <code>method_csv =</code> on the call wins over both. A group the table does not list is <code>cw</code>.</li>
 <li>
@@ -839,7 +876,7 @@ Never the receiving river downstream. <code>mad_m3s_source</code> names the tier
 <div class="section level3">
 <h3 id="the-pre-run-gate-link372">The pre-run gate (link#372)<a class="anchor" aria-label="anchor" href="#the-pre-run-gate-link372"></a></h3>
 <p>On 2026-10-23 the provincial run was the first contact between new code and OKAN and KTSU, and the dispatcher lost about five hours to them while three cloud hosts idled. A rule’s cost is driven by an input the test groups did not carry, so the gate models the groups at the extreme of each input that the changed code drives, on the dispatcher, before anything is spent:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">bash</span> data-raw/pretest_run.sh <span class="at">--config</span><span class="op">=</span>default <span class="at">--schema</span><span class="op">=</span>fresh_default</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">bash</span> data-raw/pretest_run.sh <span class="at">--config</span><span class="op">=</span>default <span class="at">--schema</span><span class="op">=</span>fresh_default</span></code></pre></div>
 <p>(bash 5.1 or later, as the driver). It prints its decisions, then:</p>
 <ul><li>
 <strong>What changed.</strong> link’s files under <code>R/</code>, <code>inst/extdata/</code> (the run’s bundle and what it <code>extends</code>; other bundles are left out), <code>DESCRIPTION</code> and the run’s <code>data-raw/</code> entry points, between <code>--since</code> and HEAD. fresh’s <code>R/</code> and <code>inst/extdata/</code> (link reads its <code>falls.csv</code>, the downstream guard its <code>wsg_outlet.csv</code>) between the two <code>Remotes:</code> pins, read from the fresh checkout beside link (<code>--fresh-repo=</code>). <code>--since</code> defaults to the link SHA of the earliest of the groups’ newest finished builds under <code>--config</code> in <code>&lt;schema&gt;.log</code>: the last run, even where a group was re-modelled by hand after it. A range must hold every one of those builds (start at or before each, and each an ancestor of the range’s end, so its code is in the diff); one that does not is refused before anything is modelled (a warning under <code>--pick-only</code>, which records nothing).</li>
@@ -915,12 +952,12 @@ Never the receiving river downstream. <code>mad_m3s_source</code> names the tier
 <td>any</td>
 <td>named; its host’s consolidate failed (below)</td>
 </tr></tbody></table><p>“Finished this run” means the group’s <strong>newest</strong> <code>&lt;schema&gt;.log</code> row (max <code>date_start</code>, the rule <code>schema_consolidate.R</code> uses for which build a group’s persist rows hold) is the run_uid’s and has <code>date_end</code> set. Consolidate copies a group’s log rows home (link#354), and the driver adds the dispatcher’s <code>done</code> markers and each cypher’s consolidated bucket. A failed build leaves its row open (<code>.lnk_log_run_fail</code> sets only <code>notes</code>), and its pre-persist can leave <code>streams</code> rows, so rows alone do not make a group “this run’s”. “Newest” matters for a <code>--recompute-only</code> days later: a group a later run rebuilt, or a hand re-run under the same uid that failed after its pre-persist, has a closed row for the uid that no longer names its rows. The classes are written to <code>&lt;TS&gt;_coverage.tsv</code>, beside the compare CSV, which covers the first class only. The compare runs over the first class only, and the recompute over it and the groups outside the run that read it and may be recomputed now (“Groups outside a partial run”, below). If that class is empty, neither runs and the report says why. Any other class makes the run exit non-zero, and the report names the groups and the recovery:</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="va">PGOPTIONS</span><span class="op">=</span><span class="st">'-c statement_timeout=&lt;the run bound, e.g. 30min&gt;'</span> <span class="dt">\</span></span>
-<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="va">LNK_RUN_UID</span><span class="op">=&lt;</span>uid<span class="op">&gt;</span> <span class="ex">[LNK_RUN_LABEL=</span><span class="op">&lt;</span>label<span class="op">&gt;</span>] LNK_SCHEMA=<span class="op">&lt;</span>schema<span class="op">&gt;</span> <span class="dt">\</span></span>
-<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>  LNK_GUARD_DOWNSTREAM=warn LNK_HABITAT_GATE=0 LNK_LOAD=loadall <span class="dt">\</span></span>
-<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>  Rscript data-raw/wsg_run_one.R <span class="op">&lt;</span>WSG<span class="op">&gt;</span> <span class="op">&lt;</span>config<span class="op">&gt;</span>          <span class="co"># each missing group</span></span>
-<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="fu">bash</span> data-raw/study_area_run.sh <span class="at">--recompute-only</span> <span class="at">--run-uid</span><span class="op">=&lt;</span>uid<span class="op">&gt;</span> <span class="dt">\</span></span>
-<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a>  <span class="at">--config</span><span class="op">=&lt;</span>config<span class="op">&gt;</span> --schema=<span class="op">&lt;</span>schema<span class="op">&gt;</span> [--run-label=<span class="op">&lt;</span>label<span class="op">&gt;</span>] [--wsgs=<span class="op">&lt;</span>the run<span class="st">'s groups&gt;]</span></span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="va">PGOPTIONS</span><span class="op">=</span><span class="st">'-c statement_timeout=&lt;the run bound, e.g. 30min&gt;'</span> <span class="dt">\</span></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="va">LNK_RUN_UID</span><span class="op">=&lt;</span>uid<span class="op">&gt;</span> <span class="ex">[LNK_RUN_LABEL=</span><span class="op">&lt;</span>label<span class="op">&gt;</span>] LNK_SCHEMA=<span class="op">&lt;</span>schema<span class="op">&gt;</span> <span class="dt">\</span></span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>  LNK_GUARD_DOWNSTREAM=warn LNK_HABITAT_GATE=0 LNK_LOAD=loadall <span class="dt">\</span></span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a>  Rscript data-raw/wsg_run_one.R <span class="op">&lt;</span>WSG<span class="op">&gt;</span> <span class="op">&lt;</span>config<span class="op">&gt;</span>          <span class="co"># each missing group</span></span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="fu">bash</span> data-raw/study_area_run.sh <span class="at">--recompute-only</span> <span class="at">--run-uid</span><span class="op">=&lt;</span>uid<span class="op">&gt;</span> <span class="dt">\</span></span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a>  <span class="at">--config</span><span class="op">=&lt;</span>config<span class="op">&gt;</span> --schema=<span class="op">&lt;</span>schema<span class="op">&gt;</span> [--run-label=<span class="op">&lt;</span>label<span class="op">&gt;</span>] [--wsgs=<span class="op">&lt;</span>the run<span class="st">'s groups&gt;]</span></span></code></pre></div>
 <p><code>--recompute-only</code> runs the driver’s tail and nothing else: no droplet, no pre-flight, no consolidate. It recomputes every group of the run, not just the re-modelled ones, because a re-modelled group’s barriers change access upstream of it, and, as a run does, the groups outside the run that read it (link#274). Without <code>--wsgs=</code>, the expected set is the groups the run recorded in <code>&lt;TS&gt;_run_wsgs.tsv</code> (<code>wsg</code>, <code>host</code>, <code>skip</code>, <code>run_uid</code>; a run_uid’s prefix is its <code>TS</code>), together with any group holding a log row for the run_uid on the dispatcher (link#358). The driver writes that file as soon as the buckets resolve, before any spend, and rewrites it after the per-host accounting with each host’s SKIPs, so a group that failed on a cloud host, or before its first log row, is still named. A run from before #358 has no file and falls back to the log alone, where such a group has no row and only <code>--wsgs=</code> gets it named. A file that names another run_uid stops a bare <code>--recompute-only</code>. A <code>--wsgs=</code> that leaves out the run’s groups warns. It refuses a <code>--config</code> other than the one the run’s log rows name, since a forgotten <code>--config</code> would recompute every group under <code>bcfishpass</code> and stamp the rows with the run’s uid. It skips the discharge resolution as well as the pre-flight, but still checks for <code>fresh.streams_vw_bcfp</code>, which the compare reads.</p>
 <p>It also cannot rescue a group whose build finished but whose <code>date_end</code> UPDATE failed (<code>.lnk_log_run_finish</code> is soft). A full run counts that group through its <code>done</code> marker, but <code>--recompute-only</code> has only the log, so it reports the group as “earlier or partial” every time. Re-model it. A missing group in a kept host’s bucket is listed apart in the report, which defers to <code>kept_hosts.tsv</code>: settle it there first (consolidate only <code>groups</code> where <code>groups_measured</code> is <code>yes</code>, never <code>groups_partial</code>), and re-model only what is still missing. <code>--recompute-only</code> warns when a <code>kept_hosts.tsv</code> names the run_uid.</p>
 <p><strong>A consolidate that refuses one source does not stop the run</strong> (link#358). <code>schema_consolidate</code> loops past a source it refuses (<code>dest_log_newer</code>, which one group can trigger, and the other checks made before anything is deleted) or fails on mid-copy, so the other sources’ groups are on the dispatcher. The driver writes one outcome per source to <code>&lt;TS&gt;_consolidate.tsv</code>, and when every source has one, carries on: the failed host keeps its finished groups (a source is deleted from only after all of it copied), so <code>host_release</code> keeps it, with <code>consolidate failed at stage &lt;stage&gt;</code> as the reason in <code>kept_hosts.tsv</code>. Its bucket adds no finish signal and is classed <strong>not consolidated</strong>, out of the recompute whatever the dispatcher’s log says, because a failure after the DELETE can leave log rows copied and <code>streams</code> not. The other hosts’ groups are recomputed and compared, and the run exits non-zero. Only when the outcomes are missing for some source (R died) does the driver exit right after consolidate, as before, with the <code>--recompute-only</code> recovery printed.</p>
@@ -1181,23 +1218,23 @@ Never the receiving river downstream. <code>mad_m3s_source</code> names the tier
 </div>
 <div class="section level2">
 <h2 id="id_8-fast-verification-recipes">8. Fast verification recipes<a class="anchor" aria-label="anchor" href="#id_8-fast-verification-recipes"></a></h2>
-<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="co"># What does bcfp emit for a WSG's mapping_code (local snapshot, no tunnel)?</span></span>
-<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="ex">docker</span> exec fresh-db psql <span class="at">-U</span> postgres <span class="at">-d</span> fwapg <span class="at">-c</span> <span class="dt">\</span></span>
-<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>  <span class="st">"SELECT mapping_code_bt, count(*) FROM fresh.streams_vw_bcfp</span></span>
-<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="st">   WHERE watershed_group_code='PARS' GROUP BY 1 ORDER BY 2 DESC;"</span></span>
-<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a></span>
-<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a><span class="co"># What does link emit (after a mapping_code=TRUE run)?</span></span>
-<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="ex">docker</span> exec fresh-db psql <span class="at">-U</span> postgres <span class="at">-d</span> fwapg <span class="at">-c</span> <span class="dt">\</span></span>
-<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a>  <span class="st">"SELECT mapping_code_bt, count(*) FROM fresh_default.streams_mapping_code</span></span>
-<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a><span class="st">   WHERE watershed_group_code='PARS' GROUP BY 1 ORDER BY 2 DESC;"</span></span>
-<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a></span>
-<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a><span class="co"># Inspect a barrier view's shape / blocks_species</span></span>
-<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a><span class="ex">docker</span> exec fresh-db psql <span class="at">-U</span> postgres <span class="at">-d</span> fwapg <span class="at">-c</span> <span class="dt">\</span></span>
-<span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a>  <span class="st">"SELECT pg_get_viewdef('fresh_default.barriers_bt_unified', true);"</span></span>
-<span id="cb13-14"><a href="#cb13-14" tabindex="-1"></a></span>
-<span id="cb13-15"><a href="#cb13-15" tabindex="-1"></a><span class="co"># Single-WSG tunnel-free build (the headline path)</span></span>
-<span id="cb13-16"><a href="#cb13-16" tabindex="-1"></a><span class="fu">bash</span> data-raw/wsgs_run_m4_offline.sh <span class="at">--wsgs</span><span class="op">=</span>PARS <span class="at">--config</span><span class="op">=</span>default <span class="dt">\</span></span>
-<span id="cb13-17"><a href="#cb13-17" tabindex="-1"></a>  <span class="at">--schema</span><span class="op">=</span>fresh_default <span class="at">--force</span> <span class="at">--mapping-code</span></span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="co"># What does bcfp emit for a WSG's mapping_code (local snapshot, no tunnel)?</span></span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="ex">docker</span> exec fresh-db psql <span class="at">-U</span> postgres <span class="at">-d</span> fwapg <span class="at">-c</span> <span class="dt">\</span></span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>  <span class="st">"SELECT mapping_code_bt, count(*) FROM fresh.streams_vw_bcfp</span></span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="st">   WHERE watershed_group_code='PARS' GROUP BY 1 ORDER BY 2 DESC;"</span></span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a></span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a><span class="co"># What does link emit (after a mapping_code=TRUE run)?</span></span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a><span class="ex">docker</span> exec fresh-db psql <span class="at">-U</span> postgres <span class="at">-d</span> fwapg <span class="at">-c</span> <span class="dt">\</span></span>
+<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a>  <span class="st">"SELECT mapping_code_bt, count(*) FROM fresh_default.streams_mapping_code</span></span>
+<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a><span class="st">   WHERE watershed_group_code='PARS' GROUP BY 1 ORDER BY 2 DESC;"</span></span>
+<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a></span>
+<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a><span class="co"># Inspect a barrier view's shape / blocks_species</span></span>
+<span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a><span class="ex">docker</span> exec fresh-db psql <span class="at">-U</span> postgres <span class="at">-d</span> fwapg <span class="at">-c</span> <span class="dt">\</span></span>
+<span id="cb15-13"><a href="#cb15-13" tabindex="-1"></a>  <span class="st">"SELECT pg_get_viewdef('fresh_default.barriers_bt_unified', true);"</span></span>
+<span id="cb15-14"><a href="#cb15-14" tabindex="-1"></a></span>
+<span id="cb15-15"><a href="#cb15-15" tabindex="-1"></a><span class="co"># Single-WSG tunnel-free build (the headline path)</span></span>
+<span id="cb15-16"><a href="#cb15-16" tabindex="-1"></a><span class="fu">bash</span> data-raw/wsgs_run_m4_offline.sh <span class="at">--wsgs</span><span class="op">=</span>PARS <span class="at">--config</span><span class="op">=</span>default <span class="dt">\</span></span>
+<span id="cb15-17"><a href="#cb15-17" tabindex="-1"></a>  <span class="at">--schema</span><span class="op">=</span>fresh_default <span class="at">--force</span> <span class="at">--mapping-code</span></span></code></pre></div>
 <p>Local docker fwapg: <code>host=localhost port=5432 dbname=fwapg user=postgres password=postgres</code> (compose at <code>~/Projects/repo/fresh/docker/</code>).</p>
 </div>
 </div>

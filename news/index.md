@@ -1,5 +1,46 @@
 # Changelog
 
+## link 0.74.0
+
+**Every file a bundle copies from bcfishpass is synced, and link’s
+changes to one sit beside it as an overlay**
+([\#429](https://github.com/NewGraphEnvironment/link/issues/429)). The
+weekly sync used to check 7 files and missed four that had drifted; its
+dry run said “no drift”.
+
+- **Copies stay byte for byte.** A bundle file can declare an
+  `overlay:`, a link-owned CSV of single-cell changes, each with its
+  reason and issue, which
+  [`lnk_load_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_load_overrides.md)
+  applies when it reads the file. The `bcfishpass` bundle’s species
+  presence table is bcfishpass’s again, and link’s kokanee column is
+  `overrides/wsg_species_presence_overlay.csv`. Moving it changed no
+  loaded table and no output token.
+- **The sync covers every copy, per bundle.** It now also checks
+  `cabd_additions`, `cabd_blkey_xref`, `cabd_exclusions`,
+  `cabd_passability_status_updates`, `dfo_known_sockeye_lakes`,
+  `wcrp_watersheds` and `observation_exclusions`, writes a change only
+  into the bundle that declares the file (`default`’s presence table is
+  link’s own), and stops when a file cannot be fetched.
+- **A change that moves an output token is held for review.** The sync
+  loads each bundle with the changes applied and compares its token
+  specs. A moved spec, or a bundle that no longer loads, opens a
+  `token-review` pull request that is not merged, naming the vocabulary
+  row to add.
+- **Pulled at `smnorris/bcfishpass@3bd2824`:** CH present in UTRE and ST
+  present in QUES in the `bcfishpass` bundle, so `acc-bcfp-4` replaces
+  `acc-bcfp-3`; the Keogh River and Adams rows in
+  `cabd_passability_status_updates.csv`; three lines of
+  `wcrp_watersheds.csv`; and `cabd_blkey_xref.csv` without the final
+  newline link had added (the reader now accepts a short file without
+  one).
+- **The two dam rows change no output yet.** Neither id is in the CABD
+  dams table that link or bcfishpass’s own build reads, and Keogh Dam is
+  still a barrier in both. Evidence: `data-raw/logs/csv_sync_429/`.
+- `config_hash` moves for `bcfishpass`, `default` and `default_tuned`.
+  The `bcfishpass` schema’s UTRE and QUES re-model at the next
+  provincial run.
+
 ## link 0.73.2
 
 **Each fish record is measured before it counts toward a presence cell**

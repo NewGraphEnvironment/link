@@ -70,5 +70,5 @@ lnk_vocabulary_resolve(lnk_config("default"))
 #> "cut-full-top"       "acc-v3"     "grad-seg"      "q-fwapg" 
 lnk_vocabulary_resolve(lnk_config("bcfishpass"))
 #>                cut                acc               grad               flow 
-#> "cut-full-ssf-all"       "acc-bcfp-3"         "grad-seg"          "q-fwapg" 
+#> "cut-full-ssf-all"       "acc-bcfp-4"         "grad-seg"          "q-fwapg" 
 ```

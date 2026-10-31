@@ -13,7 +13,7 @@ drift on each axis separately."><meta property="og:image" content="https://newgr
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.73.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.74.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -38,7 +38,7 @@ drift on each axis separately."><meta property="og:image" content="https://newgr
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Verify Config Bundle File Checksums and Shape</h1>
-      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.73.2/R/lnk_config_verify.R" class="external-link"><code>R/lnk_config_verify.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/R/lnk_config_verify.R" class="external-link"><code>R/lnk_config_verify.R</code></a></small>
       <div class="d-none name"><code>lnk_config_verify.Rd</code></div>
     </div>
 
@@ -123,12 +123,19 @@ fastest way to localize the change.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 6           overrides/user_habitat_classification.csv</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 7                overrides/observation_exclusions.csv</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 8                  overrides/wsg_species_presence.csv</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9          overrides/user_modelled_crossing_fixes.csv</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10            overrides/user_pscis_barrier_status.csv</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11 overrides/pscis_modelledcrossings_streams_xref.csv</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12               overrides/user_barriers_definite.csv</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13       overrides/user_barriers_definite_control.csv</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14                  overrides/user_crossings_misc.csv</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9          overrides/wsg_species_presence_overlay.csv</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10         overrides/user_modelled_crossing_fixes.csv</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11            overrides/user_pscis_barrier_status.csv</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12 overrides/pscis_modelledcrossings_streams_xref.csv</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 13               overrides/user_barriers_definite.csv</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 14       overrides/user_barriers_definite_control.csv</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 15                  overrides/user_crossings_misc.csv</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 16                       overrides/cabd_additions.csv</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 17                      overrides/cabd_blkey_xref.csv</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 18                      overrides/cabd_exclusions.csv</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 19      overrides/cabd_passability_status_updates.csv</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 20              overrides/dfo_known_sockeye_lakes.csv</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 21                      overrides/wcrp_watersheds.csv</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                                              byte_expected</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1  sha256:e9b9ea721ac24e33ada3e2972ec789b6a00c7ef441b4ad269f76a4a3f6d2b6f7</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2  sha256:a48aadd609e2c5dd49501ed23f61bdf85386a41359a7a100394b648f04ffb496</span>
@@ -137,13 +144,20 @@ fastest way to localize the change.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 5  sha256:9802bb71bdd7f7d296e917d138567f096a69dab12dbc7c0f331e55206e5f6a0a</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 6  sha256:80b69d0954563660c13bc481b2e955000748e0597d4e10ce0c16462d9a5df966</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 7  sha256:ad901c57ca42e71e4affffd6e583045a2ce423f15088c211c9c2f72976f5d36a</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8  sha256:cd42f2dff62cb76f77f4b055436329a74ba44fe1466dec5d7801aa5221360185</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9  sha256:d5c84fb00906acae110249c2976907860b829d4430e43ffaf2671e02e8e40037</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10 sha256:66c11defba1a1cab36adb56b395536279d83e481bcb948f93fb04db580753027</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11 sha256:cd9202d46904fac2865acff36be1b4d104c299f3b803bde6993d537e8bc03ead</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12 sha256:56c66cddf279a1c2b0c0be1fc9ba9c758dc93d4ad820e0bf2c5caf4ecce05fb6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13 sha256:8f34e2c006733e0f06248a90dc0b8abe4719880590f497581f80fe5f62fde203</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14 sha256:e569fdfcf8c98eb0c7928b52a3de894a3c46e2599cafb04e746d4f858dffc711</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8  sha256:2ea57578dbc5836d0e24ea6468534f081c7f5f37c72534ca2e3c0f06a6be4c18</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9  sha256:841e8780a1cba082be7ef32e98c9536a64f429f4fbf04f6944a60e65e13bfd14</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10 sha256:d5c84fb00906acae110249c2976907860b829d4430e43ffaf2671e02e8e40037</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11 sha256:66c11defba1a1cab36adb56b395536279d83e481bcb948f93fb04db580753027</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12 sha256:cd9202d46904fac2865acff36be1b4d104c299f3b803bde6993d537e8bc03ead</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 13 sha256:56c66cddf279a1c2b0c0be1fc9ba9c758dc93d4ad820e0bf2c5caf4ecce05fb6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 14 sha256:8f34e2c006733e0f06248a90dc0b8abe4719880590f497581f80fe5f62fde203</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 15 sha256:e569fdfcf8c98eb0c7928b52a3de894a3c46e2599cafb04e746d4f858dffc711</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 16 sha256:75022b62d83d8a3dafd3d19e7cc8871948818e4b75e84af8e775b1199786e930</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 17 sha256:3f55fcf2726fdc9aa2bb2b5bb3d22f989bc29d5aab971e82de8d4d432744a2dc</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 18 sha256:fa22681c9dd0a881b4a4ba7f03c46cee20393faf0d77ce3bc30f759772e8efa6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 19 sha256:671793805fe2f4ec30a2844bd12db648b3e04e059d40470a1e01177349c6a00b</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 20 sha256:4a8d7d1a3a3697d1536c5463364805916077aa171bd1e4d19fc8a9e2250979f7</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 21 sha256:52c7544b5bc9a033e2c50fe39f41b722598700cb2faa8655ca07010f342f21f8</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                                              byte_observed</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1  sha256:e9b9ea721ac24e33ada3e2972ec789b6a00c7ef441b4ad269f76a4a3f6d2b6f7</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2  sha256:a48aadd609e2c5dd49501ed23f61bdf85386a41359a7a100394b648f04ffb496</span>
@@ -152,13 +166,20 @@ fastest way to localize the change.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 5  sha256:9802bb71bdd7f7d296e917d138567f096a69dab12dbc7c0f331e55206e5f6a0a</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 6  sha256:80b69d0954563660c13bc481b2e955000748e0597d4e10ce0c16462d9a5df966</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 7  sha256:ad901c57ca42e71e4affffd6e583045a2ce423f15088c211c9c2f72976f5d36a</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8  sha256:cd42f2dff62cb76f77f4b055436329a74ba44fe1466dec5d7801aa5221360185</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9  sha256:d5c84fb00906acae110249c2976907860b829d4430e43ffaf2671e02e8e40037</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10 sha256:66c11defba1a1cab36adb56b395536279d83e481bcb948f93fb04db580753027</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11 sha256:cd9202d46904fac2865acff36be1b4d104c299f3b803bde6993d537e8bc03ead</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12 sha256:56c66cddf279a1c2b0c0be1fc9ba9c758dc93d4ad820e0bf2c5caf4ecce05fb6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13 sha256:8f34e2c006733e0f06248a90dc0b8abe4719880590f497581f80fe5f62fde203</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14 sha256:e569fdfcf8c98eb0c7928b52a3de894a3c46e2599cafb04e746d4f858dffc711</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8  sha256:2ea57578dbc5836d0e24ea6468534f081c7f5f37c72534ca2e3c0f06a6be4c18</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9  sha256:841e8780a1cba082be7ef32e98c9536a64f429f4fbf04f6944a60e65e13bfd14</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10 sha256:d5c84fb00906acae110249c2976907860b829d4430e43ffaf2671e02e8e40037</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11 sha256:66c11defba1a1cab36adb56b395536279d83e481bcb948f93fb04db580753027</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12 sha256:cd9202d46904fac2865acff36be1b4d104c299f3b803bde6993d537e8bc03ead</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 13 sha256:56c66cddf279a1c2b0c0be1fc9ba9c758dc93d4ad820e0bf2c5caf4ecce05fb6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 14 sha256:8f34e2c006733e0f06248a90dc0b8abe4719880590f497581f80fe5f62fde203</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 15 sha256:e569fdfcf8c98eb0c7928b52a3de894a3c46e2599cafb04e746d4f858dffc711</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 16 sha256:75022b62d83d8a3dafd3d19e7cc8871948818e4b75e84af8e775b1199786e930</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 17 sha256:3f55fcf2726fdc9aa2bb2b5bb3d22f989bc29d5aab971e82de8d4d432744a2dc</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 18 sha256:fa22681c9dd0a881b4a4ba7f03c46cee20393faf0d77ce3bc30f759772e8efa6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 19 sha256:671793805fe2f4ec30a2844bd12db648b3e04e059d40470a1e01177349c6a00b</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 20 sha256:4a8d7d1a3a3697d1536c5463364805916077aa171bd1e4d19fc8a9e2250979f7</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 21 sha256:52c7544b5bc9a033e2c50fe39f41b722598700cb2faa8655ca07010f342f21f8</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    byte_drift</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1       FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2       FALSE</span>
@@ -174,6 +195,13 @@ fastest way to localize the change.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 12      FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 13      FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 14      FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 15      FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 16      FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 17      FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 18      FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 19      FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 20      FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 21      FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                                             shape_expected</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1  sha256:4fec0f2db7523d71ba7542e0d52217c91d9bab5b55d714b689f614380f5c2eb9</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2  sha256:65b9416981cf2687332a98923d9e4cdfc6800f4d55a85c5d0348c64cafb41155</span>
@@ -182,13 +210,20 @@ fastest way to localize the change.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 5  sha256:cf285e3c204249a6b628424979ef780baa271add44cc8ea6512a44d6671a9eb5</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 6  sha256:35604598f352c0cc958e8330e80627ec65154e4eaba9dbba8cac92c8516706a0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 7  sha256:c0c0c5a6e478bae9d98c0251870fb73ef12ec5033de08589bad08ed03be02a31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8  sha256:1298cae181b9af892584328d635430224297672a4a0eced4a2dd66d15652128c</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9  sha256:acbddab3bd06ac4790eb129201198e614c1d4c08b83cd18ee94e4cdfafa09ab2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10 sha256:fb611fc77ebbe15429826d7acfe57d487118d7815dea9b2ad5a3f94f03a487e8</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11 sha256:c2cebcc7398ddd12d0803eefafbe219f3551e6948051f18d89d7984130c1589d</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12 sha256:d39b1ef2a8b3fd26974a3138a3f4e9516a65bddd34e9b50ab65c50a0cbfdc9c1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13 sha256:2a6dd20fd0fe0d9ebc4d54bedafa95054ba3167ac255f98cd2a76dd082800591</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14 sha256:463bc63156786be38c39d5479bfe07ce7b593e1174ecba6f7d9e5ac52c2c6bfd</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8  sha256:161bef58151083d80bd226022a46aed5a35a5acd1526dfc3deac42cb6ae952fc</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9  sha256:eb72f24aa4e2850578d9ce3feadf0125eb8bd1c95a16215705e8c57dc8aee324</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10 sha256:acbddab3bd06ac4790eb129201198e614c1d4c08b83cd18ee94e4cdfafa09ab2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11 sha256:fb611fc77ebbe15429826d7acfe57d487118d7815dea9b2ad5a3f94f03a487e8</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12 sha256:c2cebcc7398ddd12d0803eefafbe219f3551e6948051f18d89d7984130c1589d</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 13 sha256:d39b1ef2a8b3fd26974a3138a3f4e9516a65bddd34e9b50ab65c50a0cbfdc9c1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 14 sha256:2a6dd20fd0fe0d9ebc4d54bedafa95054ba3167ac255f98cd2a76dd082800591</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 15 sha256:463bc63156786be38c39d5479bfe07ce7b593e1174ecba6f7d9e5ac52c2c6bfd</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 16 sha256:cca1f4ecdd08ae9acfaa968767f2d911ce23115500ea2aa595b393c0e76b2cb9</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 17 sha256:62169e677bf9a7e50893f2407408a573a8137011e7797685a14d979d27e0d171</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 18 sha256:6f13d737481c9e94be585861490fe8c35a81cc026875b5e873345e47ec59ad0e</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 19 sha256:0975cea50456c610de6a229949f2e6d7233613ec57e1aa7dfdb51d05c1216ef8</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 20 sha256:33ac6f1f2766d6b4d138782b549d4f7156d7fe05485d8f66b4a9a55a431f88cb</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 21 sha256:2b0eaf185855f06731bfb8f98294a0c7938aef26a5c7265beec167ce0bb46f41</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                                             shape_observed</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1  sha256:4fec0f2db7523d71ba7542e0d52217c91d9bab5b55d714b689f614380f5c2eb9</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2  sha256:65b9416981cf2687332a98923d9e4cdfc6800f4d55a85c5d0348c64cafb41155</span>
@@ -197,13 +232,20 @@ fastest way to localize the change.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 5  sha256:cf285e3c204249a6b628424979ef780baa271add44cc8ea6512a44d6671a9eb5</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 6  sha256:35604598f352c0cc958e8330e80627ec65154e4eaba9dbba8cac92c8516706a0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 7  sha256:c0c0c5a6e478bae9d98c0251870fb73ef12ec5033de08589bad08ed03be02a31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8  sha256:1298cae181b9af892584328d635430224297672a4a0eced4a2dd66d15652128c</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9  sha256:acbddab3bd06ac4790eb129201198e614c1d4c08b83cd18ee94e4cdfafa09ab2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10 sha256:fb611fc77ebbe15429826d7acfe57d487118d7815dea9b2ad5a3f94f03a487e8</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11 sha256:c2cebcc7398ddd12d0803eefafbe219f3551e6948051f18d89d7984130c1589d</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12 sha256:d39b1ef2a8b3fd26974a3138a3f4e9516a65bddd34e9b50ab65c50a0cbfdc9c1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13 sha256:2a6dd20fd0fe0d9ebc4d54bedafa95054ba3167ac255f98cd2a76dd082800591</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14 sha256:463bc63156786be38c39d5479bfe07ce7b593e1174ecba6f7d9e5ac52c2c6bfd</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8  sha256:161bef58151083d80bd226022a46aed5a35a5acd1526dfc3deac42cb6ae952fc</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9  sha256:eb72f24aa4e2850578d9ce3feadf0125eb8bd1c95a16215705e8c57dc8aee324</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10 sha256:acbddab3bd06ac4790eb129201198e614c1d4c08b83cd18ee94e4cdfafa09ab2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11 sha256:fb611fc77ebbe15429826d7acfe57d487118d7815dea9b2ad5a3f94f03a487e8</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12 sha256:c2cebcc7398ddd12d0803eefafbe219f3551e6948051f18d89d7984130c1589d</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 13 sha256:d39b1ef2a8b3fd26974a3138a3f4e9516a65bddd34e9b50ab65c50a0cbfdc9c1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 14 sha256:2a6dd20fd0fe0d9ebc4d54bedafa95054ba3167ac255f98cd2a76dd082800591</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 15 sha256:463bc63156786be38c39d5479bfe07ce7b593e1174ecba6f7d9e5ac52c2c6bfd</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 16 sha256:cca1f4ecdd08ae9acfaa968767f2d911ce23115500ea2aa595b393c0e76b2cb9</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 17 sha256:62169e677bf9a7e50893f2407408a573a8137011e7797685a14d979d27e0d171</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 18 sha256:6f13d737481c9e94be585861490fe8c35a81cc026875b5e873345e47ec59ad0e</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 19 sha256:0975cea50456c610de6a229949f2e6d7233613ec57e1aa7dfdb51d05c1216ef8</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 20 sha256:33ac6f1f2766d6b4d138782b549d4f7156d7fe05485d8f66b4a9a55a431f88cb</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 21 sha256:2b0eaf185855f06731bfb8f98294a0c7938aef26a5c7265beec167ce0bb46f41</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    shape_drift missing</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1        FALSE   FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2        FALSE   FALSE</span>
@@ -219,6 +261,13 @@ fastest way to localize the change.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 12       FALSE   FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 13       FALSE   FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 14       FALSE   FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 15       FALSE   FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 16       FALSE   FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 17       FALSE   FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 18       FALSE   FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 19       FALSE   FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 20       FALSE   FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 21       FALSE   FALSE</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="co"># In a verification log: error on either drift kind</span></span></span>
