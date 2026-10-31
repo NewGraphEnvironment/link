@@ -1,5 +1,5 @@
-date: 2026-10-31 03:09 UTC
-link: 0.73.0 @ 6aabb6f0
+date: 2026-10-31 03:22 UTC
+link: 0.73.0 @ 83e45a71
 config: default; presence table /Users/airvine/Projects/repo/link/inst/extdata/configs/default/overrides/wsg_species_presence.csv
 db: docker fwapg localhost:5432
 bcfishobs.observations rows: 375962; newest observation_date not after today 2026-10-10

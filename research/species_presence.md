@@ -1,6 +1,6 @@
 # Species presence: which groups each species is modelled in
 
-**Verified:** 2026-10-31 · **Issues:** #402 (this), #292 and #153 (the presence groups), #290 (pooling), #398 (CT aliases in code 2) · **Produced by:** `.lnk_presence_check()` (`R/lnk_presence_check.R`) through `data-raw/wsg_species_presence_check.R` on local fwapg, bcfishobs 375,962 rows (newest valid date 2026-10-10), link `6aabb6f0` → `data-raw/logs/presence_check_402/` · **Status:** 351 cells flagged and seeded into `configs/default/wsg_species_presence_review.csv`, every one pending the operator's review
+**Verified:** 2026-10-31 · **Issues:** #402 (this), #292 and #153 (the presence groups), #290 (pooling), #398 (CT aliases in code 2) · **Produced by:** `.lnk_presence_check()` (`R/lnk_presence_check.R`) through `data-raw/wsg_species_presence_check.R` on local fwapg, bcfishobs 375,962 rows (newest valid date 2026-10-10), link `83e45a71` → `data-raw/logs/presence_check_402/` · **Status:** 351 cells flagged and seeded into `configs/default/wsg_species_presence_review.csv`, every one pending the operator's review
 
 ## What a presence cell decides
 
