@@ -92,6 +92,17 @@ Related: #292, #153, #290, #400.
 - Zotero (group 4733734, via the Web API; the MCP lacks its env vars and the local API needs Zotero running): McPhail & Baxter 1996 `SUENJEU8`; McPhail & Carveth 1993 `44PTFGQ3`; Roberge et al. 2002 `B3TYJ9I9`; Ericksen et al. 2009 `XBVCXFAG` (duplicates `BCBNSQ7B`, `WZJXVVJL`). McPhail 2007 is absent.
 - Operator (2026-10-31) at the gate: KO homework on historic access (Kootenay Lake: fish reached above Bonnington Falls before the end of the last ice age; above never-passable barriers with no rearing lake, KO records are errors). Single records are species-dependent (a lone CCT in the Elk is an error; a lone DV in KOTL is a BT). Many UTMs were typed wrong; elevation and 25–30 % gradients flag implausible records; loneliness is a reason only after the other screens.
 
+
+## Prototypes (2026-10-31, local fwapg)
+
+**50k code agreement.** `fwa_stream_networks_sp.watershed_code_50k` carries the 50k code without dashes; compare `rtrim(replace(new_watershed_code,'-',''),'0')` with `rtrim(watershed_code_50k,'0')`. On ADMS, ELKR and PARS: A matches agree 5,726 of 5,739 (9 nested, 1 other); C 196 of 196; D 983 of 1,249 (219 no 50k code on the matched line); B 0 of 392 equal (202 no code, 145 nested, 45 other); E 306 of 372. bcfishobs already matches A, C and D by the 50k code (`lookup`), so a code disagreement mostly marks B and E (`closest stream`) records. A UTM typo large enough to move a record off its stream leaves it unmatched (`bcfishobs.fiss_fish_obsrvtn_unmatched`), outside these counts; one small enough stays matched by code. So the transcription screen leans on B/E code disagreement and on isolation.
+
+**Elevation and gradient.** `ST_Z(ST_GeometryN(ST_LocateAlong(s.geom, o.downstream_route_measure), 1))` gives a value for every matched record (0 NULL of 7,948 on the three groups); P99 1,764 to 2,284 m by match type. 79 records sit on segments of gradient 0.25 or more.
+
+**Natural barrier below a record.** `fwa_downstream(record, barrier)` (a record first: it returns true when its second feature is downstream of its first; the reverse order counted barriers above the record) with `b.wscode_ltree @> o.wscode`, over `fresh_default.barriers` FALLS / GRADIENT / USER_DEFINITE where the species is in `blocks_species`, joined to `barrier_overrides` on blue_line_key and measure within 1 m: 2.3 s for ten species in three groups. Lifts exist only for species with a lift rule (none for CT and DV in `default`), so PARS DV reads 108 of 108 above an unlifted barrier and ELKR CT 25 of 65. A record above an unlifted barrier is therefore read with the other records above the same barrier, not failed alone.
+
+**Range evidence.** "BC Historical Fish Distribution - Zones (50,000)" (`b665c14f-…`) is WFS-queryable: 19,094 stream reaches with `SPECIES_CODE`, `NEW_WATERSHED_CODE`, `ACTIVITY`, `STOCK_NAME`, `REFS_AND_DATES`, upstream and downstream route measures. "Provincial Fish Ranges - Watersheds" (`4e66ac86-…`) has no WFS resource (BCGW custom download); its notes say its ranges come from McPhail & Carveth's key over 30 fish regions.
+
 ## Errors Encountered
 
 | Error | Resolution |
