@@ -137,21 +137,32 @@ update_provenance_in_yaml <- function(yaml_path, rel_path,
 # or an error message string on validation failure (caller decides
 # how to surface it). Ingests the upstream bytes exactly as a run's
 # lnk_load_overrides() does (crate::crt_ingest(): known upstream variant,
-# then conform), so a file the pipeline would refuse is shape drift here.
+# then conform). A warning counts as a failure too: crt_ingest() reads a
+# value that no longer parses (a key that is not a number) as NA with only a
+# parsing warning, and the pipeline would load that row keyless.
 validate_canonical_schema <- function(rel, slug, bytes) {
   if (is.null(slug) || !nzchar(slug)) return(NULL)
   parts <- strsplit(slug, "/", fixed = TRUE)[[1]]
-  tryCatch({
+  warned <- character(0)
+  err <- tryCatch({
     if (length(parts) != 2L) stop("canonical_schema must be '<source>/<file_name>'")
     tmp <- tempfile(fileext = ".csv")
     on.exit(unlink(tmp), add = TRUE)
     writeBin(bytes, tmp)
-    crate::crt_ingest(source = parts[1], file_name = parts[2], path = tmp)
+    withCallingHandlers(
+      crate::crt_ingest(source = parts[1], file_name = parts[2], path = tmp),
+      warning = function(w) {
+        warned <<- c(warned, conditionMessage(w))
+        invokeRestart("muffleWarning")
+      })
     NULL
-  }, error = function(e) {
-    sprintf("%s (canonical_schema=%s): %s",
-            rel, slug, conditionMessage(e))
+  }, error = function(e) conditionMessage(e))
+  msg <- c(err, if (length(warned) > 0L) {
+    paste("warned:", paste(unique(warned), collapse = " | "))
   })
+  if (length(msg) == 0L) return(NULL)
+  sprintf("%s (canonical_schema=%s): %s", rel, slug,
+          paste(msg, collapse = "; "))
 }
 
 # --- Read upstream build identifier (single SHA for all files) -------------
