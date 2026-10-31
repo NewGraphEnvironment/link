@@ -103,6 +103,15 @@ Related: #292, #153, #290, #400.
 
 **Range evidence.** "BC Historical Fish Distribution - Zones (50,000)" (`b665c14f-…`) is WFS-queryable: 19,094 stream reaches with `SPECIES_CODE`, `NEW_WATERSHED_CODE`, `ACTIVITY`, `STOCK_NAME`, `REFS_AND_DATES`, upstream and downstream route measures. "Provincial Fish Ranges - Watersheds" (`4e66ac86-…`) has no WFS resource (BCGW custom download); its notes say its ranges come from McPhail & Carveth's key over 30 fish regions.
 
+
+## Measures, province-wide (2026-10-31)
+
+- `.lnk_presence_measures()` runs in about 60 s over 375,962 records.
+- 2,574 records are filed under a group their own 50k code does not run through (the review's count).
+- Absent-recorded cells (327): 153 rest on a single waterbody, 94 on a single site. Anadromous (168): 12 with every record above a blocking natural barrier (6 of them with at most 2 records of the class above), 21 recorded only on a main stem flowing through the group, 59 with no record on a stream carrying a historical zone of the species; by major drainage 100 Fraser 51, 600 21, 400 Skeena 12, 915 12, 300 Columbia 11, 500 9, 700 8, 200 Mackenzie 7, 800 Yukon 3. KO (137): 123 with lake records; none with every record above a barrier with no lake.
+- Recall (67 data_error records): 47 caught by a barrier below with at most 2 class records above, elevation above 1,400 m, or gradient 0.25 or more; the other 20 show no geometric tell.
+- An excluded-only reach above a barrier read NA for `n_class_above`; fixed to 0 (CASE ... coalesce).
+
 ## Errors Encountered
 
 | Error | Resolution |

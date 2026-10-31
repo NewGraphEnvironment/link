@@ -123,3 +123,38 @@ test_that("live: the barrier test reads a falls below, not one above", {
   expect_true(q(f$m + 100))
   expect_false(q(f$m - 100))
 })
+
+test_that("the measure story says what holds and skips what does not", {
+  cm <- .lnk_presence_cell_measures(meas_rec(1))
+  expect_equal(.lnk_presence_measure_story(cm), paste0(
+    "Own records: 1 site on 1 waterbody in 1 year; none on a stream with a ",
+    "historical distribution zone of the species; at 500 m."))
+  m <- meas_rec(3, site = c("a", "b", "c"), waterbody_identifier = c("w1", "w1", "w2"),
+                yr = c(1990L, 2001L, 2001L), barrier_below = c("FALLS", "GRADIENT", NA),
+                n_class_above = c(1L, 4L, NA), code_other_group = c(TRUE, FALSE, FALSE),
+                in_hist_zone = c(TRUE, TRUE, TRUE), elevation_m = c(400, 800, 1200))
+  s <- .lnk_presence_measure_story(.lnk_presence_cell_measures(m))
+  expect_match(s, "3 sites on 2 waterbodies in 2 years", fixed = TRUE)
+  expect_match(s, "1 of 3 filed under a 50k code", fixed = TRUE)
+  expect_match(s, "2 of 3 above a natural barrier that blocks it (falls, gradient), with 1 to 4 counting",
+               fixed = TRUE)
+  expect_match(s, "all on a stream with a historical distribution zone", fixed = TRUE)
+  expect_match(s, "400 to 1200 m.", fixed = TRUE)
+})
+
+test_that("the measure story names kokanee with no lake and lake records", {
+  m <- meas_rec(2, species_code = "KO", barrier_below = c("FALLS", NA),
+                n_class_above = c(2L, NA), lake_record = c(TRUE, TRUE),
+                known_sockeye_lake = c(TRUE, FALSE), site = c("a", "b"))
+  s <- .lnk_presence_measure_story(.lnk_presence_cell_measures(m))
+  expect_match(s, "1 of 2 above a barrier with no lake above it", fixed = TRUE)
+  expect_match(s, "all in lakes (1 in known sockeye lakes)", fixed = TRUE)
+  expect_match(s, "with 2 counting records of its class above", fixed = TRUE)
+})
+
+test_that("the measure story says when a group holds no barrier rows, and is empty for no records", {
+  s <- .lnk_presence_measure_story(.lnk_presence_cell_measures(meas_rec(1, barriers_known = FALSE)))
+  expect_match(s, "no barrier rows in the group", fixed = TRUE)
+  empty <- data.frame(n_counting = NA_integer_)
+  expect_equal(.lnk_presence_measure_story(empty), "")
+})

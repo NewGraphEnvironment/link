@@ -29,7 +29,16 @@
 #                      calls) counted toward it. Not used for any flag: the
 #                      pipeline drops those codes, and the check judges what
 #                      the model reads.
+#   measures.csv       per group x species with a counting record: the
+#                      record measures of .lnk_presence_measures() rolled up
+#                      by .lnk_presence_cell_measures() (no record is judged)
+#   recall.csv         the data_error rows of observation_exclusions.csv with
+#                      their measures: what each measure sees of known errors
 #   stamp.txt
+#
+# The measures read evidence/hist_zones.csv (data-raw/presence_evidence_load.R)
+# and the bundle's overrides/dfo_known_sockeye_lakes.csv. They are counted
+# again in SQL for the same three groups.
 
 pkgload::load_all(quiet = TRUE)
 suppressPackageStartupMessages(library(DBI))
@@ -74,6 +83,34 @@ other <- attr(res, "other_codes")
 fl <- res[!is.na(res$flag), , drop = FALSE]
 fl$story <- .lnk_presence_story(fl)
 rule <- .lnk_presence_rule(res$n_min[1], res$year_min[1])
+
+# -- record measures (link#402, part 2) ---------------------------------------
+zones_path <- file.path(dir_out, "evidence", "hist_zones.csv")
+if (!file.exists(zones_path)) {
+  stop(zones_path, " missing: run data-raw/presence_evidence_load.R first")
+}
+zones <- utils::read.csv(zones_path, colClasses = "character")
+sockeye <- utils::read.csv(file.path(cfg$dir, "overrides",
+                                     "dfo_known_sockeye_lakes.csv"))$waterbody_poly_id
+if (length(sockeye) == 0L) stop("no known sockeye lakes read")
+sp_barrier <- c("CH", "CM", "CO", "PK", "SK", "ST", "KO")
+pf <- loaded$parameters_fresh
+pools <- stats::setNames(lapply(sp_barrier, function(s) {
+  v <- pf$observation_species[pf$species_code == s]
+  if (length(v) != 1L || is.na(v)) stop("no observation_species for ", s)
+  trimws(strsplit(v, ";")[[1]])
+}), sp_barrier)
+excl_all <- loaded$observation_exclusions
+meas <- .lnk_presence_measures(
+  conn, zones, sp_barrier, pools, sockeye,
+  excl_keys = .lnk_observation_exclusion_keys(loaded),
+  incl_keys = excl_all$observation_key[excl_all$release_include %in% c(TRUE, "t")],
+  year_min = year_min, year_now = year_now)
+if (nrow(meas) != nrow(records)) stop("measures do not cover every record")
+cm <- .lnk_presence_cell_measures(meas)
+fl <- merge(fl, cm, by = c("watershed_group_code", "species_code"), all.x = TRUE)
+ms <- .lnk_presence_measure_story(fl)
+fl$story <- ifelse(nzchar(ms), paste(fl$story, ms), fl$story)
 
 # -- independent count in SQL for three groups -------------------------------
 check_wsgs <- c("PARS", "ADMS", "ALBN")
@@ -127,6 +164,29 @@ for (v in c("n_records", "n_excluded", "n_releases", "n_kept_own")) {
 n_cmp_cells <- nrow(cmp)
 n_cmp_records <- sum(cmp$n_records)
 
+# The measures, counted again in SQL from the record table for the same groups.
+sqm <- dbGetQuery(conn, sprintf("
+  SELECT watershed_group_code, species_code,
+         count(*)::int AS n_counting,
+         count(DISTINCT site)::int AS n_sites,
+         count(*) FILTER (WHERE code_other_group)::int AS n_code_other_group,
+         count(*) FILTER (WHERE barrier_below IS NOT NULL)::int AS n_above_barrier,
+         count(*) FILTER (WHERE through_main_stem)::int AS n_main_stem,
+         count(*) FILTER (WHERE in_hist_zone)::int AS n_hist_zone
+  FROM pg_temp.pm_out
+  WHERE counting AND watershed_group_code IN (%s)
+  GROUP BY 1, 2", paste(sprintf("'%s'", check_wsgs), collapse = ", ")))
+mine_m <- cm[cm$watershed_group_code %in% check_wsgs, names(sqm)]
+cmp_m <- merge(mine_m, sqm, by = c("watershed_group_code", "species_code"),
+               all = TRUE, suffixes = c("", "_sql"))
+for (v in setdiff(names(sqm), c("watershed_group_code", "species_code"))) {
+  if (!identical(as.integer(cmp_m[[v]]), as.integer(cmp_m[[paste0(v, "_sql")]]))) {
+    print(cmp_m)
+    stop("SQL recount of the measures disagrees on ", v)
+  }
+}
+n_cmp_m <- nrow(cmp_m)
+
 # -- sensitivity: codes that name a table species -----------------------------
 # Diagnostic only, never a flag: the pipeline's observation filter matches
 # codes exactly, so these records reach no break, lift or code 2 today.
@@ -167,11 +227,29 @@ cols_out <- c("watershed_group_code", "species_code", "flag", "region",
               "modelled", "lift_readers",
               "group_notes", "story")
 fl <- merge(fl, reg, by = "watershed_group_code", all.x = TRUE)
-utils::write.csv(ord(fl)[, cols_out], file.path(dir_out, "disagreements.csv"),
-                 row.names = FALSE, na = "")
+cols_measure <- setdiff(names(cm), c("watershed_group_code", "species_code"))
+utils::write.csv(ord(fl)[, c(setdiff(cols_out, "story"), cols_measure, "story")],
+                 file.path(dir_out, "disagreements.csv"), row.names = FALSE, na = "")
 cells <- merge(res, reg, by = "watershed_group_code", all.x = TRUE)
 utils::write.csv(ord(cells)[, setdiff(cols_out, "story")],
                  file.path(dir_out, "cells.csv"), row.names = FALSE, na = "")
+cm_out <- merge(cm, reg, by = "watershed_group_code", all.x = TRUE)
+cm_out <- merge(cm_out, res[, c("watershed_group_code", "species_code", "flag",
+                                "present_raw")],
+                by = c("watershed_group_code", "species_code"), all.x = TRUE)
+utils::write.csv(ord(cm_out), file.path(dir_out, "measures.csv"),
+                 row.names = FALSE, na = "")
+errs <- excl_all[excl_all$data_error %in% c(TRUE, "t"),
+                 c("observation_key", "notes")]
+recall <- merge(errs, meas, by = "observation_key", all.x = TRUE)
+recall <- recall[order(recall$watershed_group_code, recall$species_code,
+                       recall$observation_key, method = "radix"), ]
+utils::write.csv(recall[, c("observation_key", "watershed_group_code",
+                            "species_code", "code_other_group", "elevation_m",
+                            "gradient", "major_drainage", "barrier_below",
+                            "n_class_above", "rearing_lake_ha", "lake_record",
+                            "through_main_stem", "in_hist_zone", "notes")],
+                 file.path(dir_out, "recall.csv"), row.names = FALSE, na = "")
 
 pres <- loaded$wsg_species_presence
 grp <- data.frame(watershed_group_code = pres$watershed_group_code,
@@ -264,6 +342,12 @@ writeLines(c(
           nrow(sens)),
   sprintf("SQL cross-check: %s, %d cells, %d records, all counts agree",
           paste(check_wsgs, collapse = ", "), n_cmp_cells, n_cmp_records),
+  sprintf("measures: %d records; %d cells with a counting record (measures.csv); SQL recount of %s, %d cells, all agree",
+          nrow(meas), nrow(cm), paste(check_wsgs, collapse = ", "), n_cmp_m),
+  sprintf("evidence: %s", paste(readLines(file.path(dir_out, "evidence", "stamp.txt"))[1:3],
+                                collapse = "; ")),
+  sprintf("recall set: %d data_error records in observation_exclusions.csv (recall.csv), %d of them in bcfishobs",
+          nrow(errs), sum(!is.na(recall$watershed_group_code))),
   sprintf("tracker: %s", if (is.null(merged)) "not seeded" else sprintf(
     "%d added, %d pending refreshed, %d no longer flagged",
     nrow(merged$added), nrow(merged$refreshed), nrow(merged$stale)))),

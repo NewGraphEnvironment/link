@@ -40,14 +40,14 @@ The review (`review-plan.md`) showed three of the location screens repeat what b
   - `through_main_stem`: the record's blue line continues upstream outside its group;
   - `in_hist_zone`: its 50k code lies in a historical distribution zone of the species (`presence_evidence_load.R`; pre-2001 FISS, so not independent of FISS records, stated as such);
   - `gradient`: the segment's, reported only.
-- [ ] Live tests (skip without the database): a golden value set for one group, the argument order of the barrier test (a record above a known falls reads it, one below does not), and the KO lake placement.
+- [x] Live test (skips without the database): the barrier test's argument order (a point above a falls reads it, one below does not). The golden values became the driver's SQL recount of the measures for PARS, ADMS and ALBN (106 cells, all agree, every run), and the KO lake placement is checked by its counts (235 of 269 barriers below KO records have a lake above; 0 before the fix that places lakes by their segments).
 
 ## Phase 2: The per-cell table
 
 - [x] `.lnk_presence_cell_measures(measures, records)` (pure R, tested on fixtures): per group and species, distinct sites, waterbodies and years among counting records; records whose code lies in another group; records above a blocking barrier and the most records of the class above any one of them; KO records with and without a rearing lake; lake and main-stem records; records in a historical zone; elevation range.
-- [ ] The driver joins it to every cell (`cells.csv`, `disagreements.csv`), extends the story ("1 waterbody", "2 records, both filed under another group's code", "above a falls with 1 record of its class above it"), and re-seeds pending tracker stories (decided rows untouched).
-- [ ] Recall set: the 67 `data_error` rows in `observation_exclusions.csv` with their measures (`recall.csv`): which measures would have caught each, so the session sets rules knowing what they catch.
-- [ ] SQL recount of three groups' measures, independent of the R aggregation.
+- [x] The driver joins it to every cell (`cells.csv`, `disagreements.csv`), extends the story ("1 waterbody", "2 records, both filed under another group's code", "above a falls with 1 record of its class above it"), and re-seeds pending tracker stories (decided rows untouched).
+- [x] Recall set: the 67 `data_error` rows in `observation_exclusions.csv` with their measures (`recall.csv`): which measures would have caught each, so the session sets rules knowing what they catch.
+- [x] SQL recount of three groups' measures, independent of the R aggregation.
 
 ## Phase 3: Write-up
 

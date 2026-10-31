@@ -80,7 +80,7 @@
   tmp("pm_excl", data.frame(observation_key = as.character(excl_keys)))
   tmp("pm_incl", data.frame(observation_key = as.character(incl_keys)))
   for (s in .lnk_presence_measures_sql(year_min, year_now)) {
-    DBI::dbExecute(conn, s)
+    suppressMessages(DBI::dbExecute(conn, s))
   }
   out <- DBI::dbGetQuery(conn, "SELECT * FROM pg_temp.pm_out ORDER BY observation_key")
   out
@@ -211,7 +211,8 @@ SELECT o.observation_key, o.watershed_group_code, o.species_code, o.counting,
        EXISTS (SELECT 1 FROM fresh_default.barriers g
                WHERE g.watershed_group_code = o.watershed_group_code) AS barriers_known,
        b.barrier_source AS barrier_below,
-       a.n_class_above,
+       CASE WHEN b.barrier_source IS NULL THEN NULL
+            ELSE coalesce(a.n_class_above, 0) END AS n_class_above,
        k.rearing_lake_ha,
        o.lake_record,
        lp.area_ha AS lake_ha,
@@ -305,4 +306,80 @@ LEFT JOIN LATERAL (
   rownames(out) <- NULL
   out[order(out$watershed_group_code, out$species_code, method = "radix"), ,
       drop = FALSE]
+}
+
+#' One sentence of measures for a cell's story
+#'
+#' Drafted from a row of `.lnk_presence_cell_measures()`: distinct sites,
+#' waterbodies and years, then only the measures that hold for some record
+#' (filed under another group's code, above a blocking barrier, kokanee with
+#' no lake above it, lake records, main stem, historical zone), then the
+#' elevation range. Measures cover the species' own records, not records
+#' pooled into it.
+#'
+#' @param cm Data frame of `.lnk_presence_cell_measures()` rows (NA rows,
+#'   from a cell with no counting record, give "").
+#' @return Character, one sentence per row.
+#' @noRd
+.lnk_presence_measure_story <- function(cm) {
+  pl <- function(n, one, many = paste0(one, "s")) {
+    sprintf("%d %s", n, if (identical(as.integer(n), 1L)) one else many)
+  }
+  vapply(seq_len(nrow(cm)), function(i) {
+    r <- cm[i, , drop = FALSE]
+    if (is.na(r$n_counting) || r$n_counting == 0L) return("")
+    n <- r$n_counting
+    of <- function(k) if (k == n) "all" else sprintf("%d of %d", k, n)
+    out <- sprintf("Own records: %s on %s in %s",
+                   pl(r$n_sites, "site"), pl(r$n_waterbodies, "waterbody",
+                                             "waterbodies"),
+                   pl(r$n_years, "year"))
+    if (r$n_code_other_group > 0L) {
+      out <- c(out, sprintf("%s filed under a 50k code that does not run through the group",
+                            of(r$n_code_other_group)))
+    }
+    if (r$n_above_barrier > 0L) {
+      cls <- if (r$min_class_above == r$max_class_above) {
+        sprintf("%d", as.integer(r$max_class_above))
+      } else {
+        sprintf("%d to %d", as.integer(r$min_class_above),
+                as.integer(r$max_class_above))
+      }
+      out <- c(out, sprintf(
+        "%s above a natural barrier that blocks it (%s), with %s counting records of its class above",
+        of(r$n_above_barrier), gsub(";", ", ", tolower(r$above_kinds)), cls))
+    } else if (!isTRUE(r$barriers_known)) {
+      out <- c(out, "no barrier rows in the group")
+    }
+    if (r$n_ko_no_lake > 0L) {
+      out <- c(out, sprintf("%s above a barrier with no lake above it",
+                            of(r$n_ko_no_lake)))
+    }
+    if (r$n_lake_records > 0L) {
+      lk <- sprintf("%s in lakes", of(r$n_lake_records))
+      if (r$n_known_sockeye_lake > 0L) {
+        lk <- sprintf("%s (%d in known sockeye lakes)", lk, r$n_known_sockeye_lake)
+      }
+      out <- c(out, lk)
+    }
+    if (r$n_main_stem > 0L) {
+      out <- c(out, sprintf("%s on a main stem flowing through the group",
+                            of(r$n_main_stem)))
+    }
+    out <- c(out, if (r$n_hist_zone > 0L) {
+      sprintf("%s on a stream with a historical distribution zone of the species",
+              of(r$n_hist_zone))
+    } else {
+      "none on a stream with a historical distribution zone of the species"
+    })
+    if (!is.na(r$elev_min)) {
+      out <- c(out, if (r$elev_min == r$elev_max) {
+        sprintf("at %d m", as.integer(round(r$elev_min)))
+      } else {
+        sprintf("%d to %d m", as.integer(round(r$elev_min)),
+                as.integer(round(r$elev_max)))
+      })
+    }
+    paste0(paste(out, collapse = "; "), ".")
+  }, character(1))
 }
