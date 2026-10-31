@@ -1203,7 +1203,7 @@ wsg_species_presence:
 
 ```
 watershed_group_code,column,value,reason,issue
-PARS,ko,t,link models kokanee; bcfishpass's presence table has no KO column,#107
+PARS,ko,t,link models kokanee; bcfishpass's presence table has no KO column,#106
 ```
 
 - **One row per cell, each with a reason.** The first column is named for the

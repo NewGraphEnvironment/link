@@ -1,5 +1,5 @@
 watershed_group_code,column,value,reason,issue
-CARP,ko,t,link models kokanee; bcfishpass's presence table has no KO column,#107
-KOTL,ko,t,link models kokanee; bcfishpass's presence table has no KO column,#107
-NATR,ko,t,link models kokanee; bcfishpass's presence table has no KO column,#107
-PARS,ko,t,link models kokanee; bcfishpass's presence table has no KO column,#107
+CARP,ko,t,link models kokanee; bcfishpass's presence table has no KO column,#106
+KOTL,ko,t,link models kokanee; bcfishpass's presence table has no KO column,#106
+NATR,ko,t,link models kokanee; bcfishpass's presence table has no KO column,#106
+PARS,ko,t,link models kokanee; bcfishpass's presence table has no KO column,#106

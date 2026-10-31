@@ -179,7 +179,7 @@ provenance:
   overrides/wsg_species_presence_overlay.csv:
     source: link (hand-authored; link#429). Link's cells on the presence copy, one row each with its reason
     synced: '2026-10-31'
-    checksum: sha256:a4e318f1ca0b18cc626f1d4db97680b212044aaf76fb678ae2c53ae9cd966fd5
+    checksum: sha256:841e8780a1cba082be7ef32e98c9536a64f429f4fbf04f6944a60e65e13bfd14
     shape_checksum: sha256:eb72f24aa4e2850578d9ce3feadf0125eb8bd1c95a16215705e8c57dc8aee324
   overrides/user_modelled_crossing_fixes.csv:
     source: https://github.com/smnorris/bcfishpass
