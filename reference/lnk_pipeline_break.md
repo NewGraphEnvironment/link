@@ -73,9 +73,11 @@ its segmentation. Only `subsurfaceflow` is also read off `break_order`
 for access: it is built and gates access only when listed. The other
 barrier sources still gate access through classify's breaks table and
 the access walk's barrier tables, and `access_<sp>` code 2 ("observed
-upstream") is still computed from `<schema>.observations` by
-[`lnk_pipeline_access()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_access.md),
-at the resolution of the segments that remain.
+upstream") is still computed by
+[`lnk_pipeline_access()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_access.md)
+from every group's records (`<schema>.observations_province`, gated by
+the bundle's `pipeline: observation_upstream:`), at the resolution of
+the segments that remain.
 
 |  |  |  |  |
 |----|----|----|----|

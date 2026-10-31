@@ -9,7 +9,7 @@ actually read, and matches it against lnk_vocabulary_read():"><meta property="og
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.72.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.73.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -34,7 +34,7 @@ actually read, and matches it against lnk_vocabulary_read():"><meta property="og
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Name a config's output in the vocabulary</h1>
-      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.72.0/R/lnk_vocabulary.R" class="external-link"><code>R/lnk_vocabulary.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/R/lnk_vocabulary.R" class="external-link"><code>R/lnk_vocabulary.R</code></a></small>
       <div class="d-none name"><code>lnk_vocabulary_resolve.Rd</code></div>
     </div>
 
@@ -77,7 +77,8 @@ declares (their rows are data, which the build record carries).</p></li>
 <li><p><strong>acc:</strong> a sha256 digest of the access rules, which decide where
 gradient barriers cut streams as well as what is accessible: the
 species the rules model, each species' <code>access_gradient_max</code> and
-<code>observation_*</code> lift parameters, the species presence table, and the
+<code>observation_*</code> lift parameters, the species presence table, which fish
+records make code 2 (<code>pipeline: observation_upstream</code>, resolved), and the
 two access rules held in code (the gradient class each access label
 maps to, and <code><a href="lnk_presence.html">lnk_presence()</a></code>'s species groups). The
 digest is over the parsed values, so a change in quoting or column
@@ -98,10 +99,10 @@ is refused: the new output gets a name (a row in
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">lnk_vocabulary_resolve</span><span class="op">(</span><span class="fu"><a href="lnk_config.html">lnk_config</a></span><span class="op">(</span><span class="st">"default"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>            cut            acc           grad           flow </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> "cut-full-top"       "acc-v2"     "grad-seg"      "q-fwapg" </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> "cut-full-top"       "acc-v3"     "grad-seg"      "q-fwapg" </span>
 <span class="r-in"><span><span class="fu">lnk_vocabulary_resolve</span><span class="op">(</span><span class="fu"><a href="lnk_config.html">lnk_config</a></span><span class="op">(</span><span class="st">"bcfishpass"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                cut                acc               grad               flow </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> "cut-full-ssf-all"       "acc-bcfp-2"         "grad-seg"          "q-fwapg" </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> "cut-full-ssf-all"       "acc-bcfp-3"         "grad-seg"          "q-fwapg" </span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.72.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.73.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,9 +32,25 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.72.0/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.73.0" id="link-0730">link 0.73.0<a class="anchor" aria-label="anchor" href="#link-0730"></a></h2>
+<p><strong>Code 2 counts every group’s fish records</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/401" class="external-link">#401</a>). The access walk’s observation call reads <code>&lt;schema&gt;.observations_province</code>, every group’s records, so a segment reads <code>access_&lt;sp&gt;</code> 2 where the species is recorded upstream in any group. Before, a main stem read 1 up to its group boundary whatever was recorded just upstream.</p>
+<ul><li>
+<strong>A new key, <code>pipeline: observation_upstream:</code>.</strong> <code>province</code> (<code>default</code>, and <code>default_tuned</code> by inheritance) counts a record of the species in any group. <code>group_gated</code> (the value when absent, so the <code>bcfishpass</code> bundle) also needs a record of any species from the segment’s own group upstream, which is what bcfishpass computes. Checked when the manifest loads. Breaks still read the group’s own records.</li>
+<li>
+<strong>One walk, cheaper than before.</strong> It asks fresh for each segment’s distinct species upstream (<code>frs_network_features(result = "distinct")</code>), so link now needs fresh 0.48.0. Over every group’s records it costs less than the old walk over the group’s own: LFRA 65 to 37 s, BULK 21 to 8 s.</li>
+<li>
+<strong>The access tokens are new.</strong> <code>acc-v2</code> and <code>acc-bcfp-2</code> are retired for <code>acc-v3</code> (<code>default</code>, <code>default_tuned</code>) and <code>acc-bcfp-3</code> (<code>bcfishpass</code>).</li>
+<li>
+<strong>Measured.</strong> On six <code>default</code> groups and three <code>bcfishpass</code> groups built before and after, only code 1 to 2 moved, each piece under a record of the species from another group: 25.98 km under <code>default</code> (LNTH bull trout 12.25 km the most) and 0.05 km under <code>bcfishpass</code>. link’s <code>bcfishpass</code> builds still match bcfishpass’s observed km on BULK, PARS and UPCE, steelhead excepted. Evidence: <code>data-raw/logs/obs_province_401/</code>.</li>
+<li>
+<strong>The pre-run gate has an input for it,</strong> <code>obs_upstream</code>: records upstream of a group’s outlet, which picks LFRA.</li>
+<li>
+<strong>Persisted groups keep the old reading until re-modelled:</strong> the recompute passes no observations.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.72.0" id="link-0720">link 0.72.0<a class="anchor" aria-label="anchor" href="#link-0720"></a></h2>
 <p><strong>A fish record at a segment’s start no longer counts as upstream of it</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/399" class="external-link">#399</a>). The access walk’s observation call passes <code>include_equivalents = FALSE</code>, as bcfishpass’s own walk does, so fwapg’s same-line measure test counts a record as upstream of a segment only when it lies at least 1 m above the segment’s start. With each species’ top a break, <code>access_&lt;sp&gt;</code> code 2 now normally ends at the species’ highest record on a line.</p>

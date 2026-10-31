@@ -41,9 +41,10 @@ A named character vector `c(cut = , acc = , grad = , flow = )`.
 - **acc:** a sha256 digest of the access rules, which decide where
   gradient barriers cut streams as well as what is accessible: the
   species the rules model, each species' `access_gradient_max` and
-  `observation_*` lift parameters, the species presence table, and the
-  two access rules held in code (the gradient class each access label
-  maps to, and
+  `observation_*` lift parameters, the species presence table, which
+  fish records make code 2 (`pipeline: observation_upstream`, resolved),
+  and the two access rules held in code (the gradient class each access
+  label maps to, and
   [`lnk_presence()`](https://newgraphenvironment.github.io/link/reference/lnk_presence.md)'s
   species groups). The digest is over the parsed values, so a change in
   quoting or column order is not a new rule set.
@@ -66,8 +67,8 @@ Other vocabulary:
 ``` r
 lnk_vocabulary_resolve(lnk_config("default"))
 #>            cut            acc           grad           flow 
-#> "cut-full-top"       "acc-v2"     "grad-seg"      "q-fwapg" 
+#> "cut-full-top"       "acc-v3"     "grad-seg"      "q-fwapg" 
 lnk_vocabulary_resolve(lnk_config("bcfishpass"))
 #>                cut                acc               grad               flow 
-#> "cut-full-ssf-all"       "acc-bcfp-2"         "grad-seg"          "q-fwapg" 
+#> "cut-full-ssf-all"       "acc-bcfp-3"         "grad-seg"          "q-fwapg" 
 ```

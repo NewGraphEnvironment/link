@@ -123,6 +123,13 @@ Writes to (under the caller's working schema unless noted):
   `<schema>.barriers_definite_control`,
   `<schema>.user_habitat_classification`
 
+- `<schema>.observations` (the group's own records, which the breaks
+  read) and `<schema>.observations_province` (every group's, ~200 MB,
+  which the lifts and the access walk read). prepare leaves the province
+  table in place for the access walk; dropping it is the caller's job
+  ([`lnk_pipeline_run()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_run.md)
+  does, on exit)
+
 - `<schema>.gradient_barriers_raw` (with ltree)
 
 - `<schema>.natural_barriers` (gradient + falls + opt-in subsurfaceflow)

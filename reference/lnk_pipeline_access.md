@@ -18,6 +18,7 @@ lnk_pipeline_access(
   to = NULL,
   barriers_per_sp = list(),
   observations = NULL,
+  observations_gate = NULL,
   wsg_presence = list(),
   presence = NULL,
   barrier_sources = list(),
@@ -67,9 +68,28 @@ lnk_pipeline_access(
   Character or `NULL`. Optional schema-qualified observations table with
   `(observation_key, species_code, ...)` + the standard FWA keys. When
   provided, drives the access code distinction between `1` (modelled)
-  and `2` (observed). Default `NULL` collapses
-  observation-distinguishing logic — every accessible segment gets
-  `access_<sp> = 1`.
+  and `2` (observed). The walk scopes segments to `aoi`, never these
+  records, so a record in any group upstream counts;
+  [`lnk_pipeline_run()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_run.md)
+  passes every group's (`<schema>.observations_province`, link#401).
+  Default `NULL` collapses observation-distinguishing logic — every
+  accessible segment gets `access_<sp> = 1`. Walked once for the
+  distinct species upstream of each segment (fresh's
+  `result = "distinct"`), so a main stem below many groups' records
+  costs one element per species rather than one per record (link#401).
+
+- observations_gate:
+
+  Character or `NULL`. Optional schema-qualified table of the same
+  shape. When given, a segment reads `2` only where a record from this
+  table, of any species, is also upstream: bcfishpass's reading, whose
+  species array is kept only where a record of the segment's own group
+  is upstream (`spp INNER JOIN ids` in
+  `load_streams_upstr_observations.sql`).
+  [`lnk_pipeline_run()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_run.md)
+  passes the group's own records here under
+  `pipeline: observation_upstream: group_gated`, and nothing under
+  `province`.
 
 - wsg_presence:
 

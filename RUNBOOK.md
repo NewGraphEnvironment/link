@@ -222,18 +222,19 @@ checked when the manifest loads:
 (“accessible, and the species is observed upstream”) against code 1. The
 access walk
 ([`lnk_pipeline_access()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_access.md),
-`frs_network_features(direction = "upstream", include_equivalents = FALSE)`)
-reads `<schema>.observations` itself, every record, not the breaks
-table, and its same-line measure test counts a record as upstream of a
-segment only when the record is at least 1 m above the segment’s start
-(fwapg `fwa_upstream`, fresh’s 1 m tolerance; clause 1 below). That is
-bcfishpass’s reading: its walk calls `FWA_Upstream(…, False, 1)`
-(`load_streams_upstr_observations.sql`). Breaks are rounded to the
-metre, so a break at a species’ top starts its segment within 0.5 m of
-the record: that segment reads 1 (barring the cases below) and the one
-ending there reads 2. So code 2 is a property of a segment’s start.
-**What reads 2** is `fwa_upstream()`’s clauses (fwapg; each first asks
-that the record’s watershed code descend from or equal the segment’s):
+`frs_network_features(direction = "upstream", include_equivalents = FALSE, result = "distinct")`)
+reads every group’s records itself (`<schema>.observations_province`,
+since \#401), not the breaks table, and its same-line measure test
+counts a record as upstream of a segment only when the record is at
+least 1 m above the segment’s start (fwapg `fwa_upstream`, fresh’s 1 m
+tolerance; clause 1 below). That is bcfishpass’s reading: its walk calls
+`FWA_Upstream(…, False, 1)` (`load_streams_upstr_observations.sql`).
+Breaks are rounded to the metre, so a break at a species’ top starts its
+segment within 0.5 m of the record: that segment reads 1 (barring the
+cases below) and the one ending there reads 2. So code 2 is a property
+of a segment’s start. **What reads 2** is `fwa_upstream()`’s clauses
+(fwapg; each first asks that the record’s watershed code descend from or
+equal the segment’s):
 
 1.  A record on the segment’s own line at least 1 m above its start.
     This is the only clause \#399 changed; `TRUE` read `start − 1`.
@@ -252,6 +253,55 @@ that the record’s watershed code descend from or equal the segment’s):
     local codes there do not rise with measure: on PARS line 359567332
     the segments starting at 182477 and 183194 m read BT 2 from the
     line’s top BT record at 182461 m.
+
+**Which records count** is the bundle’s
+`pipeline: observation_upstream:` (#401), checked when the manifest
+loads and hashed into the `acc` token:
+
+| value | a segment reads 2 when | bundles |
+|----|----|----|
+| `province` | a record of the species in any group is upstream | `default`, and `default_tuned` by inheritance |
+| `group_gated` (also when absent) | as `province`, and a record of the segment’s own group, of any species, is also upstream | `bcfishpass` |
+
+`group_gated` is what bcfishpass computes: its `spp` CTE collects the
+species upstream from every group’s records, but the insert is
+`spp INNER JOIN ids`, and `ids` is same-group only, so a segment with no
+own-group record upstream gets no row and reads 1
+(`load_streams_upstr_observations.sql`, `smnorris/bcfishpass@620dbe4`;
+our fork’s draft for upstream is NewGraphEnvironment/bcfishpass#16).
+Under it a main stem reads 1 below a group boundary until the group
+holds a record above it. Before \#401 both bundles read the group’s own
+records only (`<schema>.observations`), so such a main stem read 1 up to
+its boundary whatever was recorded just upstream. Breaks still read the
+group’s own records: a record in another group cannot cut this group’s
+segments.
+
+The walk asks fresh for each segment’s distinct species
+(`result = "distinct"`, fresh#284), as bcfishpass’s
+`SELECT DISTINCT segment, species_code`, and under `group_gated` one
+existence walk over `<schema>.observations` for the gate. The array walk
+it replaced returned every segment-record pair, and over every group’s
+records a Fraser main-stem segment in LFRA has about 79,000 above it
+(126,371 raw bcfishobs records under wscode `100`, 79,300 once each is
+kept by its group’s presence). The distinct walk over every group’s
+records costs less than the array walk over the group’s own did (LFRA 65
+to 37 s, BULK 21 to 8 s, SETN 47 to 45 s;
+`data-raw/logs/obs_province_401/walk_fresh_distinct.csv`).
+[`lnk_pipeline_run()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_run.md)
+drops `<schema>.observations_province` in an
+[`on.exit()`](https://rdrr.io/r/base/on.exit.html). A kept working
+schema holds it after a killed run (no
+[`on.exit()`](https://rdrr.io/r/base/on.exit.html) runs) or a failed
+DROP (a lost connection, inside
+[`try()`](https://rdrr.io/r/base/try.html)), until the group’s next run
+replaces it. A direct caller of
+[`lnk_pipeline_prepare()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_prepare.md)
+owns the drop. Built before and after on six `default` and three
+`bcfishpass` groups, only code 1 to 2 moved, each piece under a record
+of the species from another group: 25.98 km under `default` (LNTH BT
+12.25 km, 3.6 % of its observed km, the most) and 0.05 km under
+`bcfishpass`, whose gate holds most of it back
+(`data-raw/logs/obs_province_401/`).
 
 Each species’ top is a break in both bundles (under `all` every record
 is), so normally the segment starting at the top reads 1, and the
@@ -687,12 +737,13 @@ itself*. Since \#349 `.lnk_pipeline_prep_observations()` also builds
 `<schema>.observations_province` (every group’s records by its own
 presence, minus exclusions, GiST on the ltrees) and
 [`lnk_barrier_overrides()`](https://newgraphenvironment.github.io/link/reference/lnk_barrier_overrides.md)
-counts over it. `<schema>.observations` stays AOI-scoped for the
-observation break source and access code 2. Cost: ~4 s per group to
-build both tables, no change to the override step (DUNC, CARP).
-`default`’s RB row gained a rule shaped like BT’s (one RB record, only
-RB counting for RB, no date floor); before it RB had no rule and nothing
-lifted for it.
+counts over it. Since \#401 the access walk reads it too, for code 2
+(§2c, “Which records count”); `<schema>.observations` stays AOI-scoped
+for the observation break source and `group_gated`’s gate. Cost: ~4 s
+per group to build both tables, no change to the override step (DUNC,
+CARP). `default`’s RB row gained a rule shaped like BT’s (one RB record,
+only RB counting for RB, no date floor); before it RB had no rule and
+nothing lifted for it.
 
 The count is of distinct records (`count(DISTINCT o.observation_key)`,
 link#367): `natural_barriers` can hold one position twice (a point where
@@ -941,7 +992,7 @@ writes them to its `log` row (`token_cut`, `token_acc`, `token_grad`,
 | Axis | Prefix | What it names | Spec matched |
 |----|----|----|----|
 | cut | `cut-` | break sources in order, `observation_breaks` (when observations cut), gradient classes, and which of the definite-barrier, control and habitat-classification files the bundle declares | canonical string |
-| acc | `acc-` | the modelled species, each species’ `access_gradient_max` and `observation_*` lifts, the presence table, and the two access rules held in code (`.lnk_classes_bcfp`, [`lnk_presence()`](https://newgraphenvironment.github.io/link/reference/lnk_presence.md)’s groups) | sha256 of the parsed values |
+| acc | `acc-` | the modelled species, each species’ `access_gradient_max` and `observation_*` lifts, the presence table, `pipeline: observation_upstream` (resolved; \#401), and the two access rules held in code (`.lnk_classes_bcfp`, [`lnk_presence()`](https://newgraphenvironment.github.io/link/reference/lnk_presence.md)’s groups) | sha256 of the parsed values |
 | grad | `grad-` | how segment gradient is measured | `gradient=segment` |
 | flow | `q-` | `discharge_source` and `discharge_fill` | canonical string |
 
@@ -977,7 +1028,7 @@ definition is a new token, and the old row gets `retired`. - Our own
 access rule sets are numbered (`acc-v1`, `acc-v2`, …), and the
 definition says what changed from the last one. A transcription of
 bcfishpass’s rules is `acc-bcfp`, then `acc-bcfp-2` (#399), `acc-bcfp-3`
-and so on. - `test-lnk_vocabulary.R` holds the rules against
+(#401) and so on. - `test-lnk_vocabulary.R` holds the rules against
 `origin/main`’s copy, in a checkout only. CI’s shallow clone and
 `R CMD check` skip that test, so run it locally before merging an edit
 to the table.
@@ -987,11 +1038,13 @@ code. A change to how fresh finds gradient barriers, to
 `frs_barriers_minimal()`, to the CT alias expansion in observation
 breaks moves cuts with no spec change, and a change to how the access
 walk reads a record moves codes with none (#399 retired `acc-v1` and
-`acc-bcfp` for `acc-v2` and `acc-bcfp-2`). Retire and re-add the
-affected tokens in the same PR: the retired row and its successor then
-share a spec, and `.lnk_vocabulary_match()` returns the live one.
-Changing `.lnk_vocabulary_canonical()` or the digest inputs re-specs
-every `acc` token the same way.
+`acc-bcfp` for `acc-v2` and `acc-bcfp-2`; \#401 retired those for
+`acc-v3` and `acc-bcfp-3`, whose specs also hash
+`pipeline: observation_upstream`). Retire and re-add the affected tokens
+in the same PR: the retired row and its successor then share a spec, and
+`.lnk_vocabulary_match()` returns the live one. Changing
+`.lnk_vocabulary_canonical()` or the digest inputs re-specs every `acc`
+token the same way.
 
 **The recompute is not checked.** `wsg_recompute_one.R` rewrites
 `streams_access` from the config at the commit it runs, and
@@ -1908,16 +1961,19 @@ bash data-raw/pretest_run.sh --config=default --schema=fresh_default
   `data-raw/pretest/<input>.sql`, each returning
   `(watershed_group_code, value)` for every group: `near_river_conn`
   (fresh’s walk prefilter, the longest connector run), `segments`,
-  `gradient` (segments at 15 % or more), `observations`, `crossings`
-  (PSCIS), `dams` (CABD). Three special values: `any` (every pick runs
-  it; alone, the fastest group is picked), `none` (off the modelling
-  path), `unexercised` (on the run’s path but not the gate’s: the
-  recompute, the consolidate, the habitat gate). **A changed file the
-  map does not name refuses the gate (exit 2):** add a row naming what
-  drives its cost. `test-pretest.R` checks that every file in `R/`,
-  `inst/extdata/` and the entry points has a row, and that no `none` row
-  names a file the static call graph from `wsg_run_one.R` reaches
-  (`pretest_reach()`, which also follows
+  `gradient` (segments at 15 % or more), `observations`, `obs_upstream`
+  (raw bcfishobs records upstream of the group’s outlet, every group’s:
+  a ranking proxy for what the access walk reads since \#401, which
+  keeps each by its group’s presence), `crossings` (PSCIS), `dams`
+  (CABD). Three special values: `any` (every pick runs it; alone, the
+  fastest group is picked), `none` (off the modelling path),
+  `unexercised` (on the run’s path but not the gate’s: the recompute,
+  the consolidate, the habitat gate). **A changed file the map does not
+  name refuses the gate (exit 2):** add a row naming what drives its
+  cost. `test-pretest.R` checks that every file in `R/`, `inst/extdata/`
+  and the entry points has a row, and that no `none` row names a file
+  the static call graph from `wsg_run_one.R` reaches (`pretest_reach()`,
+  which also follows
   [`getFromNamespace()`](https://rdrr.io/r/utils/getFromNamespace.html)
   strings); the pick and the driver’s check walk the same graph at the
   code they see, so a changed `none` file the path reaches is treated as

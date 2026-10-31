@@ -11,7 +11,7 @@ classify, connect) consume:"><meta property="og:image" content="https://newgraph
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.72.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.73.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -36,7 +36,7 @@ classify, connect) consume:"><meta property="og:image" content="https://newgraph
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Prepare the Network and Barrier Inputs for a Pipeline Run</h1>
-      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.72.0/R/lnk_pipeline_prepare.R" class="external-link"><code>R/lnk_pipeline_prepare.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/R/lnk_pipeline_prepare.R" class="external-link"><code>R/lnk_pipeline_prepare.R</code></a></small>
       <div class="d-none name"><code>lnk_pipeline_prepare.Rd</code></div>
     </div>
 
@@ -150,6 +150,11 @@ channel width, stream order parent, GENERATED gradient / measures
 </ul><p>Writes to (under the caller's working schema unless noted):</p><ul><li><p><code>&lt;schema&gt;.falls</code>, <code>&lt;schema&gt;.barriers_definite</code>,
 <code>&lt;schema&gt;.barriers_definite_control</code>,
 <code>&lt;schema&gt;.user_habitat_classification</code></p></li>
+<li><p><code>&lt;schema&gt;.observations</code> (the group's own records, which the breaks
+read) and <code>&lt;schema&gt;.observations_province</code> (every group's, ~200 MB,
+which the lifts and the access walk read). prepare leaves the province
+table in place for the access walk; dropping it is the caller's job
+(<code><a href="lnk_pipeline_run.html">lnk_pipeline_run()</a></code> does, on exit)</p></li>
 <li><p><code>&lt;schema&gt;.gradient_barriers_raw</code> (with ltree)</p></li>
 <li><p><code>&lt;schema&gt;.natural_barriers</code> (gradient + falls + opt-in subsurfaceflow)</p></li>
 <li><p><code>&lt;schema&gt;.barriers_subsurfaceflow</code> (only when subsurfaceflow opted in

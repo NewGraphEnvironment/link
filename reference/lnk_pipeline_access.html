@@ -17,7 +17,7 @@ species integer access_&amp;lt;sp&amp;gt; codes derived via CASE on
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.72.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.73.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -42,7 +42,7 @@ species integer access_&amp;lt;sp&amp;gt; codes derived via CASE on
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Build per-segment access codes + downstream-barrier indicators</h1>
-      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.72.0/R/lnk_pipeline_access.R" class="external-link"><code>R/lnk_pipeline_access.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/R/lnk_pipeline_access.R" class="external-link"><code>R/lnk_pipeline_access.R</code></a></small>
       <div class="d-none name"><code>lnk_pipeline_access.Rd</code></div>
     </div>
 
@@ -64,6 +64,7 @@ species integer <code>access_&lt;sp&gt;</code> codes derived via CASE on
 <span>  to <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  barriers_per_sp <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  observations <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  observations_gate <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  wsg_presence <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  presence <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  barrier_sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
@@ -110,9 +111,25 @@ that lets identical tables share one walk reads (as
 <dd><p>Character or <code>NULL</code>. Optional schema-qualified
 observations table with <code>(observation_key, species_code, ...)</code> +
 the standard FWA keys. When provided, drives the access code
-distinction between <code>1</code> (modelled) and <code>2</code> (observed). Default
+distinction between <code>1</code> (modelled) and <code>2</code> (observed). The walk
+scopes segments to <code>aoi</code>, never these records, so a record in any
+group upstream counts; <code><a href="lnk_pipeline_run.html">lnk_pipeline_run()</a></code> passes every group's
+(<code>&lt;schema&gt;.observations_province</code>, link#401). Default
 <code>NULL</code> collapses observation-distinguishing logic — every
-accessible segment gets <code>access_&lt;sp&gt; = 1</code>.</p></dd>
+accessible segment gets <code>access_&lt;sp&gt; = 1</code>. Walked once for the
+distinct species upstream of each segment (fresh's
+<code>result = "distinct"</code>), so a main stem below many groups' records
+costs one element per species rather than one per record (link#401).</p></dd>
+
+
+<dt id="arg-observations-gate">observations_gate<a class="anchor" aria-label="anchor" href="#arg-observations-gate"></a></dt>
+<dd><p>Character or <code>NULL</code>. Optional schema-qualified
+table of the same shape. When given, a segment reads <code>2</code> only where a
+record from this table, of any species, is also upstream: bcfishpass's
+reading, whose species array is kept only where a record of the
+segment's own group is upstream (<code>spp INNER JOIN ids</code> in
+<code>load_streams_upstr_observations.sql</code>). <code><a href="lnk_pipeline_run.html">lnk_pipeline_run()</a></code> passes the
+group's own records here under <code>pipeline: observation_upstream: group_gated</code>, and nothing under <code>province</code>.</p></dd>
 
 
 <dt id="arg-wsg-presence">wsg_presence<a class="anchor" aria-label="anchor" href="#arg-wsg-presence"></a></dt>
