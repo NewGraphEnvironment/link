@@ -23,7 +23,7 @@ Experimental package — breaking all the time and loving the learning curve. St
 - **`barrier_overrides` cannot judge an absent cell:** lifts count only records of species a group marks present. Bonnington Falls is not a falls row and barriers outside BC are absent, so historic access is a native-range question, not geometry.
 - **FWA lake polygons carry no local watershed code** (0 of 386,025): place a lake on the network by the stream segments with its `waterbody_key`.
 - **`fwa_downstream(a, b)` is true when b is downstream of a;** the reverse order counted barriers above records and read every ADMS chinook as blocked.
-- **375,962 records sit on 179,815 species-locations** (cutthroat aliases folded), so count distinct sites and waterbodies, not records: 121 of the 327 absent-recorded cells rest on one waterbody. bcfishobs gives every stream and wetland record in a group one shared `waterbody_identifier` (`00000<group>`), so a waterbody is a lake's identifier, else the record's 50k stream code, else its blue line.
+- **375,962 records sit on 179,815 species-locations** (cutthroat aliases folded), so count distinct sites and waterbodies, not records: 117 of the 327 absent-recorded cells rest on one waterbody. bcfishobs gives every stream record in a group one shared `waterbody_identifier` (`00000<group>`), and a record's own 50k code can name the main river it was filed under, so a waterbody is a lake's or wetland's own identifier, else the matched blue line.
 
 ## Status (2026-10-31, later) — the presence table is checked against the fish records (#402)
 
