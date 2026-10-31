@@ -1,7 +1,7 @@
 Package: link
 Title: Develop, Test and Communicate Intrinsic Habitat and Connectivity
     Models for the BC Freshwater Atlas Stream Network
-Version: 0.73.0
+Version: 0.73.1
 Date: 2026-10-31
 Authors@R: c(
     person("Allan", "Irvine", , "al@newgraphenvironment.com", role = c("aut", "cre"),
