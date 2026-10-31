@@ -33,3 +33,7 @@
   in another group); steelhead 200.85 km as in #399.
 - link pins fresh v0.48.0 (`9245726c`). Evidence README, stamp, RUNBOOK §2c, research files and
   CLAUDE.md written.
+- `/code-check branch`, four rounds (review-round1..4.md): round 1 the pre-run gate's map (new
+  `obs_upstream` input), round 2 clean, round 3 prepare's "Writes to" and the drop's wording (a
+  defect inside round 1's wording fix), round 4 an enumeration of every lifetime and cost claim:
+  five false (126,000 raw vs about 79,000 kept above LFRA; a provenance note), corrected.

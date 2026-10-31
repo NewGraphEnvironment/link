@@ -155,7 +155,10 @@ worktree under `load_all`, fresh 0.47.0, `PGPASSWORD` set for the quiet-database
 
 ## Validation
 
-- [ ] Tests pass; `/code-check branch` clean; PWF checkboxes match; `/planning-archive`.
+- [x] Tests pass (4,866 at `9245726c`; later commits change comments, roxygen and the pre-run
+  gate's map, whose tests pass: 24 tests, 100 expectations); `/code-check branch`: four rounds,
+  ended by round 4's enumeration (about 45 claims about the province table and the walk's cost,
+  5 false, all corrected); PWF checkboxes match; `/planning-archive`.
 - Verification: the DB fixture proves a record in another group sets 2; `pre_post_diff.R` proves
   only 1 → 2 moved and each move is explained by an out-of-group record; parity holds; walk
   minutes recorded on the worst-case group.
