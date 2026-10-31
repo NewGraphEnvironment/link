@@ -29,17 +29,17 @@ Sized on today's local records (before pooling and exclusions): about 24 present
 
 ## Phase 1: Check logic in R/, tested without a database
 
-- [ ] `.lnk_observation_exclusion_keys(loaded)`: the `data_error` / `release_exclude` key list, moved out of `.lnk_pipeline_prep_observations()` (`R/lnk_pipeline_prepare.R:319`). Prep calls it, so the pipeline and the check apply one rule. A test asserts prep's SQL is unchanged.
-- [ ] `.lnk_presence_check(records, loaded, n_min = 1L, year_min = 1950, regions = NULL)`: takes a records data frame (`observation_key`, `watershed_group_code`, `species_code`, `observation_date`, `source`, `source_ref`), applies the CT remap, exclusions, release tag, date validity and pooling, and returns one row per group × species: counts (all, kept, since the floor, since 1990, releases, excluded, pooled DV, unpooled own), oldest and newest year, the raw and promoted presence, `promoted_by`, and `flag` (`present_unsupported` | `absent_recorded` | NA).
-- [ ] `.lnk_presence_story(row)`: a story drafted from the evidence and the group's `notes` cell. For example: "all 7 records are releases", "newest record 1968", "3 records, none since 1990", "existing note: Kenny Dam", "absent, but modelled through the salmon group".
-- [ ] `.lnk_presence_review_merge(tracker, flagged)`: appends new flags as `pending`, never touches a row that carries a decision, and reports tracker rows the check no longer flags.
-- [ ] Tests (`tests/testthat/test-lnk_presence_check.R`): CT aliases; each of the four release conditions; exclusions; pooling only in pooled regions, including a group where BT is absent; the year limit on pooling; undated and impossible years; both flag directions at the boundary (0 and 1 kept record, and a record dated 1949 against 1950); a promoted-only species; merge keeps decided rows. Then restore each defect and watch its test fail.
+- [x] `.lnk_observation_exclusion_keys(loaded)`: the `data_error` / `release_exclude` key list, moved out of `.lnk_pipeline_prep_observations()` (`R/lnk_pipeline_prepare.R:319`). Prep calls it, so the pipeline and the check apply one rule. A test asserts prep's SQL is unchanged.
+- [x] `.lnk_presence_check(records, loaded, n_min = 1L, year_min = 1950, regions = NULL)`: takes a records data frame (`observation_key`, `watershed_group_code`, `species_code`, `observation_date`, `source`, `source_ref`), applies the CT remap, exclusions, release tag, date validity and pooling, and returns one row per group × species: counts (all, kept, since the floor, since 1990, releases, excluded, pooled DV, unpooled own), oldest and newest year, the raw and promoted presence, `promoted_by`, and `flag` (`present_unsupported` | `absent_recorded` | NA).
+- [x] `.lnk_presence_story(row)`: a story drafted from the evidence and the group's `notes` cell. For example: "all 7 records are releases", "newest record 1968", "3 records, none since 1990", "existing note: Kenny Dam", "absent, but modelled through the salmon group".
+- [x] `.lnk_presence_review_merge(tracker, flagged)`: appends new flags as `pending`, never touches a row that carries a decision, and reports tracker rows the check no longer flags.
+- [x] Tests (`tests/testthat/test-lnk_presence_check.R`): CT aliases; each of the four release conditions; exclusions; pooling only in pooled regions, including a group where BT is absent; the year limit on pooling; undated and impossible years; both flag directions at the boundary (0 and 1 kept record, and a record dated 1949 against 1950); a promoted-only species; merge keeps decided rows. Then restore each defect and watch its test fail.
 
 ## Phase 2: The tracker in the bundle
 
 - [ ] `inst/extdata/configs/default/wsg_species_presence_review.csv` with columns `watershed_group_code, species_code, flag, rule, story, decision (pending|keep|add|remove), reviewer, review_date, issue`.
 - [ ] `configs/dictionary_wsg_species_presence_review.csv`, and the stem added to `test-dictionaries.R`'s tracker loop (line 248).
-- [ ] Declare it under `files:` in `configs/default/config.yaml` with a provenance entry (source: link, hand-authored; #402). The pipeline does not read it, and `lnk_vocabulary_resolve()` does not either, so no output token moves.
+- [ ] **Not** declared under `files:` (changed after the plan review, `review-plan.md` Q1): a declared file enters `config_hash`, so each tracker edit after a run would make `recompute_readers` refuse that run's groups, stop `.lnk_export_bundle()` publishing it, and redden the provenance test until re-stamped. It sits in the bundle directory beside the presence table; `data-raw/pretest_inputs.csv` maps it `none`, and the dictionary is tested by path.
 
 ## Phase 3: The check script, run on all groups
 
@@ -57,7 +57,7 @@ Sized on today's local records (before pooling and exclusions): about 24 present
 
 - [ ] **Operator review:** a decision on each tracker row. Each changed presence cell carries a `notes` entry naming the rule (#402, acceptance 2). The issue stays open until then.
 - [ ] **Changing presence cells is its own PR:** the presence table is in the `acc` token spec (RUNBOOK §6b), so an edit needs a new `acc` vocabulary row and a version bump, plus the config provenance checksum. The affected groups re-model at the next provincial run (#377's runs row).
-- [ ] The pre-run gate (#372) must run again, since `R/lnk_pipeline_prepare.R` changes, behaviour-preserving. It is already owed for #401.
+- [ ] The pre-run gate (#372) must run again: `R/lnk_pipeline_prepare.R` changes (behaviour-preserving, identical SQL) and `data-raw/pretest_inputs.csv` (the gate's own map) gains two `none` rows. It is already owed for #401.
 
 ## Validation
 

@@ -789,12 +789,7 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
     stop(s$src, " has no source column; pass source_exclude = NULL",
          call. = FALSE)
   }
-  excl <- loaded$observation_exclusions
-  keys <- character(0)
-  if (!is.null(excl) && nrow(excl) > 0L) {
-    keys <- excl$observation_key[excl$data_error %in% c(TRUE, "t") |
-                                   excl$release_exclude %in% c(TRUE, "t")]
-  }
+  keys <- .lnk_observation_exclusion_keys(loaded)
   if (s$key_generated && length(keys) > 0L) {
     stop("observations has no observation_key, so ",
          "loaded$observation_exclusions cannot be applied; add the key, or ",

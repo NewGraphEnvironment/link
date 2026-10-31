@@ -48,3 +48,9 @@ Related: #292, #153, #290, #400.
 
 | Error | Resolution |
 |-------|------------|
+
+## Phase 1 (2026-10-30)
+
+- The prep refactor (`.lnk_observation_exclusion_keys()`) produces SQL identical to the pre-refactor function from `git show HEAD:R/lnk_pipeline_prepare.R`, captured with `.lnk_db_execute` mocked, for three inputs: the shipped exclusions read as character, a logical/NA mix, and no exclusions (7 statements each, 33,134 / 27,246 / 27,168 characters).
+- The validator (`R/lnk_habitat_validate.R`) also reads the helper now. `data-raw/access_disagree_349.R` and `data-raw/query_habitat_thresholds_obs.R` keep their own copies (one-off evidence scripts; not changed).
+- bcfishpass's own filter tests the raw species code (`array[o.species_code] && wsg_spp.species_codes`), so it does not admit the CT aliases; the check folds them as link's pipeline does (relates to #398).
