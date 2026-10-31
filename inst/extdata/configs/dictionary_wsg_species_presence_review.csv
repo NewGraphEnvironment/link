@@ -1,10 +1,10 @@
 column,type,group,owner,consumed_by,default_when_absent,description,related
-watershed_group_code,character,key,link,R/lnk_presence_check.R:376,required,"The group whose presence cell was flagged, as in wsg_species_presence.csv. With species_code, unique.",species_code
-species_code,character,key,link,R/lnk_presence_check.R:377,required,"The species column flagged, upper case (BT, CH, ...).",watershed_group_code
-flag,character,check,link,R/lnk_presence_check.R:378,required,present_unsupported: the cell is marked present and no record meets the rule. absent_recorded: the cell is not marked present and at least one record does. Refreshed while the row is pending.,rule
-rule,character,check,link,R/lnk_presence_check.R:379,required,"The rule the flag was judged by, as a sentence (.lnk_presence_rule()). A note on a changed presence cell names it.",flag
-story,character,record,link,R/lnk_presence_check.R:380,required,"What the group's records show for the species, drafted by the check from its evidence (counts, years, sources, releases, pooling, the group's note) and refreshed while pending. The reviewer may rewrite it; a decided row is never changed by the check.",decision
-decision,character,record,link,R/lnk_presence_check.R:381,pending,"pending (not reviewed), keep (the cell stays as it is), add (mark the species present), or remove (unmark it). add and remove are carried out by editing wsg_species_presence.csv, whose notes cell names the rule.",story
-reviewer,character,record,link,R/lnk_presence_check.R:382,-,Who made the decision.,review_date
-review_date,date,record,link,R/lnk_presence_check.R:383,-,Date of the decision (YYYY-MM-DD).,reviewer
-issue,character,record,link,R/lnk_presence_check.R:384,-,The link issue the row was raised or last decided under.,-
+watershed_group_code,character,key,link,R/lnk_presence_check.R:392,required,"The group whose presence cell was flagged, as in wsg_species_presence.csv. With species_code, unique.",species_code
+species_code,character,key,link,R/lnk_presence_check.R:393,required,"The species column flagged, upper case (BT, CH, ...).",watershed_group_code
+flag,character,check,link,R/lnk_presence_check.R:394,required,present_unsupported: the cell is marked present and no record meets the rule. absent_recorded: the cell is not marked present and at least one record does. Refreshed while the row is pending.,rule
+rule,character,check,link,R/lnk_presence_check.R:395,required,"The rule the flag was judged by, as a sentence (.lnk_presence_rule()). A note on a changed presence cell names it.",flag
+story,character,record,link,R/lnk_presence_check.R:396,required,"What the group's records show for the species, drafted by the check from its evidence (counts, years, sources, releases, pooling, the group's note) and refreshed while pending. The reviewer may rewrite it; a decided row is never changed by the check.",decision
+decision,character,record,link,R/lnk_presence_check.R:397,pending,"pending (not reviewed), keep (the cell stays as it is), add (mark the species present), or remove (unmark it). add and remove are carried out by editing wsg_species_presence.csv, whose notes cell names the rule.",story
+reviewer,character,record,link,R/lnk_presence_check.R:398,-,Who made the decision.,review_date
+review_date,date,record,link,R/lnk_presence_check.R:399,-,Date of the decision (YYYY-MM-DD).,reviewer
+issue,character,record,link,R/lnk_presence_check.R:400,-,The link issue the row was raised or last decided under.,-

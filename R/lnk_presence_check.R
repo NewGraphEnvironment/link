@@ -300,7 +300,10 @@
                         r$year_newest, r$n_since_recent,
                         as.integer(year_recent), r$sources)
       }
-      if (r$n_kept_pooled > 0L && r$n_kept_own == 0L) {
+      if (r$n_kept == 1L && r$n_kept_pooled == 1L) {
+        lead <- sprintf("%s, a %s record pooled into %s", lead,
+                        r$pooled_from, r$species_code)
+      } else if (r$n_kept_pooled > 0L && r$n_kept_own == 0L) {
         lead <- sprintf("%s, all of them %s records pooled into %s", lead,
                         r$pooled_from, r$species_code)
       } else if (r$n_kept_pooled > 0L) {

@@ -215,7 +215,12 @@ test_that("a pooled-only flag says its records are another species'", {
                                     stringsAsFactors = FALSE)
   bt <- cell(check(rec("k1", "W2", "DV", date = "1999-01-01"), ld), "W2", "BT")
   st <- .lnk_presence_story(bt)
-  expect_match(st, "all of them DV records pooled into BT", fixed = TRUE)
+  expect_match(st, "a single record (1999; FISS Database), a DV record pooled into BT.",
+               fixed = TRUE)
+  two <- rbind(rec("k1", "W2", "DV", date = "1999-01-01"),
+               rec("k2", "W2", "DV", date = "2003-01-01"))
+  expect_match(.lnk_presence_story(cell(check(two, ld), "W2", "BT")),
+               "all of them DV records pooled into BT", fixed = TRUE)
   # DV's own cell keeps those records, so nothing is dropped: no lift sentence.
   expect_no_match(st, "dropped")
 })
