@@ -1,0 +1,5 @@
+date: 2026-10-31 19:23 UTC
+source: https://cabd-web.azurewebsites.net/cabd-api/features/<id>
+298b0f7e-41d5-479a-95d7-af685224cf3f: no feature  None
+1c16395b-0411-4bad-bfc2-3445b1e94bcc: feature {'feature_type': 'dams', 'dam_name_en': None, 'passability_status': 'NA - Decommissioned/ Removed', 'passability_status_code': 6, 'last_modified': '2026-10-02'} [-119.65800218913951, 50.94638484784619]
+242fa0e4-82ff-4ff6-9fa1-a2d892d4b41f: feature {'feature_type': 'dams', 'dam_name_en': 'Keogh Dam', 'passability_status': 'Barrier', 'passability_status_code': 1, 'last_modified': '2024-10-31'} [-127.16765823347659, 50.49869282134786]

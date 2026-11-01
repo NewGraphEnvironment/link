@@ -1,0 +1,18 @@
+date: 2026-10-31 19:23 UTC
+
+== local fwapg (link's builds)
+cabd.dams rows: 2592
+        tbl                                   id dam_name_en status
+1 cabd.dams 242fa0e4-82ff-4ff6-9fa1-a2d892d4b41f   Keogh Dam      1
+
+== bcfishpass reference
+         model_version      date_completed
+1 v0.7.15-51-g3bd2824c 2026-10-27 20:47:13
+cabd.dams rows: 2592
+        tbl                                   id dam_name_en status
+1 cabd.dams 242fa0e4-82ff-4ff6-9fa1-a2d892d4b41f   Keogh Dam      1
+
+bcfishpass.dams and bcfishpass.crossings rows for the three ids:
+        tbl                                   id watershed_group_code  status
+1      dams 242fa0e4-82ff-4ff6-9fa1-a2d892d4b41f                 NIMP       1
+2 crossings 242fa0e4-82ff-4ff6-9fa1-a2d892d4b41f                 NIMP BARRIER
