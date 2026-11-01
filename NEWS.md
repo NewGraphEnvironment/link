@@ -1,3 +1,14 @@
+# link 0.75.0
+
+**`default`'s species presence table carries the first, provisional review of its cells against the fish records** ([#402](https://github.com/NewGraphEnvironment/link/issues/402)). 111 salmon and steelhead cells are added and 10 cells removed, in 80 groups; each changed row's `notes` names the review, and each cell's reason is in `configs/default/wsg_species_presence_review.csv`. Nothing here is final: a later review can reverse any cell.
+
+- **The record rules the review set:** a salmon or steelhead record does not count above a mapped falls or a hand-entered barrier with at most one other record of its kind above it. Above a modelled gradient barrier it still counts, because removing it would assume the 15 and 20 % access gradients the records could test. There is no elevation rule; the 19 records above 1,400 m were judged one by one.
+- **Added** where records sit at several sites, or at one site with a record since 1990. Single sites with nothing since 1990, salmon in the Kootenay, upper Columbia and Mackenzie, and species outside their native range stay unmarked.
+- **Removed:** the six Upper Dean salmon and steelhead cells added as a test, and four cells resting only on stocked fish (CT in THOM and LNTH, DV in VICT, GR in BULL).
+- **Not yet decided:** 141 kokanee and rainbow cells wait on pausing those species ([#432](https://github.com/NewGraphEnvironment/link/issues/432)), and 13 cells wait on a look at their records or the literature.
+- `acc-v4` replaces `acc-v3` for `default` and `default_tuned`, and their `config_hash` moves. The 80 groups re-model at the next provincial run.
+- `data-raw/wsg_species_presence_map.R` maps the records each proposed rule would drop. The session's log and the evidence for one misplaced chinook record are in `data-raw/logs/presence_check_402/decision_session/`.
+
 # link 0.74.0
 
 **Every file a bundle copies from bcfishpass is synced, and link's changes to one sit beside it as an overlay** ([#429](https://github.com/NewGraphEnvironment/link/issues/429)). The weekly sync used to check 7 files and missed four that had drifted; its dry run said "no drift".
