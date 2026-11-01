@@ -6,7 +6,8 @@
 - **Added** where records sit at several sites, or at one site with a record since 1990, except 10 such single sites where the species is unusual that far inland. Those, single sites with nothing since 1990, salmon in the Kootenay, upper Columbia and Mackenzie, and species outside their native range stay unmarked, as do Okanagan and Similkameen steelhead and the four Yukon cells until the literature review, which may add them.
 - **Removed:** the six Upper Dean salmon and steelhead cells added as a test, and four cells resting only on stocked fish (CT in THOM and LNTH, DV in VICT, GR in BULL).
 - **Not yet decided:** 141 kokanee and rainbow cells wait on pausing those species ([#432](https://github.com/NewGraphEnvironment/link/issues/432)), and 13 cells wait on a look at their records or the literature.
-- `acc-v4` replaces `acc-v3` for `default` and `default_tuned`, and their `config_hash` moves. The 80 groups re-model at the next provincial run.
+- `acc-v4` replaces `acc-v3` for `default` and `default_tuned`, and their `config_hash` moves. The 80 edited groups, and the groups downstream of an added cell whose code 2 and lifts read its records (12 more, LFRA, SETN and LSKE among them), re-model at the next provincial run, which models every group.
+- `default` and `bcfishpass` now disagree in 122 presence cells, so `habitat_validate.R` refuses to score one with the other's species pooling for a species whose cells differ in the scored groups.
 - `data-raw/wsg_species_presence_map.R` maps the records each proposed rule would drop. The session's log and the evidence for one misplaced chinook record are in `data-raw/logs/presence_check_402/decision_session/`.
 
 # link 0.74.0

@@ -33,7 +33,7 @@ The access inputs differ between the shipped configs:
 | Species the rules model | BT CH CM CO PK SK ST WCT | adds GR, KO, RB |
 | BT lifts on | BT, the salmon and ST, records from 1900 | BT and DV, any date |
 | RB lifts | none | one RB record |
-| Presence table | bcfishpass's | the same except no GR in LARL |
+| Presence table | bcfishpass's | link's own: bcfishpass's except a few cells, then #402's review (2026-11-01) added 111 and removed 10 |
 
 `default_extrabreaks` and `default_rearbreaks` are `extends: ~` copies of an older
 `default`. They carry no RB lift rule and bcfishpass's presence table, and leave

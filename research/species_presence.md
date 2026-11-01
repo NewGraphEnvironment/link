@@ -93,7 +93,7 @@ What each measure is, per record (`.lnk_presence_measures()`), and what it canno
 
 **What the measures see of known errors.** `recall.csv` holds the 67 `data_error` records of `observation_exclusions.csv`. 36 sit above a blocking natural barrier with at most 2 records of their class above it; 21 sit above 1,400 m, 10 of them not caught by the barrier; 6 sit on a segment gradient of 0.25 or more, all already caught by one of the other two. So 46 are caught by the barrier or elevation measure. The other 21 have no geometric tell: steelhead that were likely misidentified rainbow, and points the source places elsewhere within reachable water (SETN records that belong in the Yalakom or the Fraser delta). Every one of the 67 has its own code in its own group. So these three measures are the candidates for rules; the rest are context.
 
-**What the flagged cells look like.** Of the 327 absent-recorded cells, 117 rest on a single waterbody and 94 on a single site. Of the 168 anadromous ones, 12 have every record above a blocking barrier (6 of them with at most 2 records of the class above), 21 are recorded only on a main stem flowing through the group, 59 have no record on a zoned stream, and 21 lie in the Columbia (11), Mackenzie (7) and Yukon (3), where native range decides. Of the 137 kokanee cells, 123 have lake records and none has every record above a barrier with no lake (15 have some). The story of each cell with records of its own species carries its measures: 319 of the 351 rows. The other 32 carry none: the 24 present cells with no counting record, and 8 BT cells whose only evidence is DV pooled into them.
+**What the flagged cells look like.** Of the 327 absent-recorded cells, 117 rest on a single waterbody and 94 on a single site. Of the 168 anadromous ones, 12 have every record above a blocking barrier (6 of them with at most 2 records of the class above), 21 are recorded only on a main stem flowing through the group, 59 have no record on a zoned stream, and 22 lie in the Columbia (11), Mackenzie (7) and Yukon (4, KUSR counted by `wsg_regions.csv`), where native range decides. Of the 137 kokanee cells, 123 have lake records and none has every record above a barrier with no lake (15 have some). The story of each cell with records of its own species carries its measures: 319 of the 351 rows. The other 32 carry none: the 24 present cells with no counting record, and 8 BT cells whose only evidence is DV pooled into them.
 
 **Still to come** (a second PR): McPhail (2007) and the zoogeography literature through the Zotero skills, "Provincial Fish Ranges - Watersheds" (a BC Geographic Warehouse custom download whose codes 1, 2 and 8 were overwritten from the records), the E-Fauna probe, and a native-or-introduced table per species by major drainage.
 
@@ -109,7 +109,7 @@ The operator set the record rules from `measures.csv` and `recall.csv`, then dec
 - **Strong** (3 or more sites, 2 or more waterbodies, a record since 1990, none above a modelled barrier): 39, all added.
 - **Some** (2 or more sites): 55, all added. Six are flagged to recheck: pinks in ADMS and DOGC, sockeye in MCGR, MORK and UFRA, and chinook in MUSK.
 - **One site:** 50. 17 with a record since 1990 were added. 10 recent ones were not, because the species is unusual that far inland (chum in HORS and STHM, pinks in LSAL and WILL, coho in FRAN, STUR and CHES, sockeye in BONP, LNIC and COTR). 23 with nothing since 1990 stay unmarked.
-- **Columbia, Mackenzie and Yukon:** 20, all left unmarked. Salmon are cut off from the Kootenay and upper Columbia by dams and falls, and do not run into the Mackenzie. Okanagan and Similkameen steelhead and the four Yukon cells wait for the literature, which may add them.
+- **Columbia, Mackenzie and Yukon:** 20, all left unmarked. Salmon are cut off from the Kootenay and upper Columbia by dams and falls, and the operator left the Mackenzie cells unmarked: Pacific salmon there are strays at most, which was not checked against a source. Okanagan and Similkameen steelhead and the four Yukon cells wait for the literature, which may add them.
 - **No records left after the rules:** 4. BRID ST, STUL CO and MESI SK stay unmarked, and TURN ST waits for the Mackenzie literature.
 
 The record count was shown, not used: a five-record bar was picked by eye and dropped.
@@ -118,7 +118,7 @@ Of the 21 resident cells, GR in LARL and all ten WCT cells stay unmarked as outs
 
 Of the 24 cells marked present without a counting record:
 - removed: the six Upper Dean salmon and steelhead cells added as a test, and four resting only on stocked fish (CT in THOM and LNTH, DV in VICT, GR in BULL);
-- kept: the PSE-backed Kitasu Bay cells, undated-only BT and DV, and three with no records and no evidence of absence;
+- kept: the PSE-backed Kitasu Bay cells, undated-only BT and DV, CT in UEUT (undated, flagged as unusual), and three with no records and no evidence of absence;
 - held: CT in CLRH and DUNC, for the Columbia literature;
 - deferred: the kokanee and rainbow cells, to #432.
 
