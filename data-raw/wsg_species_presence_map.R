@@ -15,7 +15,8 @@
 # --cache saves the measures, points and barriers on the first run and reads
 # them on later ones (delete it after the database changes).
 #
-# Layers, each a proposed rule applied to counting records (none decided):
+# Layers, each a rule proposed for the review, applied to counting records
+# (the rules the review chose: research/species_presence.md, "The first review"):
 #   barrier, salmon and steelhead  CH CM CO PK SK ST above the nearest natural
 #                                  barrier that blocks them, with at most 2
 #                                  counting records of the lift pool above it
@@ -25,7 +26,11 @@
 #   elevation, salmon/steelhead    CH CM CO PK SK ST above 1,400 m
 #   elevation, other species       every other species above 1,400 m
 #   known errors                   the data_error rows of
-#                                  observation_exclusions.csv (rings)
+#                                  observation_exclusions.csv (rings). They are
+#                                  excluded, so never counting records and never
+#                                  in a rule layer: a ring with no point inside
+#                                  is not a miss (recall.csv scores the rules
+#                                  against them)
 #   barriers                       the barrier each barrier-rule record sits
 #                                  behind, by kind
 # Colour is the barrier kind (falls, gradient, user definite) for the barrier
@@ -167,7 +172,6 @@ layer_sf <- function(key) {
   d$cell_records <- n_cell[i]
   d$rule_empties_cell <- drop_cell == n_cell[i]
   d$cell_status <- status[i]
-  d$known_error <- d$observation_key %in% known_err
   d <- merge(d, got$pts, by = "observation_key", all.x = TRUE)
   d <- d[!is.na(d$lon), ]
   gmap <- sprintf("https://www.google.com/maps/@%.6f,%.6f,1200m/data=!3m1!1e3",
@@ -186,7 +190,6 @@ layer_sf <- function(key) {
            ""), "<br>",
     "cell: ", d$cell_status, "; ", d$cell_records, " counting records",
     ifelse(d$rule_empties_cell, " <b>(this rule drops all of them)</b>", ""), "<br>",
-    ifelse(d$known_error, "<b>known data error</b><br>", ""),
     "match: ", htmltools::htmlEscape(d$match_type), " (", d$distance_to_stream, " m)<br>",
     "key ", d$observation_key, " · <a href='", gmap, "' target='_blank'>imagery (Google)</a>")
   d$rule <- key
@@ -197,7 +200,9 @@ lyr <- lapply(stats::setNames(names(rules), names(rules)), layer_sf)
 bar_keys <- unique(c(lyr$bar_anad$observation_key, lyr$bar_ko$observation_key,
                      lyr$ko_lake$observation_key))
 b <- got$bars[got$bars$observation_key %in% bar_keys, ]
-b <- b[!duplicated(b$id_barrier), ]
+# id_barrier is numbered within a group, so one position held by several
+# groups is one row per group: keep one per kind and position.
+b <- b[!duplicated(paste(b$barrier_source, b$lon, b$lat)), ]
 b$popup <- paste0("<b>", b$barrier_source, "</b> ", nz(b$barrier_subtype),
                   "<br>held by ", b$barrier_wsg, "<br>id ", b$id_barrier)
 b_sf <- sf::st_as_sf(b, coords = c("lon", "lat"), crs = 4326)

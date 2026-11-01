@@ -9,7 +9,7 @@ Source: EcoCat report 42693, "Fish Collection Permit KA12-81148 Guichon Creek"
 Nicola Indian Band to place riprap in the creek channel for scour protection."
 Page: http://a100.gov.bc.ca/pub/acat/public/viewReport.do?reportId=42693
 Data file: https://a100.gov.bc.ca/pub/acat/documents/r42693/KA12-81148_1401992130885_1991802827.xls
-(pulled 2026-11-01, 3,809,792 bytes, KA12-81148.xls here).
+(pulled 2026-11-01, 3,809,792 bytes; not committed, fetch it from the link).
 
 What the permit file says:
 - Step 1 sites 1 and 2: Guichon Creek, 00000GUIC, UTM 10 639474 E 5607899 N, method "GIS".

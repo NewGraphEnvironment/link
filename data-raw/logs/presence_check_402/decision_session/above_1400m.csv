@@ -1,0 +1,20 @@
+"observation_key","watershed_group_code","species_code","elevation_m","observation_date","source","waterbody","site","gradient","barrier_below","n_class_above"
+"091612fd01","GUIC","CH",1581,2012-08-15,"FDIS Database: fshclctn_id 146376","line:356111950","356111950:89",0.1366,"GRADIENT",1
+"ef68279063","KOTL","ST",1996,1974-08-14,"BC Lakes Database: survey_id 2005","wb:00398KOTL","356510333:8074",0,"GRADIENT",1
+"284b315bd7","MESI","SK",1470,1995-01-01,"FISS Database: survey_id 66276","wb:00415SUST","359505204:5430",0,"FALLS",1
+"c8906a493b","SUST","CH",1450,1986-09-14,"BC Lakes Database: survey_id 3248","wb:00349SUST","360884449:30764",0,NA,NA
+"6fc7de601b","SUST","CH",1418,1999-09-01,"FISS Database: survey_id 133579","line:360884449","360884449:24527",0.0071,NA,NA
+"75838bbe82","SUST","CO",1450,1995-01-01,"FISS Database: survey_id 64212","line:360812786","360812786:8",0,NA,NA
+"bd77169efb","SUST","CO",1450,1986-01-01,"FISS Database: survey_id 64216","wb:00349SUST","360884449:30764",0,NA,NA
+"cc5f6a2225","SUST","CO",1440,1993-01-01,"FISS Database: survey_id 74213","line:360830917","360830917:910",0.0135,NA,NA
+"9ae71c1538","SUST","CO",1432,1993-01-01,"FISS Database: survey_id 151491","line:360830917","360830917:0",0.0019,NA,NA
+"69756b0584","SUST","CO",1418,1999-09-01,"FISS Database: survey_id 133580","line:360884449","360884449:24527",0.0071,NA,NA
+"18059707d7","SUST","SK",1450,1986-09-14,"BC Lakes Database: survey_id 3248","wb:00349SUST","360884449:30764",0,NA,NA
+"a8686dd5ff","SUST","SK",1450,2001-01-01,"FISS Database: survey_id 7501825","wb:00349SUST","360884449:30764",0,NA,NA
+"e04d06b5c2","SUST","SK",1450,1975-10-12,"BC Lakes Database: survey_id 3244","wb:00349SUST","360884449:30764",0,NA,NA
+"e94a8b55c1","SUST","SK",1450,1995-01-01,"FISS Database: survey_id 88725","line:360812786","360812786:8",0,NA,NA
+"910ec9350b","SUST","ST",1466,1993-01-01,"FISS Database: survey_id 89735","line:360812786","360812786:1172",0.0097,NA,NA
+"07bbfbd5c1","SUST","ST",1450,1986-09-14,"BC Lakes Database: survey_id 3248","wb:00349SUST","360884449:30764",0,NA,NA
+"aa93054454","SUST","ST",1450,1986-01-01,"FISS Database: survey_id 89736","wb:00349SUST","360884449:30764",0,NA,NA
+"bd2bc78060","SUST","ST",1450,1986-01-01,"FISS Database: survey_id 64214","line:360812786","360812786:8",0,NA,NA
+"dd66aa0656","SUST","ST",1432,1993-01-01,"FISS Database: survey_id 151491","line:360830917","360830917:0",0.0019,NA,NA
