@@ -11,6 +11,17 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-11-01) — `default`'s presence table carries the first, provisional #402 review
+
+**The decision session set the record rules and decided the tracker in batches; `default`'s `wsg_species_presence.csv` now adds 111 salmon and steelhead cells and removes 10 (80 groups, each row's `notes` naming the review), and `acc-v4` replaces `acc-v3` for `default` and `default_tuned` (0.75.0).** Every call is provisional; each decided tracker row's story opens with its reason. Rules: a salmon or steelhead record does not count above a blocking FALLS or USER_DEFINITE barrier with at most one other lift-pool record above it; above a modelled GRADIENT barrier it counts (those records are the evidence for reviewing the access gradients); no elevation rule. Write-up: `research/species_presence.md`, "The first review". Log and evidence: `data-raw/logs/presence_check_402/decision_session/`.
+
+**Owed:** 154 tracker rows pending: 141 KO and RB (`issue` `#432`, waiting on pausing those species), 8 BT cells on DV records and CT FINL / LOMI (to look at their records), TURN ST, CT CLRH and DUNC (literature). The literature PR (McPhail 2007, the provincial range layer, a native-range table) may add Okanagan and Similkameen steelhead and the four Yukon cells. Three records need `data_error` rows (KOTL ST, MESI SK, GUIC CH), but `default`'s `observation_exclusions.csv` is a byte-for-byte bcfishpass copy and an overlay cannot add rows, so they wait on a link-owned exclusions mechanism; none moves a cell. The 80 groups re-model at the next provincial run.
+
+**Facts not worth re-deriving:**
+- **Thresholds picked from the known errors are circular.** 1,400 m and a 5-record bar were both chosen by eye from cases already seen and both dropped; the barrier rule on every barrier caught 36 of 37 known errors only by assuming the access gradients.
+- **Many cells' last record is a 1995 FISS synoptic survey,** so a high site count can be one survey (islands and the Stikine especially).
+- **The tracker allows only `pending`, `keep`, `add`, `remove`** (`test-dictionaries.R`); a deferral is a pending row with its `issue` set, which the check's merge never overwrites.
+
 ## Status (2026-10-31, latest) — every bcfishpass copy is synced, and link's changes to one are an overlay (#429)
 
 **A bundle file whose provenance names bcfishpass is a byte-for-byte copy the weekly sync checks; link's changes to it live in an overlay** (`files: <key>: overlay:`, one row per cell with a reason, applied by `lnk_load_overrides()`). The `bcfishpass` bundle's presence table is bcfishpass's again, and its `ko` column is `overrides/wsg_species_presence_overlay.csv`. The sync now runs per bundle (writes only where declared), stops on a failed fetch, and covers `cabd_*`, `dfo_known_sockeye_lakes`, `wcrp_watersheds` and `observation_exclusions` too. A change that moves an output token spec, or leaves a bundle unloadable, is the `review` kind: a `token-review` PR, not merged. Pulled at `3bd2824`: CH in UTRE and ST in QUES (bcfishpass bundle only, so `acc-bcfp-4` replaces `acc-bcfp-3`), the Keogh and Adams passability rows, three wcrp lines. Mechanics: RUNBOOK §7, "Copies and overlays". Evidence: `data-raw/logs/csv_sync_429/`.
