@@ -26,7 +26,8 @@ Reading: the record's coordinates are the submitter's own for sites 1-2, and the
 riprap salvage for Lower Nicola Indian Band in the creek's headwaters, 50 km and about 1,000 m
 above site 3. The fish are real; the location is wrong. The likely site is lower Guichon Creek.
 
-Effect: GUIC is already marked present for CH (8 CH records in GUIC, 1991-2012), so no cell
-changes. The record should be a data_error (misplaced) row in observation_exclusions.csv in the
+Effect: GUIC is already marked present for CH (8 CH records in GUIC, 1991-2012: this one, its
+twin from the same permit and site on 2012-08-14, 056266487d, which observation_exclusions.csv
+already lists as a data_error for the same reason, and 6 that count), so no cell changes. The record should be a data_error (misplaced) row in observation_exclusions.csv in the
 applying PR, and it must not be read as chinook passing a gradient barrier in the
 access-gradient review (it sits above a GRADIENT barrier with no other record).

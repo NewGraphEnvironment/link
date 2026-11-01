@@ -53,7 +53,10 @@ arg <- function(name, default) {
 known <- c("--out", "--gpkg", "--cache")
 bad <- args[!sub("=.*$", "", args) %in% known]
 if (length(bad) > 0L) stop("unknown arguments: ", paste(bad, collapse = " "))
-out <- arg("out", file.path(Sys.getenv("TMPDIR", "."), "presence_map_402.html"))
+# Not tempdir(): R deletes it on exit. An unset TMPDIR must not mean the repo.
+tmp <- Sys.getenv("TMPDIR")
+if (!nzchar(tmp)) tmp <- "/tmp"
+out <- arg("out", file.path(tmp, "presence_map_402.html"))
 gpkg <- arg("gpkg", "")
 cache <- arg("cache", "")
 
