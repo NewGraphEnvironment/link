@@ -102,9 +102,9 @@ Phases 1 to 5 about 7 to 9 hours (PR 1 about 1.5 h with CI; proof builds about 2
 
 ## Phase 4: PR 4, #439's hosts and primitives
 
-- [ ] `snapshot_bcfp.sh --with-bcfp-views --force` on m4, and on m1 under `bash -lc` as RUNBOOK §8d gives it. Confirm load stamps on both.
+- [x] `snapshot_bcfp.sh --with-bcfp-views --force` on m4, and on m1 under `bash -lc` as RUNBOOK §8d gives it. Confirm load stamps on both.
 - [ ] Cloud hosts install fresh and snapshot at prep, from whatever S3 holds then; the run's `--auto-install` and `preflight_hosts` confirm fresh. Just before launch, compare S3's `log.json` with both hosts' ledger rows (`verify_extra.sql` check 5 fails on a mismatch), and refresh again if it moved; a refresh does not void the gate.
-- [ ] Ledger and evidence committed. `/code-check branch`, PR, merge, `Fixes #439`.
+- [x] Ledger and evidence committed. `/code-check branch` (three rounds, ended on round 3's enumeration), PR stacked on PR 3. `Relates` #439, not `Fixes`: the cloud hosts get fresh at prep, and m1's `--auto-install` waits on its token.
 
 ## Phase 5: PR 5, the gate and the rehearsal (#418)
 

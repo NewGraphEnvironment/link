@@ -49,7 +49,7 @@ Round 1's fix let a bundle hold some own builds while it borrows; round 2 found 
 
 - **`default` at 0.78.0 equals its fresh 0.52.0 builds** (`zz432_post`) in KETL, KOTL, BULK and MURT, in every measure `compare.R` reads.
 - **`bcfishpass` parity 48/50** at 0.78.0 on m1 (`fresh_parity441`), the reference unmoved; 40 of 50 pairs moved, by code (#326 above all).
-- **m1's GitHub token is refused (HTTP 401),** from its git credential store, so `pak` cannot install there; `remotes::install_github()` with no token worked. `--auto-install` uses pak, so the provincial run's worker prep on m1 fails until the token is rotated (operator).
+- **m1's GitHub token is refused (HTTP 401)** (which stored token pak sends, `~/.Renviron` or the git credential store, was not measured), so `pak` cannot install there; `remotes::install_github()` with no token worked. `--auto-install` uses pak, so the provincial run's worker prep on m1 fails until the token is rotated (operator).
 - **A non-interactive ssh to m1 lacks `pg_isready` and `psql`;** run m1 commands under `bash -lc`, with `PGPASSWORD` set.
 
 ## Plan review
