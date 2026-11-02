@@ -91,7 +91,7 @@ Phases 1 to 5 about 7 to 9 hours (PR 1 about 1.5 h with CI; proof builds about 2
 - [x] `run.sh`, then `proof.R`, then `lifts.R`, at one clean commit and with nothing installed between. Evidence committed; README updated with the picks and why.
 - [x] `research/minimal_network.md` (index row added), read beside `species_paused.md`. RUNBOOK §6b. Scratch schemas `zz415_default` and `zz415_minimal` kept until the PR merges, for review; dropped then.
 - [x] File the parent-attribute issue from what the proof shows, with the lift result in its body and knowledge#120's mechanics check as acceptance. Edit #415's body, tick its boxes.
-- [ ] `/code-check branch`, PR, merge. `Fixes #415`, with the parent attribute carried by the new issue.
+- [x] `/code-check branch` (three rounds, ended on round 3's enumeration of every number and provenance claim), PR stacked on PR 1. Merge is the operator's. `Fixes #415`, with the parent attribute carried by #444.
 
 ## Phase 3: PR 3, #440's test builds (m4 and m1 side by side), before the primitive refresh
 
