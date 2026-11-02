@@ -48,9 +48,9 @@ There is no way to say "not now" short of removing the row. Steelhead have the s
 
 ## Phase 4: Measure #433 (before arm from a worktree at 07203cde, after arm at the Phase 3 commit; scratch schemas on m4)
 
-- [ ] Build `default` before (KO and RB modelled) and after (paused) on KOTL, SALR and KETL (RB without BT), NBNK (RB only through the CT/DV/RB expansion), MURT (paused species only), and BULK as the control. Pin that MURT's barrier and override rows match across arms (review 15).
-- [ ] Report segments, breaks moved, BT and CH rearing km moved, and the gradient at fish records whose segment changed. The question is what tuning reads.
-- [ ] Write it up in `research/` (the segmentation write-up, or a short `species_paused.md` indexed in `research/README.md`). Evidence in `data-raw/logs/species_paused_432/` with a README.
+- [x] Build `default` before (KO and RB modelled) and after (paused) on KOTL, SALR and KETL (RB without BT), NBNK (RB only through the CT/DV/RB expansion), MURT (paused species only), and BULK as the control. Pin that MURT's barrier and override rows match across arms (review 15).
+- [x] Report segments, breaks moved, BT and CH rearing km moved, and the gradient at fish records whose segment changed. The question is what tuning reads.
+- [x] Write it up in `research/` (the segmentation write-up, or a short `species_paused.md` indexed in `research/README.md`). Evidence in `data-raw/logs/species_paused_432/` with a README.
 
 ## Phase 5: Vocabulary, docs, release
 

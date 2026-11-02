@@ -174,7 +174,7 @@ different modelled crossing for 464 PSCIS). Step 3b ports it, with
 modelled_crossing_id`. Both KNN snaps (`lnk_points_snap()`, the dam snap) end on
 `linear_feature_id`.
 
-`barriers_<sp>_min` is a **break-spec**: a present species' post-lift natural barriers (gradient at its classes, falls, opt-in subsurface flow, minus its overrides, plus user-definite) reduced to the downstream-most position per flow path, as bcfishpass breaks (#326). It was reduced before the lifts until #223, then held every position until #326; the raw post-lift table `barriers_<sp>` stays in the working schema for diagnostics, and how this compares with bcfishpass is `research/bcfp_segmentation_parity.md`. It
+`barriers_<sp>_min` is a **break-spec**: a present, modelled species' post-lift natural barriers (gradient at its classes, falls, opt-in subsurface flow, minus its overrides, plus user-definite) reduced to the downstream-most position per flow path, as bcfishpass breaks (#326); a species the bundle pauses adds none (#432). It was reduced before the lifts until #223, then held every position until #326; the raw post-lift table `barriers_<sp>` stays in the working schema for diagnostics, and how this compares with bcfishpass is `research/bcfp_segmentation_parity.md`. It
 has NO id column, so it **cannot** feed `frs_network_features` /
 `barriers_per_sp`. (Tried in #196; failed with `barriers_bt_min_id does not
 exist`.) `barriers_per_sp` mechanically requires the *feature view* shape.
@@ -1186,7 +1186,57 @@ crate's shape); the webmap (#335).
 | The near-river pair (a river of at least a size within a distance downstream) | `parameters_habitat_thresholds.csv` → `<stage>_river_*` (#364, fresh#263) → `fresh::frs_params()` | inherited by every rule with a size test that is not stamped out; walked into `streams_near_river` |
 | Species residence (resident/anadromous/spawn-only) | **hardcoded** defaults in `lnk_pipeline_mapping_code()` | which mc_barrier flavor + spawn-only token1 |
 | Dam / anthropogenic blocking | **nowhere** — universal `all species` in `lnk_barriers_unify` | `blocks_species` (§2a). Not rules-driven. |
+| Which rules species run | `configs/<name>/species_modelled.csv` (#432) → `lnk_config()` → `cfg$species` / `cfg$species_paused` | everything species-keyed: gradient breaks, classify, access, mapping code (§7, "Pausing a species") |
 | What each config column means | `configs/dictionary_dimensions.csv`, `configs/dictionary_parameters_fresh.csv`, `configs/dictionary_parameters_habitat_thresholds.csv` | data dictionaries — per-column type, group, default, description, and (for `parameters_fresh`) `owner` + `consumed_by` file:line |
+
+### Pausing a species (link#432)
+
+A bundle can stop modelling a species without losing its rules, thresholds or
+the reason. `configs/<name>/species_modelled.csv` (declared under `files:`) has
+one row per species in `rules.yaml`, `modelled` `t` or `f`, and a paused row
+carries its `reason`, `date` and `issue`. `lnk_config()` leaves the `f` species
+out of `cfg$species` and lists them in `cfg$species_paused`; a bundle without
+the file models every rules species. It refuses a code with no rules entry, a
+rules species with no row, a value other than `t`/`f`, a duplicate, a paused row
+without its reason or date, and pausing every species. `extends:` inherits the
+file, so `default_tuned` pauses what `default` pauses. `default` pauses KO (its
+presence column was never sourced) and RB (records do not separate rainbow trout
+from steelhead), at `acc-v5`.
+
+What a paused species does, and does not do:
+
+- **It adds no gradient breaks (#433, "off means off").** `.lnk_pipeline_prep_minimal()`
+  builds a barrier set per species in `cfg$species`, so a paused species' access
+  gradient no longer cuts streams. Where it was the only species at its class
+  (RB at 25 % without BT, KO at 15 % without CH, CM, CO, PK, SK or GR; 73 groups
+  with the presence groups expanded) the segmentation changes.
+- **Other break sources stay.** Observation tops follow presence (CT and DV tops
+  already cut, though no rules model them), and the paused species' rows in
+  `user_habitat_classification.csv` still place habitat endpoints.
+- **It is not classified, and gets no access or mapping code.** Its barrier rows
+  and observation lifts are still built (`lnk_barriers_unify()` and
+  `lnk_barrier_overrides()` read every `parameters_fresh` row), so other groups
+  that read them are unaffected.
+- **The persist schema keeps its shape.** `lnk_persist_init()` adds
+  `cfg$species_paused` itself: the `streams_habitat_<sp>` tables, the
+  `access_<sp>` / `mapping_code_<sp>` columns and `streams_habitat_long_vw` stay,
+  on every host. That is what lets a consolidate clear them: its per-group
+  replace runs only over tables both sides hold.
+- **A full build clears what it no longer classifies.** Right after its first
+  persist, `lnk_pipeline_run()` deletes the group's rows from every
+  `streams_habitat_<sp>` table and every near-river pair it did not write this
+  time (a paused species, or one no longer marked present), because their
+  `id_segment` keys belong to the old segmentation. `study_area_verify.sql`
+  fails a run that leaves such rows for one of its groups.
+- **A group where only paused species are present is still modelled**, for its
+  segments, barriers, access annotations (dams, PSCIS) and one mapping-code row
+  per segment, with no habitat: other groups' recompute reads its barrier rows
+  (LEUT and LNRS are each read by 19 groups). `lnk_pipeline_species(paused =
+  TRUE)` answers whether a group is modelled; `lnk_wsg_resolve()`,
+  `wsg_run_one.R` and `wsg_recompute_one.R` use it. Under `default` these are
+  BRID, GRNL, LEUT, LNRS, MURT, PITR and UISR (CHUK's only cell is DV, so the
+  filter has always dropped it). Compare skips them with a NOTE.
+- The validator (`--species`) and the variants harness refuse a paused species.
 
 ### Copies and overlays: the bcfishpass files a bundle carries (link#429)
 
