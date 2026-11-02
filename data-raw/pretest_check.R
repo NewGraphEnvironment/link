@@ -59,13 +59,17 @@ out <- tryCatch({
     } else if (nzchar(short)) {
       list(ok = FALSE, why = paste0("the gate borrowed a short history: ", short))
     } else {
-      # Beside a borrowed history, the bundle's own builds so far must be in the range too.
-      if (borrowed) hist <- rbind(hist[c("link_sha", "link_dirty")], own[c("link_sha", "link_dirty")])
       map <- pretest_map_read(file.path(script_dir, "pretest_inputs.csv"))
       r <- pretest_record_check(records, config, head_sha, fresh_sha, hist$link_sha,
                                 hist$link_dirty, repo, map, chain,
                                 reached = pretest_reach_repo(repo))
-      if (r$ok) {
+      # Beside a borrowed history, the bundle's own builds so far must be in the range too.
+      own_why <- if (r$ok && borrowed) {
+        pretest_own_builds_why(repo, r$record$since_sha, r$record$link_sha, own, schema)
+      } else ""
+      if (nzchar(own_why)) {
+        r <- list(ok = FALSE, why = paste0("the gate's range: ", own_why), record = r$record)
+      } else if (r$ok) {
         r$why <- sprintf("gate passed at %s (%s UTC), range from %s: %s", substr(r$record$link_sha, 1, 12),
                          format(r$record$run_at, "%Y-%m-%d %H:%M", tz = "UTC"),
                          substr(r$record$since_sha, 1, 12), r$record$groups)

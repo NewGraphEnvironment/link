@@ -286,6 +286,22 @@ test_that("a borrowed history short of the groups the config models is refused",
   expect_match(many, "G005, ...", fixed = TRUE)
 })
 
+test_that("a borrowing bundle's bad own builds are named as its own, with the remedy", {
+  e <- pt_env()
+  r <- pt_git_repo(e)
+  a <- r$commit(list("R/a.R" = "one"), "a")
+  b <- r$commit(list("R/a.R" = "two"), "b")
+  r <- c(r, list(a = a, b = b))
+  own <- function(sha, dirty, wsg = "ADMS") data.frame(wsg = wsg, link_sha = sha, link_dirty = dirty)
+  expect_identical(e$pretest_own_builds_why(r$dir, r$a, r$b, NULL, "s"), "")
+  expect_identical(e$pretest_own_builds_why(r$dir, r$a, r$b, own(r$b, FALSE), "s"), "")
+  why <- e$pretest_own_builds_why(r$dir, r$a, r$b, rbind(own(r$b, FALSE, "BULK"), own(r$b, TRUE)), "s")
+  expect_match(why, "s.log's own builds (ADMS): history holds a build from a dirty tree", fixed = TRUE)
+  expect_match(why, "re-model them clean", fixed = TRUE)
+  # A sha off the range names the groups it has.
+  expect_match(e$pretest_own_builds_why(r$dir, r$b, r$b, own(r$a, FALSE), "s"), "own builds (ADMS): the range starts", fixed = TRUE)
+})
+
 test_that("a history no range can cover is named before any range is read", {
   e <- pt_env()
   expect_identical(e$pretest_history_uncoverable(c("a", "b"), c(FALSE, FALSE)), "")

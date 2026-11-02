@@ -425,6 +425,19 @@ pretest_history_short <- function(history_wsgs, modelable, source_name) {
           paste(utils::head(miss, 5), collapse = ", "), if (length(miss) > 5) ", ..." else "")
 }
 
+# Why a borrowing bundle's own builds so far keep a gate from clearing a run ("" when
+# they do not). Said apart from the borrowed history, because re-loading that cannot
+# help: the remedy is in the bundle's own log.
+pretest_own_builds_why <- function(repo, since, end, own, schema) {
+  if (!NROW(own)) return("")
+  why <- pretest_since_covers(repo, since, end, own$link_sha, own$link_dirty)
+  if (!nzchar(why)) return("")
+  bad <- is.na(own$link_sha) | is.na(own$link_dirty) | own$link_dirty
+  groups <- if (any(bad)) own$wsg[bad] else own$wsg
+  sprintf("%s.log's own builds (%s%s): %s; re-model them clean at this code, or delete their rows",
+          schema, paste(utils::head(groups, 5), collapse = ", "), if (length(groups) > 5) ", ..." else "", why)
+}
+
 # The groups a config models, from the source tree: a run's own list (lnk_wsg_resolve()).
 pretest_modelable_groups <- function(repo, config) {
   suppressPackageStartupMessages(pkgload::load_all(repo, quiet = TRUE, helpers = FALSE))

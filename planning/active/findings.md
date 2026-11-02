@@ -35,9 +35,9 @@ Round 1's fix let a bundle hold some own builds while it borrows; round 2 found 
 |---|---|---|
 | `pretest_pick.R:76-81` | own, for completeness | decides borrowing |
 | `pretest_pick.R:84-89` | history for groups and minutes | the borrowed one |
-| `pretest_pick.R:92-95`, `:98-100` | own and borrowed for coverage | both held to the range |
+| `pretest_pick.R` coverage (`pretest_own_builds_why()`) | own and borrowed for coverage | judged apart, so a message names the source that needs the remedy (round 3) |
 | `pretest_pick.R:96-97` | short check | on the borrowed one |
-| `pretest_pick.R:101` | `--since` default | from the borrowed one, the earlier |
+| `pretest_pick.R:101` | `--since` default | from the borrowed one; an own build older than it is refused with its remedy |
 | `pretest_pick.R:164-165` | label | fixed in round 2 |
 | `pretest_pick.R:202-204` | minutes | a named own schema reads its own config, fixed in round 2 |
 | `pretest_run.sh:99-100`, `:199-213` | scratch shape, minutes default | the history schema |

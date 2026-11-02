@@ -13,10 +13,10 @@
 # (pretest_history_source()).
 #
 # --since defaults to the link SHA of the earliest of the groups' newest
-# finished builds in <schema>.log (the last provincial run, even where a group
-# was re-modelled after it). A group is picked only if <schema>.log has a
+# finished builds in the history (the last provincial run, even where a group
+# was re-modelled after it). A group is picked only if the history has a
 # finished build of it, so the config can model it. Its bound is its newest
-# finished minutes in --minutes-schema (default --schema); a group in
+# finished minutes in --minutes-schema (default the history's schema); a group in
 # --minutes-exclude, whose newest minutes are a known stall, or with no row
 # there, is bounded on the median. Writes <out>/picks.tsv (one row per group) and
 # <out>/pretest.md (what changed, which input each file named, each query and
@@ -88,10 +88,7 @@ for (s in unique(c(hist_src$schema, minutes_schema))) {
 built <- DBI::dbGetQuery(conn, pretest_history_sql(hist_src$schema, hist_src$config))
 if (!nrow(built)) refuse(hist_src$schema, ".log has no finished rows under config ", hist_src$config)
 # Refused under --pick-only too: picks from either history say nothing about a run.
-# Beside a borrowed history, the bundle's own builds so far must be in the range too.
-held <- if (hist_src$borrowed) rbind(built[c("link_sha", "link_dirty")], own[c("link_sha", "link_dirty")]) else
-  built[c("link_sha", "link_dirty")]
-bad_history <- pretest_history_uncoverable(held$link_sha, held$link_dirty)
+bad_history <- pretest_history_uncoverable(built$link_sha, built$link_dirty)
 if (nzchar(bad_history)) refuse(bad_history, "; a gate on it cannot clear a run")
 if (hist_src$borrowed) {
   short <- pretest_history_short(built$wsg, modelable, paste0(hist_src$schema, ".log"))
@@ -108,8 +105,15 @@ until_sha <- tryCatch(pretest_git(repo, c("rev-parse", "--verify", paste0(until,
                       error = function(e) refuse(conditionMessage(e)))
 # The record check holds a gate to covering every build the history holds;
 # say so now rather than after an hour of modelling.
-cover <- tryCatch(pretest_since_covers(repo, since_sha, until_sha, held$link_sha, held$link_dirty),
+cover <- tryCatch(pretest_since_covers(repo, since_sha, until_sha, built$link_sha, built$link_dirty),
                   error = function(e) refuse(conditionMessage(e)))
+# Beside a borrowed history, the bundle's own builds so far must be in the range too.
+if (hist_src$borrowed) {
+  own_why <- tryCatch(pretest_own_builds_why(repo, since_sha, until_sha, own, schema),
+                      error = function(e) refuse(conditionMessage(e)))
+  if (nzchar(pretest_history_uncoverable(own$link_sha, own$link_dirty))) refuse(own_why)
+  if (nzchar(own_why) && !nzchar(cover)) cover <- own_why
+}
 # --pick-only explores a range and records nothing, so a range that falls short is a
 # warning there; the history itself was judged above.
 if (nzchar(cover)) {
