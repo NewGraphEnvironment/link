@@ -33,7 +33,7 @@ The access inputs differ between the shipped configs:
 | Species the rules model | BT CH CM CO PK SK ST WCT | adds GR, KO, RB |
 | BT lifts on | BT, the salmon and ST, records from 1900 | BT and DV, any date |
 | RB lifts | none | one RB record |
-| Presence table | bcfishpass's | the same except no GR in LARL |
+| Presence table | bcfishpass's | link's own: bcfishpass's except a few cells, then #402's review (2026-11-01) added 111 and removed 10 |
 
 `default_extrabreaks` and `default_rearbreaks` are `extends: ~` copies of an older
 `default`. They carry no RB lift rule and bcfishpass's presence table, and leave
@@ -57,9 +57,9 @@ With these axes, five configs take seven live tokens:
 
 | Config | cut | acc | grad | flow |
 |---|---|---|---|---|
-| `default` | `cut-full-top` | `acc-v3` | `grad-seg` | `q-fwapg` |
-| `default_tuned` | `cut-full-top` | `acc-v3` | `grad-seg` | `q-wet-fill` |
-| `bcfishpass` | `cut-full-ssf-all` | `acc-bcfp-3` | `grad-seg` | `q-fwapg` |
+| `default` | `cut-full-top` | `acc-v4` | `grad-seg` | `q-fwapg` |
+| `default_tuned` | `cut-full-top` | `acc-v4` | `grad-seg` | `q-wet-fill` |
+| `bcfishpass` | `cut-full-ssf-all` | `acc-bcfp-4` | `grad-seg` | `q-fwapg` |
 | `default_extrabreaks` | none | none | `grad-seg` | `q-fwapg` |
 | `default_rearbreaks` | none | none | `grad-seg` | `q-fwapg` |
 
@@ -80,6 +80,8 @@ with the same specs, and `.lnk_vocabulary_match()` returns the live row of a sha
 code 2, so its resolved value is hashed into the `acc` digest (absent and `group_gated` hash
 alike). `acc-v2` and `acc-bcfp-2` were retired for `acc-v3` and `acc-bcfp-3`, which carry new
 specs; nothing else in the digest moved.
+
+**Presence edits move the `acc` axis** as the spec intends: `acc-bcfp-4` replaced `acc-bcfp-3` when the weekly sync pulled two bcfishpass presence cells (#429, link 0.74.0), and `acc-v4` replaced `acc-v3` when #402's review edited 121 of `default`'s cells (link 0.75.0).
 
 ## What stays out of tokens
 

@@ -94,11 +94,11 @@ test_that("the vocabulary only grows against the default branch", {
 test_that("each shipped config resolves to its tokens", {
   expect_identical(
     lnk_vocabulary_resolve(lnk_config("default")),
-    c(cut = "cut-full-top", acc = "acc-v3", grad = "grad-seg",
+    c(cut = "cut-full-top", acc = "acc-v4", grad = "grad-seg",
       flow = "q-fwapg"))
   expect_identical(
     lnk_vocabulary_resolve(lnk_config("default_tuned")),
-    c(cut = "cut-full-top", acc = "acc-v3", grad = "grad-seg",
+    c(cut = "cut-full-top", acc = "acc-v4", grad = "grad-seg",
       flow = "q-wet-fill"))
   expect_identical(
     lnk_vocabulary_resolve(lnk_config("bcfishpass")),
