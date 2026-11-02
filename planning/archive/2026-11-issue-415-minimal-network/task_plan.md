@@ -201,7 +201,7 @@ from m4.
 - [x] `DESCRIPTION` to `0.77.0` (the token row names it), `NEWS.md` entry.
 - [x] CLAUDE.md status entry (what landed, what is owed, facts not worth re-deriving: the
   overlay direction, the 1 m containment caveat, the own-table design).
-- [ ] Edit the #415 body: the overlay bullet reads "under-applies", the four proposed
+- [x] Edit the #415 body: the overlay bullet reads "under-applies", the four proposed
   checkboxes note the two-PR split and link this PR, the parent-attribute design is written
   in, and `cut-min` is named. No new issue filed here. Done once the PR exists.
 
