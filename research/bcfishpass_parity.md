@@ -1,8 +1,8 @@
 # Parity with bcfishpass
 
-**Verified:** 2026-10-23 · **Issues:** #361 (this record), #362, #364, #367, #349, #277, #279 · **Produced by:**
-`data-raw/parity_crosssection.R`, `data-raw/logs/parity_0.68.0/moves.R`, log prefix
-`data-raw/logs/parity_0.68.0/` · **Run:** `20261023_215312-16fb3aae`, link 0.68.0 (`1d00c04c`)
+**Verified:** 2026-11-02 · **Issues:** #440 (this record), #361, #362, #326, #364, #367, #349, #277, #279 · **Produced by:**
+`data-raw/parity_crosssection.R`, `data-raw/logs/parity_0.78.0/moves.R`, log prefix
+`data-raw/logs/parity_0.78.0/` · **Run:** `20261102_083253-52f261f8`, link 0.78.0 (`34c4c598`), fresh 0.52.0
 
 How closely link's `bcfishpass` config reproduces bcfishpass's own output, in km of accessible,
 spawning and rearing stream per group and species. This file is the current record: a parity run
@@ -13,42 +13,68 @@ revises it in place, and the dated files listed at the end are its history.
 **48 of 50 pairs within tolerance** on ADMS, BULK, BABL and ELKR (accessible within 1 %,
 spawning and rearing within 5 %). The two pairs over are BULK SK spawning (+10.99 %) and rearing
 (+7.39 %), parked under #130 (SK upstream spawning over-credits multi-lake drainages; carried on from
-fresh#190). Accessible km sits
-within 0.07 % on all 17 pairs.
+fresh#190). Accessible km sits within 0.11 % on all 17 pairs.
 
 Each cell is link km / bcfishpass km, link's difference, and in brackets the change in link's
-km since the v0.66.6 build of 2026-10-20 where there is one. That is the difference of two totals each rounded to
-0.1 km, so a bracket can read 0.1 for a move of 0.01 km; the exact amounts are below. Rearing leaves lake connection lines out on both sides.
+km since the v0.68.0 build of 2026-10-23 where it is 0.1 km or more. Rearing leaves lake connection lines out on both sides.
 
 | Group | Species | Accessible | Spawning | Rearing |
 |---|---|---|---|---|
-| ADMS | BT | 1230.4 / 1230.3, +0.01 % | 367.0 / 361.7, +1.45 % | 609.0 / 608.3, +0.12 % |
-| ADMS | CO | 788.4 / 787.9, +0.07 % | 312.3 / 311.0, +0.42 % | 352.3 / 351.2, +0.32 % (-0.3) |
-| ADMS | CH | 788.4 / 787.9, +0.07 % | 278.1 / 277.6, +0.19 % | 309.4 / 308.2, +0.37 % |
-| ADMS | SK | 788.4 / 787.9, +0.07 % | 86.6 / 85.7, +1.09 % | 70.8 / 70.8, +0.00 % |
-| BULK | BT | 7676.5 / 7676.4, +0.00 % | 1866.3 / 1848.0, +0.99 % | 3007.9 / 3048.6, -1.34 % |
-| BULK | ST | 6462.9 / 6462.7, +0.00 % | 1287.6 / 1279.9, +0.60 % | 2230.7 / 2241.9, -0.50 % |
-| BULK | CO | 5089.6 / 5088.0, +0.03 % | 1782.1 / 1768.3, +0.78 % | 2214.3 / 2217.6, -0.14 % (-1.3) |
-| BULK | CH | 5089.6 / 5088.0, +0.03 % | 1260.2 / 1252.0, +0.66 % | 1730.1 / 1738.2, -0.46 % |
-| BULK | PK | 5089.6 / 5088.0, +0.03 % | 1854.4 / 1850.0, +0.24 % | — |
-| BULK | SK | 5089.6 / 5088.0, +0.03 % | 27.1 / 24.4, +10.99 % | 26.7 / 24.9, +7.39 % |
-| BABL | BT | 6855.5 / 6855.4, +0.00 % | 899.1 / 890.1, +1.01 % | 2076.6 / 2107.3, -1.45 % |
-| BABL | ST | 5955.6 / 5955.6, +0.00 % | 352.6 / 349.3, +0.93 % | 897.8 / 916.6, -2.05 % |
-| BABL | CO | 5063.8 / 5063.6, +0.00 % | 810.9 / 805.1, +0.71 % | 1280.2 / 1287.0, -0.53 % (-1.4) |
-| BABL | CH | 5063.8 / 5063.6, +0.00 % | 352.1 / 348.8, +0.93 % | 695.5 / 713.0, -2.44 % |
-| BABL | SK | 5063.8 / 5063.6, +0.00 % | 57.2 / 56.3, +1.65 % | 299.9 / 299.9, +0.00 % |
-| ELKR | BT | 4208.1 / 4207.2, +0.02 % | 1526.6 / 1497.5, +1.95 % | 2105.2 / 2104.1, +0.05 % |
-| ELKR | WCT | 3683.4 / 3685.2, -0.05 % | 1568.0 / 1517.6, +3.33 % | 1900.9 / 1854.6, +2.50 % |
+| ADMS | BT | 1230.3 / 1230.3, -0.01 % (-0.1) | 362.5 / 361.7, +0.22 % (-4.5) | 608.3 / 608.3, +0.00 % (-0.7) |
+| ADMS | CO | 787.6 / 787.9, -0.03 % (-0.8) | 311.8 / 311.0, +0.26 % (-0.5) | 351.8 / 351.2, +0.18 % (-0.5) |
+| ADMS | CH | 787.6 / 787.9, -0.03 % (-0.8) | 277.6 / 277.6, +0.00 % (-0.5) | 308.9 / 308.2, +0.21 % (-0.5) |
+| ADMS | SK | 787.6 / 787.9, -0.03 % (-0.8) | 86.6 / 85.7, +1.09 % | 70.8 / 70.8, +0.00 % |
+| BULK | BT | 7676.3 / 7676.4, +0.00 % (-0.2) | 1865.2 / 1848.0, +0.94 % (-1.1) | 3029.3 / 3048.6, -0.63 % (+21.4) |
+| BULK | ST | 6462.7 / 6462.7, +0.00 % (-0.2) | 1287.6 / 1279.9, +0.60 % | 2242.6 / 2241.9, +0.03 % (+11.9) |
+| BULK | CO | 5088.0 / 5088.0, +0.00 % (-1.6) | 1782.1 / 1768.3, +0.78 % | 2226.1 / 2217.6, +0.38 % (+11.8) |
+| BULK | CH | 5088.0 / 5088.0, +0.00 % (-1.6) | 1260.2 / 1252.0, +0.66 % | 1742.1 / 1738.2, +0.22 % (+12.0) |
+| BULK | PK | 5088.0 / 5088.0, +0.00 % (-1.6) | 1854.4 / 1850.0, +0.24 % | — |
+| BULK | SK | 5088.0 / 5088.0, +0.00 % (-1.6) | 27.1 / 24.4, +10.99 % | 26.7 / 24.9, +7.39 % |
+| BABL | BT | 6855.3 / 6855.4, +0.00 % (-0.2) | 896.5 / 890.1, +0.71 % (-2.6) | 2099.9 / 2107.3, -0.35 % (+23.3) |
+| BABL | ST | 5955.4 / 5955.6, +0.00 % (-0.2) | 352.1 / 349.3, +0.82 % (-0.5) | 916.0 / 916.6, -0.06 % (+18.2) |
+| BABL | CO | 5062.7 / 5063.6, -0.02 % (-1.1) | 811.1 / 805.1, +0.75 % (+0.2) | 1284.8 / 1287.0, -0.17 % (+4.6) |
+| BABL | CH | 5062.7 / 5063.6, -0.02 % (-1.1) | 351.7 / 348.8, +0.82 % (-0.4) | 700.2 / 713.0, -1.79 % (+4.7) |
+| BABL | SK | 5062.7 / 5063.6, -0.02 % (-1.1) | 57.2 / 56.3, +1.65 % | 299.9 / 299.9, +0.00 % |
+| ELKR | BT | 4206.0 / 4207.2, -0.03 % (-2.1) | 1518.4 / 1497.5, +1.40 % (-8.2) | 2103.8 / 2104.1, -0.01 % (-1.4) |
+| ELKR | WCT | 3681.3 / 3685.2, -0.11 % (-2.1) | 1558.9 / 1517.6, +2.72 % (-9.1) | 1885.4 / 1854.6, +1.66 % (-15.5) |
 
 Pink has no freshwater rearing. Five pairs bcfishpass reports and the `bcfishpass` config does not
 model in that group are left out: CM and PK accessible in ADMS and BABL, CM in BULK.
 
 **The build.** The drainage closure of the four groups is 17 groups, all modelled under
-`bcfishpass` into a scratch schema (`fresh_parity361`), recomputed and verified by
-`study_area_verify.sql`. The reference is the local copy of bcfishpass's `streams_vw`
-(`fresh.streams_vw_bcfp`), reloaded 2026-10-23 00:52 UTC from bcfishpass `v0.7.15-50-g620dbe4`
-(the same upstream commit as before). The full stamp is in
-`data-raw/logs/parity_0.68.0/README.md`.
+`bcfishpass` on m1 into a scratch schema (`fresh_parity441`), from a worktree at `34c4c598`,
+recomputed and verified by `study_area_verify.sql` (PASS). The primitives are the 2026-10-23 load
+`fresh_parity361` was built on, and the reference did not move on any of the 50 pairs. The full
+stamp is in `data-raw/logs/parity_0.78.0/README.md`.
+
+## What moved at v0.78.0 (2026-11-02, #440)
+
+The v0.68.0 score (run `20261023_215312-16fb3aae`, `fresh_parity361`) was 48/50; so is this one. Of the inputs,
+the four snapshot primitives are the same load (their load stamps), the reference is m1's view load of
+2026-10-23 (`v0.7.15-50-g620dbe4`, the newest m1 snapshot row in `bcfp_baselines.csv` before the build) and its values moved on 0 of 50
+pairs, and no barrier override was added or lost. FWA and discharge were not compared. So the moves are put down to
+code. About 40 of the 50 pairs moved by 0.1 km or more in totals each rounded to 0.1 km (`pair_moves.csv`):
+
+- **Rearing rose in BULK and BABL** for BT, CH, CO and ST, by 4.6 to 23.3 km a pair. BULK CH, CO and ST crossed the
+  reference; all but BULK CO ended nearer it. Most of the gain is on segments both builds share (BULK BT +22.1 km there against
+  +21.4 km scored: `segment_diff.csv` counts the raw flag, lake connection lines included, and the score leaves them
+  out), where it can come from a rule or from rearing clusters that re-broken lines join or cut
+  (#324). It is consistent with #326's order-1 rearing exception (`rear_stream_order_bypass`, BT, CH, CO, ST and WCT
+  in this bundle), which was not isolated here.
+- **Spawning fell toward the reference** in ADMS BT (−4.5 km), ELKR BT (−8.2) and ELKR WCT (−9.1). It changed on
+  0 km of shared segments, so every spawning move is on lines the two builds break differently. ELKR WCT rearing fell
+  15.5 km, also toward the reference.
+- **Accessible km fell up to 2.1 km a pair,** every pair still within 0.11 % of the reference.
+- **Eight pairs moved away from the reference**, counted in km of difference: BULK CO rearing (3.3 to 8.5 km) and seven
+  by 0.2 to 2.1 km, the most ELKR WCT accessible (1.8 to 3.9 km).
+
+A bracket is the difference of two totals each rounded to 0.1 km, so it can read 0.1 for a move of 0.01 km
+(ADMS BT accessible moved 0.064 km on shared segments). 95,106 of the new build's 129,329 segments in the four groups
+are shared with the old (`moves.log`). `expected.txt`, written before scoring, was wrong on three of its four bounds:
+accessible km moved more than 0.1, spawning more than 0.5, and BULK CO rearing moved away from the reference. Its
+bounds leaned on #326's measurement on other groups. Only the pass count held.
+
+**`default` at the same code** (#440): KETL, KOTL, BULK and MURT built under `default` match their last builds row for row in every stream, barrier, access, mapping-code and habitat table (`data-raw/logs/test_builds_440/identical.csv`). Against the last provincial build, their moves line up with the changes since 0.68.0 (#326, #396, #432, #402), not checked row by row (`data-raw/logs/test_builds_440/README.md`).
 
 ## What moved at v0.68.0 (2026-10-23, #361)
 
@@ -108,19 +134,16 @@ species with no barrier in a group, and every one of the 86 rows has barriers. I
 
 ## What is not yet explained
 
-Against `bcfp_divergence_taxonomy.yml` at its 2 % tolerance, five pairs are UNEXPLAINED and one is
+Against `bcfp_divergence_taxonomy.yml` at its 2 % tolerance, two pairs are UNEXPLAINED at v0.78.0 and one is
 class C (BULK SK spawning, `sk-lake-clustering-divergence`):
 
 | Pair | link vs bcfishpass |
 |---|---|
 | BULK SK rearing | +7.39 % |
-| BABL ST rearing | −2.05 % |
-| BABL CH rearing | −2.44 % |
-| ELKR WCT spawning | +3.33 % |
-| ELKR WCT rearing | +2.50 % |
+| ELKR WCT spawning | +2.72 % |
 
-The same five as on 2026-10-17. Where streams break is the first suspect for the 2–3 % rows
-(`bcfp_segmentation_parity.md`, #324), not measured on these pairs.
+BABL ST rearing, BABL CH rearing and ELKR WCT rearing, UNEXPLAINED at v0.68.0, are within 2 % now. Where streams
+break is the first suspect for ELKR WCT spawning (`bcfp_segmentation_parity.md`, #324), not measured on this pair.
 
 ## What these four groups cannot show
 
@@ -137,15 +160,19 @@ search of the `bcfishpass` config (`data-raw/logs/parity_0.66.6/turn_bt.txt`).
 Rebuild the closure into a scratch schema, verify, score, compare:
 
 ```bash
+psql ... -c "CREATE SCHEMA <scratch>"   # --pretest-note records into it, so it must exist
 bash data-raw/study_area_run.sh --focal=ADMS,BULK,BABL,ELKR --config=bcfishpass \
-  --schema=<scratch> --run-label=<label> --recompute-jobs=8
+  --schema=<scratch> --run-label=<label> --recompute-jobs=8 --cy-workspaces= \
+  --pretest-note="<why: a parity scratch build, not a run the gate clears>" \
+  --preflight-note="<why: primitives held at the load the previous build read>"
 psql ... -v schema=<scratch> -v run_uid=<uid> -v expected_n=17 -f data-raw/study_area_verify.sql
 LNK_LOAD=loadall LNK_SCHEMA=<scratch> LNK_CONFIG=bcfishpass LNK_PARITY_OUT=<dir>/parity_annotated.csv \
   Rscript data-raw/parity_crosssection.R ADMS BULK BABL ELKR
 ```
 
 Keep the reference fixed across the two runs being compared (do not pass `--refresh-primitives`),
-or a move cannot be put down to code. `moves.R` compares two builds of the closure, so the previous build's schema is kept until the next re-score (today `fresh_parity361`, and `fresh_parity362` before it). Then revise
+or a move cannot be put down to code. Both notes are needed for that: a new scratch schema has no gate record,
+and a held primitive load is past the 7-day vintage gate within a week. `moves.R` compares two builds of the closure, so the previous build's schema is kept until the next re-score (today `fresh_parity441`, and `fresh_parity361` before it). Then revise
 this file: the table, what moved, the run line under the heading.
 
 ## History
@@ -154,7 +181,8 @@ Earlier results, kept as written and cited by path elsewhere:
 
 | File | What it scored |
 |---|---|
-| `data-raw/logs/parity_0.68.0/` | 2026-10-23, link `1d00c04c` (0.68.0), the four groups: 48/50 (the table above) |
+| `data-raw/logs/parity_0.78.0/` | 2026-11-02, link `34c4c598` (0.78.0), the four groups: 48/50 (the table above) |
+| `data-raw/logs/parity_0.68.0/` | 2026-10-23, link `1d00c04c` (0.68.0), the four groups: 48/50 |
 | `data-raw/logs/parity_0.66.6/` | 2026-10-20, link `6e5cc837` (0.66.6), the four groups: 48/50 |
 | `data-raw/logs/provincial_246/` | 2026-10-17, link `a17e9177`, the four groups: 48/50 (the baseline above) |
 | [`parity_accessible_habitat_2026_07_03.md`](parity_accessible_habitat_2026_07_03.md) | 2026-07-03, accessible + spawning + rearing on 11 groups after #221 / #223 |

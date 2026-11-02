@@ -1,0 +1,18 @@
+[1] 0
+[1] 0
+[wsg_recompute_one] KETL prologue 0.91 s
+NOTICE:  table "zz_lnk_access_prior_ketl" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_ketl" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] KETL habitat gate: 0 segments (0.000 km) settled
+[wsg_recompute_one] KETL recomputed in 0.21 min (persist=zz440_default)

@@ -45,6 +45,13 @@ Round 1's fix let a bundle hold some own builds while it borrows; round 2 found 
 | `pretest_run.sh:284`, `pretest_verdict.R` | record only; `IF NOT EXISTS` | writes `log_pretest`, reads nothing else of the schema |
 | `pretest_check.R:49-66` | own, record, borrowed | as the pick |
 
+## Measured at Phase 3 (2026-11-02, m4 and m1)
+
+- **`default` at 0.78.0 equals its fresh 0.52.0 builds** (`zz432_post`) in KETL, KOTL, BULK and MURT, in every measure `compare.R` reads.
+- **`bcfishpass` parity 48/50** at 0.78.0 on m1 (`fresh_parity441`), the reference unmoved; 40 of 50 pairs moved, by code (#326 above all).
+- **m1's GitHub token is refused (HTTP 401),** from its git credential store, so `pak` cannot install there; `remotes::install_github()` with no token worked. `--auto-install` uses pak, so the provincial run's worker prep on m1 fails until the token is rotated (operator).
+- **A non-interactive ssh to m1 lacks `pg_isready` and `psql`;** run m1 commands under `bash -lc`, with `PGPASSWORD` set.
+
 ## Plan review
 
 `review-plan.md`: one Plan agent, no blocker, four fixes folded into `task_plan.md`.

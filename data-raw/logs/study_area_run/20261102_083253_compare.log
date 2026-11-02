@@ -1,0 +1,15 @@
+[study_area_compare] 86 rows across 17/17 WSGs -> /Users/airvine/Projects/repo/link-441/data-raw/logs/study_area_run/20261102_083253_compare.csv
+# A tibble: 86 × 7
+   wsg   species total_segs match_pct n_diffs top_pattern      top_pattern_count
+ * <chr> <chr>        <int>     <dbl>   <int> <chr>                        <int>
+ 1 ADMS  BT           15782     100.0       5 " | ACCESS;NONE…                 2
+ 2 ADMS  CH           15782      99.9      13 "ACCESS;NONE | …                 6
+ 3 ADMS  CO           15782      99.8      27 "ACCESS;NONE | …                16
+ 4 ADMS  SK           15782      99.2     128 "ACCESS;NONE | …                64
+ 5 BABL  BT           32241      99.8      65 "ACCESS;MODELLE…                23
+ 6 BABL  CH           32241      99.8      60 "ACCESS;NONE | …                15
+ 7 BABL  CO           32241      99.8      56 "REAR;NONE | AC…                11
+ 8 BABL  SK           32241      99.0     312 "ACCESS;NONE | …               199
+ 9 BABL  ST           32241      99.7      99 "ACCESS;NONE | …                29
+10 BABR  BT           28562      99.8      59 "SPAWN;NONE | R…                14
+# ℹ 76 more rows
