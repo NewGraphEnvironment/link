@@ -22,7 +22,7 @@
 
 ## What moves
 
-**Code 2 grows by a segment's length above each record.** `access_<sp>` 2 means the species is recorded upstream, and a segment reads 2 when a record sits above its start. With no cut at the record, more of the stream below it reads 2: BULK coho 628 to 681 km, COTR bull trout 663 to 698 km, other species and groups 0 to 4 %. Accessible km, codes 1 and 2 together, do not move.
+**Code 2 grows by a segment's length above each record.** `access_<sp>` 2 means the species is recorded upstream, and a segment reads 2 when a record sits above its start. With no cut at the record, more of the stream below it reads 2: 0 to 8.5 % per group and species, the most BULK coho (628 to 681 km) and COTR bull trout (663 to 698 km). Accessible km, codes 1 and 2 together, do not move.
 
 **Rearing rises, because coarser segments disconnect less.** The rearing predicate passes about the same km on both networks, and the connectivity pass, which drops rearing with no spawning within 10 km, drops less on the minimal network:
 
@@ -34,7 +34,7 @@
 | MORK | CH | 2,468 | 2,528 | 201 | 143 |
 | SETN | CH | 1,012 | 1,018 | 43 | 38 |
 
-So **a rearing threshold tuned on the minimal network is not tuned on the full network's rearing.** It is tuned on the same gradient a full segment would read from its parent, which is what the parent-attribute table is for. Spawning moves by under 1 % (`connectivity.csv`).
+So **a rearing threshold tuned on the minimal network is not tuned on the full network's rearing.** It is tuned on the same gradient a full segment would read from its parent, which is what the parent-attribute table is for. Spawning moves by under 1 %, except MORK sockeye, 28.2 to 28.6 km (`connectivity.csv`).
 
 **The user habitat overlay applies to fewer km.** It keeps a flag only where a segment lies wholly inside a range, and no cut falls at a range's end. Under-applied km, of the km the ranges cover: BULK 53 of 291 (11 under `default`), MORK 22 of 454 (0), SETN 19 of 333 (0), COTR 8 of 198 (0) (`overlay.csv`).
 
@@ -46,21 +46,23 @@ So **a rearing threshold tuned on the minimal network is not tuned on the full n
 
 These fields should be flagged or dropped on the minimal network (`crossing_fields.csv`; the proof README says what each means).
 
-**A record sits on a longer segment.** Under knowledge's placement rule, records whose segment starts at the record fall from 2,160 to 426 in BULK, and the segment holding a record is 1.1 to 1.6 times as long at the median (`placement.csv`).
+**A record sits on a longer segment.** Under knowledge's placement rule, records whose segment starts at the record fall from 2,160 to 426 in BULK (from about half of each group's records to a sixth or less). Within each branch of the rule, the median segment is 1.1 to 1.7 times as long (`placement.csv`).
 
 ## How far fish records reach the minimal cuts
 
-The minimal network is not independent of the fish records, because barriers are reduced after observation lifts. `lifts.R` rebuilds each group's barrier overrides with no fish records, keeping the known-habitat and control lifts. It then re-runs the pipeline's own minimal prep and break on a copy of the working tables. Two controls passed in every group: the build's own overrides reproduce the build exactly, and a species with no observation lift keeps its cuts.
+The minimal network is not independent of the fish records, because barriers are reduced after observation lifts. `lifts.R` rebuilds each group's barrier overrides with no fish records, keeping the known-habitat and control lifts. It then re-runs the pipeline's own minimal prep and break on a copy of the working tables. Two controls passed in every group: the build's own overrides reproduce the build exactly, and every segment start that moves sits within 1 m of a position that moved. The second fires when told no position moved (29 starts in COTR).
 
-| group | observation lifts | cuts removed by lifts | cuts added above a lift | km of segment changed | of km | records on a changed segment | median gradient shift there |
-|---|---|---|---|---|---|---|---|
-| BULK | 200 | 7 | 79 | 79.3 | 14,642 | 11 of 1,478 | 0.021 |
-| SETN | 151 | 6 | 601 | 310.5 | 26,020 | 3 of 1,764 | 0.073 |
-| MORK | 18 | 1 | 3 | 0.7 | 17,888 | 0 of 315 | |
-| COTR | 13 | 1 | 30 | 38.1 | 8,268 | 2 of 222 | 0.007 |
+A lift moves the minimal barrier positions, and a moved position is a cut only where it does not fall on an FWA segment's start. So the table gives both:
 
-- **Only bull trout has observation lifts in these groups.** `default` lifts a natural barrier for BT on one record and for salmon and steelhead on five since 1990, and no salmon or steelhead barrier was lifted by records in these groups.
-- **A lift adds more cuts than it removes.** With the lowest barrier on a path lifted, the barriers above it become that species' downstream-most positions. SETN's 6 removed cuts gave 601 new ones, 592 of them on lines with no cut before. That is why the changed km is far larger than the count of removed cuts.
+| group | observation lifts | positions removed | positions added | segment starts removed | segment starts added | km of segment changed | of km | records on a changed segment | median gradient shift there |
+|---|---|---|---|---|---|---|---|---|---|
+| BULK | 200 | 7 | 79 | 6 | 71 | 79.3 | 14,642 | 11 of 1,478 | 0.021 |
+| SETN | 151 | 6 | 601 | 5 | 340 | 310.5 | 26,020 | 3 of 1,764 | 0.073 |
+| MORK | 18 | 1 | 3 | 0 | 2 | 0.7 | 17,888 | 0 of 315 | |
+| COTR | 13 | 1 | 30 | 1 | 29 | 38.1 | 8,268 | 2 of 222 | 0.007 |
+
+- **Only bull trout's observation lifts move positions here.** `default` lifts a natural barrier for BT on one record and for salmon and steelhead on five since 1990. The salmon and steelhead overrides these groups hold are known-habitat and control lifts, which the counterfactual keeps; RB's belong to a paused species, which cuts nothing.
+- **A lift adds more cuts than it removes.** With the lowest barrier on a path lifted, the barriers above it become that species' downstream-most positions. In SETN, 6 positions removed gave 601 new ones, 592 of them on lines with no position before, and segment starts rose by 340: the other positions fall on an FWA segment's start. That is why the changed km is far larger than the count of removed positions.
 - **Few records sit on a changed segment** (0 to 0.9 %), the scale #433 found for pausing a species (`research/species_paused.md`: 33 of KOTL's 1,473). The issue's framing of segments that know nothing about where fish were caught holds to that degree, with lifts held fixed. Where a tuning holds records out, as knowledge#131's leave-one-out does, a held-out BT record can still move a cut below it.
 
 Raw numbers: `lifts.csv` (per species and per group), `lifts_obs.csv`.
