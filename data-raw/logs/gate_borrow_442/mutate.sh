@@ -6,13 +6,13 @@ set -uo pipefail
 REPO="$(git rev-parse --show-toplevel)"; FRESH_REPO="${FRESH_REPO:-$REPO/../fresh}"; FRESH_REPO="$(cd "$FRESH_REPO" && pwd)"
 T="$(mktemp -d "${TMPDIR:-/tmp}/mut442.XXXXXX")"; WT="$T/wt"; git -C "$REPO" worktree add -q --detach "$WT" HEAD
 export PGPASSWORD=postgres; q() { psql -h localhost -U postgres -d fwapg -X -q -v ON_ERROR_STOP=1 -Atc "$1"; }
-cleanup() { git -C "$REPO" worktree remove --force "$WT"; q "DROP SCHEMA IF EXISTS zz442_dirty CASCADE; DROP SCHEMA IF EXISTS zz442_rec CASCADE"; }
+cleanup() { git -C "$REPO" worktree remove --force "$WT"; q "DROP SCHEMA IF EXISTS zz442_dirty CASCADE; DROP SCHEMA IF EXISTS zz442_rec CASCADE; DROP SCHEMA IF EXISTS zz442_own CASCADE"; }
 trap cleanup EXIT
 FRESH_SHA=$(Rscript -e 'cat(packageDescription("fresh")$RemoteSha)')
 q "DROP SCHEMA IF EXISTS zz442_dirty CASCADE; CREATE SCHEMA zz442_dirty;
    CREATE TABLE zz442_dirty.log AS SELECT * FROM fresh_default_history.log;
    UPDATE zz442_dirty.log SET link_dirty = NULL WHERE watershed_group_code = 'ADMS'"
-pick() { (cd "$WT" && /opt/homebrew/bin/bash data-raw/pretest_run.sh --config=default_minimal --schema=zz442_none \
+pick() { (cd "$WT" && /opt/homebrew/bin/bash data-raw/pretest_run.sh --config=default_minimal --schema="${OWN:-zz442_none}" \
     --history-schema="$1" --history-config=default --pick-only --fresh-repo="$FRESH_REPO" --out="$T/pick" ${2:+--since="$2"} 2>&1) | grep -E '^REFUSED|^WARN|^pick only|pick exited' | sed "s#$T/##" | cut -c1-150; }
 check() { # the launch check, on a pass record that borrowed the 4-group history
   q "DROP SCHEMA IF EXISTS zz442_rec CASCADE; CREATE SCHEMA zz442_rec;
@@ -21,6 +21,8 @@ check() { # the launch check, on a pass record that borrowed the 4-group history
        verdict text, notes text, history_schema text, history_config text);
      INSERT INTO zz442_rec.log_pretest (config_name, link_sha, link_dirty, fresh_sha, since_sha, until_sha, verdict, history_schema, history_config)
        VALUES ('default_minimal', '$(git -C "$WT" rev-parse HEAD)', false, '$FRESH_SHA', '$(git -C "$WT" rev-parse HEAD)', '$(git -C "$WT" rev-parse HEAD)', 'pass', 'fresh_default', 'default')"
+  [ -z "${1:-}" ] || q "CREATE TABLE zz442_rec.log AS SELECT * FROM fresh_default_history.log WHERE watershed_group_code IN ('ADMS', 'BULK');
+     UPDATE zz442_rec.log SET config_name = 'default_minimal'"
   (cd "$WT" && Rscript data-raw/pretest_check.R --config=default_minimal --schema=zz442_rec --head="$(git rev-parse HEAD)" --fresh-sha="$FRESH_SHA" 2>&1; echo "exit $?") | cut -c1-150; }
 mutate() { # commit, since pretest_check.R refuses a dirty checkout first
   python3 - "$WT/$1" "$2" <<'PY'
@@ -35,3 +37,18 @@ echo; echo "## a history no range can cover, in --pick-only"; echo "as committed
 mutate data-raw/pretest_pick.R 'if (nzchar(bad_history)) refuse(bad_history, "; a gate on it cannot clear a run")'; echo "guard removed:"; pick zz442_dirty 1d00c04c; restore
 echo; echo "## short history in the launch check"; echo "as committed:"; check
 mutate data-raw/pretest_check.R 'if (nzchar(short)) stop("the gate borrowed a short history: ", short)'; echo "guard removed:"; check; restore
+
+echo; echo "## one build of its own does not end the guard (two rows under default_minimal)"
+q "DROP SCHEMA IF EXISTS zz442_own CASCADE; CREATE SCHEMA zz442_own;
+   CREATE TABLE zz442_own.log AS SELECT * FROM fresh_default_history.log WHERE watershed_group_code IN ('ADMS', 'BULK');
+   UPDATE zz442_own.log SET config_name = 'default_minimal'"
+ownpick() { (cd "$WT" && /opt/homebrew/bin/bash data-raw/pretest_run.sh --config=default_minimal --schema=zz442_own --pick-only --fresh-repo="$FRESH_REPO" --out="$T/pick" 2>&1) | grep -E '^REFUSED|^pick only|^  pick ' | sed "s#$T/##" | cut -c1-150; }
+echo "pick with no flags, as committed:"; ownpick
+mutate data-raw/pretest.R '    if (length(chain) > 1L && !own_complete) {
+      stop(schema, ".log does not cover the groups ", config, " models; borrow from a config it extends: ",
+           "--history-schema=<schema> --history-config=", chain[2], call. = FALSE)
+    }
+'; echo "guard removed:"; ownpick; restore
+echo "pick borrowing the 4-group history, as committed:"; OWN=zz442_own pick fresh_default
+echo "launch check with two builds of its own, on a record that borrowed the 4-group history, as committed:"; check own
+mutate data-raw/pretest.R '  if (own_complete || length(chain) == 1L) return(list(schema = schema, config = config))'; echo "own builds taken as the history (the old rule):"; check own; restore

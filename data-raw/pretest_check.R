@@ -47,13 +47,18 @@ out <- tryCatch({
     records <- DBI::dbGetQuery(conn, sprintf("SELECT * FROM %s.log_pretest", schema))
     chain <- pretest_config_chain(file.path(repo, "inst/extdata/configs"), config)
     own <- if (reg("log")) DBI::dbGetQuery(conn, pretest_history_sql(schema, config)) else NULL
-    # A bundle with no builds yet is held to the history its gate borrowed.
-    src <- pretest_record_history(records, schema, config, NROW(own), chain)
-    if (is.null(src)) stop(schema, " has no builds under ", config, " and its gate borrowed no history to hold it to")
+    modelable <- pretest_modelable_groups(repo, config)
+    # A bundle whose own builds do not yet cover it is held to the history its gate borrowed.
+    src <- pretest_record_history(records, schema, config, pretest_history_complete(own$wsg, modelable), chain)
+    if (is.null(src)) {
+      stop(schema, " does not cover the groups ", config, " models, and its gate borrowed no history to hold it to")
+    }
     hist <- DBI::dbGetQuery(conn, pretest_history_sql(src$schema, src$config))
-    short <- if (identical(src$config, config)) "" else
-      pretest_history_short(hist$wsg, pretest_modelable_groups(repo, config), paste0(src$schema, ".log"))
+    borrowed <- !identical(src$config, config)
+    short <- if (borrowed) pretest_history_short(hist$wsg, modelable, paste0(src$schema, ".log")) else ""
     if (nzchar(short)) stop("the gate borrowed a short history: ", short)
+    # Beside a borrowed history, the bundle's own builds so far must be in the range too.
+    if (borrowed) hist <- rbind(hist[c("link_sha", "link_dirty")], own[c("link_sha", "link_dirty")])
     map <- pretest_map_read(file.path(script_dir, "pretest_inputs.csv"))
     r <- pretest_record_check(records, config, head_sha, fresh_sha, hist$link_sha,
                               hist$link_dirty, repo, map, chain,

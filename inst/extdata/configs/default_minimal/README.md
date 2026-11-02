@@ -30,4 +30,4 @@ bash data-raw/study_area_run.sh --config=default_minimal --schema=fresh_default_
 LNK_SCHEMA=fresh_default_minimal Rscript data-raw/wsg_run_one.R ADMS default_minimal
 ```
 
-`study_area_run.sh` needs `--schema=` for this bundle, as for every bundle but `bcfishpass`. Its pre-flight refuses a schema with no passing gate record. Until this bundle has builds of its own, the gate borrows `default`'s history with `--history-schema` and `--history-config`, and that history must hold every group the bundle models (RUNBOOK §8d, "The pre-run gate"). Mechanics of the token: RUNBOOK §6b, "Output vocabulary".
+`study_area_run.sh` needs `--schema=` for this bundle, as for every bundle but `bcfishpass`. Its pre-flight refuses a schema with no passing gate record. Until this bundle's own builds cover every group it models, the gate borrows `default`'s history with `--history-schema` and `--history-config`, and that history must hold every group too (RUNBOOK §8d, "The pre-run gate"). Mechanics of the token: RUNBOOK §6b, "Output vocabulary".

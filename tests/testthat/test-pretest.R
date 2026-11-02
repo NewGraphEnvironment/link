@@ -218,40 +218,44 @@ test_that("the config chain follows extends", {
   expect_error(e$pretest_config_chain(d, "nope"), "no config bundle")
 })
 
-test_that("a bundle with no builds borrows history only from a config it extends", {
+test_that("a bundle borrows history only from a config it extends, until its own builds cover it", {
   e <- pt_env()
   chain <- c("default_minimal", "default")
-  src <- function(hs = "", hc = "", own = 0L, config = "default_minimal") {
-    e$pretest_history_source("fresh_default_minimal", config, hs, hc, chain, own)
+  src <- function(hs = "", hc = "", own = FALSE, ch = chain) {
+    e$pretest_history_source("fresh_default_minimal", ch[1], hs, hc, ch, own)
   }
-  # No flags: its own schema and config, as before.
-  expect_identical(src(), list(schema = "fresh_default_minimal", config = "default_minimal",
-                               borrowed = FALSE))
   expect_identical(src("fresh_default", "default"),
                    list(schema = "fresh_default", config = "default", borrowed = TRUE))
+  # Its own builds, once they cover it.
+  expect_identical(src(own = TRUE), list(schema = "fresh_default_minimal", config = "default_minimal",
+                                         borrowed = FALSE))
+  expect_error(src("fresh_default", "default", own = TRUE), "covers every group")
+  # Short of that, a bundle with a parent is told how to borrow; one with no parent keeps its own.
+  expect_error(src(), "--history-config=default", fixed = TRUE)
+  expect_identical(src(ch = "default"), list(schema = "fresh_default_minimal", config = "default",
+                                             borrowed = FALSE))
   expect_error(src("fresh_default"), "go together")
   expect_error(src("", "default"), "go together")
   expect_error(src("fresh_default; drop", "default"), "bad --history-schema")
   expect_error(src("fresh", "bcfishpass"), "not a config default_minimal extends")
   expect_error(src("fresh_default", "default_minimal"), "not a config default_minimal extends")
-  # Once it has builds of its own, a gate must cover them.
-  expect_error(src("fresh_default", "default", own = 3L), "already has 3 finished group")
 })
 
-test_that("a record is held to the schema's own builds, else what it borrowed", {
+test_that("a record is held to the schema's own builds when they stand, else what it borrowed", {
   e <- pt_env()
   chain <- c("default_minimal", "default")
   rec <- function(verdict = "pass", hs = "fresh_default", hc = "default", at = 2) {
     data.frame(config_name = "default_minimal", verdict = verdict, run_at = at,
                history_schema = hs, history_config = hc, stringsAsFactors = FALSE)
   }
-  held <- function(records, own = 0L) {
-    e$pretest_record_history(records, "fresh_default_minimal", "default_minimal", own, chain)
+  held <- function(records, own = FALSE, ch = chain) {
+    e$pretest_record_history(records, "fresh_default_minimal", "default_minimal", own, ch)
   }
   expect_identical(held(rec()), list(schema = "fresh_default", config = "default"))
-  # Its own builds win, whatever the record borrowed.
-  expect_identical(held(rec(), own = 2L),
-                   list(schema = "fresh_default_minimal", config = "default_minimal"))
+  own <- list(schema = "fresh_default_minimal", config = "default_minimal")
+  # Builds that cover it win, whatever the record borrowed; a bundle with no parent has only its own.
+  expect_identical(held(rec(), own = TRUE), own)
+  expect_identical(held(rec(), ch = "default_minimal"), own)
   # The newest pass or fail decides; an override row says nothing about history.
   newest <- rbind(rec(at = 1), rec(hs = NA, hc = NA, at = 2))
   expect_null(held(newest))
@@ -261,6 +265,15 @@ test_that("a record is held to the schema's own builds, else what it borrowed", 
   expect_null(held(rec()[, c("config_name", "verdict", "run_at")]))
   expect_null(held(rec(hc = "bcfishpass")))
   expect_null(held(rec()[0, ]))
+})
+
+test_that("a history is complete only when it holds every group, and holds some", {
+  e <- pt_env()
+  expect_true(e$pretest_history_complete(c("A", "B"), c("A", "B")))
+  expect_true(e$pretest_history_complete(c("A", "B", "C"), c("A", "B")))
+  expect_false(e$pretest_history_complete("A", c("A", "B")))
+  expect_false(e$pretest_history_complete(NULL, c("A", "B")))
+  expect_false(e$pretest_history_complete(character(0), character(0)))
 })
 
 test_that("a borrowed history short of the groups the config models is refused", {

@@ -13,7 +13,7 @@ Experimental package — breaking all the time and loving the learning curve. St
 
 ## Status (2026-11-02, later) — the pre-run gate can borrow a parent config's history; fresh 0.52.0 pinned (#442, #441's first PR)
 
-**`pretest_run.sh --history-schema= --history-config=` gates a bundle with no builds of its own, from a config it extends, and refuses a history short of the groups the bundle models, in the pick and at launch (0.78.0).** `data-raw/pretest_history_load.sh` copies a host's `log` into a schema of its own. Mechanics: RUNBOOK §8d, "The pre-run gate". Evidence: `data-raw/logs/gate_borrow_442/`, `data-raw/logs/minimal_run_441/`.
+**`pretest_run.sh --history-schema= --history-config=` gates a bundle whose own builds do not yet cover it, from a config it extends, and refuses a history short of the groups the bundle models, in the pick and at launch (0.78.0).** `data-raw/pretest_history_load.sh` copies a host's `log` into a schema of its own. Mechanics: RUNBOOK §8d, "The pre-run gate". Evidence: `data-raw/logs/gate_borrow_442/`, `data-raw/logs/minimal_run_441/`.
 
 **Owed:** #441's remaining phases, in `planning/active/task_plan.md`.
 

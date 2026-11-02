@@ -352,13 +352,18 @@ pretest_history_sql <- function(schema, config) {
       ORDER BY watershed_group_code, date_start DESC", schema, config)
 }
 
-# Where a bundle with no builds of its own borrows history from (--history-schema,
-# --history-config). Only from a config on its own extends chain: the groups it can
-# model and their minutes then stand for it. Only while it has no history of its
-# own: once it does, its own builds are what a gate must cover. Returns
-# list(schema, config, borrowed) or stops with the reason.
-pretest_history_source <- function(schema, config, history_schema, history_config, chain, own_rows) {
+# Where a bundle's history comes from. A bundle that extends another borrows
+# (--history-schema, --history-config) from a config on its chain until its own builds
+# cover every group it models: only then do they stand for what the gate must reach, so
+# one build of its own, or a first run stopped partway, does not end the borrowing. A
+# bundle with no parent has nothing to borrow and keeps its own history, whole or not.
+# Returns list(schema, config, borrowed) or stops with the reason.
+pretest_history_source <- function(schema, config, history_schema, history_config, chain, own_complete) {
   if (!nzchar(history_schema) && !nzchar(history_config)) {
+    if (length(chain) > 1L && !own_complete) {
+      stop(schema, ".log does not cover the groups ", config, " models; borrow from a config it extends: ",
+           "--history-schema=<schema> --history-config=", chain[2], call. = FALSE)
+    }
     return(list(schema = schema, config = config, borrowed = FALSE))
   }
   if (!nzchar(history_schema) || !nzchar(history_config)) {
@@ -371,19 +376,19 @@ pretest_history_source <- function(schema, config, history_schema, history_confi
     stop("--history-config ", history_config, " is not a config ", config, " extends (chain: ",
          paste(chain, collapse = " < "), ")", call. = FALSE)
   }
-  if (own_rows > 0L) {
-    stop(schema, ".log already has ", own_rows, " finished group(s) under ", config,
-         ": a gate must cover them, so leave out --history-schema and --history-config",
+  if (own_complete) {
+    stop(schema, ".log covers every group ", config,
+         " models: a gate must cover those builds, so leave out --history-schema and --history-config",
          call. = FALSE)
   }
   list(schema = history_schema, config = history_config, borrowed = TRUE)
 }
 
-# The history a record is held to. A schema's own builds when it has any.
-# Otherwise what the newest pass or fail record for the config borrowed, or NULL
+# The history a record is held to, by the rule above: the schema's own builds when they
+# stand, otherwise what the newest pass or fail record for the config borrowed, or NULL
 # when it borrowed nothing. A record older than the borrow columns reads as none.
-pretest_record_history <- function(records, schema, config, own_rows, chain) {
-  if (own_rows > 0L) return(list(schema = schema, config = config))
+pretest_record_history <- function(records, schema, config, own_complete, chain) {
+  if (own_complete || length(chain) == 1L) return(list(schema = schema, config = config))
   r <- records[records$config_name == config & records$verdict %in% c("pass", "fail"), , drop = FALSE]
   if (!nrow(r) || is.null(r$history_schema) || is.null(r$history_config)) return(NULL)
   rec <- r[order(r$run_at, decreasing = TRUE), , drop = FALSE][1, ]
@@ -408,6 +413,10 @@ pretest_history_uncoverable <- function(history_shas, history_dirty) {
 # Why a borrowed history cannot stand for a bundle ("" when it can). The gate picks
 # only groups the history holds, so a history short of what the bundle models hides
 # the extreme of an input: on 2026-11-01 a 4-group history picked exactly its 4.
+pretest_history_complete <- function(wsgs, modelable) {
+  length(wsgs) > 0L && !length(setdiff(modelable, wsgs))
+}
+
 pretest_history_short <- function(history_wsgs, modelable, source_name) {
   miss <- setdiff(modelable, history_wsgs)
   if (!length(miss)) return("")

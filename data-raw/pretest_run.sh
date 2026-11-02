@@ -12,10 +12,10 @@
 #     [--out=<dir>] [--pick-only] [--only=<WSG>,...] [--allow-busy] \
 #     [--history-schema=<schema> --history-config=<bundle>]
 #
-# --history-schema and --history-config are for a bundle with no builds of its
-# own (default_minimal before its first run): the groups, the minutes, the range
-# and the scratch tables come from a config it extends, and <schema> is created
-# only to hold the record.
+# --history-schema and --history-config are for a bundle whose own builds do not
+# yet cover every group it models (default_minimal before its first full run): the
+# groups, the minutes, the range and the scratch tables come from a config it
+# extends, and <schema> may exist only to hold the record.
 #
 # --only=<WSG>,... models only those of the picks (a smoke test of the
 # machinery, or a re-check of one group); its record is never a pass.

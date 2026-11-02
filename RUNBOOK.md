@@ -1944,9 +1944,9 @@ nothing). The check applies to every launch, dispatcher-only included;
 Evidence: `data-raw/logs/pretest_372/` (its README indexes it).
 
 
-**A bundle with no builds of its own borrows history (#442).** `default_minimal`
-before its first run has no groups, minutes or range to gate on, so it reads a
-config it extends:
+**A bundle without a full history of its own borrows one (#442).** `default_minimal`
+before its first full run has no groups, minutes or range that stand for it, so it
+reads a config it extends:
 
 ```bash
 bash data-raw/pretest_history_load.sh --host=<ssh target> --from=fresh_default --to=fresh_default_history
@@ -1954,8 +1954,11 @@ bash data-raw/pretest_run.sh --config=default_minimal --schema=fresh_default_min
   --history-schema=fresh_default_history --history-config=default --minutes-exclude=KTSU,OKAN
 ```
 
-- **Only from a config on its `extends` chain, and only while it has no builds.**
-  Once it has any, a gate must cover those, and the flags are refused.
+- **Only from a config on its `extends` chain, until its own builds cover every group
+  it models.** One build of its own, or a first run stopped partway, does not end the
+  borrowing, and those builds must be in the range too. Once they cover it, a gate must
+  cover them and the flags are refused. Without the flags, such a bundle is refused. A
+  bundle with no parent keeps its own history, whole or not.
 - **The record names what it borrowed,** so the launch check holds it to the same
   history. It also keeps naming a schema that must still exist on the dispatcher.
 - **The history must hold every group the config models** (`lnk_wsg_resolve()`),
