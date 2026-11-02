@@ -98,7 +98,7 @@ Phases 1 to 5 about 7 to 9 hours (PR 1 about 1.5 h with CI; proof builds about 2
 - [x] **m4:** `default` on MURT, KOTL, BULK and KETL into `zz440_default`, build and recompute, compared with `zz432_post` (code) and m1's `fresh_default` (last provincial). Segments, barrier rows, accessible km, habitat per species.
 - [x] **m1:** fresh 0.52.0 first (`worker_prep.sh`'s `install-fresh`), then the `bcfishpass` re-score from a worktree there (ADMS, BULK, BABL, ELKR and closure) into `fresh_parity441`, dispatcher only, against `fresh_parity361`, with `moves.R`. Logs copied back and redacted.
 - [x] `research/bcfishpass_parity.md` revised in place; the `default` comparison beside it. Drop `fresh_parity362` as the keep-the-previous rule says.
-- [ ] `/code-check branch`, PR, merge, `Fixes #440`.
+- [x] `/code-check branch` (three rounds, ended on round 3's enumeration), PR stacked on PR 2. Merge is the operator's. `Fixes #440`.
 
 ## Phase 4: PR 4, #439's hosts and primitives
 
