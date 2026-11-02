@@ -12,6 +12,8 @@
 
 - Phase 0 done, then Phase 1's gate issue (#442), the loader and the guards. `/code-check branch` and PR to follow.
 - The operator's resume keeps the merge: this run stops short of `/gh-pr-merge` at each PR.
+- Code-check over the branch, three rounds. Round 1: one build of the bundle's own ended the short-history guard; the launch refusal named a remedy that fails. Round 2, inside round 1's fix: two lines still assumed a borrowing bundle has no own rows, two judgements exited as "could not run", no route for a group added after both histories. Round 3, same family: a bad own build read as a bad borrowed history. Ended on an enumeration (`findings.md`, "Code-check enumeration"; round 3's message table; `data-raw/logs/gate_borrow_442/messages.txt`).
+- A full suite run showed 16 validator failures after I killed an earlier run mid-file; the file alone passes 470, and a clean full run passes 5,232 with 0 failed.
 
 ### Resume
 

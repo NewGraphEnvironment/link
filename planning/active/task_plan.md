@@ -77,7 +77,7 @@ Phases 1 to 5 about 7 to 9 hours (PR 1 about 1.5 h with CI; proof builds about 2
 - [x] Refuse a borrowed history short of the config's modelable groups, in the pick and in the launch check, and make `--pick-only` refuse, not warn, on a history the launch check would refuse (a row with no `link_sha`, or a dirty or unknown `link_dirty`). Tests, plus a mutation proving each guard fires.
 - [x] Load `fresh_default_history`. `--pick-only` with `--since` from the 241-group history: the range is fresh 0.42.0 to 0.52.0, so an unmapped file refuses here. Fix the map (`data-raw/pretest_inputs.csv`) if it does, and read fresh's NEWS 0.49.0 to 0.52.0.
 - [x] What the branch still owes: RUNBOOK §8d section, NEWS, 0.78.0, the `default_minimal` README and `CLAUDE.md` lines saying the gate cannot run.
-- [ ] Full suite, `/code-check branch`, `/gh-pr-push`, `/gh-pr-merge`. Ticks #439's pin box; `Relates` #439 and #441.
+- [x] Full suite (5,232 expectations, 0 failed), `/code-check branch` (three rounds, ended on an enumeration), `/gh-pr-push`. `/gh-pr-merge` is the operator's (resume message, 2026-11-02). Ticks #439's pin box; `Relates` #439 and #441.
 
 ## Phase 2: PR 2, #415's proof builds and research
 
