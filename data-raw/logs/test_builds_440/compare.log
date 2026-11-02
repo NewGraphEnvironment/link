@@ -1,0 +1,53 @@
+   wsg segments_pre segments_post breaks_pre_only breaks_post_only
+1 BULK        42458         42458               0                0
+2 KETL        41394         41394               0                0
+3 KOTL        38287         38287               0                0
+4 MURT        14403         14403               0                0
+  barriers_pre_only barriers_post_only overrides_pre_only overrides_post_only
+1                 0                  0                  0                   0
+2                 0                  0                  0                   0
+3                 0                  0                  0                   0
+4                 0                  0                  0                   0
+  ko_rb_habitat_rows_post
+1                       0
+2                       0
+3                       0
+4                       0
+    wsg species accessible_km_pre accessible_km_post accessible_km_moved
+1  BULK      BT              7661               7661                   0
+2  BULK      CH              5164               5164                   0
+3  BULK      CM              5164               5164                   0
+4  BULK      CO              5164               5164                   0
+5  BULK      PK              5164               5164                   0
+6  BULK      SK              5164               5164                   0
+7  BULK      ST              6553               6553                   0
+8  KETL     WCT              4194               4194                   0
+9  KOTL      BT              3618               3618                   0
+10 KOTL     WCT              3673               3673                   0
+   spawning_km_pre spawning_km_post spawning_km_moved rearing_km_pre
+1          1853.90          1853.90                 0        3111.21
+2          1266.33          1266.33                 0        2100.97
+3          1861.83          1861.83                 0           0.00
+4          1815.69          1815.69                 0        2451.50
+5          1863.96          1863.96                 0           0.00
+6            81.77            81.77                 0          64.56
+7          1297.58          1297.58                 0        2633.99
+8          1377.10          1377.10                 0        1946.87
+9          1026.97          1026.97                 0        2166.69
+10         1134.76          1134.76                 0        2186.50
+   rearing_km_post rearing_km_moved
+1          3111.21                0
+2          2100.97                0
+3             0.00                0
+4          2451.50                0
+5             0.00                0
+6            64.56                0
+7          2633.99                0
+8          1946.87                0
+9          2166.69                0
+10         2186.50                0
+   wsg n_records n_moved med_abs_dgrad max_abs_dgrad
+1 BULK      1478       0            NA             0
+2 KETL        47       0            NA             0
+3 KOTL      1473       0            NA             0
+4 MURT         0       0            NA            NA

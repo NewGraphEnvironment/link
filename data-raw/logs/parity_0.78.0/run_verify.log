@@ -1,0 +1,115 @@
+
+=== run under verification ===
+         run_uid          |        run_label        | n_attempted | n_completed | n_hosts |   bcfp_reference    | bcfp_pin_source |            started            |           finished            
+--------------------------+-------------------------+-------------+-------------+---------+---------------------+-----------------+-------------------------------+-------------------------------
+ 20261102_083253-52f261f8 | parity-4-bcfishpass-441 |          17 |          17 |       1 | v0.7.15-51-g3bd2824 | env             | 2026-11-02 08:34:19.151555+00 | 2026-11-02 09:20:06.015934+00
+(1 row)
+
+ scope_assertion 
+-----------------
+ expected_n = 17
+(1 row)
+
+
+=== 1. Provenance per host ===
+ host | n_wsg | has_link_sha | has_fresh_sha | has_fwapg_sha | has_bcfishobs_sha | has_bcfp_version | n_dirty | n_dirty_unknown |          first_done          |           last_done           
+------+-------+--------------+---------------+---------------+-------------------+------------------+---------+-----------------+------------------------------+-------------------------------
+ m1   |    17 |           17 |            17 |            17 |                17 |               17 |       0 |               0 | 2026-11-02 08:36:48.06054+00 | 2026-11-02 09:20:06.015934+00
+(1 row)
+
+
+=== 1b. Provenance verdict (per host) ===
+ host | verdict 
+------+---------
+ m1   | OK
+(1 row)
+
+
+=== 1c. Started but never finished (must be empty, or every row superseded) ===
+ host | watershed_group_code | date_start | notes | superseded 
+------+----------------------+------------+-------+------------
+(0 rows)
+
+
+=== 2. The distinct SHAs -- all hosts must agree ===
+                 link_sha                 |                fresh_sha                 |                fwapg_sha                 |              bcfishobs_sha               | bcfp_model_version  
+------------------------------------------+------------------------------------------+------------------------------------------+------------------------------------------+---------------------
+ 34c4c5985e66be609ff2ae3ee729e2d9a5aae3a8 | 245c8d8db60b446f1fedb72340f55faa25f32f24 | 83365223d70525d9e1ae0942c751e2a2b6aa6d4c | 08630cf4ac14b2f17cc4d7058b127f3996f3fd8a | v0.7.15-51-g3bd2824
+(1 row)
+
+
+=== 2b. Inputs every host must agree on (must be one row) ===
+ n_distinct_input_sets | verdict 
+-----------------------+---------
+                     1 | OK
+(1 row)
+
+
+=== 3. Coverage: every WSG of this run has streams rows ===
+ wsg  | n_segments 
+------+------------
+ ADMS |      15787
+ BABL |      32308
+ BABR |      28613
+ BULK |      42989
+ BULL |      20287
+ ELKR |      38245
+ FRCN |      29472
+ HARR |      18003
+ KISP |      30873
+ KLUM |      31731
+ KOTL |      38780
+ LARL |      34770
+ LFRA |      27612
+ LSKE |      37823
+ MSKE |      30004
+ STHM |      20726
+ THOM |      24442
+(17 rows)
+
+
+=== 4. Modelled vs recomputed -- the difference, per WSG ===
+ wsg  | modelled | recomputed |          model_done           |        recompute_done         | state 
+------+----------+------------+-------------------------------+-------------------------------+-------
+ ADMS | t        | t          | 2026-11-02 09:17:21.773703+00 | 2026-11-02 09:18:31.939102+00 | ok
+ BABL | t        | t          | 2026-11-02 09:20:06.015934+00 | 2026-11-02 09:22:10.065325+00 | ok
+ BABR | t        | t          | 2026-11-02 09:14:24.476795+00 | 2026-11-02 09:20:31.176911+00 | ok
+ BULK | t        | t          | 2026-11-02 09:04:26.008304+00 | 2026-11-02 09:10:22.178256+00 | ok
+ BULL | t        | t          | 2026-11-02 08:53:25.259123+00 | 2026-11-02 09:07:44.873349+00 | ok
+ ELKR | t        | t          | 2026-11-02 09:07:07.566637+00 | 2026-11-02 09:07:53.163949+00 | ok
+ FRCN | t        | t          | 2026-11-02 08:56:29.846968+00 | 2026-11-02 09:13:02.590856+00 | ok
+ HARR | t        | t          | 2026-11-02 08:46:22.207021+00 | 2026-11-02 08:57:04.726341+00 | ok
+ KISP | t        | t          | 2026-11-02 08:59:37.670063+00 | 2026-11-02 09:10:16.425435+00 | ok
+ KLUM | t        | t          | 2026-11-02 08:49:11.161005+00 | 2026-11-02 09:10:15.906527+00 | ok
+ KOTL | t        | t          | 2026-11-02 08:51:55.919916+00 | 2026-11-02 08:53:44.917154+00 | ok
+ LARL | t        | t          | 2026-11-02 08:36:48.06054+00  | 2026-11-02 08:53:43.191074+00 | ok
+ LFRA | t        | t          | 2026-11-02 08:39:50.438716+00 | 2026-11-02 08:57:09.051828+00 | ok
+ LSKE | t        | t          | 2026-11-02 08:43:34.423691+00 | 2026-11-02 09:10:20.157329+00 | ok
+ MSKE | t        | t          | 2026-11-02 09:09:41.316578+00 | 2026-11-02 09:20:40.674966+00 | ok
+ STHM | t        | t          | 2026-11-02 09:15:53.079674+00 | 2026-11-02 09:16:13.197563+00 | ok
+ THOM | t        | t          | 2026-11-02 09:12:14.996198+00 | 2026-11-02 09:16:20.196777+00 | ok
+(17 rows)
+
+
+=== 5. Whole-schema picture: the mixture this run leaves behind ===
+ wsg_in_streams 
+----------------
+             17
+(1 row)
+
+ wsg_with_any_log 
+------------------
+               17
+(1 row)
+
+ runs_ever_labelled 
+--------------------
+                  1
+(1 row)
+
+
+=== 6. ASSERTIONS (raise, so this script can actually fail) ===
+psql:data-raw/study_area_verify.sql:690: NOTICE:  PASS: run 20261102_083253-52f261f8 -- 17 WSG(s), all modelled, recomputed, settled, segmented and provenanced
+DO
+
+=== verify: OK ===

@@ -1,0 +1,108 @@
+=== study_area_run 20261102_083253 ===
+  run_uid:      20261102_083253-52f261f8
+  run_label:    parity-4-bcfishpass-441
+  config:       bcfishpass
+  branch:        (cyphers run this ref)
+  persist:      fresh_parity441
+  cyphers:      <none> (0)
+  workers:      <none> (0; persistent, never burned)
+  log dir:      /Users/airvine/Projects/repo/link-441/data-raw/logs/study_area_run
+  vintage max:  7 d
+  recompute -j: 8
+  recompute:    early (each group once it and every group it reads have landed; link#374)
+  statement:    30 min per modelling statement (PGOPTIONS, both legs); recompute 10 min (wsg_recompute_one.R)
+  buckets:      closure (each --focal= expanded to its drainage closure, DS-first)
+  OVERRIDE:     vintage+parity downgraded to warnings — parity re-score for #440: primitives held at the 2026-10-23 load fresh_parity361 was built on, so only code moves
+  OVERRIDE:     no pre-run gate record required — parity re-score for #440 into a scratch schema; the gate for this code runs on default_minimal before the provincial run
+  phases:       /Users/airvine/Projects/repo/link-441/data-raw/logs/study_area_run/20261102_083253_phases.tsv
+  [phase] refresh skipped
+=== pre-flight (local; pre-spend) ===
+  ✓ dispatcher fresh exports what the pipeline calls
+  ✓ output tokens: cut-full-ssf-all acc-bcfp-4 grad-seg q-fwapg 
+  ✓ fwapg_sha 83365223d705 (exported to all hosts)
+  ✓ bcfishobs_sha 08630cf4ac14 (exported to all hosts)
+  ✓ fresh_sha 245c8d8db60b (clean)
+  WARN: pre-run gate not cleared (no gate record (fresh_parity441.log_pretest does not exist)) — proceeding on --pretest-note
+  ✓ bcfp reference pinned at v0.7.15-51-g3bd2824 (exported to all hosts)
+    ok   discharge (fwapg) loaded: whse_basemapping.fwa_stream_networks_discharge
+  ✓ discharge (fwapg) loaded on the dispatcher
+    [preflight] primitive vintage (window 7 d) - FAILED
+      judged by load stamp: 4, statistics: 0, none: 0
+      stale: bcfishobs.observations (10 d, load stamp), cabd.dams (10 d, load stamp), fresh.modelled_stream_crossings (10 d, load stamp), whse_fish.pscis_assessment_svw (10 d, load stamp)
+      fix: bash data-raw/snapshot_bcfp.sh --with-bcfp-views --force
+  WARN: dispatcher primitives stale — proceeding on --preflight-note
+  ✓ pre-flight clean (tunnel-free)
+  recorded --pretest-note in fresh_parity441.log_pretest (run_uid 20261102_083253-52f261f8)
+=== resolve drainage-closed DS-first buckets ===
+  dispatcher (focal=ADMS,BULK,BABL,ELKR): LARL,LFRA,LSKE,HARR,KLUM,KOTL,BULL,FRCN,KISP,BULK,ELKR,MSKE,THOM,BABR,STHM,ADMS,BABL
+  run groups: /Users/airvine/Projects/repo/link-441/data-raw/logs/study_area_run/20261102_083253_run_wsgs.tsv
+=== dispatcher persist (fresh_parity441): init ===
+  ✓ fresh_parity441 initialised (see /Users/airvine/Projects/repo/link-441/data-raw/logs/study_area_run/20261102_083253_persist_init.log)
+=== early recompute: log tables, barrier views, dependency map ===
+  ✓ log tables present in fresh_parity441
+  ✓ barrier views built once for fresh_parity441
+  [phase] views ok 2026-11-02T08:33:03Z -> 2026-11-02T08:33:05Z (0.0 min)
+  ✓ dependency map: 2211 pairs (see /Users/airvine/Projects/repo/link-441/data-raw/logs/study_area_run/20261102_083253_recompute_deps.log)
+  [phase] prep ok 2026-11-02T08:32:53Z -> 2026-11-02T08:34:16Z (1.4 min, 17 groups)
+=== run buckets (DS-first) ===
+  early recompute scheduler started (-j8; see /Users/airvine/Projects/repo/link-441/data-raw/logs/study_area_run/20261102_083253_recompute_scheduler.log)
+  [phase] model dispatcher ok 2026-11-02T08:34:16Z -> 2026-11-02T09:20:06Z (45.8 min, 17 groups)
+  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)
+=== dispatcher completeness (database) ===
+  ✓ dispatcher: 17/17 WSGs accounted for (17 finished, 0 SKIP; database)
+  [phase] account dispatcher ok 2026-11-02T09:20:06Z -> 2026-11-02T09:20:06Z (0.0 min, 17 groups)
+  [phase] consolidate skipped
+  [phase] burn skipped
+=== verify WSG coverage in fresh_parity441 (run_uid 20261102_083253-52f261f8) ===
+  17/17 run WSGs have rows from a build this run finished
+  classes: /Users/airvine/Projects/repo/link-441/data-raw/logs/study_area_run/20261102_083253_coverage.tsv
+  [phase] coverage ok 2026-11-02T09:20:06Z -> 2026-11-02T09:20:06Z (0.0 min, 17 groups)
+=== groups outside the run that read it (fresh_parity441) ===
+  ✓ outside readers: 0 to recompute, 0 named (/Users/airvine/Projects/repo/link-441/data-raw/logs/study_area_run/20261102_083253_outside_readers.tsv)
+=== post-consolidate recompute (lnk_access, 17 WSGs, -j8) ===
+  14 of 17 group(s) recomputed while the legs ran (see /Users/airvine/Projects/repo/link-441/data-raw/logs/study_area_run/20261102_083253_recompute_scheduler.log)
+[fanout] recompute - OK: 17/17 job(s) succeeded
+  ✓ recompute: 17/17 WSGs
+  ✓ recompute audit: no group started before a group it reads had landed
+  [phase] recompute ok 2026-11-02T08:53:26Z -> 2026-11-02T09:22:11Z (28.8 min, 17 groups)
+=== compare (tunnel-free) ===
+  ✓ compare CSV: /Users/airvine/Projects/repo/link-441/data-raw/logs/study_area_run/20261102_083253_compare.csv
+  [phase] compare ok 2026-11-02T09:22:11Z -> 2026-11-02T09:22:54Z (0.7 min, 17 groups)
+=== summary ===
+  phases (/Users/airvine/Projects/repo/link-441/data-raw/logs/study_area_run/20261102_083253_phases.tsv):
+    phase       host       start_utc            end_utc              minutes groups status
+    refresh                                                                         skipped
+    views                  2026-11-02T08:33:03Z 2026-11-02T08:33:05Z     0.0        ok
+    prep                   2026-11-02T08:32:53Z 2026-11-02T08:34:16Z     1.4     17 ok
+    model       dispatcher 2026-11-02T08:34:16Z 2026-11-02T09:20:06Z    45.8     17 ok
+    account     dispatcher 2026-11-02T09:20:06Z 2026-11-02T09:20:06Z     0.0     17 ok
+    consolidate                                                                     skipped
+    burn                                                                            skipped
+    coverage               2026-11-02T09:20:06Z 2026-11-02T09:20:06Z     0.0     17 ok
+    recompute              2026-11-02T08:53:26Z 2026-11-02T09:22:11Z    28.8     17 ok
+    compare                2026-11-02T09:22:11Z 2026-11-02T09:22:54Z     0.7     17 ok
+  critical path: 50.0 min (first start to last end)
+  longest model leg: 45.8 min (dispatcher)
+  learn host speeds from this run's legs (a plan packed on --minutes-schema):
+    Rscript data-raw/host_speeds_calibrate.R --plan=<study_area_buckets.R --plan-out> \
+      --phases=/Users/airvine/Projects/repo/link-441/data-raw/logs/study_area_run/20261102_083253_phases.tsv [--skip=<name>:<reason>] [--dry-run]
+  run WSGs:        ADMS,BABL,BABR,BULK,BULL,ELKR,FRCN,HARR,KISP,KLUM,KOTL,LARL,LFRA,LSKE,MSKE,STHM,THOM
+  recomputed WSGs: ADMS,BABL,BABR,BULK,BULL,ELKR,FRCN,HARR,KISP,KLUM,KOTL,LARL,LFRA,LSKE,MSKE,STHM,THOM
+  compare CSV: /Users/airvine/Projects/repo/link-441/data-raw/logs/study_area_run/20261102_083253_compare.csv
+[study_area_compare] 86 rows across 17/17 WSGs -> /Users/airvine/Projects/repo/link-441/data-raw/logs/study_area_run/20261102_083253_compare.csv
+# A tibble: 86 × 7
+   wsg   species total_segs match_pct n_diffs top_pattern      top_pattern_count
+ * <chr> <chr>        <int>     <dbl>   <int> <chr>                        <int>
+ 1 ADMS  BT           15782     100.0       5 " | ACCESS;NONE…                 2
+ 2 ADMS  CH           15782      99.9      13 "ACCESS;NONE | …                 6
+ 3 ADMS  CO           15782      99.8      27 "ACCESS;NONE | …                16
+ 4 ADMS  SK           15782      99.2     128 "ACCESS;NONE | …                64
+ 5 BABL  BT           32241      99.8      65 "ACCESS;MODELLE…                23
+ 6 BABL  CH           32241      99.8      60 "ACCESS;NONE | …                15
+ 7 BABL  CO           32241      99.8      56 "REAR;NONE | AC…                11
+ 8 BABL  SK           32241      99.0     312 "ACCESS;NONE | …               199
+ 9 BABL  ST           32241      99.7      99 "ACCESS;NONE | …                29
+10 BABR  BT           28562      99.8      59 "SPAWN;NONE | R…                14
+# ℹ 76 more rows
+=== study_area_run done ===
+  ✓ redacted host addresses in 20 log file(s)
