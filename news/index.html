@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.78.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.78.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,9 +32,17 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.78.1/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.78.1" id="link-0781">link 0.78.1<a class="anchor" aria-label="anchor" href="#link-0781"></a></h2>
+<p>No code change. The records behind the minimal provincial run (<a href="https://github.com/NewGraphEnvironment/link/issues/441" class="external-link">#441</a>) land: the minimal network’s proof, test builds of <code>default</code> and the <code>bcfishpass</code> parity re-score, the hosts on fresh 0.52.0 with fresh primitives, the pre-run gate’s pass on <code>default_minimal</code> and a rehearsal across four hosts.</p>
+<ul><li>
+<strong>RUNBOOK §6b says what the minimal network does to a build</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/415" class="external-link">#415</a>): on four groups it keeps every minimal cut, accessible km and the length-weighted gradient, and moves code 2, rearing, the user habitat overlay and the crossing fields. Observation lifts still move its cuts, by 0 to 1.2 % of km (<code>research/minimal_network.md</code>).</li>
+<li>
+<strong>A worker’s prep reads the clone’s configured origin</strong> (<code>data-raw/worker_prep.sh</code>), so a host whose git config rewrites GitHub URLs (<code>url.&lt;base&gt;.insteadOf</code>) no longer fails it. <code>test-worker_prep.R</code> covers it (<a href="https://github.com/NewGraphEnvironment/link/issues/418" class="external-link">#418</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.78.0" id="link-0780">link 0.78.0<a class="anchor" aria-label="anchor" href="#link-0780"></a></h2>
 <p><strong>The pre-run gate can run on a bundle without a full history of its own</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/442" class="external-link">#442</a>). <code>default_minimal</code> has no groups, minutes or range of its own before its first run, so <code>pretest_run.sh</code> now borrows them from a config the bundle extends with <code>--history-schema</code> and <code>--history-config</code>. The record names what it borrowed, and the launch check holds the gate to it.</p>

@@ -1,5 +1,26 @@
 # Changelog
 
+## link 0.78.1
+
+No code change. The records behind the minimal provincial run
+([\#441](https://github.com/NewGraphEnvironment/link/issues/441)) land:
+the minimal network’s proof, test builds of `default` and the
+`bcfishpass` parity re-score, the hosts on fresh 0.52.0 with fresh
+primitives, the pre-run gate’s pass on `default_minimal` and a rehearsal
+across four hosts.
+
+- **RUNBOOK §6b says what the minimal network does to a build**
+  ([\#415](https://github.com/NewGraphEnvironment/link/issues/415)): on
+  four groups it keeps every minimal cut, accessible km and the
+  length-weighted gradient, and moves code 2, rearing, the user habitat
+  overlay and the crossing fields. Observation lifts still move its
+  cuts, by 0 to 1.2 % of km (`research/minimal_network.md`).
+- **A worker’s prep reads the clone’s configured origin**
+  (`data-raw/worker_prep.sh`), so a host whose git config rewrites
+  GitHub URLs (`url.<base>.insteadOf`) no longer fails it.
+  `test-worker_prep.R` covers it
+  ([\#418](https://github.com/NewGraphEnvironment/link/issues/418)).
+
 ## link 0.78.0
 
 **The pre-run gate can run on a bundle without a full history of its
