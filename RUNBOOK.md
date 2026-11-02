@@ -889,6 +889,8 @@ to its `log` row (`token_cut`, `token_acc`, `token_grad`, `token_flow`).
 **How a cut token is keyed.** `cut-<source set>[-<qualifier>...]`: the source set says
 which kinds of break a network has, and each qualifier says how a source in it is read.
 
+**What the minimal network does to a build (#415, `research/minimal_network.md`).** On four groups it holds every minimal cut within 1 m of a full one, the same accessible km and the same length-weighted gradient. It moves code 2 (a segment reads 2 for a record above its start, and segments are longer), rearing (the connectivity pass drops less), the user habitat overlay (no cut at a range's end) and the crossing fields (no cut at a crossing). Observation lifts still move its cuts: on the four groups 0 to 1.2 % of km.
+
 | Source set | Cuts at | Status |
 |---|---|---|
 | `full` | observations, access-gradient positions, falls, user-definite barriers, habitat end points, crossings | `cut-full-top`, `cut-full-ssf-all` |

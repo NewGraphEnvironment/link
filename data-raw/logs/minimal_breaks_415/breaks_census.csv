@@ -1,0 +1,14 @@
+"wsg","source","n"
+"BULK","barriers_definite",46
+"BULK","falls",15
+"BULK","fwa_base_segment",19656
+"BULK","gradient_minimal",6414
+"SETN","falls",41
+"SETN","fwa_base_segment",35695
+"SETN","gradient_minimal",8337
+"MORK","falls",4
+"MORK","fwa_base_segment",24541
+"MORK","gradient_minimal",5854
+"COTR","falls",4
+"COTR","fwa_base_segment",14885
+"COTR","gradient_minimal",1528

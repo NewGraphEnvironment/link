@@ -1,0 +1,5 @@
+"wsg","n_minimal_cuts","n_matched","n_exact","n_unmatched","n_full_segments","n_straddle_gt_tol","km_straddle_gt_tol","max_straddle_m"
+"BULK",26131,26131,26127,0,42458,0,0,1
+"SETN",44073,44073,44071,0,80538,0,0,1
+"MORK",30399,30399,30399,0,51930,0,0,0
+"COTR",16417,16417,16417,0,28473,0,0,0
