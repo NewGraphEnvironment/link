@@ -42,3 +42,6 @@ through the CT/DV/RB presence group), MURT (only RB, a paused species) and BULK
 
 - Re-modelling SALR with the after code into the before schema (run_uid `432_clear`) took its `streams_habitat_rb` rows from 10,676 to 0, its CH rows to its new 10,615 segments, and its near-river rows from 954 to 947.
 - `stale_check.sql` is `study_area_verify.sql`'s new assertion alone (the full verifier stops first at KOTL's missing recompute): it passes on both arms, fails on three RB rows planted for SALR in the after schema, and passes again once they are removed.
+
+The two scratch schemas stay on m4 (`zz432_pre`, `zz432_post`) until the next provincial run, so `compare.R` can be re-run; `zz432_dev` (the first MURT build) was dropped.
+- MURT alone (run_uid `432_murt`, at the review-fixed HEAD) models, recomputes and passes the full `study_area_verify.sql` with `expected_n=1` (`verify_murt.txt`): a group whose log lists no species passes every per-group check.

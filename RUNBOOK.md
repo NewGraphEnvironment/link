@@ -1236,7 +1236,7 @@ What a paused species does, and does not do:
   `wsg_run_one.R` and `wsg_recompute_one.R` use it. Under `default` these are
   BRID, GRNL, LEUT, LNRS, MURT, PITR and UISR (CHUK's only cell is DV, so the
   filter has always dropped it). Compare skips them with a NOTE.
-- The validator (`--species`) and the variants harness refuse a paused species.
+- The validator (`--species`) refuses a paused species only where no scored group's newest build classified it (`log.species`), so a schema built before the pause can still be scored; the variants harness refuses a variant of one among the variants a run builds.
 
 ### Copies and overlays: the bcfishpass files a bundle carries (link#429)
 

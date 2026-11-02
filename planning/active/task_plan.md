@@ -27,7 +27,7 @@ There is no way to say "not now" short of removing the row. Steelhead have the s
 - [x] `extends:` inherits the file: `default_tuned` pauses KO and RB. A bundle that declares no file (`bcfishpass`, `default_extrabreaks`, `default_rearbreaks`) models every rules species, unchanged.
 - [x] `.lnk_pipeline_prep_minimal()` builds no barrier set for a paused species (it iterates `cfg$species`, so this pins the existing route).
 - [x] The acc spec moves when a species is paused (`lnk_vocabulary_resolve()` already hashes `cfg$species`, `R/lnk_vocabulary.R:202`).
-- [ ] Live tests (skip without the DB): a group with no modelled species builds streams and barriers and persists no habitat. A re-model clears the habitat rows of a species no longer modelled.
+- [x] Live proof, as builds rather than testthat tests: MURT (no modelled species) builds streams and barriers and persists no habitat; SALR re-modelled over old RB rows clears them (10,676 to 0). Unit tests mock the same paths. Evidence `data-raw/logs/species_paused_432/`.
 
 ## Phase 2: The switch
 
@@ -44,7 +44,7 @@ There is no way to say "not now" short of removing the row. Steelhead have the s
 - [x] Recompute (`lnk_access()`, `wsg_recompute_one.R`, the habitat gate): a group with no modelled species passes through instead of stopping on "species is empty".
 - [x] The run clears a group's rows from `streams_habitat_<sp>` for each species in the schema that the build does not model.
 - [x] Audit the remaining readers for the rules species where `cfg$species` is meant: classify and connect take species from `lnk_pipeline_species()`. Also check the validator, `lnk_presence_check` (its `modelled` column goes FALSE for KO and RB, as intended), `barriers_views_build.R`, `buckets_balance.R` and the variants harness. Fix any that read rules species directly.
-- [ ] `study_area_verify.sql` and the driver accept a group whose log row carries no species. Check what they assert per group.
+- [x] `study_area_verify.sql` and the driver accept a group whose log row carries no species: MURT alone (`432_murt`) passes the full verifier (`verify_murt.txt`).
 
 ## Phase 4: Measure #433 (before arm from a worktree at 07203cde, after arm at the Phase 3 commit; scratch schemas on m4)
 
@@ -62,14 +62,14 @@ There is no way to say "not now" short of removing the row. Steelhead have the s
 ## Owed at the end (reported, done after merge)
 
 - [ ] Every `default` group re-models at the next provincial run: KO and RB habitat, access and mapping-code values go, and segmentation moves where Phase 4 measured. Add the 8 no-species groups to the run's notes, with `expected_n` unchanged at 241.
-- [ ] Copy the sample rules to fresh only if `rules.yaml` changes. The plan leaves it unchanged.
+- [x] Copy the sample rules to fresh only if `rules.yaml` changes: unchanged on the branch, nothing to copy.
 
 ## Validation
 
-- [ ] Tests pass (`devtools::test()`, live DB tests included)
-- [ ] `/code-check` clean (once over the branch, `/code-check branch`, three-round floor)
-- [ ] `lintr::lint_package()`, `devtools::check()`
-- [ ] PWF checkboxes match landed work
+- [x] Tests pass (`devtools::test()`, live DB tests included)
+- [x] `/code-check` clean (once over the branch, `/code-check branch`, three-round floor)
+- [x] `lintr::lint_package()`, `devtools::check()`
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
 How it is proved: the config filter and its refusals by unit tests. The no-species path by a live build of MURT that persists streams and barriers and passes the verifier's per-group checks. The stale-row clearing by a live re-model that leaves 0 rows for the cleared species in that group. Segmentation by Phase 4's before/after on one commit. `bcfishpass` unchanged by its acc spec, `config_hash` and a BULK build's segment count.
