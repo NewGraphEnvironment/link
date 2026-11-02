@@ -36,7 +36,9 @@ mutate data-raw/pretest_pick.R '  if (nzchar(short)) refuse(short)'; echo "guard
 echo; echo "## a history no range can cover, in --pick-only"; echo "as committed:"; pick zz442_dirty 1d00c04c
 mutate data-raw/pretest_pick.R 'if (nzchar(bad_history)) refuse(bad_history, "; a gate on it cannot clear a run")'; echo "guard removed:"; pick zz442_dirty 1d00c04c; restore
 echo; echo "## short history in the launch check"; echo "as committed:"; check
-mutate data-raw/pretest_check.R 'if (nzchar(short)) stop("the gate borrowed a short history: ", short)'; echo "guard removed:"; check; restore
+mutate data-raw/pretest_check.R '    } else if (nzchar(short)) {
+      list(ok = FALSE, why = paste0("the gate borrowed a short history: ", short))
+'; echo "guard removed:"; check; restore
 
 echo; echo "## one build of its own does not end the guard (two rows under default_minimal)"
 q "DROP SCHEMA IF EXISTS zz442_own CASCADE; CREATE SCHEMA zz442_own;

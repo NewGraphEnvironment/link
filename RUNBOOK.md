@@ -1958,7 +1958,9 @@ bash data-raw/pretest_run.sh --config=default_minimal --schema=fresh_default_min
   it models.** One build of its own, or a first run stopped partway, does not end the
   borrowing, and those builds must be in the range too. Once they cover it, a gate must
   cover them and the flags are refused. Without the flags, such a bundle is refused. A
-  bundle with no parent keeps its own history, whole or not.
+  bundle with no parent keeps its own history, whole or not. A group added to the
+  presence table after both histories ended has no route but to model it under the
+  parent and reload, or to launch on `--pretest-note`.
 - **The record names what it borrowed,** so the launch check holds it to the same
   history. It also keeps naming a schema that must still exist on the dispatcher.
 - **The history must hold every group the config models** (`lnk_wsg_resolve()`),

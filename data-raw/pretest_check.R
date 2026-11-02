@@ -50,25 +50,28 @@ out <- tryCatch({
     modelable <- pretest_modelable_groups(repo, config)
     # A bundle whose own builds do not yet cover it is held to the history its gate borrowed.
     src <- pretest_record_history(records, schema, config, pretest_history_complete(own$wsg, modelable), chain)
-    if (is.null(src)) {
-      stop(schema, " does not cover the groups ", config, " models, and its gate borrowed no history to hold it to")
-    }
-    hist <- DBI::dbGetQuery(conn, pretest_history_sql(src$schema, src$config))
-    borrowed <- !identical(src$config, config)
+    hist <- if (!is.null(src)) DBI::dbGetQuery(conn, pretest_history_sql(src$schema, src$config))
+    borrowed <- !is.null(src) && !identical(src$config, config)
     short <- if (borrowed) pretest_history_short(hist$wsg, modelable, paste0(src$schema, ".log")) else ""
-    if (nzchar(short)) stop("the gate borrowed a short history: ", short)
-    # Beside a borrowed history, the bundle's own builds so far must be in the range too.
-    if (borrowed) hist <- rbind(hist[c("link_sha", "link_dirty")], own[c("link_sha", "link_dirty")])
-    map <- pretest_map_read(file.path(script_dir, "pretest_inputs.csv"))
-    r <- pretest_record_check(records, config, head_sha, fresh_sha, hist$link_sha,
-                              hist$link_dirty, repo, map, chain,
-                              reached = pretest_reach_repo(repo))
-    if (r$ok) {
-      r$why <- sprintf("gate passed at %s (%s UTC), range from %s: %s", substr(r$record$link_sha, 1, 12),
-                       format(r$record$run_at, "%Y-%m-%d %H:%M", tz = "UTC"),
-                       substr(r$record$since_sha, 1, 12), r$record$groups)
+    if (is.null(src)) {
+      list(ok = FALSE, why = sprintf("%s does not cover the groups %s models, and its gate borrowed no history to hold it to",
+                                     schema, config))
+    } else if (nzchar(short)) {
+      list(ok = FALSE, why = paste0("the gate borrowed a short history: ", short))
+    } else {
+      # Beside a borrowed history, the bundle's own builds so far must be in the range too.
+      if (borrowed) hist <- rbind(hist[c("link_sha", "link_dirty")], own[c("link_sha", "link_dirty")])
+      map <- pretest_map_read(file.path(script_dir, "pretest_inputs.csv"))
+      r <- pretest_record_check(records, config, head_sha, fresh_sha, hist$link_sha,
+                                hist$link_dirty, repo, map, chain,
+                                reached = pretest_reach_repo(repo))
+      if (r$ok) {
+        r$why <- sprintf("gate passed at %s (%s UTC), range from %s: %s", substr(r$record$link_sha, 1, 12),
+                         format(r$record$run_at, "%Y-%m-%d %H:%M", tz = "UTC"),
+                         substr(r$record$since_sha, 1, 12), r$record$groups)
+      }
+      r
     }
-    r
   }
 }, error = function(e) list(ok = NA, why = conditionMessage(e)))
 

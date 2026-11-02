@@ -27,6 +27,24 @@
 - **Pre-flight:** credential, tofu state, ssh and worker lines pass. The gate and vintage fail as expected. **Unexpected: `~/Projects/repo/bcfishobs` is dirty** (modified `planning/active/task_plan.md`, untracked `duplicates.csv`), which fails the pre-flight at launch. Neither file is this session's, so it is left for the operator; no code changed there, HEAD `dd9a5e5d`.
 - **Picks on the 241-group history:** SETN, BULK, QUES, LFRA, TOAD, HARR, UPCE, OKAN, TAKL, HORS, SAJR; 69 changed files, none unmapped, across link `1d00c04c` to HEAD and fresh 0.42.0 to 0.52.0 (`data-raw/logs/gate_borrow_442/`).
 
+## Code-check enumeration: what assumes a borrowing bundle has no rows of its own (#442, after round 2)
+
+Round 1's fix let a bundle hold some own builds while it borrows; round 2 found two lines still assuming it could not. Every read of the bundle's own schema and of the history, by `grep` over `pretest_pick.R`, `pretest_run.sh`, `pretest_verdict.R`, `pretest_check.R`, and what each does when own rows exist:
+
+| where | reads | with own rows while borrowing |
+|---|---|---|
+| `pretest_pick.R:76-81` | own, for completeness | decides borrowing |
+| `pretest_pick.R:84-89` | history for groups and minutes | the borrowed one |
+| `pretest_pick.R:92-95`, `:98-100` | own and borrowed for coverage | both held to the range |
+| `pretest_pick.R:96-97` | short check | on the borrowed one |
+| `pretest_pick.R:101` | `--since` default | from the borrowed one, the earlier |
+| `pretest_pick.R:164-165` | label | fixed in round 2 |
+| `pretest_pick.R:202-204` | minutes | a named own schema reads its own config, fixed in round 2 |
+| `pretest_run.sh:99-100`, `:199-213` | scratch shape, minutes default | the history schema |
+| `pretest_run.sh:175` | live-session check | both names |
+| `pretest_run.sh:284`, `pretest_verdict.R` | record only; `IF NOT EXISTS` | writes `log_pretest`, reads nothing else of the schema |
+| `pretest_check.R:49-66` | own, record, borrowed | as the pick |
+
 ## Plan review
 
 `review-plan.md`: one Plan agent, no blocker, four fixes folded into `task_plan.md`.

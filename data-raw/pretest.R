@@ -420,7 +420,7 @@ pretest_history_complete <- function(wsgs, modelable) {
 pretest_history_short <- function(history_wsgs, modelable, source_name) {
   miss <- setdiff(modelable, history_wsgs)
   if (!length(miss)) return("")
-  sprintf("%s holds %d of the %d groups the config models (missing %s%s), so the picks would not reach each input's extreme; load the full history (data-raw/pretest_history_load.sh)",
+  sprintf("%s holds %d of the %d groups the config models (missing %s%s), so the picks would not reach each input's extreme; load the full history (data-raw/pretest_history_load.sh), and for a group the parent never built, model it under the parent first or launch on --pretest-note",
           source_name, length(modelable) - length(miss), length(modelable),
           paste(utils::head(miss, 5), collapse = ", "), if (length(miss) > 5) ", ..." else "")
 }

@@ -162,7 +162,7 @@ w("# Pre-run gate (link#372)")
 w("")
 w(sprintf("- config `%s` (chain: %s), history in `%s.log` under `%s`%s", config,
           paste(chain, collapse = " < "), hist_src$schema, hist_src$config,
-          if (hist_src$borrowed) ", borrowed: it has no builds of its own" else ""))
+          if (hist_src$borrowed) ", borrowed: its own builds do not cover it" else ""))
 w(sprintf("- link `%s..%s`; fresh `%s..%s`", substr(since_sha, 1, 12), substr(until_sha, 1, 12),
           fresh_from, fresh_to))
 w(sprintf("- per input %d groups; bound %g x last minutes in `%s.log`, floor %g min; statement bound <= %d min",
@@ -198,8 +198,10 @@ if (length(unex)) {
   message("Changed and NOT exercised by the gate: ", paste(unex, collapse = ", "))
 }
 
-mins <- if (identical(minutes_schema, schema)) built else
-  DBI::dbGetQuery(conn, pretest_history_sql(minutes_schema, hist_src$config))
+# Minutes named from the bundle's own schema read its own config, not the one borrowed.
+mins <- if (identical(minutes_schema, hist_src$schema)) built else
+  DBI::dbGetQuery(conn, pretest_history_sql(minutes_schema,
+                                            if (identical(minutes_schema, schema)) config else hist_src$config))
 history <- data.frame(wsg = built$wsg, stringsAsFactors = FALSE)
 i <- match(history$wsg, mins$wsg)
 history$minutes <- mins$minutes[i]
