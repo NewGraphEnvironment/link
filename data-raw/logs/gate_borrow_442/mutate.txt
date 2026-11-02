@@ -3,7 +3,7 @@ as committed:
 REFUSED: fresh_default.log holds 4 of the 241 groups the config models (missing ADMS, ALBN, ATLL, ATNA, BABL, ...), so the picks would not reach each 
 pick exited 2
 guard removed:
-pick only: /var/folders/mg/h910y2c54fsc99qj74dyrjph0000gn/T/mut442.Wn8kov/pick/pretest.md
+pick only: /var/folders/mg/h910y2c54fsc99qj74dyrjph0000gn/T/mut442.DRE8oY/pick/pretest.md
 
 ## a history no range can cover, in --pick-only
 as committed:
@@ -11,14 +11,14 @@ REFUSED: history holds a build from a dirty tree, whose code is not its link_sha
 pick exited 2
 guard removed:
 WARN (pick only): history holds a build from a dirty tree, whose code is not its link_sha; a gate on this range could not clear a run
-pick only: /var/folders/mg/h910y2c54fsc99qj74dyrjph0000gn/T/mut442.Wn8kov/pick/pretest.md
+pick only: /var/folders/mg/h910y2c54fsc99qj74dyrjph0000gn/T/mut442.DRE8oY/pick/pretest.md
 
 ## short history in the launch check
 as committed:
 the gate borrowed a short history: fresh_default.log holds 4 of the 241 groups the config models (missing ADMS, ALBN, ATLL, ATNA, BABL, ...), so the p
-exit 2
+exit 1
 guard removed:
-the gate's the range starts at 48857b755f5e, after history built at 21e0fea23d18
+the gate's the range starts at 7d271e2fbf09, after history built at 21e0fea23d18
 exit 1
 
 ## one build of its own does not end the guard (two rows under default_minimal)
@@ -27,13 +27,13 @@ REFUSED: zz442_own.log does not cover the groups default_minimal models; borrow 
 guard removed:
   pick BULK  [crossings,dams,gradient,near_river_conn,obs_upstream,observations,segments]  last 13.7 min on cypher-job3, bound 41.1 min
   pick ADMS  [crossings,dams,gradient,near_river_conn,obs_upstream,observations,segments]  last 4.3 min on m1, bound 13.0 min
-pick only: /var/folders/mg/h910y2c54fsc99qj74dyrjph0000gn/T/mut442.Wn8kov/pick/pretest.md
+pick only: /var/folders/mg/h910y2c54fsc99qj74dyrjph0000gn/T/mut442.DRE8oY/pick/pretest.md
 pick borrowing the 4-group history, as committed:
 REFUSED: fresh_default.log holds 4 of the 241 groups the config models (missing ADMS, ALBN, ATLL, ATNA, BABL, ...), so the picks would not reach each 
 pick exited 2
 launch check with two builds of its own, on a record that borrowed the 4-group history, as committed:
 the gate borrowed a short history: fresh_default.log holds 4 of the 241 groups the config models (missing ADMS, ALBN, ATLL, ATNA, BABL, ...), so the p
-exit 2
+exit 1
 any build taken as the history (the old rule):
-the gate's the range starts at 2606a8a2da98, after history built at 1d00c04cc5b2
+the gate's the range starts at bec53af4ee12, after history built at 1d00c04cc5b2
 exit 1
