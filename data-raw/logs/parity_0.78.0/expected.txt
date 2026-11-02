@@ -1,0 +1,18 @@
+# Expected parity moves at link 0.78.0 (fresh 0.52.0) against the 0.68.0 score of 2026-10-23 (#361),
+# written before scoring (2026-11-02T09:24:51Z). Build: run 20261102_083253-52f261f8 on m1, fresh_parity441,
+# from a worktree at 34c4c598.
+# Code moves since 0.68.0 that reach the bcfishpass bundle:
+#   #326: streams break only where a present species' access changes, and the bundle takes bcfishpass's
+#         order-1 rearing exception (BT, CH, CO, ST, WCT). Measured on m4's dev schemas: parity 120 of 122,
+#         rearing within 1.2 km a side in PCEA, FINA, LKEL (research/bcfp_segmentation_parity.md).
+#   #399, #401: code 2 only, which the cross-section does not score.
+#   #429: CH in UTRE and ST in QUES (neither in this closure); Keogh and Adams rows reach no crossing.
+#   fresh 0.42.0 -> 0.52.0: walks identical (fresh#272); group-matched joins change nothing in a per-group build.
+accessible km: within 0.1 on all 17 pairs
+spawning km:   under 0.5 on every pair (segmentation only)
+rearing km:    toward the reference wherever the order-1 exception adds rearing (BT, CH, CO, ST in BULK, BABL,
+               ELKR); no pair moves away by more than 1.5 km
+pass count:    48/50 or better; BULK SK over and parked (#130)
+# Inputs: m1's primitives are the 2026-10-23 load fresh_parity361 was built on. The reference view on m1
+# reads v0.7.15-51-g3bd2824 now (fresh_parity361 was scored against -50-g620dbe4), so ref_value can move;
+# moves.R reports both sides.
