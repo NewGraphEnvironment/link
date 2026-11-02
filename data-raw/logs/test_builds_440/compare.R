@@ -11,10 +11,11 @@
 #                 side, and km whose flag differs (measure-overlap join)
 #   obs.csv       per group: modelled-species fish records, how many sit on a
 #                 segment that changed, and the gradient shift there
-# Usage: Rscript data-raw/logs/species_paused_432/compare.R [pre] [post]
+# Usage: Rscript data-raw/logs/test_builds_440/compare.R <pre schema> <post schema>  (here: zz432_post zz440_default)
 args <- commandArgs(trailingOnly = TRUE)
-pre  <- if (length(args) >= 1L) args[1] else "zz432_pre"
-post <- if (length(args) >= 2L) args[2] else "zz432_post"
+if (length(args) != 2L) stop("usage: compare.R <pre schema> <post schema>; both required, so a bare run cannot overwrite this evidence", call. = FALSE)
+pre  <- args[1]
+post <- args[2]
 out_dir <- "data-raw/logs/test_builds_440"
 suppressPackageStartupMessages({ library(DBI); library(RPostgres) })
 conn <- dbConnect(Postgres(), dbname = "fwapg", host = "localhost", port = 5432L,

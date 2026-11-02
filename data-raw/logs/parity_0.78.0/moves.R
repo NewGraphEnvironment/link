@@ -38,7 +38,7 @@ stopifnot(nrow(m) == nrow(old), nrow(m) == nrow(new))
 # bcfishpass views with --refresh-primitives. So the reference's move is reported per pair, not
 # asserted away; a pair's diff_pct change is link_km_change against ref_km_change.
 m$ref_km_change <- round(m$ref_value_0.78.0 - m$ref_value_0.68.0, 1)
-cat(sprintf("reference moved on %d of %d pairs (bcfishpass views reloaded 2026-10-23)\n",
+cat(sprintf("reference moved on %d of %d pairs (values compared, not the build that produced them)\n",
             sum(m$ref_km_change != 0), nrow(m)))
 m$link_km_change <- round(m$link_value_0.78.0 - m$link_value_0.68.0, 1)
 m$diff_pct_change <- round(m$diff_pct_0.78.0 - m$diff_pct_0.68.0, 2)
@@ -54,7 +54,7 @@ seg_n <- function(s) dbGetQuery(conn, sprintf(
   s, paste0("'", wsgs, "'", collapse = ",")))
 n_old <- seg_n("fresh_parity361")
 n_new <- seg_n("fresh_parity441")
-print(merge(n_old, n_new, by = "wsg", suffixes = c("_362", "_361")))
+print(merge(n_old, n_new, by = "wsg", suffixes = c("_old", "_new")))
 # Segments present in one build only (the builds break the line in different places):
 # no segment in the other build with the same start and the same length (within 1 mm).
 # The segment diff below joins only on segments both builds share, so these are reported
@@ -64,12 +64,12 @@ reseg_in <- function(groups) dbGetQuery(conn, sprintf("
                FROM fresh_parity361.streams WHERE watershed_group_code IN (%1$s)),
        n AS (SELECT watershed_group_code AS wsg, blue_line_key, downstream_route_measure, length_metre
                FROM fresh_parity441.streams WHERE watershed_group_code IN (%1$s))
-  SELECT 'only_362' AS side, o.* FROM o
+  SELECT 'only_old' AS side, o.* FROM o
    WHERE NOT EXISTS (SELECT 1 FROM n WHERE n.wsg = o.wsg AND n.blue_line_key = o.blue_line_key
                      AND n.downstream_route_measure = o.downstream_route_measure
                      AND abs(n.length_metre - o.length_metre) < 0.001)
   UNION ALL
-  SELECT 'only_361', n.* FROM n
+  SELECT 'only_new', n.* FROM n
    WHERE NOT EXISTS (SELECT 1 FROM o WHERE o.wsg = n.wsg AND o.blue_line_key = n.blue_line_key
                      AND o.downstream_route_measure = n.downstream_route_measure
                      AND abs(o.length_metre - n.length_metre) < 0.001)
@@ -91,6 +91,9 @@ reseg_sum <- if (nrow(reseg_all) == 0) {
 write.csv(reseg_sum, file.path(dir_out, "resegmented_closure.csv"), row.names = FALSE)
 cat(sprintf("closure: %d groups; segments in one build only: %d on %d lines in %d groups\n",
             length(closure), nrow(reseg_all), sum(reseg_sum$lines), nrow(reseg_sum)))
+cat(sprintf("segments in one build only, old build: %d; new build: %d; new build's segments shared with the old: %.0f of %.0f\n",
+            sum(reseg$side == "only_old"), sum(reseg$side == "only_new"),
+            as.numeric(sum(as.numeric(n_new$n))) - sum(reseg$side == "only_new"), sum(as.numeric(n_new$n))))
 cat(sprintf("segments in one build only: %d on %d lines (%s)\n", nrow(reseg),
             nrow(unique(reseg[, c("wsg", "blue_line_key")])),
             paste(unique(reseg$wsg), collapse = ", ")))
@@ -174,9 +177,9 @@ ov <- function(s) dbGetQuery(conn, sprintf(
 ov_old <- ov("fresh_parity361")
 ov_new <- ov("fresh_parity441")
 pos <- c("species_code", "blue_line_key", "drm")
-ov_m <- merge(ov_old, ov_new, by = pos, all = TRUE, suffixes = c("_362", "_361"))
-ov_m$change <- ifelse(is.na(ov_m$holders_362), "added",
-                      ifelse(is.na(ov_m$holders_361), "lost", "same"))
+ov_m <- merge(ov_old, ov_new, by = pos, all = TRUE, suffixes = c("_old", "_new"))
+ov_m$change <- ifelse(is.na(ov_m$holders_old), "added",
+                      ifelse(is.na(ov_m$holders_new), "lost", "same"))
 ov_changed <- ov_m[ov_m$change != "same", ]
 write.csv(ov_changed, file.path(dir_out, "override_diff.csv"), row.names = FALSE, na = "")
 cat(sprintf("override positions: %d before, %d after; %d added, %d lost\n",

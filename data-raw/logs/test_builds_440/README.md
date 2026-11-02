@@ -1,17 +1,16 @@
 # test_builds_440 — `default` at the minimal run's code (#440)
 
-**2026-11-02, m4, link `4069fdfc` (0.78.0, the code PR #443 pins), fresh 0.52.0.** KETL, KOTL, BULK and MURT built under
+**2026-11-02, m4, link 0.78.0 (the code PR #443 pins), fresh 0.52.0.** KETL built at `4069fdfc`; KOTL, BULK and MURT and all four recomputes logged `7c36b882`, because `expected.txt` for the parity re-score was committed into this checkout while `run.sh` modelled from it (it checks the tree only at start). `R/` is identical between the two, and every row is clean. KETL, KOTL, BULK and MURT built under
 `default` into scratch `zz440_default` and recomputed (`run.sh`, `status.tsv`). MURT is the group where only paused
 species are present. KOTL's recompute exited 1 on the downstream-dam post-condition (`BLOCKED (link#227)`): its dam
 lies in a group this schema does not hold, and the check runs after the recompute's work has committed, as in
 `../minimal_breaks_415/run.sh`'s pass rule.
 
-## Against the same groups at fresh 0.52.0 (`zz432_post`, link `a6942b5d`)
+## Against the same groups' last builds (`zz432_post`)
 
-`compare.R` (copied from `../species_paused_432/`, output path changed): **identical.** Segments, break positions,
+`compare.R` (copied from `../species_paused_432/`, output path changed): **identical.** BULK, KETL and KOTL there are link `a6942b5d` at fresh 0.52.0; MURT's newest row is a later rebuild, link `2774f5b2`, logged at fresh 0.48.0. Segments, break positions,
 barrier and override rows, accessible, spawning and rearing km per species, and the segment under each fish record
-are the same in all four groups (`summary.csv`, `km.csv`, `obs.csv`, `compare.log`). The code between `a6942b5d` and
-0.78.0 moves nothing in `default`'s output.
+are the same in all four groups (`summary.csv`, `km.csv`, `obs.csv`, `compare.log`). The code since those builds moves nothing in `default`'s output on these groups.
 
 ## Against the last provincial build (m1 `fresh_default`, 2026-10-23, link 0.68.0, fresh 0.42.0)
 
@@ -25,8 +24,9 @@ are the same in all four groups (`summary.csv`, `km.csv`, `obs.csv`, `compare.lo
 | KOTL | 109,951 | 38,287 | 92,588 | 92,628 |
 | MURT | 37,569 | 14,403 | 25,742 | 25,765 |
 
-- **Segments fall 2.1- to 2.9-fold:** streams break only where a modelled species' access changes (#326) and at each
-  species' top record per line (#396).
+- **Segments fall 2.1- to 2.9-fold.** The changes since 0.68.0 that remove breaks are #326 (only where a modelled
+  species' access changes), #396 (each species' top record per line) and #432 (KO and RB add no gradient breaks; #433
+  measured 0.2 to 6.0 % fewer segments for it alone). Not decomposed here.
 - **KO and RB have no habitat or access** (paused, #432). In MURT, where only RB was present, the group is still
   built, with no habitat.
 - **BULK gains chum** (5,164 km accessible, 1,862 km spawning), from #402's presence review.

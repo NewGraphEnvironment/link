@@ -1,10 +1,11 @@
-reference moved on 0 of 50 pairs (bcfishpass views reloaded 2026-10-23)
-   wsg n_362    m_362 n_361    m_361
+reference moved on 0 of 50 pairs (values compared, not the build that produced them)
+   wsg n_old    m_old n_new    m_new
 1 ADMS 39425  5475778 15787  5475778
 2 BABL 45790 11547752 32308 11547752
 3 BULK 87640 14642214 42989 14642214
 4 ELKR 83357 12486918 38245 12486918
 closure: 17 groups; segments in one build only: 968638 on 82012 lines in 17 groups
+segments in one build only, old build: 161106; new build: 34223; new build's segments shared with the old: 95106 of 129329
 segments in one build only: 195329 on 17527 lines (ADMS, BABL, BULK, ELKR)
 override positions: 4750 before, 4750 after; 0 added, 0 lost
   wsg species total_segs_0.68.0 match_pct_0.68.0 n_diffs_0.68.0

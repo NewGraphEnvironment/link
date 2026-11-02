@@ -50,26 +50,30 @@ stamp is in `data-raw/logs/parity_0.78.0/README.md`.
 ## What moved at v0.78.0 (2026-11-02, #440)
 
 The v0.68.0 score (run `20261023_215312-16fb3aae`, `fresh_parity361`) was 48/50; so is this one. Inputs
-were held equal (the same primitive load; the reference moved on 0 of 50 pairs; no barrier override added
-or lost), so every move is code. 40 of the 50 pairs moved by 0.1 km or more, all 17 accessible pairs among them (`pair_moves.csv`):
+were held equal in value (the same primitive load; the reference's values moved on 0 of 50 pairs; no barrier
+override added or lost), so every move is code. The reference build did change, from `v0.7.15-50-g620dbe4` to
+`v0.7.15-51-g3bd2824` (`run.log`), whose change codes steelhead; it moved no scored value, and `mapping_code_moves.csv`
+may carry it. 40 of the 50 pairs moved by 0.1 km or more, all 17 accessible pairs among them (`pair_moves.csv`):
 
-- **Rearing rose toward the reference in BULK and BABL** for BT, CH, CO and ST, by 4.6 to 23.3 km a pair.
-  This is the direction #326's order-1 rearing exception (`rear_stream_order_bypass`, BT, CH, CO, ST and
-  WCT in this bundle) moves rearing, and the only change in the range that adds rearing here. BULK CO crossed the reference (−0.14 % to +0.38 %).
-- **Spawning fell toward the reference** in ADMS BT (−4.5 km), ELKR BT (−8.2) and ELKR WCT (−9.1), and
-  ELKR WCT rearing fell 15.5 km, also toward it. #326 changed where streams break, so a segment's
-  gradient and width tests moved.
+- **Rearing rose in BULK and BABL** for BT, CH, CO and ST, by 4.6 to 23.3 km a pair, toward the reference for
+  every pair but BULK CO, which crossed it (−0.14 % to +0.38 %). On segments both builds share the gain is already
+  there (BULK BT +22.1 km of +21.4, `segment_diff.csv`), so it is a rule, not where streams break. This is the direction
+  #326's order-1 rearing exception (`rear_stream_order_bypass`, BT, CH, CO, ST and WCT in this bundle) moves rearing,
+  and the only change in the range that adds rearing here.
+- **Spawning fell toward the reference** in ADMS BT (−4.5 km), ELKR BT (−8.2) and ELKR WCT (−9.1). It changed on
+  0 km of shared segments, so every spawning move is on lines the two builds break differently: #326's segmentation.
+  ELKR WCT rearing fell 15.5 km, also toward the reference.
 - **Accessible km fell 0.1 to 2.1 km a pair,** every pair still within 0.11 % of the reference.
-- **Seven pairs moved away from the reference,** by 0.06 percentage points or less, apart from BULK CO
-  rearing above.
+- **Eight pairs moved away from the reference**, counted in km of difference: BULK CO rearing (3.3 to 8.5 km) and seven
+  by 0.2 to 2.1 km, the most ELKR WCT accessible (1.8 to 3.9 km).
 
-These are not decomposed segment by segment: under #326 the two builds share few segments (195,329
-segments in one build only, on 17,527 lines of the four groups), so `segment_diff.csv` covers little.
-`expected.txt`, written before scoring, bounded accessible moves at 0.1 km and spawning moves at 0.5 km; both
-bounds were wrong, because the #326 measurement it leaned on was taken on other groups. The pass count and
-the rearing direction held.
+A bracket is the difference of two totals each rounded to 0.1 km, so it can read 0.1 for a move of 0.01 km
+(ADMS BT accessible moved 0.064 km on shared segments). 95,106 of the new build's 129,329 segments in the four groups
+are shared with the old (`moves.log`). `expected.txt`, written before scoring, was wrong on three of its four bounds:
+accessible km moved more than 0.1, spawning more than 0.5, and BULK CO rearing moved away from the reference. Its
+bounds leaned on #326's measurement on other groups. Only the pass count held.
 
-**`default` at the same code** (#440): KETL, KOTL, BULK and MURT built under `default` match their fresh 0.52.0 builds exactly, and against the last provincial build move only by the known changes since 0.68.0 (`data-raw/logs/test_builds_440/README.md`).
+**`default` at the same code** (#440): KETL, KOTL, BULK and MURT built under `default` match their last builds exactly. Against the last provincial build, their moves line up with the changes since 0.68.0 (#326, #396, #432, #402), not checked row by row (`data-raw/logs/test_builds_440/README.md`).
 
 ## What moved at v0.68.0 (2026-10-23, #361)
 
