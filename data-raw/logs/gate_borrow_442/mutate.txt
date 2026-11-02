@@ -1,0 +1,22 @@
+## short history in the pick
+as committed:
+REFUSED: fresh_default.log holds 4 of the 241 groups the config models (missing ADMS, ALBN, ATLL, ATNA, BABL, ...), so the picks would not reach each 
+pick exited 2
+guard removed:
+pick only: /var/folders/mg/h910y2c54fsc99qj74dyrjph0000gn/T/mut442.DXyhSU/pick/pretest.md
+
+## a history no range can cover, in --pick-only
+as committed:
+REFUSED: history holds a build from a dirty tree, whose code is not its link_sha; a gate on it cannot clear a run
+pick exited 2
+guard removed:
+WARN (pick only): history holds a build from a dirty tree, whose code is not its link_sha; a gate on this range could not clear a run
+pick only: /var/folders/mg/h910y2c54fsc99qj74dyrjph0000gn/T/mut442.DXyhSU/pick/pretest.md
+
+## short history in the launch check
+as committed:
+the gate borrowed a short history: fresh_default.log holds 4 of the 241 groups the config models (missing ADMS, ALBN, ATLL, ATNA, BABL, ...), so the p
+exit 2
+guard removed:
+the gate's the range starts at 2d8ae0486659, after history built at 21e0fea23d18
+exit 1

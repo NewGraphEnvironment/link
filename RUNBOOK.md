@@ -1836,7 +1836,9 @@ bash data-raw/pretest_run.sh --config=default --schema=fresh_default
   after it. A range must hold every one of those builds (start at or before
   each, and each an ancestor of the range's end, so its code is in the diff);
   one that does not is refused before anything is modelled (a warning under
-  `--pick-only`, which records nothing).
+  `--pick-only`, which records nothing). A history no range can cover, a build
+  with no `link_sha` or from a dirty or unknown tree, is refused under
+  `--pick-only` too.
 - **Which input each file drives.** `data-raw/pretest_inputs.csv` (repo, path
   regex, input, why). `{config}` in a pattern stands for any bundle in the
   chain. Inputs are queries, `data-raw/pretest/<input>.sql`, each returning
@@ -1941,6 +1943,30 @@ nothing). The check applies to every launch, dispatcher-only included;
 
 Evidence: `data-raw/logs/pretest_372/` (its README indexes it).
 
+
+**A bundle with no builds of its own borrows history (#442).** `default_minimal`
+before its first run has no groups, minutes or range to gate on, so it reads a
+config it extends:
+
+```bash
+bash data-raw/pretest_history_load.sh --host=<ssh target> --from=fresh_default --to=fresh_default_history
+bash data-raw/pretest_run.sh --config=default_minimal --schema=fresh_default_minimal \
+  --history-schema=fresh_default_history --history-config=default --minutes-exclude=KTSU,OKAN
+```
+
+- **Only from a config on its `extends` chain, and only while it has no builds.**
+  Once it has any, a gate must cover those, and the flags are refused.
+- **The record names what it borrowed,** so the launch check holds it to the same
+  history. It also keeps naming a schema that must still exist on the dispatcher.
+- **The history must hold every group the config models** (`lnk_wsg_resolve()`),
+  in the pick and at launch. The gate picks only groups the history holds, so m4's
+  4-group `fresh_default` picked exactly those 4. The full log sits on the host a
+  run consolidated on, and the loader copies it into a schema of its own by
+  `pg_dump -t`, with the key and indexes. It refuses a target holding anything else.
+- **ssh's exit status is not read.** The dump must end on `pg_dump`'s trailer and hold
+  the row count the host reports before anything local changes.
+- **The scratch schema is built `LIKE` a schema holding only `log`.** Each pick's
+  `lnk_persist_init()` creates the rest.
 ### The vintage gate reads load stamps (link#265, absorbing #247)
 
 `lnk_preflight_vintage()` (via `data-raw/host_vintage.R`) judges each snapshot
