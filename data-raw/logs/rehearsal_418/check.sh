@@ -3,11 +3,14 @@
 # Run from the repo root after the driver exits:
 #   bash data-raw/logs/rehearsal_418/check.sh <TS> <run_uid> <schema> <driver exit> <n groups> <host>...
 # <host> are the phases.tsv host keys expected (dispatcher worker1 job1 job2). Prints one line per check,
-# PASS or FAIL with the reason, then the verdict; exits 1 on any FAIL. Reads only.
+# PASS or FAIL with the reason, then the verdict; exits 1 on any FAIL. Writes its logs to a new temporary
+# directory, or to $CHECK_OUT when set (the committed record used this directory), and the negative verify
+# script builds and drops its own scratch schema.
 set -uo pipefail
 [ "$#" -ge 6 ] || { echo "usage: check.sh <TS> <run_uid> <schema> <driver exit> <n> <host>..." >&2; exit 2; }
 TS=$1 UID_=$2 SCHEMA=$3 DRC=$4 N=$5; shift 5; HOSTS=("$@")
-L=data-raw/logs/study_area_run; OUT=data-raw/logs/rehearsal_418
+L=data-raw/logs/study_area_run; OUT=${CHECK_OUT:-$(mktemp -d "${TMPDIR:-/tmp}/check418.XXXXXX")}
+echo "logs: $OUT"
 export PGPASSWORD=postgres
 fail=0
 say() { printf '%-28s %s\n' "$1" "$2"; case "$2" in FAIL*) fail=1 ;; esac; }
@@ -37,8 +40,17 @@ for f in "$deps" "$L/${TS}_run_wsgs.tsv" "$L/${TS}_consolidate_state.tsv" "$L/${
 done
 if [ -z "$missing" ]; then
   Rscript data-raw/recompute_audit.R "$SCHEMA" "$UID_" "$deps" "$L/${TS}_run_wsgs.tsv" \
-    "$L/${TS}_consolidate_state.tsv" "$L/${TS}_recompute_launched.tsv" > "$OUT/recompute_audit.log" 2>&1 \
-    && say "recompute_audit.R" PASS || say "recompute_audit.R" "FAIL: exit $? (see recompute_audit.log)"
+    "$L/${TS}_consolidate_state.tsv" "$L/${TS}_recompute_launched.tsv" > "$OUT/recompute_audit.log" 2>&1
+  arc=$?
+  # Exit 0 is not enough: header-only inputs give "0 dependency pairs ... 0 EARLY" and exit 0.
+  sum=$(grep -E 'dependency pairs in the run' "$OUT/recompute_audit.log" | tail -1)
+  pairs=$(printf '%s' "$sum" | sed -nE 's/.* ([0-9]+) dependency pairs in the run: ([0-9]+) ok.*/\1/p')
+  ok=$(printf '%s' "$sum" | sed -nE 's/.* ([0-9]+) dependency pairs in the run: ([0-9]+) ok.*/\2/p')
+  if [ "$arc" = 0 ] && [ -n "$pairs" ] && [ "$pairs" -gt 0 ] && [ "$ok" = "$pairs" ]; then
+    say "recompute_audit.R" "PASS ($ok of $pairs pairs ok)"
+  else
+    say "recompute_audit.R" "FAIL: exit $arc, pairs '${pairs:-?}', ok '${ok:-?}' (see recompute_audit.log)"
+  fi
 else
   # The audit reads a missing consolidate state or launch file as nothing landed or launched, and passes.
   say "recompute_audit.R" "FAIL: missing or empty:$missing"
@@ -54,7 +66,15 @@ else
 fi
 
 kept="$L/${TS}_kept_hosts.tsv"
-if [ -s "$kept" ] && [ "$(wc -l < "$kept")" -gt 1 ]; then say "no host kept" "FAIL: $kept"; else say "no host kept" PASS; fi
+if [ ! -e "$kept" ]; then
+  say "no host kept" PASS
+elif ! nk=$(wc -l < "$kept" 2>/dev/null); then
+  say "no host kept" "FAIL: $kept unreadable"
+elif [ "$nk" -gt 1 ]; then
+  say "no host kept" "FAIL: $kept lists a host"
+else
+  say "no host kept" PASS
+fi
 if dl=$(doctl compute droplet list --format Name --no-header 2>&1); then
   left=$(printf '%s\n' "$dl" | grep -c '^cypher-' || true)
   [ "$left" = 0 ] && say "cloud hosts burned" PASS || say "cloud hosts burned" "FAIL: $left cypher droplet(s) up"
