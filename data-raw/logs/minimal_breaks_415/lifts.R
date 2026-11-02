@@ -12,15 +12,22 @@
 # run on it under `default_minimal`. Classes, presence, paused species and orphans
 # are the build's own, and no SQL is copied here.
 #
+# Barrier positions are not cuts: a position on an FWA segment's start adds no
+# segment. So each count is given twice, as positions in gradient_barriers_minimal
+# and as segment starts in streams.
+#
 # Controls, each of which stops the script:
 #   1. The same steps with the build's own overrides reproduce the build: the same
 #      minimal positions and the same segments.
-#   2. In a species with no observation lift, the no-lift set equals the built set.
+#   2. Every segment start one side holds and the other does not lies within 1 m of
+#      a minimal position that side holds and the other does not: lifts move segments
+#      only through the positions they move.
 #
 # Reads working_<wsg>, which run.sh leaves holding the minimal build, so run it
 # after run.sh and before anything else rebuilds a group. Writes, beside this script:
 #   lifts.csv      per group and species, then per group ("ALL"): observation lifts,
-#                  cuts removed and added, how far each moved, km of segment changed
+#                  minimal positions removed and added and how far each moved; per
+#                  group, segment starts removed and added and km of segment changed
 #   lifts_obs.csv  #433's measure (research/species_paused.md), for reading beside it:
 #                  records of modelled species, how many sit on a changed segment,
 #                  and the median and largest gradient shift there
@@ -117,9 +124,9 @@ for (w in wsgs) {
   row <- function(species, a, b, lifts) {
     gone <- moved(b, a); added <- moved(a, b)
     data.frame(wsg = w, species = species, obs_lifts = lifts,
-               cuts_built = q("SELECT count(*) n FROM (%s) d", pos(a))$n,
-               cuts_no_lift = q("SELECT count(*) n FROM (%s) d", pos(b))$n,
-               cuts_removed_by_lifts = only(b, a), cuts_added_by_lifts = only(a, b),
+               positions_built = q("SELECT count(*) n FROM (%s) d", pos(a))$n,
+               positions_no_lift = q("SELECT count(*) n FROM (%s) d", pos(b))$n,
+               positions_removed_by_lifts = only(b, a), positions_added_by_lifts = only(a, b),
                removed_nearest_median_m = gone$median_m, removed_nearest_max_m = gone$max_m,
                removed_none_on_line = gone$none_on_line,
                added_nearest_median_m = added$median_m, added_nearest_max_m = added$max_m,
@@ -139,12 +146,7 @@ for (w in wsgs) {
 
   per_sp <- do.call(rbind, lapply(spp, function(s) {
     n <- lift_n(toupper(s))
-    r <- row(toupper(s), sprintf("%s.barriers_%s_min", W, s), sprintf("%s.barriers_%s_min", L, s), n)
-    # Control 2.
-    if (n == 0L && (r$cuts_removed_by_lifts != 0L || r$cuts_added_by_lifts != 0L)) {
-      stop(w, " ", r$species, " control: no observation lift, but its cuts differ", call. = FALSE)
-    }
-    r
+    row(toupper(s), sprintf("%s.barriers_%s_min", W, s), sprintf("%s.barriers_%s_min", L, s), n)
   }))
   all <- row("ALL", paste0(W, ".gradient_barriers_minimal"), paste0(L, ".gradient_barriers_minimal"), sum(per_sp$obs_lifts))
   km <- q(
@@ -154,6 +156,20 @@ for (w in wsgs) {
             (SELECT sum(l) FROM a) / 1000 km_total,
             (SELECT sum(a.l) FROM a WHERE NOT EXISTS (SELECT 1 FROM c WHERE c.b = a.b AND c.d = a.d AND c.u = a.u)) / 1000 km_changed", W, L)
   km$km_changed[is.na(km$km_changed)] <- 0
+  starts <- function(x) sprintf("SELECT DISTINCT blue_line_key, round(downstream_route_measure::numeric, 3) AS m FROM %s.streams", x)
+  only_starts <- function(x, y) q("SELECT count(*) n FROM (%s EXCEPT %s) d", starts(x), starts(y))$n
+  km$starts_removed_by_lifts <- only_starts(L, W)
+  km$starts_added_by_lifts <- only_starts(W, L)
+  # Control 2: each start that moved sits on a position that moved.
+  for (dir in list(c(W, L), c(L, W))) {
+    stray <- q(
+      "WITH s AS (%1$s EXCEPT %2$s), p AS (%3$s EXCEPT %4$s)
+       SELECT count(*) n FROM s
+        WHERE NOT EXISTS (SELECT 1 FROM p WHERE p.blue_line_key = s.blue_line_key AND abs(p.m - s.m) <= 1)",
+      starts(dir[1]), starts(dir[2]), pos(paste0(dir[1], ".gradient_barriers_minimal")),
+      pos(paste0(dir[2], ".gradient_barriers_minimal")))$n
+    if (stray != 0L) stop(w, " control: ", stray, " segment starts in ", dir[1], " only, at no moved position", call. = FALSE)
+  }
   per_sp[c(names(km))] <- NA
   res[[w]] <- rbind(per_sp, cbind(all, km))
 
@@ -185,6 +201,6 @@ for (w in wsgs) {
 out <- do.call(rbind, res)
 write.csv(out, file.path(here, "lifts.csv"), row.names = FALSE)
 write.csv(do.call(rbind, obs), file.path(here, "lifts_obs.csv"), row.names = FALSE)
-print(out[out$species == "ALL", ], digits = 4); print(do.call(rbind, obs), digits = 4)
+print(out[out$species == "ALL", ], digits = 4); print(out[out$species != "ALL" & out$obs_lifts > 0, 1:7]); print(do.call(rbind, obs), digits = 4)
 dbDisconnect(conn)
 cat("LIFTS_DONE\n")
