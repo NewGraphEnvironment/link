@@ -1316,3 +1316,35 @@ test_that("lnk_pipeline_prepare passes cfg to prep_dams", {
                        schema = "w_larl")
   expect_true(seen)
 })
+
+test_that(".lnk_pipeline_prep_minimal builds no set for a paused species (#432)", {
+  # RB is present and has an access gradient, but cfg$species leaves it out:
+  # a paused species adds no breaks (#433, option 1).
+  log <- list()
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      log[[length(log) + 1L]] <<- list(kind = "sql", sql = sql)
+      invisible(NULL)
+    })
+  local_mocked_bindings(
+    frs_barriers_minimal = function(conn, from, to, ...) {
+      log[[length(log) + 1L]] <<- list(kind = "min", from = from, to = to)
+      invisible(NULL)
+    },
+    .package = "fresh")
+  pres <- .pm_presence(ch = "t")
+  pres$rb <- "t"
+  cfg <- structure(list(species = "CH", pipeline = list()),
+                   class = "lnk_config")
+  loaded <- list(
+    parameters_fresh = data.frame(species_code = c("CH", "RB"),
+                                  access_gradient_max = c(0.15, 0.25),
+                                  stringsAsFactors = FALSE),
+    wsg_species_presence = pres)
+  .lnk_pipeline_prep_minimal("mock-conn", aoi = "BULK", cfg = cfg,
+                             loaded = loaded, schema = "w")
+  sql <- .pm_sql(log)
+  expect_length(grep("CREATE TABLE w\\.barriers_ch AS", sql), 1L)
+  expect_length(grep("barriers_rb", sql), 0L)
+  expect_identical(vapply(.pm_min(log), `[[`, "", "from"), "w.barriers_ch")
+})

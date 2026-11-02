@@ -23,19 +23,19 @@ There is no way to say "not now" short of removing the row. Steelhead have the s
 
 ## Phase 1: Tests first
 
-- [ ] `test-lnk_config.R`: `cfg$species` = rules species minus those marked `f`, in rules order; `cfg$species_paused` lists them. Refusals: a code with no rules entry, a rules species with no row, a `modelled` value other than `t`/`f`, and a duplicate code.
-- [ ] `extends:` inherits the file: `default_tuned` pauses KO and RB. A bundle that declares no file (`bcfishpass`, `default_extrabreaks`, `default_rearbreaks`) models every rules species, unchanged.
-- [ ] `.lnk_pipeline_prep_minimal()` builds no barrier set for a paused species (it iterates `cfg$species`, so this pins the existing route).
-- [ ] The acc spec moves when a species is paused (`lnk_vocabulary_resolve()` already hashes `cfg$species`, `R/lnk_vocabulary.R:202`).
+- [x] `test-lnk_config.R`: `cfg$species` = rules species minus those marked `f`, in rules order; `cfg$species_paused` lists them. Refusals: a code with no rules entry, a rules species with no row, a `modelled` value other than `t`/`f`, and a duplicate code.
+- [x] `extends:` inherits the file: `default_tuned` pauses KO and RB. A bundle that declares no file (`bcfishpass`, `default_extrabreaks`, `default_rearbreaks`) models every rules species, unchanged.
+- [x] `.lnk_pipeline_prep_minimal()` builds no barrier set for a paused species (it iterates `cfg$species`, so this pins the existing route).
+- [x] The acc spec moves when a species is paused (`lnk_vocabulary_resolve()` already hashes `cfg$species`, `R/lnk_vocabulary.R:202`).
 - [ ] Live tests (skip without the DB): a group with no modelled species builds streams and barriers and persists no habitat. A re-model clears the habitat rows of a species no longer modelled.
 
 ## Phase 2: The switch
 
-- [ ] `inst/extdata/configs/default/species_modelled.csv` (`species_code, modelled, reason, date, issue`, the shape of `species_pooling.csv`). KO `f`: the presence column was never sourced (four test values, PR #107; 137 groups with KO records unmarked, #402). RB `f`: field records do not reliably separate rainbow trout from steelhead. Every other rules species `t`. Declared under `files:` in `default/config.yaml`.
-- [ ] `configs/dictionary_species_modelled.csv`, covered by `test-dictionaries.R`.
-- [ ] `lnk_config()` applies the filter and adds `cfg$species_paused`. `print.lnk_config` shows paused species.
-- [ ] `data-raw/pretest_inputs.csv`: a row mapping `configs/{config}/species_modelled.csv` to `any` (the gate refuses an unmapped file).
-- [ ] The bundle's `README.md` names the file.
+- [x] `inst/extdata/configs/default/species_modelled.csv` (`species_code, modelled, reason, date, issue`, the shape of `species_pooling.csv`). KO `f`: the presence column was never sourced (four test values, PR #107; 137 groups with KO records unmarked, #402). RB `f`: field records do not reliably separate rainbow trout from steelhead. Every other rules species `t`. Declared under `files:` in `default/config.yaml`.
+- [x] `configs/dictionary_species_modelled.csv`, covered by `test-dictionaries.R`.
+- [x] `lnk_config()` applies the filter and adds `cfg$species_paused`. `print.lnk_config` shows paused species.
+- [x] `data-raw/pretest_inputs.csv`: a row mapping `configs/{config}/species_modelled.csv` to `any` (the gate refuses an unmapped file).
+- [x] The bundle's `README.md` names the file.
 
 ## Phase 3: Readers and a group with no modelled species
 
@@ -54,7 +54,7 @@ There is no way to say "not now" short of removing the row. Steelhead have the s
 
 ## Phase 5: Vocabulary, docs, release
 
-- [ ] An `acc-v5` row for `default` and `default_tuned`: as `acc-v4`, with KO and RB paused (no breaks, no access, no habitat). Check that `cut-full-top`'s wording still holds; its breaks follow the acc token.
+- [x] An `acc-v5` row for `default` and `default_tuned`: as `acc-v4`, with KO and RB paused (no breaks, no access, no habitat). Check that `cut-full-top`'s wording still holds; its breaks follow the acc token.
 - [ ] RUNBOOK: §2 (breaks follow modelled species) and the config section (the switch, and a group with no modelled species).
 - [ ] NEWS and the version bump to 0.76.0, the final commit. Add a CLAUDE.md Status entry.
 - [ ] #402's tracker: the 141 KO and RB rows already carry `issue` `#432` as pending deferrals. Confirm, and change nothing.
