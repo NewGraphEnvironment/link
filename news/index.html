@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.76.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.77.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,12 +32,19 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.76.0/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.76.0" id="link-0760">link 0.76.0<a class="anchor" aria-label="anchor" href="#link-0760"></a></h2>
-<p><strong>A bundle can pause a species without losing its rules, and <code>default</code> pauses kokanee and rainbow trout</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/432" class="external-link">#432</a>). <code>configs/default/species_modelled.csv</code> lists every rules species <code>t</code> or <code>f</code>; a paused row carries its reason, date and issue, and turning a species back on is a one-cell edit. KO is paused because its presence column was never sourced, RB because field records do not separate rainbow trout from steelhead. <code>default_tuned</code> inherits the file; <code>bcfishpass</code> declares none and is unchanged.</p>
+<h2 class="pkg-version" data-toc-text="0.77.0" id="link-0770">link 0.77.0<a class="anchor" aria-label="anchor" href="#link-0770"></a></h2>
+<p><strong>A second output of the <code>default</code> model, with far fewer cuts</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/415" class="external-link">#415</a>). The new <code>default_minimal</code> bundle cuts streams only at gradient barriers where a modelled species’ access changes, falls and user-definite barriers, so no fish record or road crossing cuts a stream at its own position. It is meant for tuning habitat thresholds. Records still reach the cuts through observation lifts: a barrier lifted for a species is no longer that species’ cut, though another species’ barrier or a falls may still cut there, and positions above it can become cuts. <code>default</code>, <code>default_tuned</code> and <code>bcfishpass</code> do not change.</p>
+<ul><li>
+<strong>The output is named <code>cut-min</code>,</strong> with <code>default</code>’s other three tokens. Cut tokens are keyed <code>cut-&lt;source set&gt;[-&lt;qualifier&gt;...]</code>, written down in the RUNBOOK.</li>
+<li>
+<strong><code>pipeline: break_order: ~</code> in a bundle that extends another is now refused.</strong> It would have deleted the parent’s list and fallen back to the default sources.</li>
+<li>
+<strong>Nothing has been modelled on it yet.</strong> <code>data-raw/logs/minimal_breaks_415/</code> holds the proof scripts, which compare the two networks group by group. They have not been run on the proof groups yet. Giving each full-network segment its minimal parent’s id and gradient is a follow-up built from what that proof shows. # link 0.76.0</li>
+</ul><p><strong>A bundle can pause a species without losing its rules, and <code>default</code> pauses kokanee and rainbow trout</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/432" class="external-link">#432</a>). <code>configs/default/species_modelled.csv</code> lists every rules species <code>t</code> or <code>f</code>; a paused row carries its reason, date and issue, and turning a species back on is a one-cell edit. KO is paused because its presence column was never sourced, RB because field records do not separate rainbow trout from steelhead. <code>default_tuned</code> inherits the file; <code>bcfishpass</code> declares none and is unchanged.</p>
 <ul><li>
 <strong>A paused species adds no gradient breaks, and is not classified or given access or mapping codes</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/433" class="external-link">#433</a>, “off means off”). Measured on six groups built both ways: segments fall 0.2 % (BULK) to 6.0 % (KETL), barrier rows and accessible km do not move, and habitat moves only in KOTL (BT rearing 20.9 km flips, +5.4 km net on 2,161) and KETL (0.4 km). 33 of KOTL’s 1,473 fish records sit on a segment that changed, with a median gradient shift of 0.012. Observation tops and known-habitat endpoints still cut streams. Write-up: <code>research/species_paused.md</code>.</li>
 <li>

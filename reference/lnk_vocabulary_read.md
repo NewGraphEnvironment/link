@@ -56,4 +56,5 @@ v[, c("token", "axis", "introduced")]
 #> 12       acc-bcfp-4  acc     0.74.0
 #> 13           acc-v4  acc     0.75.0
 #> 14           acc-v5  acc     0.76.0
+#> 15          cut-min  cut     0.77.0
 ```

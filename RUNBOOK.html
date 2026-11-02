@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.76.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.77.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,7 +32,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="logo.png" class="logo" alt=""><h1>link RUNBOOK — how the system actually works</h1>
-      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.76.0/RUNBOOK.md" class="external-link"><code>RUNBOOK.md</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/RUNBOOK.md" class="external-link"><code>RUNBOOK.md</code></a></small>
     </div>
 
 <div id="link-runbook--how-the-system-actually-works" class="section level1">
@@ -163,7 +163,8 @@
 <td>on each <code>blue_line_key</code>, each species’ farthest-upstream observation</td>
 <td>
 <code>default</code>, and <code>default_tuned</code> by inheritance</td>
-</tr></tbody></table><p><strong>What reads an observation break.</strong> Only <code>access_&lt;sp&gt;</code> code 2 (“accessible, and the species is observed upstream”) against code 1. The access walk (<code><a href="reference/lnk_pipeline_access.html">lnk_pipeline_access()</a></code>, <code>frs_network_features(direction = "upstream", include_equivalents = FALSE, result = "distinct")</code>) reads every group’s records itself (<code>&lt;schema&gt;.observations_province</code>, since #401), not the breaks table, and its same-line measure test counts a record as upstream of a segment only when the record is at least 1 m above the segment’s start (fwapg <code>fwa_upstream</code>, fresh’s 1 m tolerance; clause 1 below). That is bcfishpass’s reading: its walk calls <code>FWA_Upstream(…, False, 1)</code> (<code>load_streams_upstr_observations.sql</code>). Breaks are rounded to the metre, so a break at a species’ top starts its segment within 0.5 m of the record: that segment reads 1 (barring the cases below) and the one ending there reads 2. So code 2 is a property of a segment’s start. <strong>What reads 2</strong> is <code>fwa_upstream()</code>’s clauses (fwapg; each first asks that the record’s watershed code descend from or equal the segment’s):</p>
+</tr></tbody></table><p><code>default_minimal</code> leaves <code>observations</code> out of <code>break_order</code>, so no record cuts its streams and the key it inherits has no effect (#415).</p>
+<p><strong>What reads an observation break.</strong> Only <code>access_&lt;sp&gt;</code> code 2 (“accessible, and the species is observed upstream”) against code 1. The access walk (<code><a href="reference/lnk_pipeline_access.html">lnk_pipeline_access()</a></code>, <code>frs_network_features(direction = "upstream", include_equivalents = FALSE, result = "distinct")</code>) reads every group’s records itself (<code>&lt;schema&gt;.observations_province</code>, since #401), not the breaks table, and its same-line measure test counts a record as upstream of a segment only when the record is at least 1 m above the segment’s start (fwapg <code>fwa_upstream</code>, fresh’s 1 m tolerance; clause 1 below). That is bcfishpass’s reading: its walk calls <code>FWA_Upstream(…, False, 1)</code> (<code>load_streams_upstr_observations.sql</code>). Breaks are rounded to the metre, so a break at a species’ top starts its segment within 0.5 m of the record: that segment reads 1 (barring the cases below) and the one ending there reads 2. So code 2 is a property of a segment’s start. <strong>What reads 2</strong> is <code>fwa_upstream()</code>’s clauses (fwapg; each first asks that the record’s watershed code descend from or equal the segment’s):</p>
 <ol style="list-style-type: decimal"><li>A record on the segment’s own line at least 1 m above its start. This is the only clause #399 changed; <code>TRUE</code> read <code>start − 1</code>.</li>
 <li>A record on another line, by watershed codes alone. Where the segment’s watershed and local codes are equal, any other line whose watershed code descends from or equals the segment’s counts, except a distributary carrying the same two codes. Where they differ, a line counts when its watershed code is greater than the segment’s local code and does not descend from it (a tributary entering above), or when it has the same watershed code and a larger local code (fwapg’s “capture side channels”). None of this reads measure, so a tributary’s records count for every segment of the receiving line below its mouth.</li>
 <li>Where the segment’s two codes differ, the side-channel test also matches the segment’s own line, again ignoring measure, wherever local codes there do not rise with measure: on PARS line 359567332 the segments starting at 182477 and 183194 m read BT 2 from the line’s top BT record at 182461 m.</li>
@@ -468,7 +469,41 @@ The bucket is versioned but cannot be listed (<code>?versions</code> is AccessDe
 <code>discharge_source</code> and <code>discharge_fill</code>
 </td>
 <td>canonical string</td>
-</tr></tbody></table><p><strong>A network is <code>cut</code> and <code>acc</code> together.</strong> Since #326, gradient positions cut a stream only where a modelled species’ access changes, so the access rules move segments as much as the break sources do. Two outputs with the same <code>cut</code> token and different <code>acc</code> tokens are cut differently.</p>
+</tr></tbody></table><p><strong>How a cut token is keyed.</strong> <code>cut-&lt;source set&gt;[-&lt;qualifier&gt;...]</code>: the source set says which kinds of break a network has, and each qualifier says how a source in it is read.</p>
+<table class="table"><colgroup><col width="33%"><col width="33%"><col width="33%"></colgroup><thead><tr><th>Source set</th>
+<th>Cuts at</th>
+<th>Status</th>
+</tr></thead><tbody><tr><td><code>full</code></td>
+<td>observations, access-gradient positions, falls, user-definite barriers, habitat end points, crossings</td>
+<td>
+<code>cut-full-top</code>, <code>cut-full-ssf-all</code>
+</td>
+</tr><tr><td><code>min</code></td>
+<td>gradient barriers where a modelled species’ access changes, falls, user-definite barriers</td>
+<td>
+<code>cut-min</code> (<code>default_minimal</code>, #415)</td>
+</tr><tr><td>a barriers-only set</td>
+<td>falls and user-definite barriers, no access-gradient cuts</td>
+<td>room in the pattern; named when built</td>
+</tr><tr><td>a no-cut set</td>
+<td>FWA’s own segments</td>
+<td>room in the pattern; named when built</td>
+</tr></tbody></table><table class="table"><colgroup><col width="33%"><col width="33%"><col width="33%"></colgroup><thead><tr><th>Qualifier</th>
+<th>Says</th>
+<th>Reads</th>
+</tr></thead><tbody><tr><td><code>top</code></td>
+<td>each species’ highest record per line cuts</td>
+<td><code>pipeline: observation_breaks</code></td>
+</tr><tr><td><code>all</code></td>
+<td>every record cuts</td>
+<td><code>pipeline: observation_breaks</code></td>
+</tr><tr><td><code>ssf</code></td>
+<td>subsurface-flow lines cut</td>
+<td>
+<code>subsurfaceflow</code> in <code>pipeline: break_order</code>
+</td>
+</tr></tbody></table><p>A set with no observation source takes no <code>top</code> or <code>all</code>, because the spec leaves <code>observation_breaks</code> out when <code>observations</code> is not in <code>break_order</code>. The same <code>cut</code> token under another <code>acc</code> token is another network (the next paragraph), so a second minimal network under other access classes is <code>cut-min</code> with a new <code>acc</code>.</p>
+<p><strong>A network is <code>cut</code> and <code>acc</code> together.</strong> Since #326, gradient positions cut a stream only where a modelled species’ access changes, so the access rules move segments as much as the break sources do. Two outputs with the same <code>cut</code> token and different <code>acc</code> tokens are cut differently.</p>
 <p><strong>What gets no token.</strong> Habitat thresholds and rules, and width against flow: they change flags, not segments, and a tuning chooses them. Data vintage: observation records, the bcfishpass correction CSVs, <code>observation_exclusions.csv</code>, FWA and the discharge loads. <code>config_hash</code> and <code>log_input</code> carry those. Same tokens means made the same way, not necessarily from the same data.</p>
 <p><strong>A config with no live token is refused</strong> before the run opens. That covers a changed break source, a new access gradient, an edited presence table, a bundle loaded by path that differs from every named one, or <code>default_extrabreaks</code> and <code>default_rearbreaks</code>, which have no rows. The error prints the spec. <code>study_area_run.sh</code>’s local pre-flight asks the same question once, before any spend.</p>
 <p><strong>Adding a token.</strong> Add a row with <code>token</code>, <code>axis</code>, <code>definition</code> (prose that still makes sense in years), <code>spec</code> (paste the one the error printed), <code>introduced</code> (the release that ships it) and an empty <code>retired</code>. Then add a test of the config resolving to it in <code>test-lnk_vocabulary.R</code>.</p>
@@ -714,6 +749,8 @@ PARS,ko,t,link models kokanee; bcfishpass's presence table has no KO column,#106
 <strong>Not every column is live on link’s path.</strong> Rules inherit gradient and channel width; <code>*_mad_*</code> replace channel width only for watershed groups the bundle’s method table puts on <code>mad</code> (next section); <code>spawn/rear_edge_types</code> are read only on fresh’s no-rules fallback. <code>rear_lake_ha_min</code> is <strong>baked into <code>rules.yaml</code></strong> by <code>lnk_rules_build(thresholds =)</code>, so changing it needs a rules rebuild. The dictionary’s <code>consumed_by</code> column has the <a href="file:line" class="uri">file:line</a> for each.</li>
 <li>
 <strong>Runs record the values</strong> in <code>&lt;persist&gt;.log_parameters_habitat_thresholds</code> (keyed on <code>config_hash</code>), beside <code>log_parameters_fresh</code>.</li>
+<li>
+<strong><code>default_minimal</code> is a thin bundle too</strong> (#415): <code>default</code> cut only at access-gradient positions, falls and user-definite barriers, into <code>fresh_default_minimal</code>. Its <code>break_order</code> replaces the parent’s list, because <code>pipeline:</code> merges one key at a time; <code>break_order: ~</code> is refused at manifest load.</li>
 <li>
 <strong><code>default_tuned</code> is a thin bundle</strong> (<code>extends: default</code>). Inherited provenance entries carry <code>.dir</code>, <code>cfg$chain</code> lists the extends directories, and <code>.lnk_config_hash()</code> hashes every <code>config.yaml</code> on the chain and names inherited files <code>extends:&lt;bundle&gt;/&lt;rel&gt;</code>, sorted in byte order (not <code>LC_COLLATE</code>), so the hash is the same on every host. A relative <code>extends:</code> path resolves against the child bundle, not the working directory. Before #282 no shipped bundle extended anything, and all three of those were broken.</li>
 </ul></div>
