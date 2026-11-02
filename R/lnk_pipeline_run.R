@@ -228,7 +228,7 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
   if (length(active_species) == 0L &&
       length(lnk_pipeline_species(cfg, loaded, aoi, paused = TRUE)) == 0L) { # nolint: object_usage_linter
     stop("no active species in ", aoi,
-         " — no rules species of the bundle is present in wsg_species_presence.",
+         ": no rules species of the bundle is present in wsg_species_presence.",
          call. = FALSE)
   }
   if (length(active_species) > 0L) {

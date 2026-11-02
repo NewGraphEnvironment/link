@@ -91,7 +91,8 @@ test_that("persist with no species writes no habitat table (#432)", {
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql); invisible(NULL)
+      captured <<- c(captured, sql)
+      invisible(NULL)
     }
   )
   m <- mock_dbi_no_barriers()
@@ -109,7 +110,8 @@ test_that(".lnk_persist_clear_unmodelled deletes only species not classified (#4
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql); invisible(NULL)
+      captured <<- c(captured, sql)
+      invisible(NULL)
     },
     .lnk_table_exists = function(conn, table) FALSE
   )
@@ -136,7 +138,8 @@ test_that(".lnk_persist_clear_unmodelled keeps only the near-river pairs the bui
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql); invisible(NULL)
+      captured <<- c(captured, sql)
+      invisible(NULL)
     },
     .lnk_table_exists = function(conn, table) table == "fresh.streams_near_river"
   )
@@ -165,7 +168,8 @@ test_that("lnk_pipeline_persist accepts non-default schema", {
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql); invisible(NULL)
+      captured <<- c(captured, sql)
+      invisible(NULL)
     }
   )
   m <- mock_dbi_no_barriers()
@@ -189,7 +193,8 @@ test_that("lnk_pipeline_persist persists barriers when staging table present", {
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql); invisible(NULL)
+      captured <<- c(captured, sql)
+      invisible(NULL)
     }
   )
   # Probe returns one row → <schema>.barriers exists.
@@ -216,7 +221,8 @@ test_that("lnk_pipeline_persist persists barrier_overrides when staging table pr
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql); invisible(NULL)
+      captured <<- c(captured, sql)
+      invisible(NULL)
     }
   )
   # Probe returns one row → <schema>.barrier_overrides exists.
@@ -245,7 +251,8 @@ test_that("lnk_pipeline_persist skips barrier_overrides branch when staging tabl
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql); invisible(NULL)
+      captured <<- c(captured, sql)
+      invisible(NULL)
     }
   )
   m <- mock_dbi_no_barriers()
@@ -267,7 +274,8 @@ test_that("lnk_pipeline_persist skips barriers branch when staging table absent"
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql); invisible(NULL)
+      captured <<- c(captured, sql)
+      invisible(NULL)
     }
   )
   m <- mock_dbi_no_barriers()
@@ -292,7 +300,8 @@ test_that("lnk_pipeline_persist never deletes from a log table (link#354)", {
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql); invisible(NULL)
+      captured <<- c(captured, sql)
+      invisible(NULL)
     }
   )
   with_mocked_bindings(
@@ -328,7 +337,8 @@ test_that("a pair that found no river still clears the group's earlier rows (#36
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql); invisible(NULL)
+      captured <<- c(captured, sql)
+      invisible(NULL)
     }
   )
   # The working near-river table is absent (as when the walk found nothing
@@ -368,7 +378,8 @@ test_that("the delete writes a pair's numbers as fresh stores them (round 3)", {
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql); invisible(NULL)
+      captured <<- c(captured, sql)
+      invisible(NULL)
     }
   )
   cfg <- lnk_config("default")

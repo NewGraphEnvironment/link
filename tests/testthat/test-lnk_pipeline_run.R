@@ -319,7 +319,12 @@ test_that("a group with only paused species is built with no habitat (#432)", {
   calls <- character()
   persisted <- list()
   cleared <- list()
-  note <- function(x) function(...) { calls <<- c(calls, x); invisible(NULL) }
+  note <- function(x) {
+    function(...) {
+      calls <<- c(calls, x)
+      invisible(NULL)
+    }
+  }
   m_noop <- function(...) invisible(NULL)
   with_mocked_bindings(
     lnk_pipeline_setup = m_noop, lnk_pipeline_load = m_noop,
@@ -332,10 +337,12 @@ test_that("a group with only paused species is built with no habitat (#432)", {
     },
     lnk_persist_init = m_noop, lnk_barriers_unify = m_noop,
     lnk_pipeline_persist = function(conn, aoi, cfg, species, schema) {
-      persisted[[length(persisted) + 1L]] <<- species; invisible(NULL)
+      persisted[[length(persisted) + 1L]] <<- species
+      invisible(NULL)
     },
     .lnk_persist_clear_unmodelled = function(conn, cfg, aoi, species, schema) {
-      cleared[[length(cleared) + 1L]] <<- species; invisible(NULL)
+      cleared[[length(cleared) + 1L]] <<- species
+      invisible(NULL)
     },
     lnk_presence = m_noop,
     lnk_barriers_views = m_noop, lnk_pipeline_access = note("access"),
