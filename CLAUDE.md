@@ -13,7 +13,7 @@ Experimental package — breaking all the time and loving the learning curve. St
 
 ## Status (2026-11-02, latest) — #441's run is ready to launch once its five PRs merge
 
-**Five stacked PRs carry Phases 1 to 5 of #441:** #443 (the gate borrows history; fresh 0.52.0; 0.78.0), #445 (#415's proof: the minimal network is the full one with fewer cuts; observation lifts move 0 to 1.2 % of km), #447 (`default` at this code equals its last builds; `bcfishpass` parity 48/50), #448 (m4 and m1 primitives refreshed 2026-11-02), and this branch (the gate passed on `default_minimal`, borrowing `fresh_default_history`; the rehearsal passed every check on its second try). Merge in that order; each is based on the one before. Plan and launch decisions: `planning/active/task_plan.md`.
+**Five stacked PRs carry Phases 1 to 5 of #441:** #443 (the gate borrows history; fresh 0.52.0; 0.78.0), #445 (#415's proof: the minimal network is the full one with fewer cuts; observation lifts move 0 to 1.2 % of km), #447 (`default` at this code equals its last builds; `bcfishpass` parity 48/50), #448 (m4 and m1 primitives refreshed 2026-11-02), and #449 (the gate passed on `default_minimal`, borrowing `fresh_default_history`; the rehearsal passed every check on its second try). Merge in that order; each is based on the one before. Plan and launch decisions: `planning/active/task_plan.md`.
 
 **Owed before launch:**
 - The merges, then a run branch from `main`; the gate record holds while the merged commits keep `24b2cbb3` an ancestor and nothing on its watched paths changes.
