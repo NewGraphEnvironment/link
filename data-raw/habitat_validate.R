@@ -80,14 +80,6 @@ if (anyDuplicated(bundles$schema)) {
 }
 species <- toupper(split_csv(opt("species", "CH,BT")))
 if (length(species) == 0L) stop("--species is empty", call. = FALSE)
-# A species a bundle pauses (#432) has no habitat to score in a build of it.
-for (b in bundles$config) {
-  paused <- intersect(species, lnk_config(b)$species_paused)
-  if (length(paused) > 0L) {
-    stop("--species names ", paste(paused, collapse = ", "),
-         ", which bundle ", b, " pauses (species_modelled.csv)", call. = FALSE)
-  }
-}
 buffers <- as.numeric(split_csv(opt("buffers", "0,100")))
 if (anyNA(buffers) || !0 %in% buffers) {
   stop("--buffers must be numbers and include 0 (the misses are buffer 0)",
@@ -131,6 +123,32 @@ bundle_wsgs <- lapply(seq_len(nrow(bundles)), function(i) {
 if (nrow(bundles) == 2L &&
     length(intersect(bundle_wsgs[[1]], bundle_wsgs[[2]])) == 0L) {
   stop("the two bundles share no WSGs", call. = FALSE)
+}
+
+# A species the bundle pauses (#432) has no habitat in a build made since the
+# pause. What a schema holds is its own record, not the bundle as it stands
+# now: a schema built before the pause (fresh_default until the next
+# provincial run) still holds its habitat. So a paused species is refused only
+# where every scored group's newest finished build lists its species and none
+# lists this one; a build that logged no species list is not judged.
+for (i in seq_len(nrow(bundles))) {
+  paused <- intersect(species, lnk_config(bundles$config[i])$species_paused)
+  if (length(paused) == 0L) next
+  built <- dbGetQuery(conn, sprintf(
+    "SELECT DISTINCT ON (watershed_group_code) watershed_group_code,
+            array_to_string(species, ',') AS species
+       FROM %s.log
+      WHERE watershed_group_code = ANY($1::text[]) AND date_end IS NOT NULL
+      ORDER BY watershed_group_code, date_end DESC", bundles$schema[i]),
+    params = list(paste0("{", paste(bundle_wsgs[[i]], collapse = ","), "}")))
+  if (nrow(built) < length(bundle_wsgs[[i]]) || anyNA(built$species)) next
+  classified <- unique(unlist(strsplit(built$species, ",", fixed = TRUE)))
+  none <- setdiff(paused, classified)
+  if (length(none) > 0L) {
+    stop("--species names ", paste(none, collapse = ", "), ", which ",
+         bundles$config[i], " pauses, and no scored group's newest build in ",
+         bundles$schema[i], " classified it", call. = FALSE)
+  }
 }
 
 # -- absences (optional) and pooling: data-raw/habitat_validate_inputs.R -------

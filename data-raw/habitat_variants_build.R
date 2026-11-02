@@ -579,9 +579,10 @@ write_bundle <- function(r) {
 # it runs in every variants pass, --only or not.
 run_variants <- unique(c(base_variant,
                          if (length(only) > 0L) only else variants$variant))
-# A variant of a species the base pauses (#432) classifies nothing: its bundle
-# extends the base, which leaves the species out of cfg$species. Refused for
-# the variants this run builds or writes, not for every row of the file
+# A variant of a species the base pauses (#432) would be scored on a base built
+# without that species: no gradient breaks of its own and no access_<sp>, so
+# its band scores would not describe the species' model. Refused for the
+# variants this run builds or writes, not for every row of the file
 # (variants_300/302/305 carry RB rows), and not for --step=base.
 if (step != "base") local({
   sp <- variants$species_code[variants$variant %in% run_variants]
