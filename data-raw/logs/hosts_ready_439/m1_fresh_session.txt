@@ -1,0 +1,11 @@
+# m1 fresh install, 2026-11-02, as printed in the session's terminal (copied by hand, not captured to a file).
+# 1. pak::pkg_install("NewGraphEnvironment/fresh@v0.52.0", upgrade = FALSE, ask = FALSE), then again with
+#    Sys.unsetenv(c("GITHUB_PAT", "GITHUB_TOKEN")) first; both printed:
+! Could not solve package dependencies:
+* NewGraphEnvironment/fresh@v0.52.0: ! pkgdepends resolution error for NewGraphEnvironment/fresh@v0.52.0.
+! Bad GitHub credentials, make sure that your GitHub token is valid.
+! Unauthorized (HTTP 401).
+# 2. m1_fresh_install.R (this directory), which printed:
+Installing 1 packages: cpp11
+INSTALLED 0.52.0 245c8d8db60b446f1fedb72340f55faa25f32f24 v0.52.0
+# m1_fresh_installed.txt is a later read of packageDescription("fresh") on m1, by a separate command.
