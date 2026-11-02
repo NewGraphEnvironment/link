@@ -81,7 +81,11 @@ if [ ! -d "$DIR/.git" ]; then
   git clone -q "$ORIGIN" "$DIR"
 fi
 cd "$DIR"
-got=$(git remote get-url origin 2>/dev/null || true)
+# The configured URL, not `git remote get-url`: that applies the host's url.<base>.insteadOf rules, and a host
+# rewriting https://github.com/ to ssh (m1 does) could never match. The ssh form is normalized to https, as
+# study_area_run.sh does for the run's own origin.
+got=$(git config --get remote.origin.url 2>/dev/null || true)
+case "$got" in git@github.com:*) got="https://github.com/${got#git@github.com:}" ;; esac
 if [ "$got" != "$ORIGIN" ]; then
   echo "FATAL: $DIR's origin is '$got', not the run's '$ORIGIN'; it is not the driver's clone" >&2
   exit 1

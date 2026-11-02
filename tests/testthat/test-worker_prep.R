@@ -79,6 +79,31 @@ test_that("a directory that is not the driver's clone is refused, untouched", {
   expect_match(r$out, "not the driver's clone", fixed = TRUE)
 })
 
+test_that("a host's insteadOf rules and the ssh form of the origin do not make the clone a stranger", {
+  w <- wprep_world()
+  run_url <- "https://github.com/NewGraphEnvironment/link.git"
+  ssh_url <- "git@github.com:NewGraphEnvironment/link.git"
+  # The host rewrites both GitHub forms to the local origin, as m1 rewrites https to ssh: git fetches
+  # through the rule, and `git remote get-url` reports the rewritten URL.
+  cfg <- file.path(w, "gitconfig")
+  writeLines(c(sprintf('[url "%s"]', file.path(w, "origin")),
+               sprintf("\tinsteadOf = %s", run_url), sprintf("\tinsteadOf = %s", ssh_url)), cfg)
+  env <- c(GIT_CONFIG_GLOBAL = cfg, WORKER_PREP_ORIGIN = run_url)
+  r <- run_wprep(w, env)
+  expect_equal(r$status, 0L, info = r$out)
+  expect_match(r$out, "=== READY$")
+  # A clone that holds the ssh form is the same repository.
+  system2("git", c("-C", file.path(w, "clone"), "remote", "set-url", "origin", ssh_url))
+  r <- run_wprep(w, env)
+  expect_equal(r$status, 0L, info = r$out)
+  # The ssh form of another repository is still refused.
+  system2("git", c("-C", file.path(w, "clone"), "remote", "set-url", "origin",
+                   "git@github.com:Other/link.git"))
+  r <- run_wprep(w, env)
+  expect_equal(r$status, 1L)
+  expect_match(r$out, "not the driver's clone", fixed = TRUE)
+})
+
 test_that("the fresh install refuses a FRESH_GIT_SHA pin, and an unknown stage is refused", {
   w <- wprep_world()
   r <- run_wprep(w, c(WORKER_PREP_STAGE = "install-fresh", FRESH_GIT_SHA = "abc1234"))

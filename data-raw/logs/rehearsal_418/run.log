@@ -1,0 +1,176 @@
+=== study_area_run 20261102_112137 ===
+  run_uid:      20261102_112137-6a1461b2
+  run_label:    rehearsal-418
+  config:       default_minimal
+  branch:       418-gate-rehearsal (cyphers run this ref)
+  persist:      zz418_rehearsal
+  cyphers:      job1 job2 (2)
+  workers:      worker1 (1; persistent, never burned)
+  log dir:      /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run
+  vintage max:  7 d
+  recompute -j: 8
+  recompute:    early (each group once it and every group it reads have landed; link#374)
+  statement:    30 min per modelling statement (PGOPTIONS, both legs); recompute 10 min (wsg_recompute_one.R)
+  buckets:      exact (--buckets-exact; each --focal= list as given; the recompute settles access)
+  OVERRIDE:     no pre-run gate record required — rehearsal for #418 into a scratch schema; the gate passed on fresh_default_minimal at 24b2cbb3 (log_pretest 2026-11-02 11:08 UTC)
+  phases:       /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_112137_phases.tsv
+  [phase] refresh skipped
+=== pre-flight (local; pre-spend) ===
+  ✓ dispatcher fresh exports what the pipeline calls
+  ✓ output tokens: cut-min acc-v5 grad-seg q-fwapg 
+  ✓ origin/418-gate-rehearsal is at HEAD
+  ✓ fwapg_sha 5d50cc17e4d6 (exported to all hosts)
+  ✓ bcfishobs_sha dd9a5e5d2ddc (exported to all hosts)
+  ✓ fresh_sha 245c8d8db60b (clean)
+  WARN: pre-run gate not cleared (zz418_rehearsal does not cover the groups default_minimal models, and its gate borrowed no history to hold it to) — proceeding on --pretest-note
+  ✓ bcfp reference pinned at v0.7.15-51-g3bd2824 (exported to all hosts)
+    ok   discharge (fwapg) loaded: whse_basemapping.fwa_stream_networks_discharge
+  ✓ discharge (fwapg) loaded on the dispatcher
+    [preflight] primitive vintage (window 7 d) - OK, oldest 0.1 d (whse_fish.pscis_assessment_svw) [judged by load stamp: 4, statistics: 0, none: 0]
+  ✓ dispatcher primitives within 7 d
+  ✓ doctl token valid (DO API reachable)
+  ✓ tofu do_token valid (HTTP 200 /v2/account)
+  ✓ tofu s3 backend reachable
+  ✓ worker1: answers, its own database
+  ✓ pre-flight clean (tunnel-free)
+psql:/Users/airvine/Projects/repo/link-breaks/data-raw/pretest_override.sql:22: NOTICE:  relation "log_pretest" already exists, skipping
+  recorded --pretest-note in zz418_rehearsal.log_pretest (run_uid 20261102_112137-6a1461b2)
+=== resolve exact buckets (--buckets-exact; order as given, species filter only) ===
+  dispatcher (focal=SALR,MURT): SALR,MURT
+  worker1 (focal=LSAL,LNRS): LSAL,LNRS
+  cy[job1] (focal=MUSK): MUSK
+  cy[job2] (focal=LEUT): LEUT
+=== workers: prior rows ===
+  ✓ worker1: zz418_rehearsal holds no rows for its bucket
+  run groups: /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_112137_run_wsgs.tsv
+=== dispatcher persist (zz418_rehearsal): init ===
+  ✓ zz418_rehearsal initialised (see /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_112137_persist_init.log)
+=== early recompute: log tables, barrier views, dependency map ===
+  ✓ log tables present in zz418_rehearsal
+  ✓ barrier views built once for zz418_rehearsal
+  [phase] views ok 2026-11-02T11:21:51Z -> 2026-11-02T11:21:53Z (0.0 min)
+=== dispatcher persist (zz418_rehearsal): backup in the background ===
+  backup -> /tmp/zz418_rehearsal_pre_run_20261102_112137.dump (see /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_112137_backup.log)
+=== prep workers (worker_prep.sh): worker1 ===
+=== spin cyphers: job1 job2 ===
+  cy[job1] = <redacted>
+  cy[job2] = <redacted>
+=== prep cyphers (cypher_prep.sh) ===
+  [phase] prep job1 ok 2026-11-02T11:21:53Z -> 2026-11-02T11:31:01Z (9.1 min)
+  [phase] prep job2 ok 2026-11-02T11:21:53Z -> 2026-11-02T11:31:01Z (9.1 min)
+  ✓ cyphers prepped
+  [phase] prep worker1 ok 2026-11-02T11:21:53Z -> 2026-11-02T11:21:58Z (0.1 min)
+  ✓ workers prepped
+=== pre-flight (hosts; post-prep, pre-write) ===
+[preflight] host parity - OK across 4 host(s): m4, <worker1>, cypher-job1, cypher-job2
+  ✓ host parity clean (4 hosts)
+  ✓ cy[worker1] primitives within 7 d
+  ✓ cy[job1] primitives within 7 d
+  ✓ cy[job2] primitives within 7 d
+  [phase] backup ok 2026-11-02T11:21:53Z -> 2026-11-02T11:21:54Z (0.0 min)
+  ✓ pre-run backup taken (see /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_112137_backup.log)
+  ✓ dependency map: 2211 pairs (see /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_112137_recompute_deps.log)
+  [phase] prep ok 2026-11-02T11:21:37Z -> 2026-11-02T11:31:13Z (9.6 min, 6 groups)
+=== run buckets (DS-first) ===
+=== legs: each remote host is consolidated when its own leg ends (a cypher then burned, a worker released) ===
+  early recompute scheduler started (-j8; see /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_112137_recompute_scheduler.log)
+  [phase] model worker1 ok 2026-11-02T11:31:17Z -> 2026-11-02T11:32:48Z (1.5 min, 2 groups)
+=== worker1: leg ended (exit 0); account, consolidate, release ===
+  ✓ worker1: 2/2 WSGs accounted for (2 finished, 0 SKIP; database)
+  [phase] account worker1 ok 2026-11-02T11:32:48Z -> 2026-11-02T11:32:48Z (0.0 min, 2 groups)
+  consolidating worker1: 2 groups (see /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_112137_consolidate_worker1.log)
+  ✓ worker1: consolidated
+  ✓ worker1: no finished group left on the host after consolidate — may be released
+  [phase] consolidate worker1 ok 2026-11-02T11:32:48Z -> 2026-11-02T11:33:26Z (0.6 min, 2 groups)
+  [phase] burn worker1 skipped
+  [phase] model job2 ok 2026-11-02T11:31:17Z -> 2026-11-02T11:33:13Z (1.9 min, 1 groups)
+=== cy[job2]: leg ended (exit 0); account, consolidate, burn ===
+  ✓ cy[job2]: 1/1 WSGs accounted for (1 finished, 0 SKIP; database)
+  [phase] account job2 ok 2026-11-02T11:33:26Z -> 2026-11-02T11:33:27Z (0.0 min, 1 groups)
+  consolidating cy[job2]: 1 groups (see /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_112137_consolidate_job2.log)
+  ✓ cy[job2]: consolidated
+  ✓ cy[job2]: no finished group left on the host after consolidate — may be burned
+  [phase] consolidate job2 ok 2026-11-02T11:33:27Z -> 2026-11-02T11:33:58Z (0.5 min, 1 groups)
+=== BURN CYPHERS: job2 ===
+  cy[job2]: 0 tofu resources (expect 0)
+  ✓ burn clean
+  [phase] burn job2 ok 2026-11-02T11:33:58Z -> 2026-11-02T11:34:25Z (0.5 min)
+  [phase] model dispatcher ok 2026-11-02T11:31:13Z -> 2026-11-02T11:33:27Z (2.2 min, 2 groups)
+  [phase] model job1 ok 2026-11-02T11:31:17Z -> 2026-11-02T11:33:37Z (2.3 min, 1 groups)
+=== cy[job1]: leg ended (exit 0); account, consolidate, burn ===
+  ✓ cy[job1]: 1/1 WSGs accounted for (1 finished, 0 SKIP; database)
+  [phase] account job1 ok 2026-11-02T11:34:25Z -> 2026-11-02T11:34:27Z (0.0 min, 1 groups)
+  consolidating cy[job1]: 1 groups (see /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_112137_consolidate_job1.log)
+  ✓ cy[job1]: consolidated
+  ✓ cy[job1]: no finished group left on the host after consolidate — may be burned
+  [phase] consolidate job1 ok 2026-11-02T11:34:27Z -> 2026-11-02T11:34:55Z (0.5 min, 1 groups)
+=== BURN CYPHERS: job1 ===
+  cy[job1]: 0 tofu resources (expect 0)
+  ✓ burn clean
+  [phase] burn job1 ok 2026-11-02T11:34:55Z -> 2026-11-02T11:35:22Z (0.5 min)
+  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)
+=== dispatcher completeness (database) ===
+  ✓ dispatcher: 2/2 WSGs accounted for (2 finished, 0 SKIP; database)
+  [phase] account dispatcher ok 2026-11-02T11:35:22Z -> 2026-11-02T11:35:22Z (0.0 min, 2 groups)
+=== verify WSG coverage in zz418_rehearsal (run_uid 20261102_112137-6a1461b2) ===
+  6/6 run WSGs have rows from a build this run finished
+  classes: /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_112137_coverage.tsv
+  [phase] coverage ok 2026-11-02T11:35:22Z -> 2026-11-02T11:35:22Z (0.0 min, 6 groups)
+=== groups outside the run that read it (zz418_rehearsal) ===
+  ✓ outside readers: 0 to recompute, 0 named (/Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_112137_outside_readers.tsv)
+=== post-consolidate recompute (lnk_access, 6 WSGs, -j8) ===
+  6 of 6 group(s) recomputed while the legs ran (see /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_112137_recompute_scheduler.log)
+[fanout] recompute - OK: 6/6 job(s) succeeded
+  ✓ recompute: 6/6 WSGs
+  ✓ recompute audit: no group started before a group it reads had landed
+  [phase] recompute ok 2026-11-02T11:33:49Z -> 2026-11-02T11:35:26Z (1.6 min, 6 groups)
+=== compare (tunnel-free) ===
+  ✓ compare CSV: /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_112137_compare.csv
+  [phase] compare ok 2026-11-02T11:35:26Z -> 2026-11-02T11:35:43Z (0.3 min, 6 groups)
+=== summary ===
+  phases (/Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_112137_phases.tsv):
+    phase       host       start_utc            end_utc              minutes groups status
+    refresh                                                                         skipped
+    views                  2026-11-02T11:21:51Z 2026-11-02T11:21:53Z     0.0        ok
+    backup                 2026-11-02T11:21:53Z 2026-11-02T11:21:54Z     0.0        ok
+    prep        worker1    2026-11-02T11:21:53Z 2026-11-02T11:21:58Z     0.1        ok
+    prep        job1       2026-11-02T11:21:53Z 2026-11-02T11:31:01Z     9.1        ok
+    prep        job2       2026-11-02T11:21:53Z 2026-11-02T11:31:01Z     9.1        ok
+    prep                   2026-11-02T11:21:37Z 2026-11-02T11:31:13Z     9.6      6 ok
+    model       worker1    2026-11-02T11:31:17Z 2026-11-02T11:32:48Z     1.5      2 ok
+    account     worker1    2026-11-02T11:32:48Z 2026-11-02T11:32:48Z     0.0      2 ok
+    model       job2       2026-11-02T11:31:17Z 2026-11-02T11:33:13Z     1.9      1 ok
+    consolidate worker1    2026-11-02T11:32:48Z 2026-11-02T11:33:26Z     0.6      2 ok
+    burn        worker1                                                             skipped
+    account     job2       2026-11-02T11:33:26Z 2026-11-02T11:33:27Z     0.0      1 ok
+    model       dispatcher 2026-11-02T11:31:13Z 2026-11-02T11:33:27Z     2.2      2 ok
+    model       job1       2026-11-02T11:31:17Z 2026-11-02T11:33:37Z     2.3      1 ok
+    consolidate job2       2026-11-02T11:33:27Z 2026-11-02T11:33:58Z     0.5      1 ok
+    burn        job2       2026-11-02T11:33:58Z 2026-11-02T11:34:25Z     0.5        ok
+    account     job1       2026-11-02T11:34:25Z 2026-11-02T11:34:27Z     0.0      1 ok
+    consolidate job1       2026-11-02T11:34:27Z 2026-11-02T11:34:55Z     0.5      1 ok
+    burn        job1       2026-11-02T11:34:55Z 2026-11-02T11:35:22Z     0.5        ok
+    account     dispatcher 2026-11-02T11:35:22Z 2026-11-02T11:35:22Z     0.0      2 ok
+    coverage               2026-11-02T11:35:22Z 2026-11-02T11:35:22Z     0.0      6 ok
+    recompute              2026-11-02T11:33:49Z 2026-11-02T11:35:26Z     1.6      6 ok
+    compare                2026-11-02T11:35:26Z 2026-11-02T11:35:43Z     0.3      6 ok
+  critical path: 14.1 min (first start to last end)
+  longest model leg: 2.3 min (job1)
+  consolidate tail: 1.3 min (last consolidate end past the last model end)
+  learn host speeds from this run's legs (a plan packed on --minutes-schema):
+    Rscript data-raw/host_speeds_calibrate.R --plan=<study_area_buckets.R --plan-out> \
+      --phases=/Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_112137_phases.tsv [--skip=<name>:<reason>] [--dry-run]
+  run WSGs:        LEUT,LNRS,LSAL,MURT,MUSK,SALR
+  recomputed WSGs: LEUT,LNRS,LSAL,MURT,MUSK,SALR
+  compare CSV: /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_112137_compare.csv
+[study_area_compare] NOTE: 3 group(s) with no modelled species skipped: LEUT,LNRS,MURT
+[study_area_compare] 3 rows across 3/3 WSGs -> /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_112137_compare.csv
+# A tibble: 3 × 7
+  wsg   species total_segs match_pct n_diffs top_pattern       top_pattern_count
+* <chr> <chr>        <int>     <dbl>   <int> <chr>                         <int>
+1 LSAL  CH            9373      74.8    2365 "REAR;NONE | ACC…              1015
+2 MUSK  CH            6668      41.3    3914 "ACCESS;MODELLED…              1495
+3 SALR  CH            9206      76.4    2173 "REAR;NONE | ACC…              1213
+=== study_area_run done ===
+  ✓ redacted host addresses in 44 log file(s)
+DRIVER_EXIT=0

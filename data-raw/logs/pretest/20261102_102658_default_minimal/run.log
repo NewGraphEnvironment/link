@@ -1,0 +1,71 @@
+=== pre-run gate (link#372) ===
+  config:          default_minimal
+  history schema:  fresh_default_history under default, borrowed (minutes from fresh_default_history, excluding KTSU,OKAN)
+  record schema:   fresh_default_minimal
+  scratch schema:  fresh_pretest_default_minimal (dropped and rebuilt)
+  range:           <earliest newest build in fresh_default_history.log>..HEAD
+  bound:           3 x last minutes, floor 5 min; statements <= 30 min
+  out:             /Users/airvine/Projects/repo/link-breaks/data-raw/logs/pretest/20261102_102658_default_minimal
+--since from fresh_default_history.log: the earliest of the groups' newest builds, link 1d00c04cc5b2
+Changed and NOT exercised by the gate: link data-raw/schema_consolidate.R, link data-raw/study_area_run.sh, link data-raw/wsg_recompute_one.R, link R/lnk_access.R
+2 group(s) bounded on the median 3.7 min (excluded or no row in fresh_default_history.log)
+69 changed file(s), inputs: crossings, dams, gradient, near_river_conn, obs_upstream, observations, segments
+  pick SETN  [gradient,segments]  last 16.3 min on m1, bound 48.8 min
+  pick BULK  [crossings]  last 13.7 min on cypher-job3, bound 41.1 min
+  pick QUES  [near_river_conn]  last 9.3 min on m1, bound 28.0 min
+  pick LFRA  [obs_upstream,observations]  last 6.6 min on m1, bound 19.8 min
+  pick TOAD  [gradient,segments]  last 6.0 min on cypher-job2, bound 18.0 min
+  pick HARR  [obs_upstream]  last 5.7 min on m1, bound 17.2 min
+  pick UPCE  [observations]  last 3.7 min on cypher-job1, bound 11.2 min
+  pick OKAN  [dams]  last 3.7 min on median, bound 11.2 min
+  pick TAKL  [near_river_conn]  last 3.2 min on m1, bound 9.5 min
+  pick HORS  [crossings]  last 2.6 min on m1, bound 7.7 min
+  pick SAJR  [dams]  last 1.6 min on m1, bound 5.0 min
+=== scratch schema fresh_pretest_default_minimal (tables of fresh_default_history, no rows) ===
+  1 tables, 4 indexes
+=== SETN [gradient,segments] last 16.3 min on m1; bound 48.8 min, statements 30 min ===
+  [wsg_run_one] SETN done in 6.2 min (persist=fresh_pretest_default_minimal)
+  exit 0 after 374 s; other active sessions seen: up to 0
+=== BULK [crossings] last 13.7 min on cypher-job3; bound 41.1 min, statements 30 min ===
+  [wsg_run_one] BULK done in 4.0 min (persist=fresh_pretest_default_minimal)
+  exit 0 after 241 s; other active sessions seen: up to 0
+=== QUES [near_river_conn] last 9.3 min on m1; bound 28.0 min, statements 29 min ===
+  [wsg_run_one] QUES done in 12.2 min (persist=fresh_pretest_default_minimal)
+  exit 0 after 733 s; other active sessions seen: up to 0
+=== LFRA [obs_upstream,observations] last 6.6 min on m1; bound 19.8 min, statements 20 min ===
+  [wsg_run_one] LFRA done in 2.7 min (persist=fresh_pretest_default_minimal)
+  exit 0 after 166 s; other active sessions seen: up to 0
+=== TOAD [gradient,segments] last 6.0 min on cypher-job2; bound 18.0 min, statements 18 min ===
+  [wsg_run_one] TOAD done in 4.0 min (persist=fresh_pretest_default_minimal)
+  exit 0 after 245 s; other active sessions seen: up to 0
+=== HARR [obs_upstream] last 5.7 min on m1; bound 17.2 min, statements 18 min ===
+  [wsg_run_one] HARR done in 2.5 min (persist=fresh_pretest_default_minimal)
+  exit 0 after 154 s; other active sessions seen: up to 0
+=== UPCE [observations] last 3.7 min on cypher-job1; bound 11.2 min, statements 12 min ===
+  [wsg_run_one] UPCE done in 1.7 min (persist=fresh_pretest_default_minimal)
+  exit 0 after 104 s; other active sessions seen: up to 0
+=== OKAN [dams] last 3.7 min on median; bound 11.2 min, statements 12 min ===
+  [wsg_run_one] OKAN done in 2.3 min (persist=fresh_pretest_default_minimal)
+  exit 0 after 141 s; other active sessions seen: up to 0
+=== TAKL [near_river_conn] last 3.2 min on m1; bound 9.5 min, statements 10 min ===
+  [wsg_run_one] TAKL done in 3.0 min (persist=fresh_pretest_default_minimal)
+  exit 0 after 181 s; other active sessions seen: up to 0
+=== HORS [crossings] last 2.6 min on m1; bound 7.7 min, statements 8 min ===
+  [wsg_run_one] HORS done in 1.5 min (persist=fresh_pretest_default_minimal)
+  exit 0 after 93 s; other active sessions seen: up to 0
+=== SAJR [dams] last 1.6 min on m1; bound 5.0 min, statements 5 min ===
+  [wsg_run_one] SAJR done in 0.8 min (persist=fresh_pretest_default_minimal)
+  exit 0 after 53 s; other active sessions seen: up to 0
+  SETN pass    last  16.3  bound  48.8  this run 6.2
+  BULK pass    last  13.7  bound  41.1  this run 4.0
+  QUES pass    last   9.3  bound  28.0  this run 12.2
+  LFRA pass    last   6.6  bound  19.8  this run 2.7
+  TOAD pass    last   6.0  bound  18.0  this run 4.0
+  HARR pass    last   5.7  bound  17.2  this run 2.5
+  UPCE pass    last   3.7  bound  11.2  this run 1.7
+  OKAN pass    last   3.7  bound  11.2  this run 2.3
+  TAKL pass    last   3.2  bound   9.5  this run 3.0
+  HORS pass    last   2.6  bound   7.7  this run 1.5
+  SAJR pass    last   1.6  bound   5.0  this run 0.8
+GATE PASS (recorded in fresh_default_minimal.log_pretest)
+report: /Users/airvine/Projects/repo/link-breaks/data-raw/logs/pretest/20261102_102658_default_minimal/pretest.md

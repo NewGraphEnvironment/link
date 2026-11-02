@@ -1,0 +1,12 @@
+driver exit                  PASS
+study_area_verify.sql        PASS
+verify negative cases        PASS
+recompute_audit.R            PASS
+phases: model on dispatcher  PASS
+phases: model on worker1     PASS
+phases: model on job1        PASS
+phases: model on job2        PASS
+no host kept                 PASS
+cloud hosts burned           PASS
+outside_readers.tsv          PASS
+REHEARSAL: PASS

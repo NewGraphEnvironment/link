@@ -1,0 +1,25 @@
+=== negative test of study_area_verify.sql against run 20261102_112137-6a1461b2 ===
+NOTICE:  schema "zz_lnk_verify_negative" does not exist, skipping
+  scratch schema zz_lnk_verify_negative built: 6 WSG(s)
+  habitat copied settled: ch in LSAL
+  ✓ 1. healthy data              -> PASS (as expected)
+  ✓ 2. LEUT recompute deleted -> FAIL (as expected)
+  ✓ 3. expected_n=7 (wrong)  -> FAIL (as expected)
+  ✓ 4a. unpinned, no reason      -> FAIL (as expected)
+  ✓ 4b. unpinned + written reason-> PASS (as expected)
+  ✓ 4c. unpinned + blank reason  -> FAIL (as expected)
+  ✓ 5. fresh_sha NULLed -> FAIL (as expected)
+  ✓ 6. bcfishobs_sha NULLed -> FAIL (as expected)
+  ✓ 6b. fresh_dirty=TRUE         -> FAIL (as expected)
+  ✓ 6c. m4 on a different fresh -> FAIL (as expected)
+  ✓ 6d. ch row un-settled -> FAIL (as expected)
+NOTICE:  column "habitat_gate_lifted" of relation "log_recompute" already exists, skipping
+  ✓ 6e. LEUT lifted 3      -> FAIL (as expected)
+  ✓ 6f. SALR open row, superseded -> PASS (as expected)
+  ✓ 6g. SALR open row, not superseded -> FAIL (as expected)
+  ✓ 6h. outside reader recomputed -> PASS (as expected)
+  ✓ 6i. outside reader lifted 3   -> PASS, reported (as expected)
+  ✓ 7. healthy data, post-restore-> PASS (as expected)
+
+=== negative test PASSED: the verify script fails when it should, and
+    passes when it should ===

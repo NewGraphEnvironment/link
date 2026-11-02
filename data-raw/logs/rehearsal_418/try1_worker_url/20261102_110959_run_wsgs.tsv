@@ -1,0 +1,7 @@
+wsg	host	skip	run_uid	bucket_mode
+MURT	dispatcher	unknown	20261102_110959-50380beb	exact
+SALR	dispatcher	unknown	20261102_110959-50380beb	exact
+LNRS	worker1	unknown	20261102_110959-50380beb	exact
+LSAL	worker1	unknown	20261102_110959-50380beb	exact
+MUSK	job1	unknown	20261102_110959-50380beb	exact
+LEUT	job2	unknown	20261102_110959-50380beb	exact

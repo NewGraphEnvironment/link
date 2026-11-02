@@ -11,6 +11,22 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-11-02, latest) — #441's run is ready to launch once its five PRs merge
+
+**Five stacked PRs carry Phases 1 to 5 of #441:** #443 (the gate borrows history; fresh 0.52.0; 0.78.0), #445 (#415's proof: the minimal network is the full one with fewer cuts; observation lifts move 0 to 1.2 % of km), #447 (`default` at this code equals its last builds; `bcfishpass` parity 48/50), #448 (m4 and m1 primitives refreshed 2026-11-02), and #449 (the gate passed on `default_minimal`, borrowing `fresh_default_history`; the rehearsal passed every check on its second try). Merge in that order; each is based on the one before. Plan and launch decisions: `planning/active/task_plan.md`.
+
+**Owed before launch:**
+- The merges, then a run branch from `main`; the gate record holds while the merged commits keep `24b2cbb3` an ancestor and nothing on its watched paths changes.
+- `~/Projects/repo/bcfishobs` on m4 holds uncommitted files (not this work's) that fail the pre-flight; the rehearsal pointed `BCFISHOBS_DIR` at a clean clone at the same HEAD.
+- Just before launch, HEAD the two bchamp objects against `data-raw/logs/hosts_ready_439/load_stamps.csv`; refresh if they moved.
+- m1's GitHub token is refused: pak cannot install there. m1 already holds fresh 0.52.0, so `--auto-install` does nothing on it unless the pin moves.
+- #446: the driver's bcfishpass reference pin reads the newest ledger row of any kind.
+
+**Facts not worth re-deriving:**
+- **The rehearsal's first try stopped at the worker's prep:** `worker_prep.sh` compared `git remote get-url`, which m1's `url.<base>.insteadOf` rewrites. It now reads `remote.origin.url` (tested).
+- **The gate's picks on the 241-group history:** SETN, BULK, QUES, LFRA, TOAD, HARR, UPCE, OKAN, TAKL, HORS, SAJR, each within its bound (QUES 12.2 min against its 9.3).
+- **On the minimal network rearing rises** (BULK chinook 2,101 to 2,205 km): its connectivity pass drops less on longer segments (`research/minimal_network.md`).
+
 ## Status (2026-11-02, later) — the pre-run gate can borrow a parent config's history; fresh 0.52.0 pinned (#442, #441's first PR)
 
 **`pretest_run.sh --history-schema= --history-config=` gates a bundle whose own builds do not yet cover it, from a config it extends, and refuses a history short of the groups the bundle models, in the pick and at launch (0.78.0).** `data-raw/pretest_history_load.sh` copies a host's `log` into a schema of its own. Mechanics: RUNBOOK §8d, "The pre-run gate". Evidence: `data-raw/logs/gate_borrow_442/`, `data-raw/logs/minimal_run_441/`.

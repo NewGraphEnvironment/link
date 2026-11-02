@@ -108,11 +108,11 @@ Phases 1 to 5 about 7 to 9 hours (PR 1 about 1.5 h with CI; proof builds about 2
 
 ## Phase 5: PR 5, the gate and the rehearsal (#418)
 
-- [ ] Run branch from `main`. Quiet check, then `pretest_run.sh --config=default_minimal --schema=fresh_default_minimal --history-schema=fresh_default_history --history-config=default --minutes-exclude=KTSU,OKAN`. A real pass is required, recorded and committed. The scratch schema is built `LIKE` a history schema holding only `log`; each pick's `lnk_persist_init()` creates the rest. First gate in that shape, so its log is read, not assumed.
-- [ ] What voids the gate after it passes: any change to `study_area_run.sh`, `wsg_recompute_one.R`, `schema_consolidate.R` (mapped `unexercised`) or `data-raw/pretest*` (its own rules), as well as the modelling path. The rehearsal's check script lives at `data-raw/logs/rehearsal_418/check.sh`, and a driver fix means the gate runs again.
-- [ ] Rehearsal as decided above: `--preflight-only`, the small run, then each check named pass or fail: exit 0, `study_area_verify.sql`, the negative script, `recompute_audit.R`, `phases.tsv` rows on every host, hosts burned and none kept, `outside_readers.tsv`, and outputs against the last build (a report, not a fail).
-- [ ] Teardown; the worker checked clean. Evidence and #418's body updated.
-- [ ] `/code-check branch`, PR, merge, `Relates` #418.
+- [x] Run from the stacked branch head (merges are the operator's; a merge commit keeps the gate's sha an ancestor), not a branch from `main`. Quiet check, then `pretest_run.sh --config=default_minimal --schema=fresh_default_minimal --history-schema=fresh_default_history --history-config=default --minutes-exclude=KTSU,OKAN`. A real pass is required, recorded and committed. The scratch schema is built `LIKE` a history schema holding only `log`; each pick's `lnk_persist_init()` creates the rest. First gate in that shape, so its log is read, not assumed.
+- [x] What voids the gate after it passes: any change to `study_area_run.sh`, `wsg_recompute_one.R`, `schema_consolidate.R` (mapped `unexercised`) or `data-raw/pretest*` (its own rules), as well as the modelling path. The rehearsal's check script lives at `data-raw/logs/rehearsal_418/check.sh`, and a driver fix means the gate runs again.
+- [x] Rehearsal as decided above (second try passed; the first stopped on a worker-clone URL check, fixed in `worker_prep.sh`): `--preflight-only`, the small run, then each check named pass or fail: exit 0, `study_area_verify.sql`, the negative script, `recompute_audit.R`, `phases.tsv` rows on every host, hosts burned and none kept, `outside_readers.tsv`, and outputs against the last build (a report, not a fail).
+- [x] Teardown; the worker checked clean. Evidence and #418's body updated.
+- [x] `/code-check branch` (three rounds, ended on round 3's enumeration), PR #449 stacked on #448. Merge is the operator's. `Relates` #418.
 
 ## Phase 6: PR 6, the run
 
