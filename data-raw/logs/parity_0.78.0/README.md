@@ -33,6 +33,6 @@ four bounds were wrong: accessible and spawning moved more than it allowed, and 
 | `parity_crosssection.log`, `parity_annotated.csv` | the score |
 | `moves.R`, `moves.log` | the comparison with v0.68.0, adapted from `../parity_0.68.0/moves.R`; the line list became a temp table, because #326 re-breaks 17,527 lines and a `VALUES` list overflowed Postgres's stack. Columns and labels say `old` (`fresh_parity361`) and `new` (`fresh_parity441`). |
 | `pair_moves.csv` | every scored pair, before and after, with the reference's change |
-| `segment_diff.csv`, `resegmented.csv.gz`, `resegmented_*.csv` | segments both builds share whose habitat changed; segments in one build only (gzipped) |
+| `segment_diff.csv`, `resegmented.csv.gz`, `resegmented_*.csv` | segments both builds share whose access or habitat changed; segments in one build only (gzipped) |
 | `override_diff.csv` | barrier-override positions added or lost (none) |
 | `mapping_code_moves.csv` | the driver's mapping-code compare, before and after |

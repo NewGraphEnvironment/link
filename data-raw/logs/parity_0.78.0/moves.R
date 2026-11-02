@@ -14,7 +14,7 @@
 # LNK_COMPARE_NEW names the new run's compare CSV under data-raw/logs/study_area_run/.
 # Segments are matched on (watershed_group_code, blue_line_key, downstream_route_measure),
 # unique within a persist schema, and must have the same length (within 1 mm). Segments
-# in one build only (the two builds break the line in different places, #277) are written
+# in one build only (the two builds break the line in different places, #326 at this release) are written
 # to resegmented.csv and left out of the segment diff.
 # Run from the repo root:
 #   LNK_COMPARE_NEW=<TS>_compare.csv Rscript data-raw/logs/parity_0.78.0/moves.R
@@ -186,7 +186,7 @@ cat(sprintf("override positions: %d before, %d after; %d added, %d lost\n",
 dbDisconnect(conn)
 
 # mapping_code agreement with bcfishpass over all 17 groups (the driver's compare).
-# Moved by the gate and by lines the two builds break differently (resegmented_closure.csv),
+# Moved by lines the two builds break differently (resegmented_closure.csv),
 # which also changes downstream-barrier flags on segments of other lines.
 cmp_dir <- "data-raw/logs/study_area_run"
 c_old <- read.csv(file.path(cmp_dir, "20261023_215312_compare.csv"))

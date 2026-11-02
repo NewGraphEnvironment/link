@@ -51,13 +51,14 @@ stamp is in `data-raw/logs/parity_0.78.0/README.md`.
 
 The v0.68.0 score (run `20261023_215312-16fb3aae`, `fresh_parity361`) was 48/50; so is this one. Of the inputs,
 the four snapshot primitives are the same load (their load stamps), the reference is m1's view load of
-2026-10-23 (`v0.7.15-50-g620dbe4`, the newest snapshot row in `bcfp_baselines.csv`) and its values moved on 0 of 50
+2026-10-23 (`v0.7.15-50-g620dbe4`, the newest m1 snapshot row in `bcfp_baselines.csv` before the build) and its values moved on 0 of 50
 pairs, and no barrier override was added or lost. FWA and discharge were not compared. So the moves are put down to
 code. About 40 of the 50 pairs moved by 0.1 km or more in totals each rounded to 0.1 km (`pair_moves.csv`):
 
 - **Rearing rose in BULK and BABL** for BT, CH, CO and ST, by 4.6 to 23.3 km a pair. BULK CH, CO and ST crossed the
-  reference; all but BULK CO ended nearer it. Most of the gain is on segments both builds share (BULK BT +22.1 km of
-  +21.4, `segment_diff.csv`), where it can come from a rule or from rearing clusters that re-broken lines join or cut
+  reference; all but BULK CO ended nearer it. Most of the gain is on segments both builds share (BULK BT +22.1 km there against
+  +21.4 km scored: `segment_diff.csv` counts the raw flag, lake connection lines included, and the score leaves them
+  out), where it can come from a rule or from rearing clusters that re-broken lines join or cut
   (#324). It is consistent with #326's order-1 rearing exception (`rear_stream_order_bypass`, BT, CH, CO, ST and WCT
   in this bundle), which was not isolated here.
 - **Spawning fell toward the reference** in ADMS BT (−4.5 km), ELKR BT (−8.2) and ELKR WCT (−9.1). It changed on
@@ -73,7 +74,7 @@ are shared with the old (`moves.log`). `expected.txt`, written before scoring, w
 accessible km moved more than 0.1, spawning more than 0.5, and BULK CO rearing moved away from the reference. Its
 bounds leaned on #326's measurement on other groups. Only the pass count held.
 
-**`default` at the same code** (#440): KETL, KOTL, BULK and MURT built under `default` match their last builds exactly. Against the last provincial build, their moves line up with the changes since 0.68.0 (#326, #396, #432, #402), not checked row by row (`data-raw/logs/test_builds_440/README.md`).
+**`default` at the same code** (#440): KETL, KOTL, BULK and MURT built under `default` match their last builds row for row in every stream, barrier, access, mapping-code and habitat table (`data-raw/logs/test_builds_440/identical.csv`). Against the last provincial build, their moves line up with the changes since 0.68.0 (#326, #396, #432, #402), not checked row by row (`data-raw/logs/test_builds_440/README.md`).
 
 ## What moved at v0.68.0 (2026-10-23, #361)
 
@@ -159,15 +160,19 @@ search of the `bcfishpass` config (`data-raw/logs/parity_0.66.6/turn_bt.txt`).
 Rebuild the closure into a scratch schema, verify, score, compare:
 
 ```bash
+psql ... -c "CREATE SCHEMA <scratch>"   # --pretest-note records into it, so it must exist
 bash data-raw/study_area_run.sh --focal=ADMS,BULK,BABL,ELKR --config=bcfishpass \
-  --schema=<scratch> --run-label=<label> --recompute-jobs=8
+  --schema=<scratch> --run-label=<label> --recompute-jobs=8 --cy-workspaces= \
+  --pretest-note="<why: a parity scratch build, not a run the gate clears>" \
+  --preflight-note="<why: primitives held at the load the previous build read>"
 psql ... -v schema=<scratch> -v run_uid=<uid> -v expected_n=17 -f data-raw/study_area_verify.sql
 LNK_LOAD=loadall LNK_SCHEMA=<scratch> LNK_CONFIG=bcfishpass LNK_PARITY_OUT=<dir>/parity_annotated.csv \
   Rscript data-raw/parity_crosssection.R ADMS BULK BABL ELKR
 ```
 
 Keep the reference fixed across the two runs being compared (do not pass `--refresh-primitives`),
-or a move cannot be put down to code. `moves.R` compares two builds of the closure, so the previous build's schema is kept until the next re-score (today `fresh_parity441`, and `fresh_parity361` before it). Then revise
+or a move cannot be put down to code. Both notes are needed for that: a new scratch schema has no gate record,
+and a held primitive load is past the 7-day vintage gate within a week. `moves.R` compares two builds of the closure, so the previous build's schema is kept until the next re-score (today `fresh_parity441`, and `fresh_parity361` before it). Then revise
 this file: the table, what moved, the run line under the heading.
 
 ## History

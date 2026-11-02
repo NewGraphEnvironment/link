@@ -8,9 +8,11 @@ lies in a group this schema does not hold, and the check runs after the recomput
 
 ## Against the same groups' last builds (`zz432_post`)
 
-`compare.R` (copied from `../species_paused_432/`, output path changed): **identical.** BULK, KETL and KOTL there are link `a6942b5d` at fresh 0.52.0; MURT's newest row is a later rebuild, link `2774f5b2`, logged at fresh 0.48.0. Segments, break positions,
+`compare.R` (copied from `../species_paused_432/`; output path changed, and both schemas are required arguments): **identical.** BULK, KETL and KOTL there are link `a6942b5d` at fresh 0.52.0; MURT's newest row is a later rebuild, link `2774f5b2`, logged at fresh 0.48.0. Segments, break positions,
 barrier and override rows, accessible, spawning and rearing km per species, and the segment under each fish record
-are the same in all four groups (`summary.csv`, `km.csv`, `obs.csv`, `compare.log`). The code since those builds moves nothing in `default`'s output on these groups.
+are the same in all four groups (`summary.csv`, `km.csv`, `obs.csv`, `compare.log`). The code since those builds moves nothing in `default`'s output on these groups: `identical.sql` finds no row in
+one schema and not the other, either way, in `streams`, `streams_access`, `streams_mapping_code`, `barriers`,
+`barrier_overrides` and all 11 `streams_habitat_<sp>` tables (`identical.csv`).
 
 ## Against the last provincial build (m1 `fresh_default`, run `20261023_074321-24d85e8c`, link 0.68.0, fresh 0.42.0; `provenance_m1_fresh_default.csv`)
 
@@ -30,8 +32,9 @@ are the same in all four groups (`summary.csv`, `km.csv`, `obs.csv`, `compare.lo
 - **KO and RB have no habitat or access** (paused, #432). In MURT, where only RB was present, the group is still
   built, with no habitat.
 - **BULK gains chum** (5,164 km accessible, 1,862 km spawning), from #402's presence review.
-- **Barrier rows rise 15 to 40 per group.** That is the scale #326's change to `lnk_barriers_unify()` restored (rows
-  `FWA_LocateAlong()` could not place, 4 to 31 per group lost before); not checked row by row.
+- **Barrier rows rise 15 to 40 per group,** of the order of #326's change to `lnk_barriers_unify()` (rows
+  `FWA_LocateAlong()` could not place, 4 to 31 per group lost before); KOTL's 40 is above that range. Not checked row
+  by row.
 - **Accessible km move by 0.0 to 0.3 %, spawning and rearing by under 1 %** for every species modelled in both
   (KOTL BT rearing 2,179 to 2,167 km, KETL WCT spawning 1,387 to 1,377 km).
 
