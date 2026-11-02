@@ -51,4 +51,11 @@ mutate data-raw/pretest.R '    if (length(chain) > 1L && !own_complete) {
 '; echo "guard removed:"; ownpick; restore
 echo "pick borrowing the 4-group history, as committed:"; OWN=zz442_own pick fresh_default
 echo "launch check with two builds of its own, on a record that borrowed the 4-group history, as committed:"; check own
-mutate data-raw/pretest.R '  if (own_complete || length(chain) == 1L) return(list(schema = schema, config = config))'; echo "own builds taken as the history (the old rule):"; check own; restore
+# The old rule: any build of its own is the history. Then only the record's own checks speak.
+python3 - "$WT/data-raw/pretest_check.R" <<'PY2'
+import sys
+p = sys.argv[1]; s = open(p).read()
+old = "pretest_history_complete(own$wsg, modelable), chain)"; assert old in s
+open(p, 'w').write(s.replace(old, "NROW(own) > 0L, chain)", 1))
+PY2
+git -C "$WT" -c user.email=m -c user.name=m commit -qam mutation; echo "any build taken as the history (the old rule):"; check own; restore
