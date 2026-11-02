@@ -48,7 +48,9 @@
 #' @param cfg An `lnk_config` object (resolves `cfg$pipeline$schema`
 #'   for the underlying persist-schema reference).
 #' @param species Character vector of species codes the views should
-#'   cover. Default `c("BT","CH","CM","CO","PK","SK","ST","WCT")`.
+#'   cover. Default `c("BT","CH","CM","CO","PK","SK","ST","WCT")`. May be
+#'   empty, which builds only the per-source views (a group where only
+#'   paused species are present).
 #' @param barriers_table Character or `NULL`. Source barriers table the
 #'   views read from. Default `NULL` → uses `<persist_schema>.barriers`
 #'   from `cfg` (the original behaviour). Pass a working-schema name
@@ -133,7 +135,7 @@ lnk_barriers_views <- function(conn, schema, cfg,
     inherits(conn, "DBIConnection"),
     is.character(schema), length(schema) == 1L, nzchar(schema),
     inherits(cfg, "lnk_config"),
-    is.character(species), length(species) > 0L,
+    is.character(species),
     is.null(barriers_table) ||
       (is.character(barriers_table) && length(barriers_table) == 1L &&
         nzchar(barriers_table)),

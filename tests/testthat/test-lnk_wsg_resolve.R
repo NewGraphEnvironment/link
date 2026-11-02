@@ -166,3 +166,14 @@ test_that("lnk_wsg_resolve province mode returns the full bundle-species list", 
   # Spot-check a few known bundle-species WSGs are present
   expect_true(all(c("BULK", "PARS", "ADMS") %in% res))
 })
+
+test_that("a group where only paused species are present stays modelable (#432)", {
+  cfg <- lnk_config("default")
+  loaded <- lnk_load_overrides(cfg)
+  # CHUK's only cell is DV (RB reaches it only through lnk_presence()'s
+  # ct_dv_rb group), so the filter drops it, as it did before any pause.
+  seven <- c("BRID", "GRNL", "LEUT", "LNRS", "MURT", "PITR", "UISR")
+  expect_identical(lnk_wsg_resolve(cfg, loaded, wsgs = seven, expand = FALSE),
+                   seven)
+  expect_length(lnk_wsg_resolve(cfg, loaded), 241L)
+})

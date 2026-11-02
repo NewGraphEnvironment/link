@@ -98,6 +98,8 @@ cols_streams_access_base <- c(
 #' @noRd
 .lnk_cols_streams_access_per_sp <- function(species) {
   sp <- tolower(species)
+  # paste0() over no species is one name, not none (a paused-only group, #432).
+  if (length(sp) == 0L) return(stats::setNames(character(0), character(0)))
   c(
     setNames(rep("boolean", length(sp)),
              paste0("has_barriers_", sp, "_dnstr")),
@@ -124,6 +126,7 @@ cols_streams_mapping_code_base <- c(
 #' @noRd
 .lnk_cols_streams_mapping_code_per_sp <- function(species) {
   sp <- tolower(species)
+  if (length(sp) == 0L) return(stats::setNames(character(0), character(0)))
   setNames(rep("text", length(sp)), paste0("mapping_code_", sp))
 }
 
@@ -388,6 +391,10 @@ cols_streams_near_river <- c(
 #' @param species Character vector of species codes (uppercased) to
 #'   create `streams_habitat_<sp>` tables for. Typically derived via
 #'   [lnk_pipeline_species()] or `unique(loaded$parameters_fresh$species_code)`.
+#'   The species `cfg` pauses (`cfg$species_paused`) are always added, so the
+#'   schema's tables and columns do not change when a species is paused: every
+#'   host builds the same shape, and a consolidate's per-group replace reaches
+#'   a paused species' tables too, clearing the rows an earlier build left.
 #' @param force_recreate Logical. When `TRUE`, drop any existing target
 #'   tables whose DDL doesn't match the expected shape — specifically,
 #'   tables that have unexpected `GENERATED ALWAYS` columns. Default
@@ -420,6 +427,8 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
   if (!is.character(species) || length(species) == 0L) {
     stop("species must be a non-empty character vector", call. = FALSE)
   }
+  # A pause (#432) changes what is classified, never the schema's shape.
+  species <- union(species, cfg$species_paused)
   if (any(!nzchar(species))) {
     stop("species must not contain empty strings", call. = FALSE)
   }

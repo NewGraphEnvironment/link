@@ -11,6 +11,18 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-11-02) — `default` pauses KO and RB; a paused species adds no breaks (#432, #433)
+
+**`configs/<name>/species_modelled.csv` pauses a rules species: `lnk_config()` drops it from `cfg$species` into `cfg$species_paused`, so it adds no gradient breaks, is not classified, and gets no access or mapping code; `default` (and `default_tuned` through `extends:`) pause KO and RB, at `acc-v5` (0.76.0).** A group where only paused species are present (BRID, GRNL, LEUT, LNRS, MURT, PITR, UISR) is still modelled for segments, barriers, access annotations and mapping-code rows, because other groups read its barriers; the run stays at 241. `lnk_persist_init()` keeps paused species' tables and columns, a full build clears the group's rows a build no longer classifies, and `study_area_verify.sql` fails a run that leaves them. Mechanics: RUNBOOK §7, "Pausing a species". Measurement and write-up: `data-raw/logs/species_paused_432/`, `research/species_paused.md`.
+
+**Owed:** every `default` group re-models at the next provincial run (KO and RB values go, segmentation moves where their classes stood alone: 73 groups). #402's 141 KO and RB tracker rows stay pending on #432's deferral until the species are sourced or settled.
+
+**Facts not worth re-deriving:**
+- **"Off means off" was chosen on tuning** (operator, 2026-11-01, #433): segmentation matters where it moves the gradient a habitat rule reads at scored records. On six groups segments fall 0.2 to 6.0 %, barrier rows and accessible km do not move, habitat moves only in KOTL (BT rearing 20.9 km flips, +5.4 km net) and KETL (0.4 km), and 33 of KOTL's 1,473 records sit on a changed segment (median gradient shift 0.012).
+- **A pause must not change the persist schema's shape.** Consolidate replaces per group only in tables both sides hold (`schema_consolidate.R`), so hosts initialised without the paused tables would have left the dispatcher's old KO and RB rows in place (plan review blocker). `lnk_persist_init()` adds `cfg$species_paused` itself.
+- **CHUK is not in the run and never was:** its only presence cell is DV, and `lnk_wsg_resolve()` reads raw cells while `lnk_presence()` expands DV to RB. Without counting paused species the resolver drops to 234 groups.
+- **Installing link from a branch with `pak::local_install()` reinstalls fresh at the `Remotes:` pin** (0.52.0 back to 0.48.0 on m4, 2026-11-02).
+
 ## Status (2026-11-01) — `default`'s presence table carries the first, provisional #402 review
 
 **The decision session set the record rules and decided the tracker in batches; `default`'s `wsg_species_presence.csv` now adds 111 salmon and steelhead cells and removes 10 (80 groups, each row's `notes` naming the review), and `acc-v4` replaces `acc-v3` for `default` and `default_tuned` (0.75.0).** Every call is provisional; each decided tracker row's story opens with its reason. Rules: a salmon or steelhead record does not count when its nearest blocking natural barrier below (`barrier_below`) is FALLS or USER_DEFINITE with at most one other lift-pool record above it; when that nearest barrier is GRADIENT it counts (those records are the evidence for reviewing the access gradients); no elevation rule. Write-up: `research/species_presence.md`, "The first review". Log and evidence: `data-raw/logs/presence_check_402/decision_session/`.

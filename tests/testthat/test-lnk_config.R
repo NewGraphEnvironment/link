@@ -495,3 +495,102 @@ test_that("a relative extends: resolves against the child bundle, not the cwd", 
   cfg <- withr::with_dir(elsewhere, lnk_config(leaf))
   expect_identical(cfg$chain[[2]], normalizePath(base))
 })
+
+# -- species_modelled: pausing a species (#432) ------------------------------
+
+# A bundle whose rules name BT, CH and KO, extended by a child; `rows` is the
+# species_modelled.csv body, or NULL to declare none.
+local_paused_bundle <- function(rows, env = parent.frame()) {
+  dir <- withr::local_tempdir(.local_envir = env)
+  yaml::write_yaml(list(BT = list(), CH = list(), KO = list()),
+                   file.path(dir, "rules.yaml"))
+  write.csv(data.frame(a = 1), file.path(dir, "dims.csv"), row.names = FALSE)
+  files <- list()
+  if (!is.null(rows)) {
+    writeLines(c("species_code,modelled,reason,date,issue", rows),
+               file.path(dir, "species_modelled.csv"))
+    files$species_modelled <- list(path = "species_modelled.csv")
+  }
+  yaml::write_yaml(list(name = "paused", rules = "rules.yaml",
+                        dimensions = "dims.csv", files = files),
+                   file.path(dir, "config.yaml"))
+  dir
+}
+
+test_that("species_modelled drops paused species from cfg$species, in rules order", {
+  dir <- local_paused_bundle(c(
+    "KO,t,,,",
+    "CH,f,Not sourced,2026-11-01,#432",
+    "BT,t,,,"))
+  cfg <- lnk_config(dir)
+  expect_identical(cfg$species, c("BT", "KO"))
+  expect_identical(cfg$species_paused, "CH")
+})
+
+test_that("a bundle with no species_modelled models every rules species", {
+  cfg <- lnk_config(local_paused_bundle(NULL))
+  expect_identical(cfg$species, c("BT", "CH", "KO"))
+  expect_identical(cfg$species_paused, character(0))
+})
+
+test_that("species_modelled refuses a malformed tracker", {
+  ok_bt <- "BT,t,,,"
+  ok_ch <- "CH,t,,,"
+  ok_ko <- "KO,t,,,"
+  # a code the rules do not name
+  expect_error(lnk_config(local_paused_bundle(c(ok_bt, ok_ch, ok_ko,
+                                                "RB,f,x,2026-11-01,#432"))),
+               "no rules entry.*RB")
+  # a rules species with no row
+  expect_error(lnk_config(local_paused_bundle(c(ok_bt, ok_ch))),
+               "no row.*KO")
+  # a value other than t / f
+  for (v in c("TRUE", "yes", "F", " t", "")) {
+    expect_error(lnk_config(local_paused_bundle(c(ok_bt, ok_ch,
+                                                  paste0("KO,", v, ",,,")))),
+                 "modelled", info = v)
+  }
+  # a duplicate code
+  expect_error(lnk_config(local_paused_bundle(c(ok_bt, ok_ch, ok_ko, ok_ko))),
+               "duplicate.*KO")
+  # a paused species without its reason or date
+  expect_error(lnk_config(local_paused_bundle(c(ok_bt, ok_ch,
+                                                "KO,f,,2026-11-01,#432"))),
+               "reason.*KO")
+  expect_error(lnk_config(local_paused_bundle(c(ok_bt, ok_ch,
+                                                "KO,f,Not sourced,,#432"))),
+               "date.*KO")
+  expect_error(lnk_config(local_paused_bundle(c(ok_bt, ok_ch,
+                                                "KO,f,Not sourced,1/11/2026,#432"))),
+               "date.*KO")
+  # every species paused
+  expect_error(lnk_config(local_paused_bundle(c(
+    "BT,f,x,2026-11-01,#432", "CH,f,x,2026-11-01,#432",
+    "KO,f,x,2026-11-01,#432"))), "every species")
+  # a missing column
+  dir <- local_paused_bundle(ok_bt)
+  writeLines(c("species_code,modelled", "BT,t", "CH,t", "KO,t"),
+             file.path(dir, "species_modelled.csv"))
+  expect_error(lnk_config(dir), "missing column")
+})
+
+test_that("default and default_tuned pause KO and RB; other bundles pause nothing", {
+  rules_sp <- c("BT", "CH", "CM", "CO", "PK", "SK", "ST", "WCT", "KO", "RB", "GR")
+  for (b in c("default", "default_tuned")) {
+    cfg <- lnk_config(b)
+    expect_identical(cfg$species, setdiff(rules_sp, c("KO", "RB")), info = b)
+    expect_identical(cfg$species_paused, c("KO", "RB"), info = b)
+  }
+  for (b in c("default_extrabreaks", "default_rearbreaks")) {
+    expect_identical(lnk_config(b)$species, rules_sp, info = b)
+    expect_identical(lnk_config(b)$species_paused, character(0), info = b)
+  }
+  expect_identical(lnk_config("bcfishpass")$species,
+                   c("BT", "CH", "CM", "CO", "PK", "SK", "ST", "WCT"))
+})
+
+test_that("print shows paused species", {
+  cfg <- lnk_config("default")
+  out <- paste(capture.output(print(cfg)), collapse = "\n")
+  expect_match(out, "paused: +KO, RB")
+})

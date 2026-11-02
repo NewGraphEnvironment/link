@@ -119,6 +119,7 @@ lnk_config <- function(name_or_path) {
 
   files <- .lnk_config_resolve_files(manifest$files, dir)
   rules_species <- names(yaml::read_yaml(rules_path))
+  modelled <- .lnk_species_modelled(files$species_modelled$path, rules_species)
 
   out <- list(
     name = manifest$name,
@@ -126,7 +127,8 @@ lnk_config <- function(name_or_path) {
     description = manifest$description,
     rules = rules_path,
     dimensions = dimensions_path,
-    species = rules_species,
+    species = modelled$species,
+    species_paused = modelled$paused,
     files = files,
     pipeline = .lnk_config_pipeline_check(manifest$pipeline %||% list(),
                                           manifest$name),
@@ -146,6 +148,10 @@ print.lnk_config <- function(x, ...) {
   cat("  dimensions: ", basename(x$dimensions), "\n", sep = "")
   if (!is.null(x$species)) {
     cat("  species:    ", paste(x$species, collapse = ", "), "\n", sep = "")
+  }
+  if (length(x$species_paused) > 0L) {
+    cat("  paused:     ", paste(x$species_paused, collapse = ", "), "\n",
+        sep = "")
   }
   if (length(x$files) > 0L) {
     cat("  files:      ", length(x$files), " declared (", sep = "")
@@ -419,4 +425,63 @@ print.lnk_config <- function(x, ...) {
          "true or false", call. = FALSE)
   }
   pipeline
+}
+
+# The species a bundle models: its rules species less those its
+# `species_modelled.csv` marks `f` (#432). A paused species keeps its rules and
+# thresholds but is not classified and adds no gradient breaks (#433). The file
+# is the record of why: a paused row carries its reason and date. A bundle that
+# declares no file models every rules species.
+.lnk_species_modelled <- function(path, rules_species) {
+  none <- list(species = rules_species, paused = character(0))
+  if (is.null(path)) return(none)
+  d <- utils::read.csv(path, colClasses = "character", na.strings = character(),
+                       strip.white = FALSE, check.names = FALSE)
+  need <- c("species_code", "modelled", "reason", "date", "issue")
+  miss <- setdiff(need, names(d))
+  if (length(miss) > 0L) {
+    stop("species_modelled.csv is missing column(s): ",
+         paste(miss, collapse = ", "), " (", path, ")", call. = FALSE)
+  }
+  dup <- unique(d$species_code[duplicated(d$species_code)])
+  if (length(dup) > 0L) {
+    stop("species_modelled.csv has a duplicate species_code: ",
+         paste(dup, collapse = ", "), call. = FALSE)
+  }
+  extra <- setdiff(d$species_code, rules_species)
+  if (length(extra) > 0L) {
+    stop("species_modelled.csv names species with no rules entry: ",
+         paste(extra, collapse = ", "), call. = FALSE)
+  }
+  absent <- setdiff(rules_species, d$species_code)
+  if (length(absent) > 0L) {
+    stop("species_modelled.csv has no row for rules species: ",
+         paste(absent, collapse = ", "), call. = FALSE)
+  }
+  # Exactly t or f, as the presence table reads its cells: a near spelling
+  # (" t", "TRUE") would otherwise pause or run a species by accident.
+  bad <- !d$modelled %in% c("t", "f")
+  if (any(bad)) {
+    stop("species_modelled.csv `modelled` must be t or f; got ",
+         paste(sprintf("'%s' for %s", d$modelled[bad], d$species_code[bad]),
+               collapse = ", "), call. = FALSE)
+  }
+  off <- d$modelled == "f"
+  no_reason <- off & !nzchar(trimws(d$reason))
+  if (any(no_reason)) {
+    stop("species_modelled.csv: a paused species needs its reason: ",
+         paste(d$species_code[no_reason], collapse = ", "), call. = FALSE)
+  }
+  bad_date <- off & !grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", d$date)
+  if (any(bad_date)) {
+    stop("species_modelled.csv: a paused species needs its date ",
+         "(YYYY-MM-DD): ", paste(d$species_code[bad_date], collapse = ", "),
+         call. = FALSE)
+  }
+  paused <- rules_species[rules_species %in% d$species_code[off]]
+  if (length(paused) == length(rules_species)) {
+    stop("species_modelled.csv pauses every species in the rules",
+         call. = FALSE)
+  }
+  list(species = setdiff(rules_species, paused), paused = paused)
 }

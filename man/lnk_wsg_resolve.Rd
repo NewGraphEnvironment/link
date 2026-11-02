@@ -43,8 +43,8 @@ filter (link#157).
 Three call patterns dispatched by \code{wsgs} + \code{expand}:
 \itemize{
 \item \code{wsgs = NULL} — \emph{province mode}: every WSG in
-\code{loaded$wsg_species_presence} that has at least one of
-\code{cfg$species} flagged present.
+\code{loaded$wsg_species_presence} that has at least one of the bundle's
+rules species flagged present.
 \item \code{wsgs = c(...)} + \code{expand = TRUE} (default) — \emph{closure mode}:
 expand the focal set to its drainage closure (focal + every WSG
 they flow through, ordered downstream-first), then species-filter.
@@ -55,9 +55,12 @@ closed on exit.
 the input verbatim, no closure expansion, no DB.
 }
 
-Species filter: a WSG is kept if \emph{any} of \code{tolower(cfg$species)}
-columns in \code{loaded$wsg_species_presence} carries \code{"t"} (or \code{"TRUE"} /
-\code{TRUE}, defensively). DS-first ordering from the closure is preserved.
+Species filter: a WSG is kept if \emph{any} of the bundle's rules species
+(\code{cfg$species} and the paused \code{cfg$species_paused}) has a column in
+\code{loaded$wsg_species_presence} carrying \code{"t"} (or \code{"TRUE"} / \code{TRUE},
+defensively). A group where only paused species are present is kept: it is
+modelled for its segments and barriers, which other groups' access reads,
+and gets no habitat. DS-first ordering from the closure is preserved.
 }
 \examples{
 \dontrun{

@@ -94,11 +94,11 @@ test_that("the vocabulary only grows against the default branch", {
 test_that("each shipped config resolves to its tokens", {
   expect_identical(
     lnk_vocabulary_resolve(lnk_config("default")),
-    c(cut = "cut-full-top", acc = "acc-v4", grad = "grad-seg",
+    c(cut = "cut-full-top", acc = "acc-v5", grad = "grad-seg",
       flow = "q-fwapg"))
   expect_identical(
     lnk_vocabulary_resolve(lnk_config("default_tuned")),
-    c(cut = "cut-full-top", acc = "acc-v4", grad = "grad-seg",
+    c(cut = "cut-full-top", acc = "acc-v5", grad = "grad-seg",
       flow = "q-wet-fill"))
   expect_identical(
     lnk_vocabulary_resolve(lnk_config("bcfishpass")),
@@ -288,4 +288,12 @@ test_that("the acc digest moves with observation_upstream (#401)", {
   g <- .lnk_vocabulary_spec_acc(cfg, loaded)
   cfg$pipeline$observation_upstream <- NULL
   expect_identical(.lnk_vocabulary_spec_acc(cfg, loaded), g)
+})
+
+test_that("pausing a species moves the acc spec (#432)", {
+  cfg <- lnk_config("default")
+  loaded <- lnk_load_overrides(cfg)
+  paused <- .lnk_vocabulary_spec_acc(cfg, loaded)
+  cfg$species <- c(cfg$species, cfg$species_paused)
+  expect_false(identical(paused, .lnk_vocabulary_spec_acc(cfg, loaded)))
 })
