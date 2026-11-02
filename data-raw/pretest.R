@@ -352,6 +352,100 @@ pretest_history_sql <- function(schema, config) {
       ORDER BY watershed_group_code, date_start DESC", schema, config)
 }
 
+# Where a bundle's history comes from. A bundle that extends another borrows
+# (--history-schema, --history-config) from a config on its chain until its own builds
+# cover every group it models: only then do they stand for what the gate must reach, so
+# one build of its own, or a first run stopped partway, does not end the borrowing. A
+# bundle with no parent has nothing to borrow and keeps its own history, whole or not.
+# Returns list(schema, config, borrowed) or stops with the reason.
+pretest_history_source <- function(schema, config, history_schema, history_config, chain, own_complete) {
+  if (!nzchar(history_schema) && !nzchar(history_config)) {
+    if (length(chain) > 1L && !own_complete) {
+      stop(schema, ".log does not cover the groups ", config, " models; borrow from a config it extends: ",
+           "--history-schema=<schema> --history-config=", chain[2], call. = FALSE)
+    }
+    return(list(schema = schema, config = config, borrowed = FALSE))
+  }
+  if (!nzchar(history_schema) || !nzchar(history_config)) {
+    stop("--history-schema and --history-config go together", call. = FALSE)
+  }
+  if (!grepl("^[a-z_][a-z0-9_]*$", history_schema)) {
+    stop("bad --history-schema '", history_schema, "'", call. = FALSE)
+  }
+  if (identical(history_config, config) || !history_config %in% chain) {
+    stop("--history-config ", history_config, " is not a config ", config, " extends (chain: ",
+         paste(chain, collapse = " < "), ")", call. = FALSE)
+  }
+  if (own_complete) {
+    stop(schema, ".log covers every group ", config,
+         " models: a gate must cover those builds, so leave out --history-schema and --history-config",
+         call. = FALSE)
+  }
+  list(schema = history_schema, config = history_config, borrowed = TRUE)
+}
+
+# The history a record is held to, by the rule above: the schema's own builds when they
+# stand, otherwise what the newest pass or fail record for the config borrowed, or NULL
+# when it borrowed nothing. A record older than the borrow columns reads as none.
+pretest_record_history <- function(records, schema, config, own_complete, chain) {
+  if (own_complete || length(chain) == 1L) return(list(schema = schema, config = config))
+  r <- records[records$config_name == config & records$verdict %in% c("pass", "fail"), , drop = FALSE]
+  if (!nrow(r) || is.null(r$history_schema) || is.null(r$history_config)) return(NULL)
+  rec <- r[order(r$run_at, decreasing = TRUE), , drop = FALSE][1, ]
+  if (is.na(rec$history_schema) || is.na(rec$history_config)) return(NULL)
+  if (!rec$history_config %in% chain) return(NULL)
+  list(schema = rec$history_schema, config = rec$history_config)
+}
+
+# Why no range can cover a history whatever it spans ("" when one can): a build with
+# no link_sha, or whose tree was dirty or unknown, has no code to hold a diff against.
+pretest_history_uncoverable <- function(history_shas, history_dirty) {
+  stopifnot(length(history_dirty) == length(history_shas))
+  if (anyNA(history_shas)) {
+    return("history holds a build with no link_sha, which no range can be shown to cover")
+  }
+  if (any(is.na(history_dirty) | history_dirty)) {
+    return("history holds a build from a dirty tree, whose code is not its link_sha")
+  }
+  ""
+}
+
+# Why a borrowed history cannot stand for a bundle ("" when it can). The gate picks
+# only groups the history holds, so a history short of what the bundle models hides
+# the extreme of an input: on 2026-11-01 a 4-group history picked exactly its 4.
+pretest_history_complete <- function(wsgs, modelable) {
+  length(wsgs) > 0L && !length(setdiff(modelable, wsgs))
+}
+
+pretest_history_short <- function(history_wsgs, modelable, source_name) {
+  miss <- setdiff(modelable, history_wsgs)
+  if (!length(miss)) return("")
+  sprintf("%s holds %d of the %d groups the config models (missing %s%s), so the picks would not reach each input's extreme; load the full history (data-raw/pretest_history_load.sh), and for a group the parent never built, model it under the parent first or launch on --pretest-note",
+          source_name, length(modelable) - length(miss), length(modelable),
+          paste(utils::head(miss, 5), collapse = ", "), if (length(miss) > 5) ", ..." else "")
+}
+
+# Why a borrowing bundle's own builds so far keep a gate from clearing a run ("" when
+# they do not). Said apart from the borrowed history, because re-loading that cannot
+# help: the remedy is in the bundle's own log.
+pretest_own_builds_why <- function(repo, since, end, own, schema) {
+  if (!NROW(own)) return("")
+  why <- pretest_since_covers(repo, since, end, own$link_sha, own$link_dirty)
+  if (!nzchar(why)) return("")
+  bad <- is.na(own$link_sha) | is.na(own$link_dirty) | own$link_dirty
+  groups <- if (any(bad)) own$wsg[bad] else own$wsg
+  sprintf("%s.log's own builds (%s%s): %s; re-model them clean at this code, or delete their rows",
+          schema, paste(utils::head(groups, 5), collapse = ", "), if (length(groups) > 5) ", ..." else "", why)
+}
+
+# The groups a config models, from the source tree: a run's own list (lnk_wsg_resolve()).
+pretest_modelable_groups <- function(repo, config) {
+  suppressPackageStartupMessages(pkgload::load_all(repo, quiet = TRUE, helpers = FALSE))
+  ns <- asNamespace("link")
+  cfg <- get("lnk_config", ns)(config)
+  get("lnk_wsg_resolve", ns)(cfg, get("lnk_load_overrides", ns)(cfg))
+}
+
 # The default --since: the link SHA of the earliest of the groups' newest
 # finished builds. A group re-modelled by hand after a run keeps the run's
 # SHA as the oldest, so the range covers every group's history.
@@ -446,13 +540,8 @@ pretest_is_ancestor <- function(repo, a, b) {
 # in the diff. A build off that line (an unmerged branch, a squash-merged
 # one) is in no diff. Returns "" or the first reason it does not.
 pretest_since_covers <- function(repo, since, end, history_shas, history_dirty) {
-  stopifnot(length(history_dirty) == length(history_shas))
-  if (anyNA(history_shas)) {
-    return("history holds a build with no link_sha, which no range can be shown to cover")
-  }
-  if (any(is.na(history_dirty) | history_dirty)) {
-    return("history holds a build from a dirty tree, whose code is not its link_sha")
-  }
+  bad <- pretest_history_uncoverable(history_shas, history_dirty)
+  if (nzchar(bad)) return(bad)
   for (h in unique(history_shas)) {
     if (!pretest_is_ancestor(repo, since, h)) {
       return(sprintf("the range starts at %s, after history built at %s", substr(since, 1, 12),

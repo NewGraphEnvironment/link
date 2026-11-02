@@ -4,7 +4,7 @@
 #
 #   Rscript data-raw/pretest_verdict.R --out=<dir> --schema=<persist schema> \
 #     --scratch=<scratch schema> --config=<bundle> [--k=3] [--floor-min=5] \
-#     [--per-input=2] [--notes=<text>]
+#     [--per-input=2] [--notes=<text>] [--history-schema=<s> --history-config=<c>]
 #
 # Reads <out>/picks.tsv, <out>/exits.tsv (wsg, exit status) and
 # <out>/range.txt; each group's minutes and provenance come from its row in
@@ -33,6 +33,8 @@ k <- as.numeric(arg_val("--k", "3"))
 floor_min <- as.numeric(arg_val("--floor-min", "5"))
 per_input <- as.integer(arg_val("--per-input", "2"))
 notes_in <- arg_val("--notes")
+hist_schema <- arg_val("--history-schema")
+hist_config <- arg_val("--history-config")
 subset <- "--subset" %in% args
 for (s in c(schema, scratch)) {
   if (!grepl("^[a-z_][a-z0-9_]*$", s)) stop("bad schema name '", s, "'", call. = FALSE)
@@ -164,18 +166,31 @@ if (!exists) {
        per_input   integer NOT NULL,
        groups      text,
        verdict     text NOT NULL CHECK (verdict IN ('pass', 'fail', 'override')),
-       notes       text)", schema)))
+       notes       text,
+       history_schema text,
+       history_config text)", schema)))
+} else {
+  # A table from before the borrow columns. Read the catalog first, as above.
+  have <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT column_name FROM information_schema.columns
+      WHERE table_schema = '%s' AND table_name = 'log_pretest'", schema))$column_name
+  for (col in setdiff(c("history_schema", "history_config"), have)) {
+    invisible(DBI::dbExecute(conn, sprintf("ALTER TABLE %s.log_pretest ADD COLUMN %s text", schema, col)))
+  }
 }
 notes <- paste(c(why, if (nzchar(notes_in)) notes_in), collapse = "; ")
 invisible(DBI::dbExecute(conn, sprintf(
   "INSERT INTO %s.log_pretest (config_name, link_sha, link_dirty, fresh_sha, since_sha,
-     until_sha, scratch, k, floor_min, per_input, groups, verdict, notes)
-   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)", schema),
+     until_sha, scratch, k, floor_min, per_input, groups, verdict, notes,
+     history_schema, history_config)
+   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)", schema),
   params = list(config, if (length(link_sha) == 1L) link_sha else NA_character_, dirty,
                 if (length(fresh_sha) == 1L) fresh_sha else NA_character_,
                 range[1], range[2], scratch, k, floor_min, per_input,
                 paste(sprintf("%s:%s", picks$wsg, picks$verdict), collapse = ","),
-                overall, if (nzchar(notes)) notes else NA_character_)))
+                overall, if (nzchar(notes)) notes else NA_character_,
+                if (nzchar(hist_schema)) hist_schema else NA_character_,
+                if (nzchar(hist_config)) hist_config else NA_character_)))
 DBI::dbDisconnect(conn)
 
 for (i in seq_len(nrow(picks))) {

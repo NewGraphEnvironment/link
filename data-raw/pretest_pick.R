@@ -5,13 +5,18 @@
 #   Rscript data-raw/pretest_pick.R --config=<bundle> --schema=<persist schema> \
 #     --out=<dir> [--since=<sha>] [--until=HEAD] [--per-input=2] [--k=3] \
 #     [--floor-min=5] [--statement-timeout=30] [--fresh-repo=<fresh checkout>] \
-#     [--minutes-schema=<schema>] [--minutes-exclude=KTSU,...]
+#     [--minutes-schema=<schema>] [--minutes-exclude=KTSU,...] \
+#     [--history-schema=<schema> --history-config=<bundle>]
+#
+# --history-schema and --history-config read the history from another config the
+# bundle extends, until the bundle's own builds cover every group it models
+# (pretest_history_source()).
 #
 # --since defaults to the link SHA of the earliest of the groups' newest
-# finished builds in <schema>.log (the last provincial run, even where a group
-# was re-modelled after it). A group is picked only if <schema>.log has a
+# finished builds in the history (the last provincial run, even where a group
+# was re-modelled after it). A group is picked only if the history has a
 # finished build of it, so the config can model it. Its bound is its newest
-# finished minutes in --minutes-schema (default --schema); a group in
+# finished minutes in --minutes-schema (default the history's schema); a group in
 # --minutes-exclude, whose newest minutes are a known stall, or with no row
 # there, is bounded on the median. Writes <out>/picks.tsv (one row per group) and
 # <out>/pretest.md (what changed, which input each file named, each query and
@@ -63,17 +68,36 @@ suppressPackageStartupMessages({
 conn <- DBI::dbConnect(RPostgres::Postgres(), dbname = "fwapg", host = "localhost",
                        port = 5432L, user = "postgres", password = "postgres")
 
-for (s in unique(c(schema, minutes_schema))) {
-  if (is.na(DBI::dbGetQuery(conn, sprintf("SELECT to_regclass('%s.log')::text AS t", s))$t)) {
-    refuse(s, ".log does not exist: no history")
-  }
+has_log <- function(s) {
+  !is.na(DBI::dbGetQuery(conn, sprintf("SELECT to_regclass('%s.log')::text AS t", s))$t)
 }
-built <- DBI::dbGetQuery(conn, pretest_history_sql(schema, config))
-if (!nrow(built)) refuse(schema, ".log has no finished rows under config ", config)
+chain <- tryCatch(pretest_config_chain(file.path(repo, "inst/extdata/configs"), config),
+                  error = function(e) refuse(conditionMessage(e)))
+own <- if (has_log(schema)) DBI::dbGetQuery(conn, pretest_history_sql(schema, config)) else
+  data.frame(wsg = character(), link_sha = character(), link_dirty = logical())
+modelable <- tryCatch(pretest_modelable_groups(repo, config), error = function(e) refuse(conditionMessage(e)))
+hist_src <- tryCatch(pretest_history_source(schema, config, arg_val("--history-schema"),
+                                            arg_val("--history-config"), chain,
+                                            pretest_history_complete(own$wsg, modelable)),
+                     error = function(e) refuse(conditionMessage(e)))
+# Minutes come from where the history does, under the same config, unless named.
+if (!nzchar(arg_val("--minutes-schema"))) minutes_schema <- hist_src$schema
+for (s in unique(c(hist_src$schema, minutes_schema))) {
+  if (!has_log(s)) refuse(s, ".log does not exist: no history")
+}
+built <- DBI::dbGetQuery(conn, pretest_history_sql(hist_src$schema, hist_src$config))
+if (!nrow(built)) refuse(hist_src$schema, ".log has no finished rows under config ", hist_src$config)
+# Refused under --pick-only too: picks from either history say nothing about a run.
+bad_history <- pretest_history_uncoverable(built$link_sha, built$link_dirty)
+if (nzchar(bad_history)) refuse(bad_history, "; a gate on it cannot clear a run")
+if (hist_src$borrowed) {
+  short <- pretest_history_short(built$wsg, modelable, paste0(hist_src$schema, ".log"))
+  if (nzchar(short)) refuse(short)
+}
 if (!nzchar(since)) {
   since <- tryCatch(pretest_since_default(built), error = function(e) refuse(conditionMessage(e)))
   message(sprintf("--since from %s.log: the earliest of the groups' newest builds, link %s",
-                  schema, substr(since, 1, 12)))
+                  hist_src$schema, substr(since, 1, 12)))
 }
 since_sha <- tryCatch(pretest_git(repo, c("rev-parse", "--verify", paste0(since, "^{commit}"))),
                       error = function(e) refuse(conditionMessage(e)))
@@ -83,14 +107,20 @@ until_sha <- tryCatch(pretest_git(repo, c("rev-parse", "--verify", paste0(until,
 # say so now rather than after an hour of modelling.
 cover <- tryCatch(pretest_since_covers(repo, since_sha, until_sha, built$link_sha, built$link_dirty),
                   error = function(e) refuse(conditionMessage(e)))
-# --pick-only explores a range and records nothing, so there it is a warning.
+# Beside a borrowed history, the bundle's own builds so far must be in the range too.
+if (hist_src$borrowed) {
+  own_why <- tryCatch(pretest_own_builds_why(repo, since_sha, until_sha, own, schema),
+                      error = function(e) refuse(conditionMessage(e)))
+  if (nzchar(pretest_history_uncoverable(own$link_sha, own$link_dirty))) refuse(own_why)
+  if (nzchar(own_why) && !nzchar(cover)) cover <- own_why
+}
+# --pick-only explores a range and records nothing, so a range that falls short is a
+# warning there; the history itself was judged above.
 if (nzchar(cover)) {
   if (!"--pick-only" %in% args) refuse(cover, "; a gate on this range cannot clear a run")
   message("WARN (pick only): ", cover, "; a gate on this range could not clear a run")
 }
 
-chain <- tryCatch(pretest_config_chain(file.path(repo, "inst/extdata/configs"), config),
-                  error = function(e) refuse(conditionMessage(e)))
 desc_at <- function(ref) pretest_git(repo, c("show", paste0(ref, ":DESCRIPTION")))
 fresh_from <- pretest_fresh_pin(desc_at(since_sha))
 fresh_to <- pretest_fresh_pin(desc_at(until_sha))
@@ -134,8 +164,9 @@ w <- function(...) cat(..., "\n", sep = "", file = md, append = TRUE)
 cat("", file = md)
 w("# Pre-run gate (link#372)")
 w("")
-w(sprintf("- config `%s` (chain: %s), history in `%s.log`", config,
-          paste(chain, collapse = " < "), schema))
+w(sprintf("- config `%s` (chain: %s), history in `%s.log` under `%s`%s", config,
+          paste(chain, collapse = " < "), hist_src$schema, hist_src$config,
+          if (hist_src$borrowed) ", borrowed: its own builds do not cover it" else ""))
 w(sprintf("- link `%s..%s`; fresh `%s..%s`", substr(since_sha, 1, 12), substr(until_sha, 1, 12),
           fresh_from, fresh_to))
 w(sprintf("- per input %d groups; bound %g x last minutes in `%s.log`, floor %g min; statement bound <= %d min",
@@ -171,8 +202,10 @@ if (length(unex)) {
   message("Changed and NOT exercised by the gate: ", paste(unex, collapse = ", "))
 }
 
-mins <- if (identical(minutes_schema, schema)) built else
-  DBI::dbGetQuery(conn, pretest_history_sql(minutes_schema, config))
+# Minutes named from the bundle's own schema read its own config, not the one borrowed.
+mins <- if (identical(minutes_schema, hist_src$schema)) built else
+  DBI::dbGetQuery(conn, pretest_history_sql(minutes_schema,
+                                            if (identical(minutes_schema, schema)) config else hist_src$config))
 history <- data.frame(wsg = built$wsg, stringsAsFactors = FALSE)
 i <- match(history$wsg, mins$wsg)
 history$minutes <- mins$minutes[i]

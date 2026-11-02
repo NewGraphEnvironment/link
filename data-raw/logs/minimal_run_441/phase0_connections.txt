@@ -1,0 +1,10 @@
+# connection probes, 2026-11-02T05:38:30Z, m4 (addresses left out)
+ping m1: 60 packets transmitted, 60 packets received, 0.0% packet loss round-trip min/avg/max/stddev = 4.864/17.343/65.591/14.154 ms 
+ping gateway: 60 packets transmitted, 60 packets received, 0.0% packet loss round-trip min/avg/max/stddev = 2.055/13.765/155.348/27.128 ms 
+ssh m1 round trip 1: 0.37 s
+ssh m1 round trip 2: 0.18 s
+ssh m1 round trip 3: 0.17 s
+active
+DO API: 0.46 s
+spin job1 (cypher_up.sh): rc 0, 433 s; burn (cypher_down.sh) after a reach check, see task_plan Phase 0.
+reach check: ANSWERS fresh-db cypher-job1 8 

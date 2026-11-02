@@ -11,11 +11,23 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-11-02, later) — the pre-run gate can borrow a parent config's history; fresh 0.52.0 pinned (#442, #441's first PR)
+
+**`pretest_run.sh --history-schema= --history-config=` gates a bundle whose own builds do not yet cover it, from a config it extends, and refuses a history short of the groups the bundle models, in the pick and at launch (0.78.0).** `data-raw/pretest_history_load.sh` copies a host's `log` into a schema of its own. Mechanics: RUNBOOK §8d, "The pre-run gate". Evidence: `data-raw/logs/gate_borrow_442/`, `data-raw/logs/minimal_run_441/`.
+
+**Owed:** #441's remaining phases, in `planning/active/task_plan.md`.
+
+**Facts not worth re-deriving:**
+- **Only m1 holds the 241-group history.** m4's `fresh_default` holds 4 groups (`fresh_default_history` there is the copy). Against it the pick takes SETN, BULK, QUES, LFRA, TOAD, HARR, UPCE, OKAN, TAKL, HORS and SAJR, with no unmapped file across link `1d00c04c` to now and fresh 0.42.0 to 0.52.0.
+- **`--pick-only` still warns on a range that falls short.** It refuses only a history no range can cover.
+- **`pak` over an `R CMD INSTALL`ed fresh is what gives it `RemoteSha`:** the pre-flight needs it.
+- **A cloud spin takes about 7 min and a burn about 30 s** (`job1`, 2026-11-02).
+
 ## Status (2026-11-02) — a minimal network is defined and named; nothing is modelled on it yet (#415, first PR)
 
 **`default_minimal` (`extends: default`, schema `fresh_default_minimal`) cuts streams only at `gradient_minimal`, `falls` and `barriers_definite`, and resolves to `cut-min` with `default`'s other three tokens (0.77.0).** No R modelling code changed, because `break_order` already supported leaving sources out; the only new behaviour is that `.lnk_config_merge()` refuses a child's `break_order: ~`. The operator's two-PR split: this PR is the bundle, token, docs and proof scripts. Mechanics: RUNBOOK §6b, "How a cut token is keyed". Scripts: `data-raw/logs/minimal_breaks_415/` (its README).
 
-**Owed:** a second branch, now that #432 has merged: the proof builds on BULK plus two or three chinook-rearing and crossing-heavy groups (`pick_groups.sql`), read beside #433's measurement (`research/species_paused.md`), `research/`, and the parent-attribute issue drafted from what the proof shows (below), with knowledge#120's mechanics check as its acceptance. Then the pre-run gate (#372) on `fresh_default_minimal` and the minimal provincial run from m4. The gate cannot pick groups for a bundle with no build history (`pretest_pick.R` refuses a schema with no `log`, and `--minutes-schema` filters by the run's config, so a seed build gives it nothing to work from): that run takes `--pretest-note` on a created schema, or the gate learns to borrow `default`'s history. Decide before launching.
+**Owed:** a second branch, now that #432 has merged: the proof builds on BULK plus two or three chinook-rearing and crossing-heavy groups (`pick_groups.sql`), read beside #433's measurement (`research/species_paused.md`), `research/`, and the parent-attribute issue drafted from what the proof shows (below), with knowledge#120's mechanics check as its acceptance. Then the pre-run gate (#372) on `fresh_default_minimal`, borrowing `default`'s history (#442), and the minimal provincial run from m4.
 
 **Facts not worth re-deriving:**
 - **The minimal network is not independent of the fish records.** Gradient positions are reduced after observation lifts (`.lnk_pipeline_prep_minimal()`), so a barrier lifted for a species is no longer that species' cut (another species' barrier or a falls may still cut there), and positions above it can become cuts. A record cuts no stream at its own position, but it can move a cut below it. The issue's framing of "segments that know nothing about where fish were caught" holds only with lifts held fixed; knowledge#131's leave-one-out is where that matters. Falls and user-definite barriers cut unreduced.

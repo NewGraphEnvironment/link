@@ -218,6 +218,82 @@ test_that("the config chain follows extends", {
   expect_error(e$pretest_config_chain(d, "nope"), "no config bundle")
 })
 
+test_that("a bundle borrows history only from a config it extends, until its own builds cover it", {
+  e <- pt_env()
+  chain <- c("default_minimal", "default")
+  src <- function(hs = "", hc = "", own = FALSE, ch = chain) {
+    e$pretest_history_source("fresh_default_minimal", ch[1], hs, hc, ch, own)
+  }
+  expect_identical(src("fresh_default", "default"),
+                   list(schema = "fresh_default", config = "default", borrowed = TRUE))
+  # Its own builds, once they cover it.
+  expect_identical(src(own = TRUE), list(schema = "fresh_default_minimal", config = "default_minimal",
+                                         borrowed = FALSE))
+  expect_error(src("fresh_default", "default", own = TRUE), "covers every group")
+  # Short of that, a bundle with a parent is told how to borrow; one with no parent keeps its own.
+  expect_error(src(), "--history-config=default", fixed = TRUE)
+  expect_identical(src(ch = "default"), list(schema = "fresh_default_minimal", config = "default",
+                                             borrowed = FALSE))
+  expect_error(src("fresh_default"), "go together")
+  expect_error(src("", "default"), "go together")
+  expect_error(src("fresh_default; drop", "default"), "bad --history-schema")
+  expect_error(src("fresh", "bcfishpass"), "not a config default_minimal extends")
+  expect_error(src("fresh_default", "default_minimal"), "not a config default_minimal extends")
+})
+
+test_that("a record is held to the schema's own builds when they stand, else what it borrowed", {
+  e <- pt_env()
+  chain <- c("default_minimal", "default")
+  rec <- function(verdict = "pass", hs = "fresh_default", hc = "default", at = 2) {
+    data.frame(config_name = "default_minimal", verdict = verdict, run_at = at,
+               history_schema = hs, history_config = hc, stringsAsFactors = FALSE)
+  }
+  held <- function(records, own = FALSE, ch = chain) {
+    e$pretest_record_history(records, "fresh_default_minimal", "default_minimal", own, ch)
+  }
+  expect_identical(held(rec()), list(schema = "fresh_default", config = "default"))
+  own <- list(schema = "fresh_default_minimal", config = "default_minimal")
+  # Builds that cover it win, whatever the record borrowed; a bundle with no parent has only its own.
+  expect_identical(held(rec(), own = TRUE), own)
+  expect_identical(held(rec(), ch = "default_minimal"), own)
+  # The newest pass or fail decides; an override row says nothing about history.
+  newest <- rbind(rec(at = 1), rec(hs = NA, hc = NA, at = 2))
+  expect_null(held(newest))
+  expect_identical(held(rbind(rec(at = 1), rec("override", NA, NA, at = 2))),
+                   list(schema = "fresh_default", config = "default"))
+  # A table from before the columns, and a config off the chain, borrow nothing.
+  expect_null(held(rec()[, c("config_name", "verdict", "run_at")]))
+  expect_null(held(rec(hc = "bcfishpass")))
+  expect_null(held(rec()[0, ]))
+})
+
+test_that("a history is complete only when it holds every group, and holds some", {
+  e <- pt_env()
+  expect_true(e$pretest_history_complete(c("A", "B"), c("A", "B")))
+  expect_true(e$pretest_history_complete(c("A", "B", "C"), c("A", "B")))
+  expect_false(e$pretest_history_complete("A", c("A", "B")))
+  expect_false(e$pretest_history_complete(NULL, c("A", "B")))
+  expect_false(e$pretest_history_complete(character(0), character(0)))
+})
+
+test_that("a borrowed history short of the groups the config models is refused", {
+  e <- pt_env()
+  expect_identical(e$pretest_history_short(c("BULK", "PARS", "ADMS"), c("BULK", "PARS"), "h.log"), "")
+  why <- e$pretest_history_short(c("PARS"), c("BULK", "PARS", "ADMS"), "h.log")
+  expect_match(why, "h.log holds 1 of the 3 groups", fixed = TRUE)
+  expect_match(why, "missing BULK, ADMS", fixed = TRUE)
+  many <- e$pretest_history_short(character(0), sprintf("G%03d", 1:7), "h.log")
+  expect_match(many, "G005, ...", fixed = TRUE)
+})
+
+test_that("a history no range can cover is named before any range is read", {
+  e <- pt_env()
+  expect_identical(e$pretest_history_uncoverable(c("a", "b"), c(FALSE, FALSE)), "")
+  expect_match(e$pretest_history_uncoverable(c("a", NA), c(FALSE, FALSE)), "no link_sha")
+  expect_match(e$pretest_history_uncoverable(c("a", "b"), c(FALSE, TRUE)), "dirty tree")
+  expect_match(e$pretest_history_uncoverable("a", NA), "dirty tree")
+})
+
 test_that("every file under inst/extdata, DESCRIPTION and the run's data-raw scripts matches a row", {
   e <- pt_env()
   map <- e$pretest_map_read(pt_map_path())
@@ -256,6 +332,22 @@ pt_git_repo <- function(e) {
   }
   list(dir = d, commit = commit)
 }
+
+test_that("a borrowing bundle's bad own builds are named as its own, with the remedy", {
+  e <- pt_env()
+  r <- pt_git_repo(e)
+  a <- r$commit(list("R/a.R" = "one"), "a")
+  b <- r$commit(list("R/a.R" = "two"), "b")
+  r <- c(r, list(a = a, b = b))
+  own <- function(sha, dirty, wsg = "ADMS") data.frame(wsg = wsg, link_sha = sha, link_dirty = dirty)
+  expect_identical(e$pretest_own_builds_why(r$dir, r$a, r$b, NULL, "s"), "")
+  expect_identical(e$pretest_own_builds_why(r$dir, r$a, r$b, own(r$b, FALSE), "s"), "")
+  why <- e$pretest_own_builds_why(r$dir, r$a, r$b, rbind(own(r$b, FALSE, "BULK"), own(r$b, TRUE)), "s")
+  expect_match(why, "s.log's own builds (ADMS): history holds a build from a dirty tree", fixed = TRUE)
+  expect_match(why, "re-model them clean", fixed = TRUE)
+  # A sha off the range names the groups it has.
+  expect_match(e$pretest_own_builds_why(r$dir, r$b, r$b, own(r$a, FALSE), "s"), "own builds (ADMS): the range starts", fixed = TRUE)
+})
 
 test_that("a gate record holds across commits that touch only none files", {
   e <- pt_env()

@@ -1,0 +1,11 @@
+# each message on the new state, driven at 9e4b07ce
+## dirty own row, borrowing the full history
+REFUSED: zz442_own.log's own builds (ADMS): history holds a build from a dirty tree, whose code is not its link_sha; re-model them clean at this code, or delete their rows
+pick exited 2
+(off-line case uses a real commit)
+## own row older than the range, borrowing: --pick-only warns, a real pick would refuse
+WARN (pick only): zz442_own.log's own builds (ADMS, BULK): the range starts at 1d00c04cc5b2, after history built at 0c1b9a319017; re-model them clean at this code, or delete their rows; a gate on this range could not clear a run
+pick only: m2/pretest.md
+## clean own rows, borrowing: passes the pick
+pick only: m3/pretest.md
+3:- config `default_minimal` (chain: default_minimal < default), history in `fresh_default_history.log` under `default`, borrowed: its own b
