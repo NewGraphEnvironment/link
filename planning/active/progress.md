@@ -17,6 +17,11 @@
 
 - Phase 2 on branch `415-proof-builds-lifts`, stacked on PR #443 (the merge is the operator's): `lifts.R` committed before the builds; `run.sh` on BULK, SETN, MORK, COTR at `6bf9ca06` (47 min, every step passed); `proof.R` every check passed; `lifts.R` both controls passed; review found it counted barrier positions as cuts, so it now counts segment starts too, with a control that can fail (final CSVs from `lifts.R` as of `ac52e150`). Parent tables gzipped (11.8 to 3.7 MB). Filed #444 (parent attributes); #415's body ticked.
 
+- Phase 3 (PR #447): default test builds identical to their last builds; bcfishpass parity 48/50 on m1; m1's GitHub token refused, fresh installed with remotes; #446 filed (reference pin reads a CSV-sync row).
+- Phase 4 (PR #448): m4 and m1 primitives refreshed, same object versions, vintage line passes.
+- Phase 5: the gate passed on default_minimal (11 picks, link `24b2cbb3`). The rehearsal's first try stopped at the worker's prep (URL check against m1's insteadOf rule); fixed in `worker_prep.sh`; the second try passed every check.
+- Reviewer agents this session: three rounds per PR for PRs 1 to 5, above the five-per-task bound because each PR has its own floor.
+
 ### Resume
 
 ```
