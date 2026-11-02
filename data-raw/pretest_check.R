@@ -45,9 +45,12 @@ out <- tryCatch({
     list(ok = FALSE, why = sprintf("no gate record (%s.log_pretest does not exist)", schema))
   } else {
     records <- DBI::dbGetQuery(conn, sprintf("SELECT * FROM %s.log_pretest", schema))
-    if (!reg("log")) stop(schema, ".log does not exist: no history to hold a gate to")
-    hist <- DBI::dbGetQuery(conn, pretest_history_sql(schema, config))
     chain <- pretest_config_chain(file.path(repo, "inst/extdata/configs"), config)
+    own <- if (reg("log")) DBI::dbGetQuery(conn, pretest_history_sql(schema, config)) else NULL
+    # A bundle with no builds yet is held to the history its gate borrowed.
+    src <- pretest_record_history(records, schema, config, NROW(own), chain)
+    if (is.null(src)) stop(schema, " has no builds under ", config, " and its gate borrowed no history to hold it to")
+    hist <- DBI::dbGetQuery(conn, pretest_history_sql(src$schema, src$config))
     map <- pretest_map_read(file.path(script_dir, "pretest_inputs.csv"))
     r <- pretest_record_check(records, config, head_sha, fresh_sha, hist$link_sha,
                               hist$link_dirty, repo, map, chain,

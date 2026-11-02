@@ -218,6 +218,51 @@ test_that("the config chain follows extends", {
   expect_error(e$pretest_config_chain(d, "nope"), "no config bundle")
 })
 
+test_that("a bundle with no builds borrows history only from a config it extends", {
+  e <- pt_env()
+  chain <- c("default_minimal", "default")
+  src <- function(hs = "", hc = "", own = 0L, config = "default_minimal") {
+    e$pretest_history_source("fresh_default_minimal", config, hs, hc, chain, own)
+  }
+  # No flags: its own schema and config, as before.
+  expect_identical(src(), list(schema = "fresh_default_minimal", config = "default_minimal",
+                               borrowed = FALSE))
+  expect_identical(src("fresh_default", "default"),
+                   list(schema = "fresh_default", config = "default", borrowed = TRUE))
+  expect_error(src("fresh_default"), "go together")
+  expect_error(src("", "default"), "go together")
+  expect_error(src("fresh_default; drop", "default"), "bad --history-schema")
+  expect_error(src("fresh", "bcfishpass"), "not a config default_minimal extends")
+  expect_error(src("fresh_default", "default_minimal"), "not a config default_minimal extends")
+  # Once it has builds of its own, a gate must cover them.
+  expect_error(src("fresh_default", "default", own = 3L), "already has 3 finished group")
+})
+
+test_that("a record is held to the schema's own builds, else what it borrowed", {
+  e <- pt_env()
+  chain <- c("default_minimal", "default")
+  rec <- function(verdict = "pass", hs = "fresh_default", hc = "default", at = 2) {
+    data.frame(config_name = "default_minimal", verdict = verdict, run_at = at,
+               history_schema = hs, history_config = hc, stringsAsFactors = FALSE)
+  }
+  held <- function(records, own = 0L) {
+    e$pretest_record_history(records, "fresh_default_minimal", "default_minimal", own, chain)
+  }
+  expect_identical(held(rec()), list(schema = "fresh_default", config = "default"))
+  # Its own builds win, whatever the record borrowed.
+  expect_identical(held(rec(), own = 2L),
+                   list(schema = "fresh_default_minimal", config = "default_minimal"))
+  # The newest pass or fail decides; an override row says nothing about history.
+  newest <- rbind(rec(at = 1), rec(hs = NA, hc = NA, at = 2))
+  expect_null(held(newest))
+  expect_identical(held(rbind(rec(at = 1), rec("override", NA, NA, at = 2))),
+                   list(schema = "fresh_default", config = "default"))
+  # A table from before the columns, and a config off the chain, borrow nothing.
+  expect_null(held(rec()[, c("config_name", "verdict", "run_at")]))
+  expect_null(held(rec(hc = "bcfishpass")))
+  expect_null(held(rec()[0, ]))
+})
+
 test_that("every file under inst/extdata, DESCRIPTION and the run's data-raw scripts matches a row", {
   e <- pt_env()
   map <- e$pretest_map_read(pt_map_path())

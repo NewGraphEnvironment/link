@@ -9,7 +9,13 @@
 #     [--since=<sha>] [--until=HEAD] [--per-input=2] [--k=3] [--floor-min=5] \
 #     [--statement-timeout=30] [--minutes-schema=<schema>] \
 #     [--minutes-exclude=KTSU,...] [--fresh-repo=<fresh checkout>] \
-#     [--out=<dir>] [--pick-only] [--only=<WSG>,...] [--allow-busy]
+#     [--out=<dir>] [--pick-only] [--only=<WSG>,...] [--allow-busy] \
+#     [--history-schema=<schema> --history-config=<bundle>]
+#
+# --history-schema and --history-config are for a bundle with no builds of its
+# own (default_minimal before its first run): the groups, the minutes, the range
+# and the scratch tables come from a config it extends, and <schema> is created
+# only to hold the record.
 #
 # --only=<WSG>,... models only those of the picks (a smoke test of the
 # machinery, or a re-check of one group); its record is never a pass.
@@ -55,6 +61,7 @@ fi
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG="" SCHEMA="" SINCE="" UNTIL="HEAD" PER_INPUT=2 K=3 FLOOR_MIN=5 STMT=30
 MINUTES_SCHEMA="" MINUTES_EXCLUDE="" FRESH_REPO="" OUT="" PICK_ONLY=0 ONLY="" ALLOW_BUSY=0
+HISTORY_SCHEMA="" HISTORY_CONFIG=""
 for arg in "$@"; do
   case "$arg" in
     --config=*)            CONFIG="${arg#*=}" ;;
@@ -72,6 +79,8 @@ for arg in "$@"; do
     --pick-only)           PICK_ONLY=1 ;;
     --only=*)              ONLY="${arg#*=}" ;;
     --allow-busy)          ALLOW_BUSY=1 ;;
+    --history-schema=*)    HISTORY_SCHEMA="${arg#*=}" ;;
+    --history-config=*)    HISTORY_CONFIG="${arg#*=}" ;;
     *) echo "REFUSED: unknown argument $arg" >&2; exit 2 ;;
   esac
 done
@@ -80,7 +89,15 @@ done
 [[ "$SCHEMA" =~ ^[a-z_][a-z0-9_]*$ ]] || { echo "REFUSED: bad --schema '$SCHEMA'" >&2; exit 2; }
 SCRATCH="fresh_pretest_${CONFIG}"
 [ "$SCRATCH" != "$SCHEMA" ] || { echo "REFUSED: --schema is the scratch schema $SCRATCH" >&2; exit 2; }
-[ -n "$MINUTES_SCHEMA" ] || MINUTES_SCHEMA="$SCHEMA"
+if [ -n "$HISTORY_SCHEMA$HISTORY_CONFIG" ]; then
+  [ -n "$HISTORY_SCHEMA" ] && [ -n "$HISTORY_CONFIG" ] \
+    || { echo "REFUSED: --history-schema and --history-config go together" >&2; exit 2; }
+  [[ "$HISTORY_SCHEMA" =~ ^[a-z_][a-z0-9_]*$ ]] || { echo "REFUSED: bad --history-schema '$HISTORY_SCHEMA'" >&2; exit 2; }
+  [[ "$HISTORY_CONFIG" =~ ^[a-z][a-z0-9_]*$ ]] || { echo "REFUSED: bad --history-config '$HISTORY_CONFIG'" >&2; exit 2; }
+  [ "$HISTORY_SCHEMA" != "$SCRATCH" ] || { echo "REFUSED: --history-schema is the scratch schema $SCRATCH" >&2; exit 2; }
+fi
+SHAPE_SCHEMA="${HISTORY_SCHEMA:-$SCHEMA}"
+[ -n "$MINUTES_SCHEMA" ] || MINUTES_SCHEMA="$SHAPE_SCHEMA"
 TS="$(date -u +%Y%m%d_%H%M%S)"
 [ -n "$OUT" ] || OUT="$REPO_ROOT/data-raw/logs/pretest/${TS}_${CONFIG}"
 mkdir -p "$OUT"
@@ -92,9 +109,10 @@ psql_q() { PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d fwapg -X
 
 echo "=== pre-run gate (link#372) ==="
 echo "  config:          $CONFIG"
-echo "  history schema:  $SCHEMA (minutes from $MINUTES_SCHEMA${MINUTES_EXCLUDE:+, excluding $MINUTES_EXCLUDE})"
+echo "  history schema:  $SHAPE_SCHEMA${HISTORY_CONFIG:+ under $HISTORY_CONFIG, borrowed} (minutes from $MINUTES_SCHEMA${MINUTES_EXCLUDE:+, excluding $MINUTES_EXCLUDE})"
+echo "  record schema:   $SCHEMA"
 echo "  scratch schema:  $SCRATCH (dropped and rebuilt)"
-echo "  range:           ${SINCE:-<earliest newest build in $SCHEMA.log>}..$UNTIL"
+echo "  range:           ${SINCE:-<earliest newest build in $SHAPE_SCHEMA.log>}..$UNTIL"
 echo "  bound:           ${K} x last minutes, floor ${FLOOR_MIN} min; statements <= ${STMT} min"
 echo "  out:             $OUT"
 [ "$PICK_ONLY" = 1 ] && echo "  mode:            pick only (nothing modelled, nothing recorded)"
@@ -117,6 +135,7 @@ pick_args=(--config="$CONFIG" --schema="$SCHEMA" --out="$OUT" --until="$UNTIL"
 [ -z "$SINCE" ] || pick_args+=(--since="$SINCE")
 [ -z "$MINUTES_EXCLUDE" ] || pick_args+=(--minutes-exclude="$MINUTES_EXCLUDE")
 [ -z "$FRESH_REPO" ] || pick_args+=(--fresh-repo="$FRESH_REPO")
+[ -z "$HISTORY_SCHEMA" ] || pick_args+=(--history-schema="$HISTORY_SCHEMA" --history-config="$HISTORY_CONFIG")
 [ "$PICK_ONLY" = 0 ] || pick_args+=(--pick-only)
 prc=0
 (cd "$REPO_ROOT" && Rscript data-raw/pretest_pick.R "${pick_args[@]}") || prc=$?
@@ -153,7 +172,7 @@ OTHERS_SQL="SELECT count(*) FROM pg_stat_activity
              WHERE backend_type = 'client backend' AND pid <> pg_backend_pid()
                AND state NOT IN ('idle')"
 live=$(psql_q -c "SELECT count(*) FROM pg_stat_activity WHERE pid <> pg_backend_pid() AND state <> 'idle'
-                   AND (query ILIKE '%${SCHEMA}.%' OR query ILIKE '%working\\_%')")
+                   AND (query ILIKE '%${SCHEMA}.%' OR query ILIKE '%${SHAPE_SCHEMA}.%' OR query ILIKE '%working\\_%')")
 [ "$live" = 0 ] || { echo "REFUSED: $live active session(s) on $SCHEMA or a working schema; a run looks live" >&2; exit 2; }
 busy=$(psql_q -c "$OTHERS_SQL")
 if [ "$busy" != 0 ]; then
@@ -168,7 +187,7 @@ if [ "$busy" != 0 ]; then
 fi
 
 if [ "${#PICKS[@]}" -gt 0 ]; then
-  echo "=== scratch schema $SCRATCH (tables of $SCHEMA, no rows) ==="
+  echo "=== scratch schema $SCRATCH (tables of $SHAPE_SCHEMA, no rows) ==="
   psql_q <<SQL
 SET client_min_messages = warning;
 DROP SCHEMA IF EXISTS ${SCRATCH} CASCADE;
@@ -177,8 +196,8 @@ DO \$\$
 DECLARE t record; i record;
 BEGIN
   FOR t IN SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
-            WHERE n.nspname = '${SCHEMA}' AND c.relkind = 'r' AND c.relname <> 'log_pretest' LOOP
-    EXECUTE format('CREATE TABLE ${SCRATCH}.%I (LIKE ${SCHEMA}.%I INCLUDING DEFAULTS INCLUDING GENERATED INCLUDING IDENTITY)',
+            WHERE n.nspname = '${SHAPE_SCHEMA}' AND c.relkind = 'r' AND c.relname <> 'log_pretest' LOOP
+    EXECUTE format('CREATE TABLE ${SCRATCH}.%I (LIKE ${SHAPE_SCHEMA}.%I INCLUDING DEFAULTS INCLUDING GENERATED INCLUDING IDENTITY)',
                    t.relname, t.relname);
   END LOOP;
   -- Indexes under their own names (persist_init and the log find them by
@@ -190,8 +209,8 @@ BEGIN
              JOIN pg_class tc ON tc.oid = ix.indrelid
              JOIN pg_namespace n ON n.oid = tc.relnamespace
              LEFT JOIN pg_constraint con ON con.conindid = ix.indexrelid AND con.contype IN ('p', 'u')
-            WHERE n.nspname = '${SCHEMA}' AND tc.relkind = 'r' AND tc.relname <> 'log_pretest' LOOP
-    EXECUTE replace(i.def, ' ON ${SCHEMA}.', ' ON ${SCRATCH}.');
+            WHERE n.nspname = '${SHAPE_SCHEMA}' AND tc.relkind = 'r' AND tc.relname <> 'log_pretest' LOOP
+    EXECUTE replace(i.def, ' ON ${SHAPE_SCHEMA}.', ' ON ${SCRATCH}.');
     IF i.contype = 'p' THEN
       EXECUTE format('ALTER TABLE ${SCRATCH}.%I ADD CONSTRAINT %I PRIMARY KEY USING INDEX %I', i.tbl, i.conname, i.idx);
     ELSIF i.contype = 'u' THEN
@@ -261,9 +280,13 @@ notes=""
 if [ -s "$OUT/unexercised.txt" ]; then
   notes="${notes:+$notes; }unexercised: $(paste -sd, "$OUT/unexercised.txt")"
 fi
+# A borrowing bundle's persist schema need not exist yet; the record lives there.
+[ -z "$HISTORY_SCHEMA" ] || psql_q -c "SET client_min_messages = warning; CREATE SCHEMA IF NOT EXISTS ${SCHEMA}" >/dev/null
+history_args=()
+[ -z "$HISTORY_SCHEMA" ] || history_args=(--history-schema="$HISTORY_SCHEMA" --history-config="$HISTORY_CONFIG")
 vrc=0
 (cd "$REPO_ROOT" && Rscript data-raw/pretest_verdict.R --out="$OUT" --schema="$SCHEMA" \
    --scratch="$SCRATCH" --config="$CONFIG" --k="$K" --floor-min="$FLOOR_MIN" \
-   --per-input="$PER_INPUT" --notes="$notes" ${ONLY:+--subset}) || vrc=$?
+   --per-input="$PER_INPUT" --notes="$notes" ${ONLY:+--subset} "${history_args[@]}") || vrc=$?
 echo "report: $OUT/pretest.md"
 exit "$vrc"
