@@ -1,0 +1,79 @@
+=== study_area_run 20261102_110959 ===
+  run_uid:      20261102_110959-50380beb
+  run_label:    rehearsal-418
+  config:       default_minimal
+  branch:       418-gate-rehearsal (cyphers run this ref)
+  persist:      zz418_rehearsal
+  cyphers:      job1 job2 (2)
+  workers:      worker1 (1; persistent, never burned)
+  log dir:      /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run
+  vintage max:  7 d
+  recompute -j: 8
+  recompute:    early (each group once it and every group it reads have landed; link#374)
+  statement:    30 min per modelling statement (PGOPTIONS, both legs); recompute 10 min (wsg_recompute_one.R)
+  buckets:      exact (--buckets-exact; each --focal= list as given; the recompute settles access)
+  OVERRIDE:     no pre-run gate record required — rehearsal for #418 into a scratch schema; the gate passed on fresh_default_minimal at 24b2cbb3 (log_pretest 2026-11-02 11:08 UTC)
+  phases:       /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_110959_phases.tsv
+  [phase] refresh skipped
+=== pre-flight (local; pre-spend) ===
+  ✓ dispatcher fresh exports what the pipeline calls
+  ✓ output tokens: cut-min acc-v5 grad-seg q-fwapg 
+  ✓ origin/418-gate-rehearsal is at HEAD
+  ✓ fwapg_sha 5d50cc17e4d6 (exported to all hosts)
+  ✓ bcfishobs_sha dd9a5e5d2ddc (exported to all hosts)
+  ✓ fresh_sha 245c8d8db60b (clean)
+  WARN: pre-run gate not cleared (no gate record (zz418_rehearsal.log_pretest does not exist)) — proceeding on --pretest-note
+  ✓ bcfp reference pinned at v0.7.15-51-g3bd2824 (exported to all hosts)
+    ok   discharge (fwapg) loaded: whse_basemapping.fwa_stream_networks_discharge
+  ✓ discharge (fwapg) loaded on the dispatcher
+    [preflight] primitive vintage (window 7 d) - OK, oldest 0.1 d (whse_fish.pscis_assessment_svw) [judged by load stamp: 4, statistics: 0, none: 0]
+  ✓ dispatcher primitives within 7 d
+  ✓ doctl token valid (DO API reachable)
+  ✓ tofu do_token valid (HTTP 200 /v2/account)
+  ✓ tofu s3 backend reachable
+  ✓ worker1: answers, its own database
+  ✓ pre-flight clean (tunnel-free)
+  recorded --pretest-note in zz418_rehearsal.log_pretest (run_uid 20261102_110959-50380beb)
+=== resolve exact buckets (--buckets-exact; order as given, species filter only) ===
+  dispatcher (focal=SALR,MURT): SALR,MURT
+  worker1 (focal=LSAL,LNRS): LSAL,LNRS
+  cy[job1] (focal=MUSK): MUSK
+  cy[job2] (focal=LEUT): LEUT
+=== workers: prior rows ===
+  ✓ worker1: zz418_rehearsal holds no rows for its bucket
+  run groups: /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_110959_run_wsgs.tsv
+=== dispatcher persist (zz418_rehearsal): init ===
+  ✓ zz418_rehearsal initialised (see /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_110959_persist_init.log)
+=== early recompute: log tables, barrier views, dependency map ===
+  ✓ log tables present in zz418_rehearsal
+  ✓ barrier views built once for zz418_rehearsal
+  [phase] views ok 2026-11-02T11:10:13Z -> 2026-11-02T11:10:14Z (0.0 min)
+=== dispatcher persist (zz418_rehearsal): backup in the background ===
+  backup -> /tmp/zz418_rehearsal_pre_run_20261102_110959.dump (see /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_110959_backup.log)
+=== prep workers (worker_prep.sh): worker1 ===
+=== spin cyphers: job1 job2 ===
+  cy[job1] = <redacted>
+  cy[job2] = <redacted>
+=== prep cyphers (cypher_prep.sh) ===
+  [phase] prep job1 ok 2026-11-02T11:10:14Z -> 2026-11-02T11:19:21Z (9.1 min)
+  [phase] prep job2 ok 2026-11-02T11:10:14Z -> 2026-11-02T11:19:22Z (9.1 min)
+  ✓ cyphers prepped
+  [phase] prep worker1 failed 2026-11-02T11:10:14Z -> 2026-11-02T11:10:28Z (0.2 min)
+FATAL: worker1 prep failed; see /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_110959_prep_worker1.log
+  [phase] prep failed 2026-11-02T11:09:59Z -> 2026-11-02T11:19:23Z (9.4 min)
+  phases (/Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_110959_phases.tsv):
+    phase       host       start_utc            end_utc              minutes groups status
+    refresh                                                                         skipped
+    views                  2026-11-02T11:10:13Z 2026-11-02T11:10:14Z     0.0        ok
+    backup                 2026-11-02T11:10:14Z 2026-11-02T11:10:15Z     0.0        ok
+    prep        worker1    2026-11-02T11:10:14Z 2026-11-02T11:10:28Z     0.2        failed
+    prep        job1       2026-11-02T11:10:14Z 2026-11-02T11:19:21Z     9.1        ok
+    prep        job2       2026-11-02T11:10:14Z 2026-11-02T11:19:22Z     9.1        ok
+    prep                   2026-11-02T11:09:59Z 2026-11-02T11:19:23Z     9.4        failed
+  critical path: 9.4 min (first start to last end)
+=== BURN CYPHERS: job1 job2 ===
+  cy[job1]: 0 tofu resources (expect 0)
+  cy[job2]: 0 tofu resources (expect 0)
+  ✓ burn clean
+  ✓ redacted host addresses in 17 log file(s)
+DRIVER_EXIT=1

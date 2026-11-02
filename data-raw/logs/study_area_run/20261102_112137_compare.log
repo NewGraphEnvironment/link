@@ -1,0 +1,8 @@
+[study_area_compare] NOTE: 3 group(s) with no modelled species skipped: LEUT,LNRS,MURT
+[study_area_compare] 3 rows across 3/3 WSGs -> /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_112137_compare.csv
+# A tibble: 3 × 7
+  wsg   species total_segs match_pct n_diffs top_pattern       top_pattern_count
+* <chr> <chr>        <int>     <dbl>   <int> <chr>                         <int>
+1 LSAL  CH            9373      74.8    2365 "REAR;NONE | ACC…              1015
+2 MUSK  CH            6668      41.3    3914 "ACCESS;MODELLED…              1495
+3 SALR  CH            9206      76.4    2173 "REAR;NONE | ACC…              1213

@@ -1,0 +1,98 @@
+
+=== run under verification ===
+         run_uid          |   run_label   | n_attempted | n_completed | n_hosts |   bcfp_reference    | bcfp_pin_source |            started            |           finished            
+--------------------------+---------------+-------------+-------------+---------+---------------------+-----------------+-------------------------------+-------------------------------
+ 20261102_112137-6a1461b2 | rehearsal-418 |           6 |           6 |       4 | v0.7.15-51-g3bd2824 | env             | 2026-11-02 11:31:14.752462+00 | 2026-11-02 11:33:37.920881+00
+(1 row)
+
+ scope_assertion 
+-----------------
+ expected_n = 6
+(1 row)
+
+
+=== 1. Provenance per host ===
+    host     | n_wsg | has_link_sha | has_fresh_sha | has_fwapg_sha | has_bcfishobs_sha | has_bcfp_version | n_dirty | n_dirty_unknown |          first_done           |           last_done           
+-------------+-------+--------------+---------------+---------------+-------------------+------------------+---------+-----------------+-------------------------------+-------------------------------
+ cypher-job1 |     1 |            1 |             1 |             1 |                 1 |                1 |       0 |               0 | 2026-11-02 11:33:37.920881+00 | 2026-11-02 11:33:37.920881+00
+ cypher-job2 |     1 |            1 |             1 |             1 |                 1 |                1 |       0 |               0 | 2026-11-02 11:33:13.098732+00 | 2026-11-02 11:33:13.098732+00
+ m1          |     2 |            2 |             2 |             2 |                 2 |                2 |       0 |               0 | 2026-11-02 11:32:12.150366+00 | 2026-11-02 11:32:48.464427+00
+ m4          |     2 |            2 |             2 |             2 |                 2 |                2 |       0 |               0 | 2026-11-02 11:32:17.340282+00 | 2026-11-02 11:33:27.903574+00
+(4 rows)
+
+
+=== 1b. Provenance verdict (per host) ===
+    host     | verdict 
+-------------+---------
+ cypher-job1 | OK
+ cypher-job2 | OK
+ m1          | OK
+ m4          | OK
+(4 rows)
+
+
+=== 1c. Started but never finished (must be empty, or every row superseded) ===
+ host | watershed_group_code | date_start | notes | superseded 
+------+----------------------+------------+-------+------------
+(0 rows)
+
+
+=== 2. The distinct SHAs -- all hosts must agree ===
+                 link_sha                 |                fresh_sha                 |                fwapg_sha                 |              bcfishobs_sha               | bcfp_model_version  
+------------------------------------------+------------------------------------------+------------------------------------------+------------------------------------------+---------------------
+ 066fd51811bca575d42b90a1ea31987422ff3f99 | 245c8d8db60b446f1fedb72340f55faa25f32f24 | 5d50cc17e4d649dd19092c25c952980638b36f76 | dd9a5e5d2ddc5c6e838739a166af638e942149f4 | v0.7.15-51-g3bd2824
+(1 row)
+
+
+=== 2b. Inputs every host must agree on (must be one row) ===
+ n_distinct_input_sets | verdict 
+-----------------------+---------
+                     1 | OK
+(1 row)
+
+
+=== 3. Coverage: every WSG of this run has streams rows ===
+ wsg  | n_segments 
+------+------------
+ LEUT |       6958
+ LNRS |       9618
+ LSAL |       9373
+ MURT |      14377
+ MUSK |       6718
+ SALR |       9206
+(6 rows)
+
+
+=== 4. Modelled vs recomputed -- the difference, per WSG ===
+ wsg  | modelled | recomputed |          model_done           |        recompute_done         | state 
+------+----------+------------+-------------------------------+-------------------------------+-------
+ LEUT | t        | t          | 2026-11-02 11:33:13.098732+00 | 2026-11-02 11:34:23.61082+00  | ok
+ LNRS | t        | t          | 2026-11-02 11:32:48.464427+00 | 2026-11-02 11:34:23.929413+00 | ok
+ LSAL | t        | t          | 2026-11-02 11:32:12.150366+00 | 2026-11-02 11:35:25.634987+00 | ok
+ MURT | t        | t          | 2026-11-02 11:33:27.903574+00 | 2026-11-02 11:33:54.877419+00 | ok
+ MUSK | t        | t          | 2026-11-02 11:33:37.920881+00 | 2026-11-02 11:35:25.336638+00 | ok
+ SALR | t        | t          | 2026-11-02 11:32:17.340282+00 | 2026-11-02 11:33:54.055094+00 | ok
+(6 rows)
+
+
+=== 5. Whole-schema picture: the mixture this run leaves behind ===
+ wsg_in_streams 
+----------------
+              6
+(1 row)
+
+ wsg_with_any_log 
+------------------
+                6
+(1 row)
+
+ runs_ever_labelled 
+--------------------
+                  1
+(1 row)
+
+
+=== 6. ASSERTIONS (raise, so this script can actually fail) ===
+psql:data-raw/study_area_verify.sql:690: NOTICE:  PASS: run 20261102_112137-6a1461b2 -- 6 WSG(s), all modelled, recomputed, settled, segmented and provenanced
+
+=== verify: OK ===

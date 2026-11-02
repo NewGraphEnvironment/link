@@ -24,7 +24,8 @@ bash data-raw/study_area_verify_negative.sh "$UID_" "$SCHEMA" > "$OUT/verify_neg
 
 deps="$L/${TS}_recompute_deps.tsv"
 if [ -s "$deps" ]; then
-  Rscript data-raw/recompute_audit.R "$SCHEMA" "$UID_" "$deps" > "$OUT/recompute_audit.log" 2>&1 \
+  Rscript data-raw/recompute_audit.R "$SCHEMA" "$UID_" "$deps" "$L/${TS}_run_wsgs.tsv" \
+    "$L/${TS}_consolidate_state.tsv" "$L/${TS}_recompute_launched.tsv" > "$OUT/recompute_audit.log" 2>&1 \
     && say "recompute_audit.R" PASS || say "recompute_audit.R" "FAIL: exit $? (see recompute_audit.log)"
 else
   say "recompute_audit.R" "FAIL: no $deps"

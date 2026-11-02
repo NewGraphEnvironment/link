@@ -1,0 +1,54 @@
+# rehearsal_418 — the real driver on six groups across four hosts, before the minimal run (#418, #441)
+
+**2026-11-02, by hand.** #418's gated script (picker, `log_rehearsal`, launch refusal, seeded failures) is still owed;
+this is its check list run once, at the code #441's run will use, with `check.sh` committed before the run.
+
+## The run
+
+`study_area_run.sh --config=default_minimal --schema=zz418_rehearsal --workers=m1 --cy-workspaces=job1,job2
+--buckets-exact --recompute-jobs=8 --auto-install --run-label=rehearsal-418`, with a `--pretest-note` naming the gate's
+pass (`../pretest/20261102_102658_default_minimal/`, `fresh_default_minimal.log_pretest`, link `24b2cbb3`), from branch
+`418-gate-rehearsal`. Run `20261102_112137-6a1461b2`: driver exit 0, critical path 14.1 min (`run.log`; the driver's own
+files are `../study_area_run/20261102_112137_*`).
+
+| host | groups | why |
+|---|---|---|
+| m4 (dispatcher) | SALR, MURT | SALR is the group LSAL and MUSK read; MURT has only paused species present |
+| m1 (worker) | LSAL, LNRS | LSAL reads SALR on another host; LNRS holds the dam LEUT's downstream check needs |
+| job1 | MUSK | reads SALR and LSAL, both on other hosts |
+| job2 | LEUT | reads LNRS on another host, and LNRS reads it back |
+
+Picked from `recompute_deps.R`'s line rule over FWA (7 dependency pairs inside the six) and the 241-group history's
+minutes (each group 0.7 to 1.7 min there). `lnk_wsg_downstream_check()` passed for each against an empty schema except
+LEUT, whose one unmodelled dam is in LNRS, which is in the run. No Fraser main-stem group is in it: the smallest takes
+6.6 min, and SALR stands in as the group others read.
+
+## Checks (`check.sh`, `check.txt`)
+
+| check | result |
+|---|---|
+| driver exit | PASS (0) |
+| `study_area_verify.sql`, `expected_n=6` | PASS (`verify.log`) |
+| `study_area_verify_negative.sh` | PASS (`verify_negative.log`) |
+| `recompute_audit.R` | PASS: 7 dependency pairs, 0 early (`recompute_audit.log`) |
+| `phases.tsv` model rows on dispatcher, worker1, job1, job2 | PASS |
+| no host kept; no cloud host left up | PASS |
+| `outside_readers.tsv` written | PASS (empty: the schema held only the run) |
+
+Each cloud host was consolidated and burned when its own leg ended. The driver's compare against bcfishpass reads 41 to
+76 % on the three groups with a modelled species: a minimal network against the full reference, not a check. Outputs
+were not compared with a last build: no `default_minimal` build exists, and a `default` build differs by design.
+
+## The first try (`try1_worker_url/`)
+
+Run `20261102_110959-50380beb` stopped at the worker's prep: `worker_prep.sh` compared `git remote get-url origin`
+with the run's https origin, and m1 rewrites `https://github.com/` to ssh (`url.<base>.insteadOf`), so the clone could
+never match. Both cloud hosts were burned by the driver; nothing was modelled. The fix (this branch) reads
+`remote.origin.url` and normalizes the ssh form as the driver does. `worker_prep.sh` is outside the gate's watched
+paths, so the gate's record stands.
+
+## Also
+
+- `BCFISHOBS_DIR` pointed at a clean clone of `~/Projects/repo/bcfishobs` at its HEAD (`dd9a5e5d`), because that
+  checkout holds uncommitted files that are not this work's; the stamped `bcfishobs_sha` is that HEAD.
+- Teardown: `zz418_rehearsal` dropped on m4 and m1, the pre-run dump removed, the worker clone clean.

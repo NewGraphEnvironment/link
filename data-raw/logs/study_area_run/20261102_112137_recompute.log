@@ -1,0 +1,105 @@
+[1] 0
+[1] 0
+[wsg_recompute_one] LEUT prologue 0.89 s
+NOTICE:  table "zz_lnk_access_prior_leut" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_leut" does not exist, skipping
+
+NOTICE:  table "zz_lnk_access_prior_leut" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] LEUT recomputed in 0.04 min (persist=zz418_rehearsal)
+[1] 0
+[1] 0
+[wsg_recompute_one] MURT prologue 0.91 s
+NOTICE:  table "zz_lnk_access_prior_murt" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_murt" does not exist, skipping
+
+NOTICE:  table "zz_lnk_access_prior_murt" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] MURT recomputed in 0.07 min (persist=zz418_rehearsal)
+[1] 0
+[1] 0
+[wsg_recompute_one] LSAL prologue 0.90 s
+NOTICE:  table "zz_lnk_access_prior_lsal" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_lsal" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] LSAL habitat gate: 7 segments (7.438 km) settled
+[wsg_recompute_one] LSAL recomputed in 0.05 min (persist=zz418_rehearsal)
+[1] 0
+[1] 0
+[wsg_recompute_one] MUSK prologue 0.90 s
+NOTICE:  table "zz_lnk_access_prior_musk" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_musk" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] MUSK habitat gate: 4 segments (2.583 km) settled
+[wsg_recompute_one] MUSK recomputed in 0.05 min (persist=zz418_rehearsal)
+[1] 0
+[1] 0
+[wsg_recompute_one] LNRS prologue 0.90 s
+NOTICE:  table "zz_lnk_access_prior_lnrs" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_lnrs" does not exist, skipping
+
+NOTICE:  table "zz_lnk_access_prior_lnrs" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] LNRS recomputed in 0.04 min (persist=zz418_rehearsal)
+[1] 0
+[1] 0
+[wsg_recompute_one] SALR prologue 0.91 s
+NOTICE:  table "zz_lnk_access_prior_salr" does not exist, skipping
+
+NOTICE:  table "zz_lnk_streams_salr" does not exist, skipping
+
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+[wsg_recompute_one] SALR habitat gate: 13 segments (5.790 km) settled
+[wsg_recompute_one] SALR recomputed in 0.06 min (persist=zz418_rehearsal)
