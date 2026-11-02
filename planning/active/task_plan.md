@@ -201,7 +201,7 @@ from m4.
 - [x] `DESCRIPTION` to `0.77.0` (the token row names it), `NEWS.md` entry.
 - [x] CLAUDE.md status entry (what landed, what is owed, facts not worth re-deriving: the
   overlay direction, the 1 m containment caveat, the own-table design).
-- [x] Edit the #415 body: the overlay bullet reads "under-applies", the four proposed
+- [ ] Edit the #415 body: the overlay bullet reads "under-applies", the four proposed
   checkboxes note the two-PR split and link this PR, the parent-attribute design is written
   in, and `cut-min` is named. No new issue filed here. Done once the PR exists.
 
@@ -216,15 +216,17 @@ from m4.
 - [ ] Pre-run gate (#372) on `fresh_default_minimal` before the minimal provincial run.
 
 ## Validation
-- [ ] `devtools::test()` clean, `lintr::lint_package()` clean, `devtools::document()`,
-  `pkgdown::check_pkgdown()`.
-- [ ] `/code-check branch` before the PR.
-- [ ] `lnk_vocabulary_resolve(lnk_config("default_minimal"))` prints the four tokens;
+- [x] `devtools::test()` clean (5,184 expectations, 0 failed, 6 skipped), `devtools::document()`,
+  `pkgdown::check_pkgdown()`. `lintr::lint_package()` is not clean and was not before this
+  branch (about 3,000 warnings); on the lines this branch added, package and test code has
+  indentation lints only, and `proof.R` keeps a few style lints, a one-off script left as tested.
+- [x] `/code-check branch` before the PR: 3 rounds, ended by round 3's enumeration.
+- [x] `lnk_vocabulary_resolve(lnk_config("default_minimal"))` prints the four tokens;
   `lnk_vocabulary_resolve(lnk_config("default"))` unchanged.
-- [ ] The vocabulary append-only test run locally in this checkout, and the `cut-min` row's
+- [x] The vocabulary append-only test run locally in this checkout, and the `cut-min` row's
   `introduced` equals `packageVersion("link")` (one line in R; no test ties them).
-- [ ] The smoke run completes on ADMS and `proof.R` writes every CSV.
-- [ ] PWF checkboxes match landed work; `/planning-archive` on completion.
+- [x] The smoke run completes on ADMS and `proof.R` writes every CSV.
+- [x] PWF checkboxes match landed work; `/planning-archive` on completion.
 
 Parked (operator, 2026-11-01): approval covered the baseline only, written and pushed. The run-to-PR
 mandate starts at the `### Resume` block in `progress.md`.
