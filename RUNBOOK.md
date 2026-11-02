@@ -892,7 +892,7 @@ which kinds of break a network has, and each qualifier says how a source in it i
 | Source set | Cuts at | Status |
 |---|---|---|
 | `full` | every source | `cut-full-top`, `cut-full-ssf-all` |
-| `min` | access-gradient positions, falls, user-definite barriers | `cut-min` (`default_minimal`, #415) |
+| `min` | gradient barriers where a modelled species' access changes, falls, user-definite barriers | `cut-min` (`default_minimal`, #415) |
 | a barriers-only set | falls and user-definite barriers, no access-gradient cuts | room in the pattern; named when built |
 | a no-cut set | FWA's own segments | room in the pattern; named when built |
 

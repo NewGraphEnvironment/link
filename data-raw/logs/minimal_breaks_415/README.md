@@ -8,7 +8,7 @@
 
 ## Run decision (for the real run, restate before launching)
 
-- **Software:** `proof.R` reads the fresh version from `builds.csv`; install the pinned one or say why not.
+- **Software:** install the pinned fresh, or say why not. `builds.csv` records the version each build read, and `proof.R` stops when the builds differ, but it does not compare it with the pin.
 - **Groups:** BULK plus two or three chinook-rearing and crossing-heavy groups, picked from `pick_groups.sql` when the proof runs, and named here with why. Check each is on `cw`, since `proof.R` reads channel width only.
 - **Schemas:** `zz415_default` (`default`) and `zz415_minimal` (`default_minimal`), scratch on the local fwapg, published nowhere, dropped when the write-up lands.
 - **Order:** downstream-first, passed to `run.sh` in that order. Serial, because both bundles share `working_<wsg>`. In each group `default` runs first, so `working_<wsg>` holds the minimal build the census reads.
@@ -25,15 +25,15 @@ Rscript data-raw/logs/minimal_breaks_415/proof.R --wsgs=BULK,<WSG>,<WSG>
 | file | what it answers | stops on |
 |---|---|---|
 | `status.tsv` | minutes, exit, pass rule and segments per step | |
-| `builds.csv` | which commit and tokens each build carries | not one clean commit, wrong tokens |
-| `segments.csv` | segments and km per schema; the overlap must cover both | pieces not covering either side |
+| `builds.csv` | which commit, fresh and tokens each build and recompute carries | not one clean commit and fresh, wrong tokens, an open build, a recompute missing, older than its build or failed other than on the post-condition |
+| `segments.csv` | segments and km per schema; the overlap must cover both, and each segment must have a `streams_access` row | pieces not covering either side, a missing access row, a species on one network only |
 | `superset.csv` | every minimal cut has a full cut within 1 m, and km of full segments straddling a minimal cut | an unmatched cut |
 | `parent_<wsg>.csv` | the parent table's prototype: each full segment's largest-overlap minimal segment, its gradient and length, the overlap and what straddles | |
 | `access_km.csv` | `access_<sp>` km by code (-9, 0, 1, 2) on each network | |
 | `access_open.csv`, `access_differences.csv` | pieces where a species reads -9, 0 or open differently | any piece of 1.01 m or more |
 | `crossing_fields.csv` | km on which `dam_dnstr_ind`, `remediated_dnstr_ind` and each `has_barriers_*_dnstr` differ | |
 | `overlay.csv` | km of user habitat range each network applies, and under-applies | |
-| `connectivity.csv` | km the stream rear predicate gives on accessible segments and the persisted flag does not, on each network | |
+| `connectivity.csv` | km the rear predicate (every rear rule) gives on accessible segments and the persisted flag does not, on each network, split between lines in a lake, reservoir or wetland polygon and the rest | |
 | `gradient.csv` | minimal gradient against the length-weighted full gradient over its pieces | |
 | `breaks_census.csv` | what put each minimal break there | a break with no named source |
 | `placement.csv` | bcfishobs records placed by knowledge's `knw_link_place()` rule on each network: start-window branch against containing segment, offset, segment length, km above and below | |
@@ -44,7 +44,7 @@ Rscript data-raw/logs/minimal_breaks_415/proof.R --wsgs=BULK,<WSG>,<WSG>
 
 No cut falls at a crossing, so each field reads from the segment's start:
 
-- **`has_barriers_anthropogenic_dnstr`, `has_barriers_pscis_dnstr`, `has_barriers_dams_dnstr`, `has_barriers_remediations_dnstr`:** true only when the crossing or dam lies below the segment's start, so a segment holding a crossing reads as below it up to the next cut. These can only lose km against the full network. On this network they say "below this segment's start", not "below this point".
+- **`has_barriers_anthropogenic_dnstr`, `has_barriers_pscis_dnstr`, `has_barriers_dams_dnstr`, `has_barriers_remediations_dnstr`:** true only when the crossing or dam lies below the segment's start, so a segment holding a crossing reads as below it up to the next cut. These lose km against the full network, apart from pieces of about 2 m or less at a minimal cut the full build skipped, where the minimal segment starts above the full one. On this network they say "below this segment's start", not "below this point".
 - **`dam_dnstr_ind`, `remediated_dnstr_ind`:** whether the *next* feature downstream of the segment's start is a dam or a remediation. A crossing that no longer counts on a segment can expose a dam or remediation below it, so these can gain km as well as lose them.
 - **`has_barriers_<sp>_dnstr`:** natural barriers cut this network, so these should move little. A barrier of another group is not cut here, which `access_open.csv` would show.
 - **Mapping codes** inherit the same reading. The knowledge repo reads none of them.

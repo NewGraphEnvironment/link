@@ -46,6 +46,10 @@ while [ "$quiet" -lt "$QUIET_MIN" ] && [ "$waited" -lt 180 ]; do
   if [ "$n" = "0" ]; then quiet=$((quiet + 1)); else quiet=0; fi
   sleep 60; waited=$((waited + 1))
 done
+if [ "$quiet" -lt "$QUIET_MIN" ]; then
+  echo "[run] $(stamp) database still busy after $waited min: not building beside it" >&2
+  exit 1
+fi
 echo "[run] $(stamp) gate passed (quiet minutes $quiet, waited $waited min)"
 
 printf 'step\twsg\tschema\tstart_utc\tend_utc\tminutes\texit\tpass\tn_segments\tload_start\tload_end\n' > "$STATUS"

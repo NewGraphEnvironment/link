@@ -1,6 +1,6 @@
 # link 0.77.0
 
-**A second output of the `default` model, cut only where a species' access changes** ([#415](https://github.com/NewGraphEnvironment/link/issues/415)). The new `default_minimal` bundle cuts streams at access-gradient positions, falls and user-definite barriers, so a segment's gradient no longer depends on where fish were caught or where a road crosses. It is meant for tuning habitat thresholds. `default`, `default_tuned` and `bcfishpass` do not change.
+**A second output of the `default` model, with far fewer cuts** ([#415](https://github.com/NewGraphEnvironment/link/issues/415)). The new `default_minimal` bundle cuts streams only at gradient barriers where a modelled species' access changes, falls and user-definite barriers, so no fish record or road crossing cuts a stream at its own position. It is meant for tuning habitat thresholds. Records still reach the cuts one way: a barrier a record lifts is not cut, and the positions above it can be. `default`, `default_tuned` and `bcfishpass` do not change.
 
 - **The output is named `cut-min`,** with `default`'s other three tokens. Cut tokens are keyed `cut-<source set>[-<qualifier>...]`, written down in the RUNBOOK.
 - **`pipeline: break_order: ~` in a bundle that extends another is now refused.** It would have deleted the parent's list and fallen back to every break source.

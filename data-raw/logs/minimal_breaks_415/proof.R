@@ -9,8 +9,10 @@
 # 3.93 mm within one side (FWA).
 #
 # Checks, and what stops the script after every CSV is written:
-#   builds.csv             both builds' newest log rows; stops unless one commit,
-#                          clean, on one config of inputs apart from the bundle
+#   builds.csv             both builds' newest log and log_recompute rows; stops
+#                          unless one clean commit and fresh, the expected tokens,
+#                          closed builds, and a recompute at or after each build
+#                          that closed or failed only on the post-condition
 #   segments.csv           segments and km per schema
 #   superset.csv           every minimal cut has a full cut within tol_m of it, and
 #                          km of full segments that straddle a minimal cut;
@@ -24,7 +26,7 @@
 #   crossing_fields.csv    km on which each crossing-based field differs
 #   overlay.csv            km of user habitat range each network applies
 #   connectivity.csv       rearing km the predicate gives and the connectivity
-#                          pass takes away, both builds
+#                          passes take away, both builds, split by polygon lines
 #   gradient.csv           minimal gradient against length-weighted full gradient
 #   breaks_census.csv      what put each minimal break there; stops on 'none'
 #   placement.csv          bcfishobs records placed by knowledge's knw_link_place()
@@ -78,7 +80,13 @@ builds <- do.call(rbind, lapply(wsgs, function(w) {
          FROM %1$s.log WHERE watershed_group_code = '%2$s'
         ORDER BY date_start DESC LIMIT 1", s, w))
     if (nrow(d) != 1L) stop(s, " has no log row for ", w, call. = FALSE)
-    d
+    rc <- q(sprintf(
+      "SELECT date_start AS recompute_start, date_end AS recompute_end,
+              notes AS recompute_notes
+         FROM %1$s.log_recompute WHERE watershed_group_code = '%2$s'
+        ORDER BY date_start DESC LIMIT 1", s, w))
+    if (nrow(rc) != 1L) stop(s, " has no log_recompute row for ", w, call. = FALSE)
+    cbind(d, rc)
   }))
 }))
 write_csv(builds, "builds.csv")
@@ -86,7 +94,10 @@ token_ok <- builds$token_cut == ifelse(builds$schema == minimal, "cut-min", "cut
 builds_ok <- length(unique(builds$link_sha)) == 1L && !anyNA(builds$link_sha) &&
   !any(builds$link_dirty %in% TRUE) && all(token_ok) &&
   length(unique(builds$token_acc)) == 1L && length(unique(builds$token_flow)) == 1L &&
-  !anyNA(builds$date_end)
+  length(unique(builds$fresh_version)) == 1L && !anyNA(builds$date_end) &&
+  all(builds$recompute_start >= builds$date_end) &&
+  all(!is.na(builds$recompute_end) |
+        grepl("BLOCKED (link#227)", builds$recompute_notes, fixed = TRUE))
 
 # -- per group --------------------------------------------------------------
 res <- list(segments = list(), superset = list(), access_km = list(),
@@ -135,6 +146,12 @@ for (w in wsgs) {
             (SELECT sum(um - dm) FROM sf) / 1000 AS km_full,
             (SELECT sum(um - dm) FROM sm) / 1000 AS km_minimal,
             (SELECT sum(len) FROM pc) / 1000 AS km_pieces", w)))
+  n_access <- num(q("SELECT (SELECT count(*) FROM sf s WHERE NOT EXISTS (
+                               SELECT 1 FROM af a WHERE a.id_segment = s.id_segment)) AS f_missing,
+                            (SELECT count(*) FROM sm s WHERE NOT EXISTS (
+                               SELECT 1 FROM am a WHERE a.id_segment = s.id_segment)) AS m_missing"))
+  seg$n_full_no_access <- n_access$f_missing
+  seg$n_minimal_no_access <- n_access$m_missing
   add("segments", seg)
   tol <- max(seg$n_full, seg$n_minimal) / 1e6
   if (abs(seg$km_pieces - seg$km_full) > tol || abs(seg$km_pieces - seg$km_minimal) > tol) {
@@ -171,7 +188,12 @@ for (w in wsgs) {
   # Species: access on both networks.
   cols_f <- acc_cols(full)
   species <- sub("^access_", "", grep("^access_", cols_f, value = TRUE))
-  species <- species[paste0("access_", species) %in% acc_cols(minimal)]
+  species_minimal <- sub("^access_", "", grep("^access_", acc_cols(minimal), value = TRUE))
+  if (!setequal(species, species_minimal)) {
+    stop(w, ": the networks carry different species: ",
+         paste(setdiff(union(species, species_minimal), intersect(species, species_minimal)),
+               collapse = ", "), call. = FALSE)
+  }
   for (sp in species) {
     a <- sprintf("access_%s", sp)
     km <- rbind(
@@ -187,7 +209,8 @@ for (w in wsgs) {
 
     diff_sql <- sprintf(
       "FROM pc JOIN af ON af.id_segment = pc.fid JOIN am ON am.id_segment = pc.mid
-       WHERE least(af.%1$s, 1) IS DISTINCT FROM least(am.%1$s, 1)", a)
+       WHERE least(coalesce(af.%1$s, -99), 1) IS DISTINCT FROM
+             least(coalesce(am.%1$s, -99), 1)", a)
     add("access_open", num(q(sprintf(
       "SELECT '%1$s' AS wsg, '%2$s' AS sp,
               count(*) FILTER (WHERE pc.len < 1.01) AS n_sliver,
@@ -218,17 +241,19 @@ for (w in wsgs) {
   # User habitat overlay. fresh's match and lnk_habitat_gate() keep a flag only
   # where one row contains the whole segment, so km inside a range on a segment
   # that also runs past its end is not applied.
+  # Rows are matched by line and measure, not by the group they are filed under,
+  # as the gate and fresh's overlay match them.
   uhc <- loaded$user_habitat_classification
-  uhc <- uhc[uhc$watershed_group_code == w, , drop = FALSE]
   truthy <- function(v) tolower(trimws(as.character(v))) %in% c("1", "t", "true")
   for (s in c(full, minimal)) {
     tbl <- if (s == full) "sf" else "sm"
     segs <- num(q(sprintf("SELECT blk, dm, um FROM %s", tbl)))
+    uhc_w <- uhc[uhc$blue_line_key %in% segs$blk, , drop = FALSE]
     for (stage in c("spawning", "rearing")) {
-      u <- uhc[truthy(uhc[[stage]]), , drop = FALSE]
+      u <- uhc_w[truthy(uhc_w[[stage]]), , drop = FALSE]
       for (sp in unique(u$species_code)) {
         r <- u[u$species_code == sp, , drop = FALSE]
-        tot <- c(range_km = 0, covered_km = 0, applied_km = 0)
+        tot <- c(covered_km = 0, applied_km = 0)
         for (b in unique(r$blue_line_key)) {
           rb <- r[r$blue_line_key == b, , drop = FALSE]
           sb <- segs[segs$blk == b, , drop = FALSE]
@@ -247,7 +272,6 @@ for (w in wsgs) {
           merged[[length(merged) + 1L]] <- c(lo, hi)
           for (m in merged) {
             ov <- pmin(sb$um, m[2]) - pmax(sb$dm, m[1])
-            tot["range_km"] <- tot["range_km"] + (m[2] - m[1]) / 1000
             tot["covered_km"] <- tot["covered_km"] + sum(ov[ov > 0]) / 1000
           }
           inside <- vapply(seq_len(nrow(sb)), function(i) {
@@ -257,7 +281,6 @@ for (w in wsgs) {
           tot["applied_km"] <- tot["applied_km"] + sum((sb$um - sb$dm)[inside]) / 1000
         }
         add("overlay", data.frame(wsg = w, schema = s, sp = sp, stage = stage,
-                                  range_km = tot[["range_km"]],
                                   covered_km = tot[["covered_km"]],
                                   applied_km = tot[["applied_km"]],
                                   under_applied_km = tot[["covered_km"]] - tot[["applied_km"]]))
@@ -265,9 +288,10 @@ for (w in wsgs) {
     }
   }
 
-  # Connectivity: km the stream rear predicate gives on accessible segments and
-  # the persisted flag does not. Stream rule only, since lake and wetland buckets
-  # are sized apart; the gate has already blanked inaccessible rows.
+  # Connectivity: km the rear predicate gives on accessible segments and the
+  # persisted flag does not. The predicate ORs every rear rule, so the km split
+  # into lake, reservoir and wetland polygon lines (requires_connected: spawning)
+  # and the rest (cluster_rearing). The gate has already blanked inaccessible rows.
   model <- unique(.lnk_wsg_model(.lnk_habitat_method_read(.lnk_habitat_method_csv(cfg)), w))
   for (s in c(full, minimal)) {
     near <- if (has_tbl(s, "streams_near_river")) paste0(s, ".streams_near_river") else NULL
@@ -290,9 +314,14 @@ for (w in wsgs) {
                 coalesce(sum(t.len) FILTER (WHERE t.acc AND t.pred), 0) / 1000 AS km_predicate,
                 coalesce(sum(t.len) FILTER (WHERE t.rearing), 0) / 1000 AS km_rearing,
                 coalesce(sum(t.len) FILTER (WHERE t.acc AND t.pred AND NOT t.rearing), 0) / 1000 AS km_dropped,
+                coalesce(sum(t.len) FILTER (WHERE t.acc AND t.pred AND NOT t.rearing AND t.in_poly), 0) / 1000 AS km_dropped_polygon,
                 coalesce(sum(t.len) FILTER (WHERE t.spawning), 0) / 1000 AS km_spawning
            FROM (SELECT s.length_metre AS len, h.accessible AS acc, h.rearing, h.spawning,
-                        coalesce((%3$s), false) AS pred
+                        coalesce((%3$s), false) AS pred,
+                        coalesce(s.waterbody_key IN (
+                          SELECT waterbody_key FROM whse_basemapping.fwa_lakes_poly
+                          UNION ALL SELECT waterbody_key FROM whse_basemapping.fwa_manmade_waterbodies_poly
+                          UNION ALL SELECT waterbody_key FROM whse_basemapping.fwa_wetlands_poly), false) AS in_poly
                    FROM %4$s s
                    JOIN %5$s.streams_habitat_%6$s h
                      ON h.id_segment = s.id_segment
@@ -404,7 +433,7 @@ write_csv(bind("access_differences", data.frame(
 write_csv(bind("crossing", data.frame()), "crossing_fields.csv")
 write_csv(bind("overlay", data.frame(
   wsg = character(), schema = character(), sp = character(), stage = character(),
-  range_km = numeric(), covered_km = numeric(), applied_km = numeric(),
+  covered_km = numeric(), applied_km = numeric(),
   under_applied_km = numeric())), "overlay.csv")
 write_csv(bind("connectivity", data.frame()), "connectivity.csv")
 write_csv(bind("gradient", data.frame()), "gradient.csv")
@@ -420,6 +449,7 @@ defects <- c(
   if (!builds_ok) "the builds are not of one clean commit with the expected tokens (builds.csv)",
   if (any(superset$n_unmatched > 0)) "a minimal cut has no full cut within tol_m (superset.csv)",
   if (any(access_open$n_violation > 0)) "a species' access differs outside slivers (access_open.csv)",
+  if (any(segments$n_full_no_access > 0 | segments$n_minimal_no_access > 0)) "a segment has no streams_access row (segments.csv)",
   if (any(census$source %in% c("none", "working_schema_not_this_build"))) "a minimal break has no named source (breaks_census.csv)")
 if (length(defects)) stop("DEFECT: ", paste(defects, collapse = "; "), call. = FALSE)
 message("[proof] every check passed for ", paste(wsgs, collapse = ", "))

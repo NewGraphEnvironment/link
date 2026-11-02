@@ -11,7 +11,9 @@ Every file and every other pipeline key resolves to `configs/default/`, so `lnk_
 
 ## Why
 
-A segment's gradient is the elevation drop over its own length, so each cut moves the gradient a habitat rule reads. Observation cuts make that gradient depend on where fish were caught, and crossing and habitat end point cuts fall at places unrelated to the stream's form. This network keeps only the cuts where a species' access changes, so thresholds can be tuned on segments that know nothing about the records scored against them.
+A segment's gradient is the elevation drop over its own length, so each cut moves the gradient a habitat rule reads. Observation cuts put a segment boundary at a fish record, and crossing and habitat end point cuts fall at places unrelated to the stream's form. This network keeps the gradient barriers where a species' access changes, falls and user-definite barriers, so thresholds can be tuned with no record cutting the segment it is scored on.
+
+**It is not independent of the records.** Gradient positions are reduced after observation lifts (`.lnk_pipeline_prep_minimal()`): a barrier a record lifts is not cut, and the positions above it can be. So a record far upstream can still move a cut below it. A check that leaves a record out needs this in mind.
 
 ## What reads differently on longer segments
 
@@ -28,4 +30,4 @@ bash data-raw/study_area_run.sh --config=default_minimal --schema=fresh_default_
 LNK_SCHEMA=fresh_default_minimal Rscript data-raw/wsg_run_one.R ADMS default_minimal
 ```
 
-`study_area_run.sh` needs `--schema=` for this bundle, as for every bundle but `bcfishpass`. Mechanics of the token: RUNBOOK §6b, "Output vocabulary".
+`study_area_run.sh` needs `--schema=` for this bundle, as for every bundle but `bcfishpass`. Its pre-flight refuses a schema with no passing gate record, and the gate (`pretest_pick.R`) refuses a schema with no `log`, so a first provincial run needs the schema seeded first: build one group with the `wsg_run_one.R` line above, then run `pretest_run.sh` with `--minutes-schema=fresh_default`. That route has not been run. Mechanics of the token: RUNBOOK §6b, "Output vocabulary".

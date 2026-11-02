@@ -208,7 +208,9 @@ from m4.
 ## Owed at the end (reported, done after merge)
 - [ ] Second branch after #432 merges: the proof builds, `research/minimal_network.md`
   (or a section of `bcfp_segmentation_parity.md`), #433's measurement folded in, and the
-  parent-attribute issue drafted from the proof (the `streams_parent` table, its `grad`
+  parent-attribute issue drafted from the proof (how far lifts move the cuts, measured with
+  the records left out: round 1 of the code check found gradient positions are reduced after
+  observation lifts, so the network is not independent of the records; the `streams_parent` table, its `grad`
   token, and whether the Atlas-line reading gets one), with knowledge#120's mechanics
   check named as its acceptance.
 - [ ] Pre-run gate (#372) on `fresh_default_minimal` before the minimal provincial run.

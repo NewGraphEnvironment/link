@@ -72,8 +72,8 @@ us. link's own access rules are numbered revisions (`acc-v1`, `acc-v2`, `acc-v3`
 after the company (operator, 2026-10-29).
 
 **A cut token is keyed by its source set, then its qualifiers:**
-`cut-<source set>[-<qualifier>...]`. `full` cuts at every source and `min` at access-gradient
-positions, falls and user-definite barriers (#415). The pattern leaves room for a
+`cut-<source set>[-<qualifier>...]`. `full` cuts at every source and `min` at gradient barriers
+where a modelled species' access changes, falls and user-definite barriers (#415). The pattern leaves room for a
 barriers-only set and a no-cut FWA set, named when built. `top`, `all` and `ssf` say how the
 observation and subsurface sources are read. RUNBOOK §6b holds both tables.
 
