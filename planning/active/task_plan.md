@@ -55,9 +55,9 @@ There is no way to say "not now" short of removing the row. Steelhead have the s
 ## Phase 5: Vocabulary, docs, release
 
 - [x] An `acc-v5` row for `default` and `default_tuned`: as `acc-v4`, with KO and RB paused (no breaks, no access, no habitat). Check that `cut-full-top`'s wording still holds; its breaks follow the acc token.
-- [ ] RUNBOOK: §2 (breaks follow modelled species) and the config section (the switch, and a group with no modelled species).
+- [x] RUNBOOK: §2 (breaks follow modelled species) and the config section (the switch, and a group with no modelled species).
 - [ ] NEWS and the version bump to 0.76.0, the final commit. Add a CLAUDE.md Status entry.
-- [ ] #402's tracker: the 141 KO and RB rows already carry `issue` `#432` as pending deferrals. Confirm, and change nothing.
+- [x] #402's tracker: the 141 KO and RB rows already carry `issue` `#432` as pending deferrals. Confirm, and change nothing.
 
 ## Owed at the end (reported, done after merge)
 
