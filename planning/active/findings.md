@@ -18,6 +18,15 @@
 - **`pretest_since_covers()`** (`pretest.R:448`) refuses a history with any NULL `link_sha` or dirty row and requires `since` to be an ancestor of every history sha and each sha an ancestor of `end`.
 - **`study_area_compare.R`** exits 0 with nothing compared when no group has a modelled species; it does not stop a non-`bcfishpass` run.
 
+## Measured at Phase 0 (2026-11-02 05:36 to 05:55 UTC, m4)
+
+- **fresh:** reinstalled from the tag; `RemoteSha` 245c8d8d equals `v0.52.0^{commit}`.
+- **History:** `fresh_default_history.log` holds 242 rows, 241 groups, 4 hosts, 1 link sha, with its key and three indexes.
+- **Connections:** 0 % loss on 60 pings to m1 and the gateway; ssh to m1 0.17 to 0.37 s; DO API 0.46 s (`data-raw/logs/minimal_run_441/phase0_connections.txt`).
+- **Spin and burn:** `job1` up in 433 s, answered ssh with `fresh-db` and Tailscale, burned in 26 s, gone from `doctl`. Auto mode allowed both.
+- **Pre-flight:** credential, tofu state, ssh and worker lines pass. The gate and vintage fail as expected. **Unexpected: `~/Projects/repo/bcfishobs` is dirty** (modified `planning/active/task_plan.md`, untracked `duplicates.csv`), which fails the pre-flight at launch. Neither file is this session's, so it is left for the operator; no code changed there, HEAD `dd9a5e5d`.
+- **Picks on the 241-group history:** SETN, BULK, QUES, LFRA, TOAD, HARR, UPCE, OKAN, TAKL, HORS, SAJR; 69 changed files, none unmapped, across link `1d00c04c` to HEAD and fresh 0.42.0 to 0.52.0 (`data-raw/logs/gate_borrow_442/`).
+
 ## Plan review
 
 `review-plan.md`: one Plan agent, no blocker, four fixes folded into `task_plan.md`.

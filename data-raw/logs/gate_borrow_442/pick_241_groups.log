@@ -1,0 +1,25 @@
+=== pre-run gate (link#372) ===
+  config:          default_minimal
+  history schema:  fresh_default_history under default, borrowed (minutes from fresh_default_history, excluding KTSU,OKAN)
+  record schema:   fresh_default_minimal
+  scratch schema:  fresh_pretest_default_minimal (dropped and rebuilt)
+  range:           <earliest newest build in fresh_default_history.log>..HEAD
+  bound:           3 x last minutes, floor 5 min; statements <= 30 min
+  out:             pick241
+  mode:            pick only (nothing modelled, nothing recorded)
+--since from fresh_default_history.log: the earliest of the groups' newest builds, link 1d00c04cc5b2
+Changed and NOT exercised by the gate: link data-raw/schema_consolidate.R, link data-raw/study_area_run.sh, link data-raw/wsg_recompute_one.R, link R/lnk_access.R
+2 group(s) bounded on the median 3.7 min (excluded or no row in fresh_default_history.log)
+69 changed file(s), inputs: crossings, dams, gradient, near_river_conn, obs_upstream, observations, segments
+  pick SETN  [gradient,segments]  last 16.3 min on m1, bound 48.8 min
+  pick BULK  [crossings]  last 13.7 min on cypher-job3, bound 41.1 min
+  pick QUES  [near_river_conn]  last 9.3 min on m1, bound 28.0 min
+  pick LFRA  [obs_upstream,observations]  last 6.6 min on m1, bound 19.8 min
+  pick TOAD  [gradient,segments]  last 6.0 min on cypher-job2, bound 18.0 min
+  pick HARR  [obs_upstream]  last 5.7 min on m1, bound 17.2 min
+  pick UPCE  [observations]  last 3.7 min on cypher-job1, bound 11.2 min
+  pick OKAN  [dams]  last 3.7 min on median, bound 11.2 min
+  pick TAKL  [near_river_conn]  last 3.2 min on m1, bound 9.5 min
+  pick HORS  [crossings]  last 2.6 min on m1, bound 7.7 min
+  pick SAJR  [dams]  last 1.6 min on m1, bound 5.0 min
+pick only: pick241/pretest.md

@@ -51,6 +51,9 @@ out <- tryCatch({
     src <- pretest_record_history(records, schema, config, NROW(own), chain)
     if (is.null(src)) stop(schema, " has no builds under ", config, " and its gate borrowed no history to hold it to")
     hist <- DBI::dbGetQuery(conn, pretest_history_sql(src$schema, src$config))
+    short <- if (identical(src$config, config)) "" else
+      pretest_history_short(hist$wsg, pretest_modelable_groups(repo, config), paste0(src$schema, ".log"))
+    if (nzchar(short)) stop("the gate borrowed a short history: ", short)
     map <- pretest_map_read(file.path(script_dir, "pretest_inputs.csv"))
     r <- pretest_record_check(records, config, head_sha, fresh_sha, hist$link_sha,
                               hist$link_dirty, repo, map, chain,

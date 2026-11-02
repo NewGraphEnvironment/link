@@ -263,6 +263,24 @@ test_that("a record is held to the schema's own builds, else what it borrowed", 
   expect_null(held(rec()[0, ]))
 })
 
+test_that("a borrowed history short of the groups the config models is refused", {
+  e <- pt_env()
+  expect_identical(e$pretest_history_short(c("BULK", "PARS", "ADMS"), c("BULK", "PARS"), "h.log"), "")
+  why <- e$pretest_history_short(c("PARS"), c("BULK", "PARS", "ADMS"), "h.log")
+  expect_match(why, "h.log holds 1 of the 3 groups", fixed = TRUE)
+  expect_match(why, "missing BULK, ADMS", fixed = TRUE)
+  many <- e$pretest_history_short(character(0), sprintf("G%03d", 1:7), "h.log")
+  expect_match(many, "G005, ...", fixed = TRUE)
+})
+
+test_that("a history no range can cover is named before any range is read", {
+  e <- pt_env()
+  expect_identical(e$pretest_history_uncoverable(c("a", "b"), c(FALSE, FALSE)), "")
+  expect_match(e$pretest_history_uncoverable(c("a", NA), c(FALSE, FALSE)), "no link_sha")
+  expect_match(e$pretest_history_uncoverable(c("a", "b"), c(FALSE, TRUE)), "dirty tree")
+  expect_match(e$pretest_history_uncoverable("a", NA), "dirty tree")
+})
+
 test_that("every file under inst/extdata, DESCRIPTION and the run's data-raw scripts matches a row", {
   e <- pt_env()
   map <- e$pretest_map_read(pt_map_path())

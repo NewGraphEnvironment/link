@@ -63,19 +63,19 @@ Phases 1 to 5 about 7 to 9 hours (PR 1 about 1.5 h with CI; proof builds about 2
 ## Phase 0: prove the dependencies first (about 15 min, under $0.20)
 
 - [x] PWF baseline on `439-fresh-052-gate-borrowed-history` (parked, 2026-11-01). The PWF carries forward through each PR and is archived by the last.
-- [ ] Install fresh from the tag on m4 and confirm `RemoteSha` equals `v0.52.0^{commit}`.
-- [ ] Copy m1's `fresh_default.log` into m4's `fresh_default_history` (242 rows, `pg_dump -t`) and confirm the count and the 4 hosts.
-- [ ] Connection probes written to the record: 60 pings to m1 and the gateway (loss and jitter), ssh round trip to m1 three times, DO API time. Loss above 1 % or a round trip above 3 s is reported before anything is spun.
-- [ ] `study_area_run.sh --preflight-only --config=default_minimal --schema=fresh_default_minimal --workers=m1 --cy-workspaces=job1,job2,job3` on this branch. The gate and vintage failures are expected; the credential, tofu state, ssh and worker reach lines must pass.
-- [ ] Spin and burn `job1` with `cypher_up.sh` and `cypher_down.sh`: a real test of the DigitalOcean, S3 state, ssh and Tailscale paths, and of whether auto mode allows it.
-- [ ] Report any failure to the operator right away.
+- [x] Install fresh from the tag on m4 and confirm `RemoteSha` equals `v0.52.0^{commit}`.
+- [x] Copy m1's `fresh_default.log` into m4's `fresh_default_history` (242 rows, `pg_dump -t`) and confirm the count and the 4 hosts.
+- [x] Connection probes written to the record: 60 pings to m1 and the gateway (loss and jitter), ssh round trip to m1 three times, DO API time. Loss above 1 % or a round trip above 3 s is reported before anything is spun.
+- [x] `study_area_run.sh --preflight-only --config=default_minimal --schema=fresh_default_minimal --workers=m1 --cy-workspaces=job1,job2,job3` on this branch. The gate and vintage failures are expected; the credential, tofu state, ssh and worker reach lines must pass.
+- [x] Spin and burn `job1` with `cypher_up.sh` and `cypher_down.sh`: a real test of the DigitalOcean, S3 state, ssh and Tailscale paths, and of whether auto mode allows it.
+- [x] Report any failure to the operator right away.
 
 ## Phase 1: PR 1, the fresh pin and the gate (new issue, attached to #441 ahead of #418)
 
-- [ ] File the gate issue, label `track:minimal-run`, add its row to #441, and record the m4 history finding.
-- [ ] `data-raw/pretest_history_load.sh`: copies a host's `<schema>.log` into a named local schema by `pg_dump -t` (so the primary key and indexes come too), taking the host as an argument.
-- [ ] Refuse a borrowed history short of the config's modelable groups, in the pick and in the launch check, and make `--pick-only` refuse, not warn, on a history the launch check would refuse (a row with no `link_sha`, or a dirty or unknown `link_dirty`). Tests, plus a mutation proving each guard fires.
-- [ ] Load `fresh_default_history`. `--pick-only` with `--since` from the 241-group history: the range is fresh 0.42.0 to 0.52.0, so an unmapped file refuses here. Fix the map (`data-raw/pretest_inputs.csv`) if it does, and read fresh's NEWS 0.49.0 to 0.52.0.
+- [x] File the gate issue, label `track:minimal-run`, add its row to #441, and record the m4 history finding.
+- [x] `data-raw/pretest_history_load.sh`: copies a host's `<schema>.log` into a named local schema by `pg_dump -t` (so the primary key and indexes come too), taking the host as an argument.
+- [x] Refuse a borrowed history short of the config's modelable groups, in the pick and in the launch check, and make `--pick-only` refuse, not warn, on a history the launch check would refuse (a row with no `link_sha`, or a dirty or unknown `link_dirty`). Tests, plus a mutation proving each guard fires.
+- [x] Load `fresh_default_history`. `--pick-only` with `--since` from the 241-group history: the range is fresh 0.42.0 to 0.52.0, so an unmapped file refuses here. Fix the map (`data-raw/pretest_inputs.csv`) if it does, and read fresh's NEWS 0.49.0 to 0.52.0.
 - [ ] What the branch still owes: RUNBOOK §8d section, NEWS, 0.78.0, the `default_minimal` README and `CLAUDE.md` lines saying the gate cannot run.
 - [ ] Full suite, `/code-check branch`, `/gh-pr-push`, `/gh-pr-merge`. Ticks #439's pin box; `Relates` #439 and #441.
 

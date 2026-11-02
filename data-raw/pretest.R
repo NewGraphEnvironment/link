@@ -392,6 +392,38 @@ pretest_record_history <- function(records, schema, config, own_rows, chain) {
   list(schema = rec$history_schema, config = rec$history_config)
 }
 
+# Why no range can cover a history whatever it spans ("" when one can): a build with
+# no link_sha, or whose tree was dirty or unknown, has no code to hold a diff against.
+pretest_history_uncoverable <- function(history_shas, history_dirty) {
+  stopifnot(length(history_dirty) == length(history_shas))
+  if (anyNA(history_shas)) {
+    return("history holds a build with no link_sha, which no range can be shown to cover")
+  }
+  if (any(is.na(history_dirty) | history_dirty)) {
+    return("history holds a build from a dirty tree, whose code is not its link_sha")
+  }
+  ""
+}
+
+# Why a borrowed history cannot stand for a bundle ("" when it can). The gate picks
+# only groups the history holds, so a history short of what the bundle models hides
+# the extreme of an input: on 2026-11-01 a 4-group history picked exactly its 4.
+pretest_history_short <- function(history_wsgs, modelable, source_name) {
+  miss <- setdiff(modelable, history_wsgs)
+  if (!length(miss)) return("")
+  sprintf("%s holds %d of the %d groups the config models (missing %s%s), so the picks would not reach each input's extreme; load the full history (data-raw/pretest_history_load.sh)",
+          source_name, length(modelable) - length(miss), length(modelable),
+          paste(utils::head(miss, 5), collapse = ", "), if (length(miss) > 5) ", ..." else "")
+}
+
+# The groups a config models, from the source tree: a run's own list (lnk_wsg_resolve()).
+pretest_modelable_groups <- function(repo, config) {
+  suppressPackageStartupMessages(pkgload::load_all(repo, quiet = TRUE, helpers = FALSE))
+  ns <- asNamespace("link")
+  cfg <- get("lnk_config", ns)(config)
+  get("lnk_wsg_resolve", ns)(cfg, get("lnk_load_overrides", ns)(cfg))
+}
+
 # The default --since: the link SHA of the earliest of the groups' newest
 # finished builds. A group re-modelled by hand after a run keeps the run's
 # SHA as the oldest, so the range covers every group's history.
@@ -486,13 +518,8 @@ pretest_is_ancestor <- function(repo, a, b) {
 # in the diff. A build off that line (an unmerged branch, a squash-merged
 # one) is in no diff. Returns "" or the first reason it does not.
 pretest_since_covers <- function(repo, since, end, history_shas, history_dirty) {
-  stopifnot(length(history_dirty) == length(history_shas))
-  if (anyNA(history_shas)) {
-    return("history holds a build with no link_sha, which no range can be shown to cover")
-  }
-  if (any(is.na(history_dirty) | history_dirty)) {
-    return("history holds a build from a dirty tree, whose code is not its link_sha")
-  }
+  bad <- pretest_history_uncoverable(history_shas, history_dirty)
+  if (nzchar(bad)) return(bad)
   for (h in unique(history_shas)) {
     if (!pretest_is_ancestor(repo, since, h)) {
       return(sprintf("the range starts at %s, after history built at %s", substr(since, 1, 12),

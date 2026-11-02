@@ -83,6 +83,15 @@ for (s in unique(c(hist_src$schema, minutes_schema))) {
 }
 built <- DBI::dbGetQuery(conn, pretest_history_sql(hist_src$schema, hist_src$config))
 if (!nrow(built)) refuse(hist_src$schema, ".log has no finished rows under config ", hist_src$config)
+# Refused under --pick-only too: picks from either history say nothing about a run.
+bad_history <- pretest_history_uncoverable(built$link_sha, built$link_dirty)
+if (nzchar(bad_history)) refuse(bad_history, "; a gate on it cannot clear a run")
+if (hist_src$borrowed) {
+  short <- tryCatch(pretest_history_short(built$wsg, pretest_modelable_groups(repo, config),
+                                          paste0(hist_src$schema, ".log")),
+                    error = function(e) refuse(conditionMessage(e)))
+  if (nzchar(short)) refuse(short)
+}
 if (!nzchar(since)) {
   since <- tryCatch(pretest_since_default(built), error = function(e) refuse(conditionMessage(e)))
   message(sprintf("--since from %s.log: the earliest of the groups' newest builds, link %s",
@@ -96,7 +105,8 @@ until_sha <- tryCatch(pretest_git(repo, c("rev-parse", "--verify", paste0(until,
 # say so now rather than after an hour of modelling.
 cover <- tryCatch(pretest_since_covers(repo, since_sha, until_sha, built$link_sha, built$link_dirty),
                   error = function(e) refuse(conditionMessage(e)))
-# --pick-only explores a range and records nothing, so there it is a warning.
+# --pick-only explores a range and records nothing, so a range that falls short is a
+# warning there; the history itself was judged above.
 if (nzchar(cover)) {
   if (!"--pick-only" %in% args) refuse(cover, "; a gate on this range cannot clear a run")
   message("WARN (pick only): ", cover, "; a gate on this range could not clear a run")

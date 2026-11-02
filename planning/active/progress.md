@@ -8,6 +8,11 @@
 - Scaffolded PWF baseline from issue #441 with the approved phases and the decisions at the gate
 - Next: parked 2026-11-01; paste the block under ### Resume into a fresh session
 
+## Session 2026-11-01 (22:36 Vancouver onward)
+
+- Phase 0 done, then Phase 1's gate issue (#442), the loader and the guards. `/code-check branch` and PR to follow.
+- The operator's resume keeps the merge: this run stops short of `/gh-pr-merge` at each PR.
+
 ### Resume
 
 ```
