@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.74.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.75.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,24 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.75.0" id="link-0750">link 0.75.0<a class="anchor" aria-label="anchor" href="#link-0750"></a></h2>
+<p><strong><code>default</code>’s species presence table carries the first, provisional review of its cells against the fish records</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/402" class="external-link">#402</a>). 111 salmon and steelhead cells are added and 10 cells removed, in 80 groups; each changed row’s <code>notes</code> names the review, and each cell’s reason is in <code>configs/default/wsg_species_presence_review.csv</code>. Nothing here is final: a later review can reverse any cell.</p>
+<ul><li>
+<strong>The record rules the review set:</strong> a salmon or steelhead record does not count when the nearest barrier below that blocks it is a mapped falls or a hand-entered barrier with at most one other record of its kind above it. When that nearest barrier is a modelled gradient barrier the record still counts, because removing it would assume the 15 and 20 % access gradients the records could test. There is no elevation rule; the 19 records above 1,400 m were judged one by one.</li>
+<li>
+<strong>Added</strong> where records sit at several sites, or at one site with a record since 1990, except 10 such single sites where the species is unusual that far inland. Those, single sites with nothing since 1990, salmon in the Kootenay, upper Columbia and Mackenzie, and species outside their native range stay unmarked, as do Okanagan and Similkameen steelhead and the four Yukon cells until the literature review, which may add them.</li>
+<li>
+<strong>Removed:</strong> the six Upper Dean salmon and steelhead cells added as a test, and four cells resting only on stocked fish (CT in THOM and LNTH, DV in VICT, GR in BULL).</li>
+<li>
+<strong>Not yet decided:</strong> 141 kokanee and rainbow cells wait on pausing those species (<a href="https://github.com/NewGraphEnvironment/link/issues/432" class="external-link">#432</a>), and 13 cells wait on a look at their records or the literature.</li>
+<li>
+<code>acc-v4</code> replaces <code>acc-v3</code> for <code>default</code> and <code>default_tuned</code>, and their <code>config_hash</code> moves. The 80 edited groups, and the groups downstream of an added cell whose code 2 and lifts read its records (12 more, LFRA, SETN and LSKE among them), re-model at the next provincial run, which models every group.</li>
+<li>
+<code>default</code> and <code>bcfishpass</code> now disagree in 122 presence cells, so <code>habitat_validate.R</code> refuses to score one with the other’s species pooling for a species whose cells differ in the scored groups.</li>
+<li>
+<code>data-raw/wsg_species_presence_map.R</code> maps the records each proposed rule would drop. The session’s log and the evidence for one misplaced chinook record are in <code>data-raw/logs/presence_check_402/decision_session/</code>.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.74.0" id="link-0740">link 0.74.0<a class="anchor" aria-label="anchor" href="#link-0740"></a></h2>
 <p><strong>Every file a bundle copies from bcfishpass is synced, and link’s changes to one sit beside it as an overlay</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/429" class="external-link">#429</a>). The weekly sync used to check 7 files and missed four that had drifted; its dry run said “no drift”.</p>
