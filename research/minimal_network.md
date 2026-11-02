@@ -1,6 +1,6 @@
 # The minimal network
 
-**Verified:** 2026-11-02 · **Issues:** #415 (and #441); spawned the parent-attribute issue · **Produced by:** `data-raw/logs/minimal_breaks_415/` (`run.sh`, `proof.R`, `lifts.R`) at link `6bf9ca06` (0.78.0), fresh 0.52.0, on m4's local fwapg · **Status:** proof run on four groups; nothing built province-wide.
+**Verified:** 2026-11-02 · **Issues:** #415 (and #441); spawned the parent-attribute issue · **Produced by:** `data-raw/logs/minimal_breaks_415/` (`run.sh`, `proof.R`, `lifts.R`) builds at link `6bf9ca06` (0.78.0), fresh 0.52.0, on m4's local fwapg; `lifts.csv` written by `lifts.R` as of `ac52e150`, with `R/` unchanged since the builds · **Status:** proof run on four groups; nothing built province-wide.
 
 `default_minimal` cuts streams only at gradient barriers where a modelled species' access changes, falls and user-definite barriers. `default` also cuts at each species' highest fish record per line, at known-habitat end points and at road crossings. Read this beside `species_paused.md`, which measures the same kind of change for pausing a species.
 
@@ -52,7 +52,7 @@ These fields should be flagged or dropped on the minimal network (`crossing_fiel
 
 The minimal network is not independent of the fish records, because barriers are reduced after observation lifts. `lifts.R` rebuilds each group's barrier overrides with no fish records, keeping the known-habitat and control lifts. It then re-runs the pipeline's own minimal prep and break on a copy of the working tables. Two controls passed in every group: the build's own overrides reproduce the build exactly, and every segment start that moves sits within 1 m of a position that moved. The second fires when told no position moved (29 starts in COTR).
 
-A lift moves the minimal barrier positions, and a moved position is a cut only where it does not fall on an FWA segment's start. So the table gives both:
+A lift moves the minimal barrier positions, and a moved position is a cut only where no cut is already there: an FWA segment's start, or another cut within 1 m, which the break step skips. So the table gives both:
 
 | group | observation lifts | positions removed | positions added | segment starts removed | segment starts added | km of segment changed | of km | records on a changed segment | median gradient shift there |
 |---|---|---|---|---|---|---|---|---|---|
@@ -62,7 +62,7 @@ A lift moves the minimal barrier positions, and a moved position is a cut only w
 | COTR | 13 | 1 | 30 | 1 | 29 | 38.1 | 8,268 | 2 of 222 | 0.007 |
 
 - **Only bull trout's observation lifts move positions here.** `default` lifts a natural barrier for BT on one record and for salmon and steelhead on five since 1990. The salmon and steelhead overrides these groups hold are known-habitat and control lifts, which the counterfactual keeps; RB's belong to a paused species, which cuts nothing.
-- **A lift adds more cuts than it removes.** With the lowest barrier on a path lifted, the barriers above it become that species' downstream-most positions. In SETN, 6 positions removed gave 601 new ones, 592 of them on lines with no position before, and segment starts rose by 340: the other positions fall on an FWA segment's start. That is why the changed km is far larger than the count of removed positions.
+- **A lift adds more cuts than it removes.** With the lowest barrier on a path lifted, the barriers above it become that species' downstream-most positions. In SETN, 6 positions removed gave 601 new ones, 592 of them on lines with no position before. They added 340 segment starts and removed 5, a net 335; of the 261 that add no start, 257 fall on an FWA segment's start and 4 within 1 m of another cut. That is why the changed km is far larger than the count of removed positions.
 - **Few records sit on a changed segment** (0 to 0.9 %), the scale #433 found for pausing a species (`research/species_paused.md`: 33 of KOTL's 1,473). The issue's framing of segments that know nothing about where fish were caught holds to that degree, with lifts held fixed. Where a tuning holds records out, as knowledge#131's leave-one-out does, a held-out BT record can still move a cut below it.
 
 Raw numbers: `lifts.csv` (per species and per group), `lifts_obs.csv`.

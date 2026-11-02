@@ -1,6 +1,6 @@
 # minimal_breaks_415 — is the minimal network the full network with fewer cuts? (#415)
 
-**Status: proof run 2026-11-02 on BULK, SETN, MORK and COTR at link `6bf9ca06` (0.78.0), fresh 0.52.0, every check passed. The write-up is `research/minimal_network.md`.** The groups are the top four of `pick_groups.sql` by combined rank (chinook sites plus modelled crossings), all on `cw`, built downstream-first in that order. `lifts.R` was committed before the builds and re-run at `234425e8`, which changed only how it reads counts; both runs gave the same numbers. Before the run, a smoke run exercised the scripts and is not evidence: ADMS on 2026-11-02 at `c86e8871` (after #432 merged), on the installed fresh 0.52.0 against the `v0.48.0` pin. `run.sh` and the recompute passed, `proof.R` passed its checks and wrote every CSV, and the scratch schemas were dropped. An earlier `proof.R` with the two schema names swapped stopped on the commit-and-token, superset and census checks, so those guards fire, and the final `proof.R` stopped on a dirtied tree. No smoke group has a dam below it, so neither `BLOCKED` branch has run on real data.
+**Status: proof run 2026-11-02 on BULK, SETN, MORK and COTR at link `6bf9ca06` (0.78.0), fresh 0.52.0, every check passed. The write-up is `research/minimal_network.md`.** The groups are the top four of `pick_groups.sql` by combined rank (chinook sites plus modelled crossings), all on `cw`, built downstream-first in that order. `lifts.R` was committed before the builds. `lifts.csv` and `lifts_obs.csv` are from `lifts.R` as of `ac52e150`, which counts segment starts beside barrier positions and replaced the second control after review; `R/` is unchanged since the builds, and every run of it gave the same positions and km. Before the run, a smoke run exercised the scripts and is not evidence: ADMS on 2026-11-02 at `c86e8871` (after #432 merged), on the installed fresh 0.52.0 against the `v0.48.0` pin. `run.sh` and the recompute passed, `proof.R` passed its checks and wrote every CSV, and the scratch schemas were dropped. An earlier `proof.R` with the two schema names swapped stopped on the commit-and-token, superset and census checks, so those guards fire, and the final `proof.R` stopped on a dirtied tree. No smoke group has a dam below it, so neither `BLOCKED` branch has run on real data.
 
 ## Question
 
@@ -22,7 +22,7 @@ Rscript data-raw/logs/minimal_breaks_415/proof.R --wsgs=BULK,<WSG>,<WSG>
 
 ## Checks
 
-`lifts.R` (run after `proof.R`, while `working_<wsg>` holds the minimal build) writes `lifts.csv` and `lifts_obs.csv`: how far observation lifts move the minimal cuts, from a counterfactual with no fish records in the barrier overrides. It stops unless the build's own overrides reproduce the build and a species with no observation lift keeps its cuts.
+`lifts.R` (run after `proof.R`, while `working_<wsg>` holds the minimal build) writes `lifts.csv` and `lifts_obs.csv`: how far observation lifts move the minimal cuts, from a counterfactual with no fish records in the barrier overrides. It stops unless the build's own overrides reproduce the build, and unless every segment start that moves lies within 1 m of a barrier position that moved.
 
 | file | what it answers | stops on |
 |---|---|---|
