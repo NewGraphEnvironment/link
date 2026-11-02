@@ -14,6 +14,8 @@
 
 - PR #437 merged mid-run; merged origin/main into this branch, so `default_minimal` is now `cut-min acc-v5` at 0.77.0. The proof smoke re-run on the merged commit shows whether its species handling survives the pause.
 
+- Code check rounds 1 and 2 landed; round 2 found defects inside round 1's fixes (the gate route could not run; lift wording), so an enumeration ends the loop.
+
 ### Resume
 
 ```

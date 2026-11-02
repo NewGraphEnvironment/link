@@ -355,13 +355,13 @@ test_that("default_minimal extends default and overrides only schema and cuts", 
   expect_false(any(v$byte_drift | v$shape_drift | v$missing))
 })
 
-test_that("a child's break_order: ~ is refused, not read as every source", {
+test_that("a child's break_order: ~ is refused, not read as the default sources", {
   child <- withr::local_tempdir()
   writeLines(c("name: nulled", "extends: default", "pipeline:",
                "  break_order: ~"),
              file.path(child, "config.yaml"))
   expect_error(lnk_config(child),
-               "break_order: ~.* would fall back to every break source")
+               "break_order: ~.* would fall back to the default break sources")
 
   # An ordinary key may still be nulled, and a list still replaces.
   ok <- withr::local_tempdir()

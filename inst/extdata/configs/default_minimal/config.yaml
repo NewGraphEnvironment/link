@@ -4,8 +4,8 @@ description: |
   on segments no fish record or road crossing cuts at its own position. Streams
   are cut only at gradient barriers where a modelled species' access changes,
   falls and user-definite barriers (link#415). Records still reach the cuts
-  through observation lifts: a lifted barrier is not cut, and the positions
-  above it can be. Inherits everything else from `default`. Three things read
+  through observation lifts: a barrier lifted for a species is no longer that
+  species' cut, and positions above it can become cuts. Inherits everything else from `default`. Three things read
   differently on segments
   this long: the user habitat overlay applies only to a segment wholly inside
   a range, so it reaches fewer km; access code 2 reads from each segment's
@@ -23,7 +23,7 @@ pipeline:
   # at a time, never inside a key). Observations, habitat end points and
   # crossings are left out. Their tables are still built, and nothing but the
   # cuts reads them. A child's `break_order: ~` is refused when the manifest
-  # loads: it would fall back to every source.
+  # loads: it would fall back to the default sources.
   break_order:
   - gradient_minimal
   - falls

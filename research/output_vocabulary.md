@@ -57,8 +57,8 @@ With these axes, six configs take eight live tokens:
 
 | Config | cut | acc | grad | flow |
 |---|---|---|---|---|
-| `default` | `cut-full-top` | `acc-v4` | `grad-seg` | `q-fwapg` |
-| `default_tuned` | `cut-full-top` | `acc-v4` | `grad-seg` | `q-wet-fill` |
+| `default` | `cut-full-top` | `acc-v5` | `grad-seg` | `q-fwapg` |
+| `default_tuned` | `cut-full-top` | `acc-v5` | `grad-seg` | `q-wet-fill` |
 | `default_minimal` | `cut-min` | `acc-v5` | `grad-seg` | `q-fwapg` |
 | `bcfishpass` | `cut-full-ssf-all` | `acc-bcfp-4` | `grad-seg` | `q-fwapg` |
 | `default_extrabreaks` | none | none | `grad-seg` | `q-fwapg` |
@@ -72,7 +72,7 @@ us. link's own access rules are numbered revisions (`acc-v1`, `acc-v2`, `acc-v3`
 after the company (operator, 2026-10-29).
 
 **A cut token is keyed by its source set, then its qualifiers:**
-`cut-<source set>[-<qualifier>...]`. `full` cuts at every source and `min` at gradient barriers
+`cut-<source set>[-<qualifier>...]`. `full` cuts at observations, access-gradient positions, falls, user-definite barriers, habitat end points and crossings, and `min` at gradient barriers
 where a modelled species' access changes, falls and user-definite barriers (#415). The pattern leaves room for a
 barriers-only set and a no-cut FWA set, named when built. `top`, `all` and `ssf` say how the
 observation and subsurface sources are read. RUNBOOK §6b holds both tables.

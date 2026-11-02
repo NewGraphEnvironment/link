@@ -82,7 +82,8 @@ builds <- do.call(rbind, lapply(wsgs, function(w) {
     if (nrow(d) != 1L) stop(s, " has no log row for ", w, call. = FALSE)
     rc <- q(sprintf(
       "SELECT date_start AS recompute_start, date_end AS recompute_end,
-              notes AS recompute_notes
+              link_sha AS recompute_link_sha, link_dirty AS recompute_link_dirty,
+              fresh_version AS recompute_fresh_version, notes AS recompute_notes
          FROM %1$s.log_recompute WHERE watershed_group_code = '%2$s'
         ORDER BY date_start DESC LIMIT 1", s, w))
     if (nrow(rc) != 1L) stop(s, " has no log_recompute row for ", w, call. = FALSE)
@@ -91,10 +92,14 @@ builds <- do.call(rbind, lapply(wsgs, function(w) {
 }))
 write_csv(builds, "builds.csv")
 token_ok <- builds$token_cut == ifelse(builds$schema == minimal, "cut-min", "cut-full-top")
-builds_ok <- length(unique(builds$link_sha)) == 1L && !anyNA(builds$link_sha) &&
-  !any(builds$link_dirty %in% TRUE) && all(token_ok) &&
+# The recompute writes the streams_access these checks read, so it counts too.
+builds_ok <- length(unique(c(builds$link_sha, builds$recompute_link_sha))) == 1L &&
+  !anyNA(builds$link_sha) &&
+  all(builds$link_dirty %in% FALSE) && all(builds$recompute_link_dirty %in% FALSE) &&
+  all(token_ok) &&
   length(unique(builds$token_acc)) == 1L && length(unique(builds$token_flow)) == 1L &&
-  length(unique(builds$fresh_version)) == 1L && !anyNA(builds$date_end) &&
+  length(unique(c(builds$fresh_version, builds$recompute_fresh_version))) == 1L &&
+  !anyNA(builds$date_end) &&
   all(builds$recompute_start >= builds$date_end) &&
   all(!is.na(builds$recompute_end) |
         grepl("BLOCKED (link#227)", builds$recompute_notes, fixed = TRUE))
