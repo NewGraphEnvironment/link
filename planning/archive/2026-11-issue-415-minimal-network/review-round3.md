@@ -92,7 +92,7 @@ Every claim in the added prose, walked by sentence. "Code" means read; "smoke" m
 | # | Claim | Verdict | Checked against |
 |---|---|---|---|
 | 48 | #432 moved which species cut | pass | NEWS 0.76.0, `prep_minimal` reads `cfg$species` |
-| 49 | smoke ADMS at `4f7bab58`, fresh 0.52.0 against the `v0.48.0` pin | pass, ages | `smoke415c/proof/builds.csv`; DESCRIPTION. See the note under Findings: `proof.R` has since changed |
+| 49 | smoke ADMS at `e333ec97`, fresh 0.52.0 against the `v0.48.0` pin | pass, ages | `smoke415c/proof/builds.csv`; DESCRIPTION. See the note under Findings: `proof.R` has since changed |
 | 50 | run.sh and recompute passed; every CSV written; schemas dropped | pass | status.tsv, 13 CSVs, no `zz415%` schema now |
 | 51 | swapped schemas stopped on commit-and-token, superset, census | pass | progress.md records the swap; the arms read correctly |
 | 52 | `builds.csv` records version; stops when builds differ; no pin compare | pass | `proof.R:96-106` |
@@ -200,5 +200,5 @@ Every stop, from a grep of `stop(`, `stopifnot`, `defects`, `exit`, `return 1`, 
 
 Not findings, for the record:
 
-- `README.md`'s smoke line names `4f7bab58`, and `proof.R` has changed since (`git diff 4f7bab58 HEAD` touches 13 lines, including the recompute commit check). `smoke415d` at `9cc03918` ran HEAD's `run.sh` and `proof.R` and passed with the new columns populated, so the sentence is true of its commit and can be moved to the newer one when this round's fixes land.
+- `README.md`'s smoke line names `e333ec97`, and `proof.R` has changed since (`git diff e333ec97 HEAD` touches 13 lines, including the recompute commit check). `smoke415d` at `1ad2e6f9` ran HEAD's `run.sh` and `proof.R` and passed with the new columns populated, so the sentence is true of its commit and can be moved to the newer one when this round's fixes land.
 - Neither `BLOCKED` arm (`run.sh:77`, `builds_ok`) has run on real data, because ADMS has no dam on its path. Read as correct; the first dam-blocked group in the real proof runs them.

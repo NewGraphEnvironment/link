@@ -6,7 +6,7 @@
 
 ## Measurement
 
-ADMS smoke runs only, which test the scripts and are not evidence. At `c6d81b1e`: 15,716 full and 11,920 minimal segments on 5,475.8 km; 8,434 minimal cuts all matched exactly on the full network; no access difference on any piece; 6 falls, 6,788 FWA base segments and 1,640 gradient positions name every minimal break. An earlier smoke, before pausing KO and RB: `dam_dnstr_ind` true on 15.996 km only on the minimal network and 0.654 km only on the full one, which moved the docs from "shifts up to the next cut" to "moves either way"; CO overlay under-application 7.19 km of 122.1 km against 0.05 km on the full network; 488 of 615 bcfishobs records fall in `knw_link_place()`'s start window on the full network and 31 on the minimal one, so it runs on its fallback there. `proof.R` with the schema names swapped stopped on three guards, and on a dirtied tree on one.
+ADMS smoke runs only, which test the scripts and are not evidence. At `c86e8871`: 15,716 full and 11,920 minimal segments on 5,475.8 km; 8,434 minimal cuts all matched exactly on the full network; no access difference on any piece; 6 falls, 6,788 FWA base segments and 1,640 gradient positions name every minimal break. An earlier smoke, before pausing KO and RB: `dam_dnstr_ind` true on 15.996 km only on the minimal network and 0.654 km only on the full one, which moved the docs from "shifts up to the next cut" to "moves either way"; CO overlay under-application 7.19 km of 122.1 km against 0.05 km on the full network; 488 of 615 bcfishobs records fall in `knw_link_place()`'s start window on the full network and 31 on the minimal one, so it runs on its fallback there. `proof.R` with the schema names swapped stopped on three guards, and on a dirtied tree on one.
 
 ## Evidence
 
