@@ -1,9 +1,12 @@
 # rehearsal_418 — the real driver on six groups across four hosts, before the minimal run (#418, #441)
 
 **2026-11-02, by hand.** #418's gated script (picker, `log_rehearsal`, launch refusal, seeded failures) is still owed;
-this is its check list run once, at the code #441's run will use. `check.sh` was committed before the run; after it, its
-`recompute_audit.R` call was given the six arguments the script now takes (it had three, from a stale usage line), and
-the checks were run again. No threshold changed.
+this is its check list run once, at the code #441's run will use. `check.sh` was committed before the run and edited twice after it.
+Its `recompute_audit.R` call was given the six arguments the script takes (it had three, from reading only the first
+line of the script's usage), and the checks were run again (`check.txt`). Then, in review, the droplet check was made
+to fail when `doctl` cannot list droplets, and the audit's other two inputs and the run's `run_uid` were made checks of
+their own. `check.txt` comes from the version before those last edits; the driver's own burn rows (`run.log`) show both
+cloud hosts burned. No threshold changed.
 
 ## The run
 

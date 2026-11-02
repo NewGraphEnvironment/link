@@ -22,16 +22,28 @@ psql -h localhost -U postgres -d fwapg -X -q -v ON_ERROR_STOP=1 -v schema="$SCHE
 bash data-raw/study_area_verify_negative.sh "$UID_" "$SCHEMA" > "$OUT/verify_negative.log" 2>&1 \
   && say "verify negative cases" PASS || say "verify negative cases" "FAIL: see verify_negative.log"
 
+ph="$L/${TS}_phases.tsv"
+# <TS> and <run_uid> must name one run: phases.tsv's first column carries the run_uid.
+if [ -s "$ph" ] && awk -F'\t' -v u="$UID_" 'NR > 1 && $1 != u { bad = 1 } END { exit bad }' "$ph"; then
+  say "TS names the run_uid" PASS
+else
+  say "TS names the run_uid" "FAIL: $ph missing, or holds rows of another run"
+fi
+
 deps="$L/${TS}_recompute_deps.tsv"
-if [ -s "$deps" ]; then
+missing=""
+for f in "$deps" "$L/${TS}_run_wsgs.tsv" "$L/${TS}_consolidate_state.tsv" "$L/${TS}_recompute_launched.tsv"; do
+  [ -s "$f" ] || missing="$missing $f"
+done
+if [ -z "$missing" ]; then
   Rscript data-raw/recompute_audit.R "$SCHEMA" "$UID_" "$deps" "$L/${TS}_run_wsgs.tsv" \
     "$L/${TS}_consolidate_state.tsv" "$L/${TS}_recompute_launched.tsv" > "$OUT/recompute_audit.log" 2>&1 \
     && say "recompute_audit.R" PASS || say "recompute_audit.R" "FAIL: exit $? (see recompute_audit.log)"
 else
-  say "recompute_audit.R" "FAIL: no $deps"
+  # The audit reads a missing consolidate state or launch file as nothing landed or launched, and passes.
+  say "recompute_audit.R" "FAIL: missing or empty:$missing"
 fi
 
-ph="$L/${TS}_phases.tsv"
 if [ -s "$ph" ]; then
   for h in "${HOSTS[@]}"; do
     n=$(awk -F'\t' -v h="$h" '$2 == "model" && $3 == h && $8 == "ok"' "$ph" | wc -l | tr -d ' ')
