@@ -1,0 +1,26 @@
+name: default_minimal
+description: |
+  The `default` bundle on a minimal network, for measuring and tuning habitat
+  on segments that do not depend on where fish were caught or where a road
+  crosses. Streams are cut only at gradient barriers where a modelled species'
+  access changes, falls and user-definite barriers (link#415). Inherits
+  everything else from `default`. Three things read differently on segments
+  this long: the user habitat overlay applies only to a segment wholly inside
+  a range, so it reaches fewer km; access code 2 reads from each segment's
+  start, so the segment holding a species' top record reads 2 to the next cut;
+  and a crossing-based field reads from the next cut below, so `dam_dnstr_ind`
+  and `remediated_dnstr_ind` shift up to the next cut above the crossing.
+
+extends: default
+
+pipeline:
+  schema: fresh_default_minimal
+  # break_order replaces default's list wholesale (`pipeline:` merges one key
+  # at a time, never inside a key). Observations, habitat end points and
+  # crossings are left out. Their tables are still built, and nothing but the
+  # cuts reads them. A child's `break_order: ~` is refused when the manifest
+  # loads: it would fall back to every source.
+  break_order:
+  - gradient_minimal
+  - falls
+  - barriers_definite

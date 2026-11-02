@@ -118,19 +118,20 @@ from m4.
   by `load_all`). Neither blocks this PR.
 
 ## Phase 1: the `default_minimal` bundle
-- [ ] `inst/extdata/configs/default_minimal/config.yaml`: `name`, `description` (what it
+- [x] `inst/extdata/configs/default_minimal/config.yaml`: `name`, `description` (what it
   is for, what it cuts at, the overlay and code 2 consequences), `extends: default`,
   `pipeline: schema: fresh_default_minimal`, `pipeline: break_order:` the three sources with
   the comment that the list replaces the parent's. No `files:` (everything inherited).
-- [ ] `inst/extdata/configs/default_minimal/README.md` on the `default_tuned` pattern: thin
+- [x] `inst/extdata/configs/default_minimal/README.md` on the `default_tuned` pattern: thin
   bundle, inherited files, what differs, how to run it (`--config=default_minimal
   --schema=fresh_default_minimal`, `LNK_SCHEMA` for `wsg_run_one.R`).
-- [ ] `test-lnk_config.R`: `default_minimal` extends `default`, `break_order` is exactly the
+- [x] `test-lnk_config.R`: `default_minimal` extends `default`, `break_order` is exactly the
   three sources (a child list replaces the parent's), every other `pipeline` key and every
   file is inherited, schema is `fresh_default_minimal`; `lnk_config_verify()` clean.
-- [ ] `test-lnk_pipeline_break.R` (or the vocabulary test): `.lnk_break_order()` on the
+- [x] `test-lnk_pipeline_break.R` (or the vocabulary test): `.lnk_break_order()` on the
   bundle returns the three, and a child `break_order: ~` is refused or documented
   (decide from what `lnk_config()` does; refuse is preferred, one check in the merge).
+  Refused in `.lnk_config_merge()`; both tests are in `test-lnk_config.R`.
 
 ## Phase 2: the `cut-min` token
 - [ ] Run `lnk_vocabulary_resolve(lnk_config("default_minimal"))`, take the spec the

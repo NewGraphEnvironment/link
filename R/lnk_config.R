@@ -231,6 +231,14 @@ print.lnk_config <- function(x, ...) {
 
   parent_pipe <- parent$pipeline %||% list()
   child_pipe <- child$pipeline %||% list()
+  # `break_order: ~` would delete the parent's list, and .lnk_break_order()
+  # would then fall back to every source: the opposite of what it reads as.
+  if ("break_order" %in% names(child_pipe) &&
+      is.null(child_pipe[["break_order"]])) {
+    stop("`pipeline: break_order: ~` in '", child$name %||% child_dir,
+         "' would fall back to every break source. List the sources, or ",
+         "leave the key out to inherit the parent's.", call. = FALSE)
+  }
   for (key in names(child_pipe)) {
     parent_pipe[[key]] <- child_pipe[[key]]
   }
