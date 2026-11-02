@@ -1,6 +1,6 @@
 # minimal_breaks_415 — is the minimal network the full network with fewer cuts? (#415)
 
-**Status: scripts ready, real proof not run.** This directory holds the scripts for the proof builds. Pausing KO and RB (#432, merged) moved which species cut streams, so the real run is at or after that release, read beside #433's measurement (`research/species_paused.md`). Its evidence and the write-up land on a second branch. A smoke run exercised the scripts and is not evidence: ADMS on 2026-11-02 at `4f7bab58` (after #432 merged), on the installed fresh 0.52.0 against the `v0.48.0` pin. `run.sh` and the recompute passed, `proof.R` passed its checks and wrote every CSV, and the scratch schemas were dropped. An earlier `proof.R` with the two schema names swapped stopped on the commit-and-token, superset and census checks, so those guards fire.
+**Status: scripts ready, real proof not run.** This directory holds the scripts for the proof builds. Pausing KO and RB (#432, merged) moved which species cut streams, so the real run is at or after that release, read beside #433's measurement (`research/species_paused.md`). Its evidence and the write-up land on a second branch. A smoke run exercised the scripts and is not evidence: ADMS on 2026-11-02 at `9cc03918` (after #432 merged), on the installed fresh 0.52.0 against the `v0.48.0` pin. `run.sh` and the recompute passed, `proof.R` passed its checks and wrote every CSV, and the scratch schemas were dropped. An earlier `proof.R` with the two schema names swapped stopped on the commit-and-token, superset and census checks, so those guards fire. No smoke group has a dam below it, so neither `BLOCKED` branch has run on real data.
 
 ## Question
 
@@ -12,7 +12,7 @@
 - **Groups:** BULK plus two or three chinook-rearing and crossing-heavy groups, picked from `pick_groups.sql` when the proof runs, and named here with why. Check each is on `cw`, since `proof.R` reads channel width only.
 - **Schemas:** `zz415_default` (`default`) and `zz415_minimal` (`default_minimal`), scratch on the local fwapg, published nowhere, dropped when the write-up lands.
 - **Order:** downstream-first, passed to `run.sh` in that order. Serial, because both bundles share `working_<wsg>`. In each group `default` runs first, so `working_<wsg>` holds the minimal build the census reads.
-- **One commit:** `run.sh` refuses tracked changes, and `proof.R` stops unless both builds' log rows name one clean `link_sha`, the expected cut tokens and one `acc` and `flow` token. Edit nothing in the checkout while it runs.
+- **One commit:** `run.sh` refuses tracked changes, and `proof.R` stops unless both builds' and recomputes' log rows name one clean `link_sha` and fresh, the ones it is run at itself, the expected cut tokens and one `acc` and `flow` token. Commit nothing and install nothing between the two scripts.
 - **Recompute pass rule:** exit 0, or exit 1 with the downstream-dam post-condition (`BLOCKED (link#227)`) as the failure. That check runs after the work commits, and a scratch schema holds no groups below the ones built. `status.tsv` records `yes` or `postcondition`.
 
 ```bash

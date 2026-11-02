@@ -16,6 +16,8 @@
 
 - Code check rounds 1 and 2 landed; round 2 found defects inside round 1's fixes (the gate route could not run; lift wording), so an enumeration ends the loop.
 
+- Code check round 3 enumerated 90 prose claims and every stop in both scripts; its three findings fixed. Reviewer rounds: 3.
+
 ### Resume
 
 ```

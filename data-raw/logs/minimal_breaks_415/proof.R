@@ -10,7 +10,8 @@
 #
 # Checks, and what stops the script after every CSV is written:
 #   builds.csv             both builds' newest log and log_recompute rows; stops
-#                          unless one clean commit and fresh, the expected tokens,
+#                          unless one clean commit and fresh, this checkout's,
+#                          the expected tokens,
 #                          closed builds, and a recompute at or after each build
 #                          that closed or failed only on the post-condition
 #   segments.csv           segments and km per schema
@@ -71,6 +72,9 @@ params <- fresh::frs_params(csv = .lnk_habitat_thresholds_csv(cfg),
                             rules_yaml = cfg$rules)
 
 # -- builds: one commit, clean, the expected tokens -------------------------
+proof_sha <- system2("git", c("rev-parse", "HEAD"), stdout = TRUE)
+proof_dirty <- length(system2("git", c("status", "--porcelain", "--untracked-files=no"),
+                              stdout = TRUE)) > 0L
 builds <- do.call(rbind, lapply(wsgs, function(w) {
   do.call(rbind, lapply(c(full, minimal), function(s) {
     d <- q(sprintf(
@@ -100,6 +104,10 @@ builds_ok <- length(unique(c(builds$link_sha, builds$recompute_link_sha))) == 1L
   length(unique(builds$token_acc)) == 1L && length(unique(builds$token_flow)) == 1L &&
   length(unique(c(builds$fresh_version, builds$recompute_fresh_version))) == 1L &&
   !anyNA(builds$date_end) &&
+  # overlay.csv and connectivity.csv read this checkout's bundle and this fresh,
+  # so a commit or an install since the builds would come out as km.
+  identical(unique(builds$link_sha), proof_sha) && !proof_dirty &&
+  identical(unique(builds$fresh_version), as.character(utils::packageVersion("fresh"))) &&
   all(builds$recompute_start >= builds$date_end) &&
   all(!is.na(builds$recompute_end) |
         grepl("BLOCKED (link#227)", builds$recompute_notes, fixed = TRUE))

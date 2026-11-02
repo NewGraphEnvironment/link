@@ -22,6 +22,9 @@ DIR="${LNK415_OUT:-$HERE}"
 QUIET_MIN="${LNK415_QUIET_MIN:-5}"
 FULL=zz415_default
 MINIMAL=zz415_minimal
+case "$QUIET_MIN" in
+  ''|*[!0-9]*) echo "[run] LNK415_QUIET_MIN must be a whole number of minutes" >&2; exit 2 ;;
+esac
 mkdir -p "$DIR" || exit 1
 STATUS="$DIR/status.tsv"
 export PGPASSWORD="${PGPASSWORD:-postgres}"
