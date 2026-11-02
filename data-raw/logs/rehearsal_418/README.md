@@ -1,7 +1,9 @@
 # rehearsal_418 — the real driver on six groups across four hosts, before the minimal run (#418, #441)
 
 **2026-11-02, by hand.** #418's gated script (picker, `log_rehearsal`, launch refusal, seeded failures) is still owed;
-this is its check list run once, at the code #441's run will use, with `check.sh` committed before the run.
+this is its check list run once, at the code #441's run will use. `check.sh` was committed before the run; after it, its
+`recompute_audit.R` call was given the six arguments the script now takes (it had three, from a stale usage line), and
+the checks were run again. No threshold changed.
 
 ## The run
 
@@ -20,8 +22,9 @@ files are `../study_area_run/20261102_112137_*`).
 
 Picked from `recompute_deps.R`'s line rule over FWA (7 dependency pairs inside the six) and the 241-group history's
 minutes (each group 0.7 to 1.7 min there). `lnk_wsg_downstream_check()` passed for each against an empty schema except
-LEUT, whose one unmodelled dam is in LNRS, which is in the run. No Fraser main-stem group is in it: the smallest takes
-6.6 min, and SALR stands in as the group others read.
+LEUT, whose one unmodelled dam is in LNRS, which is in the run. **No Fraser main-stem group is in it, which #418's rule asks for.** TABR or CHWK (2.4 min in the history) would
+have served; SALR stood in as the group others read, which is weaker: every Fraser group reads every group on the main
+stem.
 
 ## Checks (`check.sh`, `check.txt`)
 
@@ -37,7 +40,7 @@ LEUT, whose one unmodelled dam is in LNRS, which is in the run. No Fraser main-s
 
 Each cloud host was consolidated and burned when its own leg ended. The driver's compare against bcfishpass reads 41 to
 76 % on the three groups with a modelled species: a minimal network against the full reference, not a check. Outputs
-were not compared with a last build: no `default_minimal` build exists, and a `default` build differs by design.
+were not compared with a last build: no `default_minimal` build of these six groups exists, and a `default` build differs by design.
 
 ## The first try (`try1_worker_url/`)
 

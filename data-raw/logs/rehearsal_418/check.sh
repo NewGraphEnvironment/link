@@ -43,8 +43,12 @@ fi
 
 kept="$L/${TS}_kept_hosts.tsv"
 if [ -s "$kept" ] && [ "$(wc -l < "$kept")" -gt 1 ]; then say "no host kept" "FAIL: $kept"; else say "no host kept" PASS; fi
-left=$(doctl compute droplet list --format Name --no-header | grep -c '^cypher-' || true)
-[ "$left" = 0 ] && say "cloud hosts burned" PASS || say "cloud hosts burned" "FAIL: $left cypher droplet(s) up"
+if dl=$(doctl compute droplet list --format Name --no-header 2>&1); then
+  left=$(printf '%s\n' "$dl" | grep -c '^cypher-' || true)
+  [ "$left" = 0 ] && say "cloud hosts burned" PASS || say "cloud hosts burned" "FAIL: $left cypher droplet(s) up"
+else
+  say "cloud hosts burned" "FAIL: doctl could not list droplets: $dl"
+fi
 
 [ -e "$L/${TS}_outside_readers.tsv" ] && say "outside_readers.tsv" PASS || say "outside_readers.tsv" "FAIL: not written"
 
