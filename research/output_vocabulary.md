@@ -1,6 +1,6 @@
 # Naming link's outputs: what a token covers
 
-**Verified:** 2026-10-29 · **Issues:** #414 (consumers: #415 and a downstream tuning archive) · **Produced by:** reading the five config bundles under `inst/extdata/configs/` and the code paths below; the specs in `inst/extdata/vocabulary.csv` are written by `lnk_vocabulary_resolve()`'s helpers · **Status:** four axes; seven live tokens (eleven rows since #401); `default_extrabreaks` and `default_rearbreaks` have none and refuse
+**Verified:** 2026-11-01 · **Issues:** #414, #415 (consumers: a downstream tuning archive) · **Produced by:** reading the five config bundles under `inst/extdata/configs/` and the code paths below; the specs in `inst/extdata/vocabulary.csv` are written by `lnk_vocabulary_resolve()`'s helpers · **Status:** four axes; eight live tokens; `default_extrabreaks` and `default_rearbreaks` have none and refuse
 
 ## The question
 
@@ -53,12 +53,13 @@ So access is its own axis, and the cut axis keeps naming the method:
 | grad | `grad-` | how a segment's gradient is measured | `gradient=segment` |
 | flow | `q-` | `discharge_source` and `discharge_fill` | canonical string |
 
-With these axes, five configs take seven live tokens:
+With these axes, six configs take eight live tokens:
 
 | Config | cut | acc | grad | flow |
 |---|---|---|---|---|
 | `default` | `cut-full-top` | `acc-v4` | `grad-seg` | `q-fwapg` |
 | `default_tuned` | `cut-full-top` | `acc-v4` | `grad-seg` | `q-wet-fill` |
+| `default_minimal` | `cut-min` | `acc-v4` | `grad-seg` | `q-fwapg` |
 | `bcfishpass` | `cut-full-ssf-all` | `acc-bcfp-4` | `grad-seg` | `q-fwapg` |
 | `default_extrabreaks` | none | none | `grad-seg` | `q-fwapg` |
 | `default_rearbreaks` | none | none | `grad-seg` | `q-fwapg` |
@@ -69,6 +70,12 @@ someone names it.
 `acc-bcfp` is named for its source, because bcfishpass is the one rule set defined outside
 us. link's own access rules are numbered revisions (`acc-v1`, `acc-v2`, `acc-v3`), not named
 after the company (operator, 2026-10-29).
+
+**A cut token is keyed by its source set, then its qualifiers:**
+`cut-<source set>[-<qualifier>...]`. `full` cuts at every source and `min` at access-gradient
+positions, falls and user-definite barriers (#415). The pattern leaves room for a
+barriers-only set and a no-cut FWA set, named when built. `top`, `all` and `ssf` say how the
+observation and subsurface sources are read. RUNBOOK §6b holds both tables.
 
 **The first code change that needed new tokens** was #399 (link 0.72.0): the access walk
 stopped counting a record at a segment's start as upstream of it, which moves code 2 with

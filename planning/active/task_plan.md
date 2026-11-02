@@ -134,22 +134,23 @@ from m4.
   Refused in `.lnk_config_merge()`; both tests are in `test-lnk_config.R`.
 
 ## Phase 2: the `cut-min` token
-- [ ] Run `lnk_vocabulary_resolve(lnk_config("default_minimal"))`, take the spec the
+- [x] Run `lnk_vocabulary_resolve(lnk_config("default_minimal"))`, take the spec the
   refusal prints, add the `cut-min` row to `inst/extdata/vocabulary.csv` (definition in
   prose: cut at gradient barriers only where a modelled species' access changes, falls,
   user-definite barriers; no observation, habitat end point or crossing cuts; the bundle
-  declares the three barrier inputs), `introduced` = `0.76.0`, the version Phase 4 bumps
-  `DESCRIPTION` to (no test ties the two; the Validation check below does).
-- [ ] `test-lnk_vocabulary.R:94-107`: `default_minimal` resolves to `cut-min acc-v4 grad-seg
-  q-fwapg`; the append-only test passes locally against `origin/main`.
-- [ ] RUNBOOK §6b: the cut keying written as the abstract pattern, not the one name:
+  declares the three barrier inputs), `introduced` = `0.77.0`, the version Phase 4 bumps
+  `DESCRIPTION` to (no test ties the two; the Validation check below does). Corrected from
+  the baseline's `0.76.0`: PR #437 (#432) already takes it.
+- [x] `test-lnk_vocabulary.R:94-107`: `default_minimal` resolves to `cut-min`, with `default`'s
+  other three tokens (compared, not named, so #437's `acc-v5` needs no edit here); the append-only test passes locally against `origin/main`.
+- [x] RUNBOOK §6b: the cut keying written as the abstract pattern, not the one name:
   `cut-<source set>[-<qualifier>...]`, with a short table of source sets (`full`: every
   source; `min`: access-gradient positions, falls, definite barriers; and the shapes the
   pattern leaves room for, a barriers-only set and a no-cut FWA set, named only when
   built) and of qualifiers (`top`, `all`, `ssf`, each saying which key it reads). `cut-min`
   joins the axis table's examples; §7's bundle list names `default_minimal`. The research
   file's naming paragraph gets the same pattern.
-- [ ] `research/output_vocabulary.md`: the config table gains `default_minimal`; the
+- [x] `research/output_vocabulary.md`: the config table gains `default_minimal`; the
   verified date moves.
 
 ## Phase 3: the proof script, ready to run (after Phase 2: a build refuses a config with no live token)
