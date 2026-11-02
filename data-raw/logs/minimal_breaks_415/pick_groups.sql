@@ -11,9 +11,10 @@ x AS (
   SELECT watershed_group_code AS wsg, count(*) AS n_crossings
     FROM fresh.modelled_stream_crossings
    GROUP BY 1)
-SELECT ch.wsg, ch.n_ch, ch.n_ch_sites, x.n_crossings,
-       rank() OVER (ORDER BY ch.n_ch_sites DESC) AS rank_ch,
-       rank() OVER (ORDER BY x.n_crossings DESC) AS rank_crossings
-  FROM ch JOIN x USING (wsg)
+SELECT * FROM (
+  SELECT ch.wsg, ch.n_ch, ch.n_ch_sites, x.n_crossings,
+         rank() OVER (ORDER BY ch.n_ch_sites DESC) AS rank_ch,
+         rank() OVER (ORDER BY x.n_crossings DESC) AS rank_crossings
+    FROM ch JOIN x USING (wsg)) r
  ORDER BY rank_ch + rank_crossings
  LIMIT 15;
