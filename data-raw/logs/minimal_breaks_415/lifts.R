@@ -39,7 +39,12 @@ suppressPackageStartupMessages({
 })
 conn <- dbConnect(Postgres(), dbname = "fwapg", host = "localhost", port = 5432L,
                   user = "postgres", password = "postgres")
-q <- function(sql, ...) dbGetQuery(conn, sprintf(sql, ...))
+# count(*) arrives as integer64, which binding beside an NA strips to raw bits.
+q <- function(sql, ...) {
+  r <- dbGetQuery(conn, sprintf(sql, ...))
+  r[] <- lapply(r, function(v) if (inherits(v, "integer64")) as.integer(v) else v)
+  r
+}
 x <- function(sql, ...) invisible(dbExecute(conn, sprintf(sql, ...)))
 modelled_obs <- c("BT", "CH", "CM", "CO", "PK", "SK", "ST", "WCT", "GR", "DV")
 cfg <- lnk_config("default_minimal")
@@ -145,7 +150,7 @@ for (w in wsgs) {
   km <- q(
     "WITH a AS (SELECT blue_line_key b, round(downstream_route_measure::numeric, 3) d, round(upstream_route_measure::numeric, 3) u, length_metre l FROM %1$s.streams),
           c AS (SELECT blue_line_key b, round(downstream_route_measure::numeric, 3) d, round(upstream_route_measure::numeric, 3) u, length_metre l FROM %2$s.streams)
-     SELECT (SELECT count(*) FROM a) segments_built, (SELECT count(*) FROM c) segments_no_lift,
+     SELECT (SELECT count(*) FROM a)::int segments_built, (SELECT count(*) FROM c)::int segments_no_lift,
             (SELECT sum(l) FROM a) / 1000 km_total,
             (SELECT sum(a.l) FROM a WHERE NOT EXISTS (SELECT 1 FROM c WHERE c.b = a.b AND c.d = a.d AND c.u = a.u)) / 1000 km_changed", W, L)
   km$km_changed[is.na(km$km_changed)] <- 0
