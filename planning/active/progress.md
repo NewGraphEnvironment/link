@@ -26,3 +26,12 @@ calibrator, as task_plan.md's Phase 6 says. Cloud spend is approved through the 
 - Run branch `441-minimal-run` cut from `main` at `552f43d6` for Phase 6. Commit and push this entry before launch, then nothing in the worktree changes while the run is in flight.
 - m1's refused token is most likely an expired PAT (`~/.Renviron` `GITHUB_PAT` or the git credential store); renewing it is the operator's. It matters only if `--auto-install` has to move fresh on m1.
 - Next: the resume block above, from this branch.
+
+## Session 2026-11-02 (launch, Phase 6)
+
+- Branch `441-minimal-run` pushed and tracking. The two bchamp objects HEAD at 20:30 UTC to the versions in `hosts_ready_439/load_stamps.csv` (observations 1790057230537, crossings 1793134826715): no refresh.
+- `~/Projects/repo/bcfishobs` still holds the two files that are not this work's; routed around with `BCFISHOBS_DIR` at a fresh clean clone at its HEAD `dd9a5e5d` (session scratchpad), as the rehearsal did.
+- Quiet: no other active client on m4 or m1 at 20:31 UTC. m1's database volume 112 GB free.
+- Packed (`data-raw/logs/minimal_run_441/buckets.md`, `plan.tsv`): `study_area_buckets.R --hosts=5 --workers=1 --atom=group --config=default_minimal` on fresh's 246 groups, minutes from `fresh_default_history`, KTSU and OKAN at the median, names `m4,m1,cloud,cloud,cloud`. 241 modelable (5 dropped by presence), 48 / 49 / 48 / 48 / 48 groups, 202 to 203 dispatcher-equivalent min per host (1,012 in all); m4 takes the median speed (no learned row yet).
+- Launch decisions as at the top of `task_plan.md`, unchanged: `default_minimal` into `fresh_default_minimal`, tokens `cut-min acc-v5 grad-seg q-fwapg`, 241 groups `--buckets-exact`, m4 + m1 (`--workers=m1`) + `job1,job2,job3`, `--recompute-jobs=8`, `--statement-timeout=30`, `--auto-install`, no `--refresh-primitives`, early recompute, cloud hosts burned as their legs end, no note flags, `--run-label=minimal-provincial-441`. Command: `data-raw/logs/minimal_run_441/launch.sh` (`PREFLIGHT=1` for the no-spend pass).
+- From launch until the driver exits nothing in this worktree changes. Resume after a lost session: read `data-raw/logs/minimal_run_441/run.log` and the driver's `data-raw/logs/study_area_run/<TS>_*`; the driver burns its own hosts.
