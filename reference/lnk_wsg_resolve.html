@@ -15,7 +15,7 @@ filter (link#157)."><meta property="og:image" content="https://newgraphenvironme
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.75.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.76.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -100,8 +100,8 @@ species filter (closure / strict modes) are reported via <code><a href="https://
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Three call patterns dispatched by <code>wsgs</code> + <code>expand</code>:</p><ul><li><p><code>wsgs = NULL</code> — <em>province mode</em>: every WSG in
-<code>loaded$wsg_species_presence</code> that has at least one of
-<code>cfg$species</code> flagged present.</p></li>
+<code>loaded$wsg_species_presence</code> that has at least one of the bundle's
+rules species flagged present.</p></li>
 <li><p><code>wsgs = c(...)</code> + <code>expand = TRUE</code> (default) — <em>closure mode</em>:
 expand the focal set to its drainage closure (focal + every WSG
 they flow through, ordered downstream-first), then species-filter.
@@ -110,9 +110,12 @@ opened from <code><a href="lnk_db_conn.html">lnk_db_conn()</a></code> (defaults 
 closed on exit.</p></li>
 <li><p><code>wsgs = c(...)</code> + <code>expand = FALSE</code> — <em>strict mode</em>: species-filter
 the input verbatim, no closure expansion, no DB.</p></li>
-</ul><p>Species filter: a WSG is kept if <em>any</em> of <code>tolower(cfg$species)</code>
-columns in <code>loaded$wsg_species_presence</code> carries <code>"t"</code> (or <code>"TRUE"</code> /
-<code>TRUE</code>, defensively). DS-first ordering from the closure is preserved.</p>
+</ul><p>Species filter: a WSG is kept if <em>any</em> of the bundle's rules species
+(<code>cfg$species</code> and the paused <code>cfg$species_paused</code>) has a column in
+<code>loaded$wsg_species_presence</code> carrying <code>"t"</code> (or <code>"TRUE"</code> / <code>TRUE</code>,
+defensively). A group where only paused species are present is kept: it is
+modelled for its segments and barriers, which other groups' access reads,
+and gets no habitat. DS-first ordering from the closure is preserved.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

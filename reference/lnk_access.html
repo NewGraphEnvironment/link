@@ -15,7 +15,7 @@ streams_access shape for aoi and writes it to table_to."><meta property="og:imag
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.75.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.76.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -112,7 +112,9 @@ for <code>aoi</code>; pass-through to <code><a href="lnk_pipeline_access.html">l
 
 
 <dt id="arg-species">species<a class="anchor" aria-label="anchor" href="#arg-species"></a></dt>
-<dd><p>Character vector of species codes. Default <code>cfg$species</code>.</p></dd>
+<dd><p>Character vector of species codes. Default <code>cfg$species</code>.
+An explicit <code>character(0)</code> (a group where only species the bundle pauses
+are present) recomputes the per-source columns only.</p></dd>
 
 
 <dt id="arg-build-views">build_views<a class="anchor" aria-label="anchor" href="#arg-build-views"></a></dt>

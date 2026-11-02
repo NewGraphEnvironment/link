@@ -164,15 +164,19 @@ is written, and the tokens go in the run's `<persist_schema>.log` row.
     — observations, gradient minimal, definite, habitat endpoints,
     crossings — in config-defined order.
 
-6.  [`lnk_pipeline_classify()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_classify.md)
+6.  [`lnk_pipeline_species()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_species.md)
+    — resolve the active species set for this AOI (cfg\$species ∩
+    wsg_species_presence). Empty is a group where only species the
+    bundle pauses are present: steps 7 and 8 and the habitat gate are
+    skipped, and the group is persisted with its segments, barriers and
+    access annotations but no habitat. A group where no rules species is
+    present is an error.
+
+7.  [`lnk_pipeline_classify()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_classify.md)
     — assemble `streams_breaks` and run `frs_habitat_classify()`.
 
-7.  [`lnk_pipeline_connect()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_connect.md)
+8.  [`lnk_pipeline_connect()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_connect.md)
     — per-species cluster + connected_waterbody.
-
-8.  [`lnk_pipeline_species()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_species.md)
-    — resolve the active species set for this AOI (cfg\$species ∩
-    wsg_species_presence). Empty set is an error.
 
 9.  [`lnk_persist_init()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_init.md)
     — create persistent target tables if absent.
@@ -195,7 +199,9 @@ is written, and the tokens go in the run's `<persist_schema>.log` row.
 11. [`lnk_pipeline_persist()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.md)
     — copy per-WSG streams + per-species habitat + barriers +
     streams_access into `<persist_schema>` (idempotent
-    DELETE-WHERE-WSG + INSERT).
+    DELETE-WHERE-WSG + INSERT). The group's rows in the habitat tables
+    of species not classified here (paused, or no longer present) are
+    then deleted, so no earlier build's habitat outlives its segments.
 
 12. [`lnk_habitat_gate()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_gate.md)
     — settle the persisted habitat flags on `streams_access`: where

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.75.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.76.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,18 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.76.0" id="link-0760">link 0.76.0<a class="anchor" aria-label="anchor" href="#link-0760"></a></h2>
+<p><strong>A bundle can pause a species without losing its rules, and <code>default</code> pauses kokanee and rainbow trout</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/432" class="external-link">#432</a>). <code>configs/default/species_modelled.csv</code> lists every rules species <code>t</code> or <code>f</code>; a paused row carries its reason, date and issue, and turning a species back on is a one-cell edit. KO is paused because its presence column was never sourced, RB because field records do not separate rainbow trout from steelhead. <code>default_tuned</code> inherits the file; <code>bcfishpass</code> declares none and is unchanged.</p>
+<ul><li>
+<strong>A paused species adds no gradient breaks, and is not classified or given access or mapping codes</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/433" class="external-link">#433</a>, “off means off”). Measured on six groups built both ways: segments fall 0.2 % (BULK) to 6.0 % (KETL), barrier rows and accessible km do not move, and habitat moves only in KOTL (BT rearing 20.9 km flips, +5.4 km net on 2,161) and KETL (0.4 km). 33 of KOTL’s 1,473 fish records sit on a segment that changed, with a median gradient shift of 0.012. Observation tops and known-habitat endpoints still cut streams. Write-up: <code>research/species_paused.md</code>.</li>
+<li>
+<strong>A group where only paused species are present is still modelled</strong>, for its segments, barriers, access annotations and mapping-code rows, with no habitat, because other groups’ access reads its barriers (LEUT and LNRS are each read by 19 groups). Under <code>default</code> that is BRID, GRNL, LEUT, LNRS, MURT, PITR and UISR, so a provincial run still models 241 groups. <code>lnk_pipeline_species(paused = TRUE)</code> says whether a group is modelled at all.</li>
+<li>
+<strong>A full build clears what it no longer classifies.</strong> Right after its first persist, <code><a href="../reference/lnk_pipeline_run.html">lnk_pipeline_run()</a></code> deletes the group’s rows from the habitat tables and near-river pairs of species it did not write this time, since they belong to the old segmentation. <code><a href="../reference/lnk_persist_init.html">lnk_persist_init()</a></code> keeps a paused species’ tables and columns, so every host builds one shape and a consolidate’s per-group replace reaches them; <code>study_area_verify.sql</code> fails a run that leaves such rows.</li>
+<li>
+<code>acc-v5</code> replaces <code>acc-v4</code> for <code>default</code> and <code>default_tuned</code>, and their <code>config_hash</code> moves. Every <code>default</code> group re-models at the next provincial run. The validator refuses a paused species only for a schema whose builds never classified it, the variants harness refuses a variant of one, and the compare step skips a group with none modelled.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.75.0" id="link-0750">link 0.75.0<a class="anchor" aria-label="anchor" href="#link-0750"></a></h2>
 <p><strong><code>default</code>’s species presence table carries the first, provisional review of its cells against the fish records</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/402" class="external-link">#402</a>). 111 salmon and steelhead cells are added and 10 cells removed, in 80 groups; each changed row’s <code>notes</code> names the review, and each cell’s reason is in <code>configs/default/wsg_species_presence_review.csv</code>. Nothing here is final: a later review can reverse any cell.</p>

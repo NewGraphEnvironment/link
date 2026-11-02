@@ -19,7 +19,7 @@ table."><meta property="og:image" content="https://newgraphenvironment.github.io
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.75.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.76.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -88,7 +88,9 @@ table.</p>
 <dt id="arg-species">species<a class="anchor" aria-label="anchor" href="#arg-species"></a></dt>
 <dd><p>Character vector of species codes to persist. Should
 match what <code><a href="lnk_persist_init.html">lnk_persist_init()</a></code> was called with — typically
-<code><a href="lnk_pipeline_species.html">lnk_pipeline_species()</a></code> output for the AOI.</p></dd>
+<code><a href="lnk_pipeline_species.html">lnk_pipeline_species()</a></code> output for the AOI. Empty for a group where
+only species the bundle pauses are present: no habitat table is
+written, and the other tables are replaced as usual.</p></dd>
 
 
 <dt id="arg-schema">schema<a class="anchor" aria-label="anchor" href="#arg-schema"></a></dt>

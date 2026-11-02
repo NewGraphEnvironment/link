@@ -63,8 +63,8 @@ the species filter (closure / strict modes) are reported via
 Three call patterns dispatched by `wsgs` + `expand`:
 
 - `wsgs = NULL` — *province mode*: every WSG in
-  `loaded$wsg_species_presence` that has at least one of `cfg$species`
-  flagged present.
+  `loaded$wsg_species_presence` that has at least one of the bundle's
+  rules species flagged present.
 
 - `wsgs = c(...)` + `expand = TRUE` (default) — *closure mode*: expand
   the focal set to its drainage closure (focal + every WSG they flow
@@ -76,9 +76,13 @@ Three call patterns dispatched by `wsgs` + `expand`:
 - `wsgs = c(...)` + `expand = FALSE` — *strict mode*: species-filter the
   input verbatim, no closure expansion, no DB.
 
-Species filter: a WSG is kept if *any* of `tolower(cfg$species)` columns
-in `loaded$wsg_species_presence` carries `"t"` (or `"TRUE"` / `TRUE`,
-defensively). DS-first ordering from the closure is preserved.
+Species filter: a WSG is kept if *any* of the bundle's rules species
+(`cfg$species` and the paused `cfg$species_paused`) has a column in
+`loaded$wsg_species_presence` carrying `"t"` (or `"TRUE"` / `TRUE`,
+defensively). A group where only paused species are present is kept: it
+is modelled for its segments and barriers, which other groups' access
+reads, and gets no habitat. DS-first ordering from the closure is
+preserved.
 
 ## See also
 

@@ -72,7 +72,9 @@ lnk_access(
 
 - species:
 
-  Character vector of species codes. Default `cfg$species`.
+  Character vector of species codes. Default `cfg$species`. An explicit
+  `character(0)` (a group where only species the bundle pauses are
+  present) recomputes the per-source columns only.
 
 - build_views:
 

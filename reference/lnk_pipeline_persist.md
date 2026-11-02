@@ -39,7 +39,9 @@ lnk_pipeline_persist(
   [`lnk_persist_init()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_init.md)
   was called with — typically
   [`lnk_pipeline_species()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_species.md)
-  output for the AOI.
+  output for the AOI. Empty for a group where only species the bundle
+  pauses are present: no habitat table is written, and the other tables
+  are replaced as usual.
 
 - schema:
 

@@ -1,5 +1,51 @@
 # Changelog
 
+## link 0.76.0
+
+**A bundle can pause a species without losing its rules, and `default`
+pauses kokanee and rainbow trout**
+([\#432](https://github.com/NewGraphEnvironment/link/issues/432)).
+`configs/default/species_modelled.csv` lists every rules species `t` or
+`f`; a paused row carries its reason, date and issue, and turning a
+species back on is a one-cell edit. KO is paused because its presence
+column was never sourced, RB because field records do not separate
+rainbow trout from steelhead. `default_tuned` inherits the file;
+`bcfishpass` declares none and is unchanged.
+
+- **A paused species adds no gradient breaks, and is not classified or
+  given access or mapping codes**
+  ([\#433](https://github.com/NewGraphEnvironment/link/issues/433), “off
+  means off”). Measured on six groups built both ways: segments fall 0.2
+  % (BULK) to 6.0 % (KETL), barrier rows and accessible km do not move,
+  and habitat moves only in KOTL (BT rearing 20.9 km flips, +5.4 km net
+  on 2,161) and KETL (0.4 km). 33 of KOTL’s 1,473 fish records sit on a
+  segment that changed, with a median gradient shift of 0.012.
+  Observation tops and known-habitat endpoints still cut streams.
+  Write-up: `research/species_paused.md`.
+- **A group where only paused species are present is still modelled**,
+  for its segments, barriers, access annotations and mapping-code rows,
+  with no habitat, because other groups’ access reads its barriers (LEUT
+  and LNRS are each read by 19 groups). Under `default` that is BRID,
+  GRNL, LEUT, LNRS, MURT, PITR and UISR, so a provincial run still
+  models 241 groups. `lnk_pipeline_species(paused = TRUE)` says whether
+  a group is modelled at all.
+- **A full build clears what it no longer classifies.** Right after its
+  first persist,
+  [`lnk_pipeline_run()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_run.md)
+  deletes the group’s rows from the habitat tables and near-river pairs
+  of species it did not write this time, since they belong to the old
+  segmentation.
+  [`lnk_persist_init()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_init.md)
+  keeps a paused species’ tables and columns, so every host builds one
+  shape and a consolidate’s per-group replace reaches them;
+  `study_area_verify.sql` fails a run that leaves such rows.
+- `acc-v5` replaces `acc-v4` for `default` and `default_tuned`, and
+  their `config_hash` moves. Every `default` group re-models at the next
+  provincial run. The validator refuses a paused species only for a
+  schema whose builds never classified it, the variants harness refuses
+  a variant of one, and the compare step skips a group with none
+  modelled.
+
 ## link 0.75.0
 
 **`default`’s species presence table carries the first, provisional

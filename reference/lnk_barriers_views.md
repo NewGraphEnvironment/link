@@ -38,7 +38,9 @@ lnk_barriers_views(
 - species:
 
   Character vector of species codes the views should cover. Default
-  `c("BT","CH","CM","CO","PK","SK","ST","WCT")`.
+  `c("BT","CH","CM","CO","PK","SK","ST","WCT")`. May be empty, which
+  builds only the per-source views (a group where only paused species
+  are present).
 
 - barriers_table:
 

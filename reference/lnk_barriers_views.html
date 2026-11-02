@@ -17,7 +17,7 @@ consumer code paths run unchanged."><meta property="og:image" content="https://n
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.75.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.76.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -86,7 +86,9 @@ for the underlying persist-schema reference).</p></dd>
 
 <dt id="arg-species">species<a class="anchor" aria-label="anchor" href="#arg-species"></a></dt>
 <dd><p>Character vector of species codes the views should
-cover. Default <code>c("BT","CH","CM","CO","PK","SK","ST","WCT")</code>.</p></dd>
+cover. Default <code>c("BT","CH","CM","CO","PK","SK","ST","WCT")</code>. May be
+empty, which builds only the per-source views (a group where only
+paused species are present).</p></dd>
 
 
 <dt id="arg-barriers-table">barriers_table<a class="anchor" aria-label="anchor" href="#arg-barriers-table"></a></dt>
