@@ -191,6 +191,9 @@ exist`.) `barriers_per_sp` mechanically requires the *feature view* shape.
 | `all` (also when absent) | every observation, rounded to the metre, as bcfishpass cuts | `bcfishpass`, `default_extrabreaks`, `default_rearbreaks` |
 | `top_per_species` | on each `blue_line_key`, each species' farthest-upstream observation | `default`, and `default_tuned` by inheritance |
 
+`default_minimal` leaves `observations` out of `break_order`, so no record cuts its
+streams and the key it inherits has no effect (#415).
+
 **What reads an observation break.** Only `access_<sp>` code 2 ("accessible, and the
 species is observed upstream") against code 1. The access walk
 (`lnk_pipeline_access()`, `frs_network_features(direction = "upstream",
@@ -883,6 +886,27 @@ to its `log` row (`token_cut`, `token_acc`, `token_grad`, `token_flow`).
 | grad | `grad-` | how segment gradient is measured | `gradient=segment` |
 | flow | `q-` | `discharge_source` and `discharge_fill` | canonical string |
 
+**How a cut token is keyed.** `cut-<source set>[-<qualifier>...]`: the source set says
+which kinds of break a network has, and each qualifier says how a source in it is read.
+
+| Source set | Cuts at | Status |
+|---|---|---|
+| `full` | observations, access-gradient positions, falls, user-definite barriers, habitat end points, crossings | `cut-full-top`, `cut-full-ssf-all` |
+| `min` | gradient barriers where a modelled species' access changes, falls, user-definite barriers | `cut-min` (`default_minimal`, #415) |
+| a barriers-only set | falls and user-definite barriers, no access-gradient cuts | room in the pattern; named when built |
+| a no-cut set | FWA's own segments | room in the pattern; named when built |
+
+| Qualifier | Says | Reads |
+|---|---|---|
+| `top` | each species' highest record per line cuts | `pipeline: observation_breaks` |
+| `all` | every record cuts | `pipeline: observation_breaks` |
+| `ssf` | subsurface-flow lines cut | `subsurfaceflow` in `pipeline: break_order` |
+
+A set with no observation source takes no `top` or `all`, because the spec leaves
+`observation_breaks` out when `observations` is not in `break_order`. The same `cut` token
+under another `acc` token is another network (the next paragraph), so a second minimal
+network under other access classes is `cut-min` with a new `acc`.
+
 **A network is `cut` and `acc` together.** Since #326, gradient positions cut a stream
 only where a modelled species' access changes, so the access rules move segments as
 much as the break sources do. Two outputs with the same `cut` token and different
@@ -1356,6 +1380,10 @@ so a threshold change moved the parity reference too.
   The dictionary's `consumed_by` column has the file:line for each.
 - **Runs record the values** in `<persist>.log_parameters_habitat_thresholds`
   (keyed on `config_hash`), beside `log_parameters_fresh`.
+- **`default_minimal` is a thin bundle too** (#415): `default` cut only at
+  access-gradient positions, falls and user-definite barriers, into
+  `fresh_default_minimal`. Its `break_order` replaces the parent's list, because
+  `pipeline:` merges one key at a time; `break_order: ~` is refused at manifest load.
 - **`default_tuned` is a thin bundle** (`extends: default`). Inherited provenance
   entries carry `.dir`, `cfg$chain` lists the extends directories, and
   `.lnk_config_hash()` hashes every `config.yaml` on the chain and names inherited

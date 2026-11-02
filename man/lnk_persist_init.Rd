@@ -13,7 +13,11 @@ lnk_persist_init(conn, cfg, species, force_recreate = FALSE)
 
 \item{species}{Character vector of species codes (uppercased) to
 create \verb{streams_habitat_<sp>} tables for. Typically derived via
-\code{\link[=lnk_pipeline_species]{lnk_pipeline_species()}} or \code{unique(loaded$parameters_fresh$species_code)}.}
+\code{\link[=lnk_pipeline_species]{lnk_pipeline_species()}} or \code{unique(loaded$parameters_fresh$species_code)}.
+The species \code{cfg} pauses (\code{cfg$species_paused}) are always added, so the
+schema's tables and columns do not change when a species is paused: every
+host builds the same shape, and a consolidate's per-group replace reaches
+a paused species' tables too, clearing the rows an earlier build left.}
 
 \item{force_recreate}{Logical. When \code{TRUE}, drop any existing target
 tables whose DDL doesn't match the expected shape — specifically,

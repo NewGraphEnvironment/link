@@ -106,6 +106,16 @@ test_that("each shipped config resolves to its tokens", {
       flow = "q-fwapg"))
 })
 
+test_that("default_minimal differs from default only in its cut token (#415)", {
+  minimal <- lnk_vocabulary_resolve(lnk_config("default_minimal"))
+  def <- lnk_vocabulary_resolve(lnk_config("default"))
+  expect_identical(minimal[["cut"]], "cut-min")
+  # Compared with default, not named: the two networks are compared because
+  # only the cuts differ, and that must hold when default's acc token moves.
+  others <- c("acc", "grad", "flow")
+  expect_identical(minimal[others], def[others])
+})
+
 test_that("the two stale gradient-class bundles have no tokens and refuse", {
   for (n in c("default_extrabreaks", "default_rearbreaks")) {
     expect_error(lnk_vocabulary_resolve(lnk_config(n)),

@@ -328,6 +328,49 @@ test_that("default_tuned extends default and overrides only its thresholds", {
   expect_setequal(names(cfg$files), names(def$files))
 })
 
+# -- default_minimal: the same model on a minimal network (#415) --------------
+
+test_that("default_minimal extends default and overrides only schema and cuts", {
+  cfg <- lnk_config("default_minimal")
+  def <- lnk_config("default")
+
+  expect_identical(cfg$extends, "default")
+  expect_identical(cfg$chain, c(cfg$dir, def$dir))
+  expect_identical(cfg$pipeline$schema, "fresh_default_minimal")
+  # A child list replaces the parent's: not appended, not merged by position.
+  expect_identical(.lnk_break_order(cfg),
+                   c("gradient_minimal", "falls", "barriers_definite"))
+
+  # Every other pipeline key, every file and the rules are default's.
+  own <- c("schema", "break_order")
+  expect_setequal(names(cfg$pipeline), names(def$pipeline))
+  expect_identical(cfg$pipeline[setdiff(names(cfg$pipeline), own)],
+                   def$pipeline[setdiff(names(cfg$pipeline), own)])
+  expect_identical(cfg$files, def$files)
+  expect_identical(cfg$rules, def$rules)
+  expect_identical(cfg$dimensions, def$dimensions)
+
+  v <- lnk_config_verify(cfg)
+  expect_gt(nrow(v), 0)
+  expect_false(any(v$byte_drift | v$shape_drift | v$missing))
+})
+
+test_that("a child's break_order: ~ is refused, not read as the default sources", {
+  child <- withr::local_tempdir()
+  writeLines(c("name: nulled", "extends: default", "pipeline:",
+               "  break_order: ~"),
+             file.path(child, "config.yaml"))
+  expect_error(lnk_config(child),
+               "break_order: ~.* would fall back to the default break sources")
+
+  # An ordinary key may still be nulled, and a list still replaces.
+  ok <- withr::local_tempdir()
+  writeLines(c("name: nulled", "extends: default", "pipeline:",
+               "  discharge_fill: ~", "  break_order:", "  - falls"),
+             file.path(ok, "config.yaml"))
+  expect_identical(lnk_config(ok)$pipeline$break_order, "falls")
+})
+
 test_that("default_tuned differs from default only in the #284 and #302 cells", {
   # Every other value was examined and kept (research/habitat_thresholds.md);
   # a cell outside this list changing is an untracked calibration.
