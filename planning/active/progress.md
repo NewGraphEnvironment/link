@@ -17,3 +17,12 @@ uncommitted files (BCFISHOBS_DIR at a clean clone, as the rehearsal did); HEAD t
 data-raw/logs/hosts_ready_439/load_stamps.csv. Then pack, launch detached, and run the verifiers, the audit and the
 calibrator, as task_plan.md's Phase 6 says. Cloud spend is approved through the run's own legs.
 ```
+
+## Session 2026-11-02 (merges)
+
+- The operator had the five PRs merged in order, each after the previous merge's CI went green: #443 (`57cb86e3`, tagged v0.78.0), #445 (`55c2b616`), #447 (`481dc8d3`), #448 (`794ddd0e`), #449 (`c87ba267`). The four after #443 ship only a RUNBOOK paragraph and a test, so they released together as v0.78.1 (`fd91d1b7`, no code change). #415, #440 and #442 closed; #439 and #418 stay open.
+- The gate's record at `24b2cbb3` stands: it is an ancestor of `main`, and `DESCRIPTION` maps to `none` in `pretest_inputs.csv` (only the fresh pin is compared), so the 0.78.1 bump does not void it.
+- Filed #450 (the gate finds its history through `extends:` and from a committed minutes record, so a new bundle or a brand-new database gates with no flags; provisional lean recorded in its body). Not this run's work.
+- Run branch `441-minimal-run` cut from `main` at `552f43d6` for Phase 6. Commit and push this entry before launch, then nothing in the worktree changes while the run is in flight.
+- m1's refused token is most likely an expired PAT (`~/.Renviron` `GITHUB_PAT` or the git credential store); renewing it is the operator's. It matters only if `--auto-install` has to move fresh on m1.
+- Next: the resume block above, from this branch.
