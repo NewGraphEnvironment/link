@@ -56,7 +56,7 @@ There is no way to say "not now" short of removing the row. Steelhead have the s
 
 - [x] An `acc-v5` row for `default` and `default_tuned`: as `acc-v4`, with KO and RB paused (no breaks, no access, no habitat). Check that `cut-full-top`'s wording still holds; its breaks follow the acc token.
 - [x] RUNBOOK: §2 (breaks follow modelled species) and the config section (the switch, and a group with no modelled species).
-- [ ] NEWS and the version bump to 0.76.0, the final commit. Add a CLAUDE.md Status entry.
+- [x] NEWS and the CLAUDE.md status written; the version bump to 0.76.0 is the commit after this archive.
 - [x] #402's tracker: the 141 KO and RB rows already carry `issue` `#432` as pending deferrals. Confirm, and change nothing.
 
 ## Owed at the end (reported, done after merge)
@@ -70,6 +70,6 @@ There is no way to say "not now" short of removing the row. Steelhead have the s
 - [x] `/code-check` clean (once over the branch, `/code-check branch`, three-round floor)
 - [x] `lintr::lint_package()`, `devtools::check()`
 - [x] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] `/planning-archive` on completion
 
 How it is proved: the config filter and its refusals by unit tests. The no-species path by a live build of MURT that persists streams and barriers and passes the verifier's per-group checks. The stale-row clearing by a live re-model that leaves 0 rows for the cleared species in that group. Segmentation by Phase 4's before/after on one commit. `bcfishpass` unchanged by its acc spec, `config_hash` and a BULK build's segment count.
