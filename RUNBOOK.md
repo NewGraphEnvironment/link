@@ -2177,7 +2177,9 @@ bash data-raw/pretest_run.sh --config=default --schema=fresh_default
   hand after it. A range must hold every one of those builds (start at
   or before each, and each an ancestor of the range’s end, so its code
   is in the diff); one that does not is refused before anything is
-  modelled (a warning under `--pick-only`, which records nothing).
+  modelled (a warning under `--pick-only`, which records nothing). A
+  history no range can cover, a build with no `link_sha` or from a dirty
+  or unknown tree, is refused under `--pick-only` too.
 - **Which input each file drives.** `data-raw/pretest_inputs.csv` (repo,
   path regex, input, why). [config](https://rstudio.github.io/config/)
   in a pattern stands for any bundle in the chain. Inputs are queries,
@@ -2290,7 +2292,43 @@ environment (`study_area_remote.sh`) is outside the gate’s paths.
 
 Evidence: `data-raw/logs/pretest_372/` (its README indexes it).
 
-### The vintage gate reads load stamps (link#265, absorbing \#247)
+**A bundle without a full history of its own borrows one (#442).**
+`default_minimal` before its first full run has no groups, minutes or
+range that stand for it, so it reads a config it extends:
+
+``` bash
+bash data-raw/pretest_history_load.sh --host=<ssh target> --from=fresh_default --to=fresh_default_history
+bash data-raw/pretest_run.sh --config=default_minimal --schema=fresh_default_minimal \
+  --history-schema=fresh_default_history --history-config=default --minutes-exclude=KTSU,OKAN
+```
+
+- **Only from a config on its `extends` chain, until its own builds
+  cover every group it models.** One build of its own, or a first run
+  stopped partway, does not end the borrowing, and those builds must be
+  in the range too. Once they cover it, a gate must cover them and the
+  flags are refused. Without the flags, such a bundle is refused. A
+  bundle with no parent keeps its own history, whole or not. A group
+  added to the presence table after both histories ended has no route
+  but to model it under the parent and reload, or to launch on
+  `--pretest-note`.
+- **The record names what it borrowed,** so the launch check holds it to
+  the same history. It also keeps naming a schema that must still exist
+  on the dispatcher.
+- **The history must hold every group the config models**
+  ([`lnk_wsg_resolve()`](https://newgraphenvironment.github.io/link/reference/lnk_wsg_resolve.md)),
+  in the pick and at launch. The gate picks only groups the history
+  holds, so m4’s 4-group `fresh_default` picked exactly those 4. The
+  full log sits on the host a run consolidated on, and the loader copies
+  it into a schema of its own by `pg_dump -t`, with the key and indexes.
+  It refuses a target holding anything else.
+- **ssh’s exit status is not read.** The dump must end on `pg_dump`’s
+  trailer and hold the row count the host reports before anything local
+  changes.
+- **The scratch schema is built `LIKE` a schema holding only `log`.**
+  Each pick’s
+  [`lnk_persist_init()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_init.md)
+  creates the rest. \### The vintage gate reads load stamps (link#265,
+  absorbing \#247)
 
 [`lnk_preflight_vintage()`](https://newgraphenvironment.github.io/link/reference/lnk_preflight_vintage.md)
 (via `data-raw/host_vintage.R`) judges each snapshot primitive on its

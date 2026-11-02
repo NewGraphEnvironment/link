@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.77.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.78.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,9 +32,21 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.77.0/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.78.0" id="link-0780">link 0.78.0<a class="anchor" aria-label="anchor" href="#link-0780"></a></h2>
+<p><strong>The pre-run gate can run on a bundle without a full history of its own</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/442" class="external-link">#442</a>). <code>default_minimal</code> has no groups, minutes or range of its own before its first run, so <code>pretest_run.sh</code> now borrows them from a config the bundle extends with <code>--history-schema</code> and <code>--history-config</code>. The record names what it borrowed, and the launch check holds the gate to it.</p>
+<ul><li>
+<strong>A bundle that extends another borrows until its own builds cover every group it models,</strong> so one build of its own does not end it. <strong>The borrowed history must hold every group too,</strong> in the pick and at launch. The gate picks only groups the history holds, so a 4-group history picked exactly those 4; against the full 241 it picks 11, across link’s code since the last provincial run.</li>
+<li>
+<strong><code>data-raw/pretest_history_load.sh</code> copies a host’s <code>log</code> into a schema of its own,</strong> with its key and indexes, and refuses a target holding anything else.</li>
+<li>
+<strong><code>--pick-only</code> refuses a history no range can cover,</strong> a build with no <code>link_sha</code> or from a dirty or unknown tree, because a gate on it could never clear a run. A range that merely falls short is still a warning there.</li>
+<li>
+<strong>link now pins fresh 0.52.0</strong> (from 0.48.0). Its <code>frs_order_child()</code> and <code>frs_habitat_overlay(bridge =)</code> match the watershed group as well as <code>id_segment</code>. How this moves <code>default</code> and <code>bcfishpass</code> is measured under <a href="https://github.com/NewGraphEnvironment/link/issues/440" class="external-link">#440</a>. Persistent workers need <code>--auto-install</code> at the next run.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.77.0" id="link-0770">link 0.77.0<a class="anchor" aria-label="anchor" href="#link-0770"></a></h2>
 <p><strong>A second output of the <code>default</code> model, with far fewer cuts</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/415" class="external-link">#415</a>). The new <code>default_minimal</code> bundle cuts streams only at gradient barriers where a modelled species’ access changes, falls and user-definite barriers, so no fish record or road crossing cuts a stream at its own position. It is meant for tuning habitat thresholds. Records still reach the cuts through observation lifts: a barrier lifted for a species is no longer that species’ cut, though another species’ barrier or a falls may still cut there, and positions above it can become cuts. <code>default</code>, <code>default_tuned</code> and <code>bcfishpass</code> do not change.</p>

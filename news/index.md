@@ -1,5 +1,33 @@
 # Changelog
 
+## link 0.78.0
+
+**The pre-run gate can run on a bundle without a full history of its
+own** ([\#442](https://github.com/NewGraphEnvironment/link/issues/442)).
+`default_minimal` has no groups, minutes or range of its own before its
+first run, so `pretest_run.sh` now borrows them from a config the bundle
+extends with `--history-schema` and `--history-config`. The record names
+what it borrowed, and the launch check holds the gate to it.
+
+- **A bundle that extends another borrows until its own builds cover
+  every group it models,** so one build of its own does not end it.
+  **The borrowed history must hold every group too,** in the pick and at
+  launch. The gate picks only groups the history holds, so a 4-group
+  history picked exactly those 4; against the full 241 it picks 11,
+  across link’s code since the last provincial run.
+- **`data-raw/pretest_history_load.sh` copies a host’s `log` into a
+  schema of its own,** with its key and indexes, and refuses a target
+  holding anything else.
+- **`--pick-only` refuses a history no range can cover,** a build with
+  no `link_sha` or from a dirty or unknown tree, because a gate on it
+  could never clear a run. A range that merely falls short is still a
+  warning there.
+- **link now pins fresh 0.52.0** (from 0.48.0). Its `frs_order_child()`
+  and `frs_habitat_overlay(bridge =)` match the watershed group as well
+  as `id_segment`. How this moves `default` and `bcfishpass` is measured
+  under [\#440](https://github.com/NewGraphEnvironment/link/issues/440).
+  Persistent workers need `--auto-install` at the next run.
+
 ## link 0.77.0
 
 **A second output of the `default` model, with far fewer cuts**
