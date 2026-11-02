@@ -81,16 +81,16 @@ Phases 1 to 5 about 7 to 9 hours (PR 1 about 1.5 h with CI; proof builds about 2
 
 ## Phase 2: PR 2, #415's proof builds and research
 
-- [ ] Add `data-raw/logs/minimal_breaks_415/lifts.R`, committed before the builds (`run.sh` refuses tracked changes), answering **how far observation lifts move the minimal cuts**. Shaped by the plan review:
+- [x] Add `data-raw/logs/minimal_breaks_415/lifts.R`, committed before the builds (`run.sh` refuses tracked changes), answering **how far observation lifts move the minimal cuts**. Shaped by the plan review:
   - `barrier_overrides` holds observation, habitat-classification and control lifts with no source column, so the counterfactual is built, not filtered: copy the group's working tables into a scratch schema, rebuild `barrier_overrides` there with an empty observations table (the other lifts stay), and call `link:::.lnk_pipeline_prep_minimal()` on it, so classes, presence, paused species, orphans and subsurface flow are the build's own. The built `gradient_barriers_minimal` minus that is the observation lifts' effect.
   - Cuts are the whole `break_order` (gradient minimal, falls, definite), so km that changes is measured on the full cut set.
   - `lifts.csv`: observation lifts, cuts removed, cuts added above a lift, how far each moved, km of segment that changes.
   - `lifts_obs.csv`: `compare.R`'s #433 measure, so it reads beside `research/species_paused.md`: records of modelled species on a changed segment, and the median and largest gradient shift.
   - Runs before Phase 3 rebuilds BULK: `wsg_run_one.R` keeps `working_<wsg>`, and the #440 build would replace it.
-- [ ] Groups: **BULK, SETN, MORK, COTR**, the top of `pick_groups.sql` by combined rank (all on `cw`; 0 groups on `mad` in `default`). If a group has few lifts, add LFRA and say so. Downstream-first.
-- [ ] `run.sh`, then `proof.R`, then `lifts.R`, at one clean commit and with nothing installed between. Evidence committed; README updated with the picks and why.
-- [ ] `research/minimal_network.md` (index row added), read beside `species_paused.md`. RUNBOOK §6b. Scratch schemas dropped after.
-- [ ] File the parent-attribute issue from what the proof shows, with the lift result in its body and knowledge#120's mechanics check as acceptance. Edit #415's body, tick its boxes.
+- [x] Groups: **BULK, SETN, MORK, COTR**, the top of `pick_groups.sql` by combined rank (all on `cw`; 0 groups on `mad` in `default`). If a group has few lifts, add LFRA and say so. Downstream-first.
+- [x] `run.sh`, then `proof.R`, then `lifts.R`, at one clean commit and with nothing installed between. Evidence committed; README updated with the picks and why.
+- [x] `research/minimal_network.md` (index row added), read beside `species_paused.md`. RUNBOOK §6b. Scratch schemas `zz415_default` and `zz415_minimal` kept until the PR merges, for review; dropped then.
+- [x] File the parent-attribute issue from what the proof shows, with the lift result in its body and knowledge#120's mechanics check as acceptance. Edit #415's body, tick its boxes.
 - [ ] `/code-check branch`, PR, merge. `Fixes #415`, with the parent attribute carried by the new issue.
 
 ## Phase 3: PR 3, #440's test builds (m4 and m1 side by side), before the primitive refresh

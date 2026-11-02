@@ -61,7 +61,7 @@ The minimal network is not independent of the fish records, because barriers are
 
 - **Only bull trout has observation lifts in these groups.** `default` lifts a natural barrier for BT on one record and for salmon and steelhead on five since 1990, and no salmon or steelhead barrier was lifted by records in these groups.
 - **A lift adds more cuts than it removes.** With the lowest barrier on a path lifted, the barriers above it become that species' downstream-most positions. SETN's 6 removed cuts gave 601 new ones, 592 of them on lines with no cut before. That is why the changed km is far larger than the count of removed cuts.
-- **Few records sit on a changed segment** (0 to 0.6 %), the scale #433 found for pausing a species (`research/species_paused.md`: 33 of KOTL's 1,473). The issue's framing of segments that know nothing about where fish were caught holds to that degree, with lifts held fixed. Where a tuning holds records out, as knowledge#131's leave-one-out does, a held-out BT record can still move a cut below it.
+- **Few records sit on a changed segment** (0 to 0.9 %), the scale #433 found for pausing a species (`research/species_paused.md`: 33 of KOTL's 1,473). The issue's framing of segments that know nothing about where fish were caught holds to that degree, with lifts held fixed. Where a tuning holds records out, as knowledge#131's leave-one-out does, a held-out BT record can still move a cut below it.
 
 Raw numbers: `lifts.csv` (per species and per group), `lifts_obs.csv`.
 
