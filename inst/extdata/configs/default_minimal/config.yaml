@@ -8,8 +8,10 @@ description: |
   this long: the user habitat overlay applies only to a segment wholly inside
   a range, so it reaches fewer km; access code 2 reads from each segment's
   start, so the segment holding a species' top record reads 2 to the next cut;
-  and a crossing-based field reads from the next cut below, so `dam_dnstr_ind`
-  and `remediated_dnstr_ind` shift up to the next cut above the crossing.
+  and a crossing-based field reads what lies below a segment's start, so a
+  crossing counts only from the next cut above it. That can also change which
+  feature is next downstream, so `dam_dnstr_ind` and `remediated_dnstr_ind` can
+  move either way.
 
 extends: default
 

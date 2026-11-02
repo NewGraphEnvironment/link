@@ -17,7 +17,7 @@ A segment's gradient is the elevation drop over its own length, so each cut move
 
 - **The user habitat overlay reaches fewer km.** `frs_habitat_overlay()` and `lnk_habitat_gate()` keep a flag only where a segment lies wholly inside an overlay range, and no cut falls at a range's ends.
 - **Access code 2 reads from each segment's start,** so the segment holding a species' top record reads 2 up to the next cut. Species access codes 0 and 1 stay at cuts, because each species' minimal reduction cuts every access frontier.
-- **Crossing-based fields read from the next cut below.** `dam_dnstr_ind` and `remediated_dnstr_ind` shift up to the next cut above the crossing, and nothing is measured at a crossing.
+- **Crossing-based fields read what lies below a segment's start,** so a crossing counts only from the next cut above it, and nothing is measured at a crossing. `dam_dnstr_ind` and `remediated_dnstr_ind` read the next feature downstream, which that can change, so they can move either way.
 
 `streams_access` and `barriers` persist as they do for `default`.
 

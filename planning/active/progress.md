@@ -7,6 +7,11 @@
 - Scaffolded PWF baseline from issue #415 with approved phases
 - Next: parked 2026-11-01; paste the block under ### Resume into a fresh session
 
+## Session 2026-11-02 (run-to-PR)
+
+- Phases 1 to 4 landed. Plan corrected: `0.77.0`, because PR #437 holds `0.76.0`; the token test compares `default_minimal` with `default`, so #437's `acc-v5` needs no edit in it.
+- Smoke on ADMS at `e287abcb`: 15,781 full and 11,985 minimal segments, every minimal cut matched exactly, no access difference, every break named. Swapping the schemas in a copy of `proof.R` fired three guards. Schemas dropped.
+
 ### Resume
 
 ```

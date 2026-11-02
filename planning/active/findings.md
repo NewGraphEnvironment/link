@@ -48,7 +48,15 @@ require the segment wholly inside the range); and a full segment is not always i
 segment (observations cut first; a later cut within 1 m of an end is skipped), so the parent join
 is largest overlap, not containment.
 
+## Smoke run, ADMS (2026-11-02, scripts check, not evidence)
+
+- `dam_dnstr_ind` and `remediated_dnstr_ind` move both ways: `dam_dnstr_ind` is true on 15.996 km only on the minimal network and 0.654 km only on the full one. They read the *next* feature downstream, so an uncounted crossing can expose a dam. The plan's "shift up to the next cut" was too simple; the bundle README, description and proof README now say so.
+- `has_barriers_*` on crossings only lose km (minimal-only 0), as the walk predicts. Natural `has_barriers_<sp>` did not move.
+- The overlay under-applies as predicted (CO spawning 7.19 of 110.4 km against 0.05 km on the full network).
+- Placement: 488 of 615 records fall in the start window on the full network and 31 on the minimal one, so `knw_link_place()` runs on its fallback there, as the plan expected.
+
 ## Errors Encountered
 
 | Error | Resolution |
 |-------|------------|
+| `column "rank_ch" does not exist` in `pick_groups.sql` | An `ORDER BY` expression cannot read a select alias; wrapped the query |

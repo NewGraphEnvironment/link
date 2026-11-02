@@ -1,6 +1,6 @@
 # minimal_breaks_415 — is the minimal network the full network with fewer cuts? (#415)
 
-**Status: scripts ready, real proof not run.** This directory holds the scripts for the proof builds. The real run waits for #432 to merge, since pausing KO and RB moves which species cut streams, and folds in #433's keep-or-drop measurement. Its evidence and the write-up land on a second branch. A smoke run on ADMS (below) exercised the scripts and is not evidence.
+**Status: scripts ready, real proof not run.** This directory holds the scripts for the proof builds. The real run waits for #432 to merge, since pausing KO and RB moves which species cut streams, and folds in #433's keep-or-drop measurement. Its evidence and the write-up land on a second branch. A smoke run exercised the scripts and is not evidence: ADMS on 2026-11-02 at `e287abcb`, on the installed fresh 0.52.0 against the `v0.48.0` pin. `run.sh` and the recompute passed, `proof.R` passed its checks and wrote every CSV, and the scratch schemas were dropped. The same `proof.R` with the two schema names swapped stopped on the commit-and-token, superset and census checks, so those guards fire.
 
 ## Question
 
@@ -8,6 +8,7 @@
 
 ## Run decision (for the real run, restate before launching)
 
+- **Software:** `proof.R` reads the fresh version from `builds.csv`; install the pinned one or say why not.
 - **Groups:** BULK plus two or three chinook-rearing and crossing-heavy groups, picked from `pick_groups.sql` when the proof runs, and named here with why. Check each is on `cw`, since `proof.R` reads channel width only.
 - **Schemas:** `zz415_default` (`default`) and `zz415_minimal` (`default_minimal`), scratch on the local fwapg, published nowhere, dropped when the write-up lands.
 - **Order:** downstream-first, passed to `run.sh` in that order. Serial, because both bundles share `working_<wsg>`. In each group `default` runs first, so `working_<wsg>` holds the minimal build the census reads.
@@ -43,7 +44,8 @@ Rscript data-raw/logs/minimal_breaks_415/proof.R --wsgs=BULK,<WSG>,<WSG>
 
 No cut falls at a crossing, so each field reads from the segment's start:
 
-- **`dam_dnstr_ind`, `remediated_dnstr_ind`, `has_barriers_anthropogenic_dnstr`, `has_barriers_pscis_dnstr`, `has_barriers_dams_dnstr`, `has_barriers_remediations_dnstr`:** true only when the crossing or dam lies below the segment's start. The segment holding the crossing reads as above it no earlier than the next cut, so the change appears up to one minimal segment late. On this network they say "below this segment's start", not "below this point".
+- **`has_barriers_anthropogenic_dnstr`, `has_barriers_pscis_dnstr`, `has_barriers_dams_dnstr`, `has_barriers_remediations_dnstr`:** true only when the crossing or dam lies below the segment's start, so a segment holding a crossing reads as below it up to the next cut. These can only lose km against the full network. On this network they say "below this segment's start", not "below this point".
+- **`dam_dnstr_ind`, `remediated_dnstr_ind`:** whether the *next* feature downstream of the segment's start is a dam or a remediation. A crossing that no longer counts on a segment can expose a dam or remediation below it, so these can gain km as well as lose them.
 - **`has_barriers_<sp>_dnstr`:** natural barriers cut this network, so these should move little. A barrier of another group is not cut here, which `access_open.csv` would show.
 - **Mapping codes** inherit the same reading. The knowledge repo reads none of them.
 

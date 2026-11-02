@@ -154,15 +154,15 @@ from m4.
   verified date moves.
 
 ## Phase 3: the proof script, ready to run (after Phase 2: a build refuses a config with no live token)
-- [ ] `data-raw/logs/minimal_breaks_415/README.md`: question, groups to build (BULK plus
+- [x] `data-raw/logs/minimal_breaks_415/README.md`: question, groups to build (BULK plus
   two or three chinook-rearing and crossing-heavy groups, picked by a query in the README
   when the proof runs), the two scratch schemas (`zz415_default`, `zz415_minimal`), the
   order (downstream-first per schema, serial because both share `working_<wsg>`), and the
   checks below. States that the real run waits for #432 and folds in #433.
-- [ ] `run.sh` adapted from `observation_breaks_396/run.sh`: both bundles from one commit
+- [x] `run.sh` adapted from `observation_breaks_396/run.sh`: both bundles from one commit
   into the two scratch schemas with `LNK_SCHEMA`, then `wsg_recompute_one.R`, `status.tsv`
   with minutes and row counts per group and schema.
-- [ ] `proof.R` adapted from `observation_breaks_396/pre_post_diff.R` (overlap pieces per
+- [x] `proof.R` adapted from `observation_breaks_396/pre_post_diff.R` (overlap pieces per
   `blue_line_key`, 1 cm slivers dropped, coverage both ways), writing one CSV per check:
   superset (every minimal cut matches a full cut within 1 m; each full segment's
   largest-overlap parent, and the km that straddle by more than 1 m), access code 2 km per
@@ -179,18 +179,18 @@ from m4.
   its `at_top` measures; `proof.R` drops those measures rather than carry the builder, and
   its 0/1 assertion excludes slivers (`len < 1.01`), because a minimal cut skipped in the
   full build by the 1 m rule leaves a sub-metre piece whose access differs by construction.
-- [ ] Access on the minimal network (the issue's third checkbox): the proof reports
+- [x] Access on the minimal network (the issue's third checkbox): the proof reports
   `access_<sp>` km by code (-9, 0, 1, 2) per species on the minimal schema beside the full
   one, and for each crossing-based field (`dam_dnstr_ind`, `remediated_dnstr_ind`,
   `has_barriers_*_dnstr`) states in the README what it means on a segment that was not cut
   at the crossing. Whether to flag or drop those fields on the minimal network is the
   follow-up's call, written there as a question. `subsurfaceflow` stays off, as `default`
   leaves it; the bundle inherits that and the README says so.
-- [ ] The parent-table prototype inside `proof.R`: the largest-overlap join from each full
+- [x] The parent-table prototype inside `proof.R`: the largest-overlap join from each full
   segment to its minimal parent, written as a CSV per group (`id_segment, wsg,
   id_segment_minimal, gradient_minimal, length_minimal, overlap_m, straddle_m`), so the
   follow-up issue's table design is measured, not guessed.
-- [ ] Smoke run on one small group (ADMS) at this commit into the two scratch schemas with
+- [x] Smoke run on one small group (ADMS) at this commit into the two scratch schemas with
   `LNK_GUARD_DOWNSTREAM=warn` (as 396's `run.sh` sets it; the scratch schema holds no
   downstream group), the recompute's pass rule written before the run as 396 did ("failed
   only on the downstream-dam post-condition" passes), schemas dropped after. Pass line: no
@@ -198,12 +198,12 @@ from m4.
   smoke output is not evidence and is not committed beyond the README's note that it ran.
 
 ## Phase 4: release bookkeeping and the issue
-- [ ] `DESCRIPTION` to `0.76.0` (the token row names it), `NEWS.md` entry.
-- [ ] CLAUDE.md status entry (what landed, what is owed, facts not worth re-deriving: the
+- [x] `DESCRIPTION` to `0.77.0` (the token row names it), `NEWS.md` entry.
+- [x] CLAUDE.md status entry (what landed, what is owed, facts not worth re-deriving: the
   overlay direction, the 1 m containment caveat, the own-table design).
-- [ ] Edit the #415 body: the overlay bullet reads "under-applies", the four proposed
+- [x] Edit the #415 body: the overlay bullet reads "under-applies", the four proposed
   checkboxes note the two-PR split and link this PR, the parent-attribute design is written
-  in, and `cut-min` is named. No new issue filed here.
+  in, and `cut-min` is named. No new issue filed here. Done once the PR exists.
 
 ## Owed at the end (reported, done after merge)
 - [ ] Second branch after #432 merges: the proof builds, `research/minimal_network.md`

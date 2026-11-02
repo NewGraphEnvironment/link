@@ -1,3 +1,11 @@
+# link 0.77.0
+
+**A second output of the `default` model, cut only where a species' access changes** ([#415](https://github.com/NewGraphEnvironment/link/issues/415)). The new `default_minimal` bundle cuts streams at access-gradient positions, falls and user-definite barriers, so a segment's gradient no longer depends on where fish were caught or where a road crosses. It is meant for tuning habitat thresholds. `default`, `default_tuned` and `bcfishpass` do not change.
+
+- **The output is named `cut-min`,** with `default`'s other three tokens. Cut tokens are keyed `cut-<source set>[-<qualifier>...]`, written down in the RUNBOOK.
+- **`pipeline: break_order: ~` in a bundle that extends another is now refused.** It would have deleted the parent's list and fallen back to every break source.
+- **Nothing has been modelled on it yet.** `data-raw/logs/minimal_breaks_415/` holds the proof scripts, which compare the two networks group by group. They run after species pausing ([#432](https://github.com/NewGraphEnvironment/link/issues/432)) lands. Giving each full-network segment its minimal parent's id and gradient is a follow-up built from what that proof shows.
+
 # link 0.75.0
 
 **`default`'s species presence table carries the first, provisional review of its cells against the fish records** ([#402](https://github.com/NewGraphEnvironment/link/issues/402)). 111 salmon and steelhead cells are added and 10 cells removed, in 80 groups; each changed row's `notes` names the review, and each cell's reason is in `configs/default/wsg_species_presence_review.csv`. Nothing here is final: a later review can reverse any cell.
