@@ -12,8 +12,8 @@
 # run on it under `default_minimal`. Classes, presence, paused species and orphans
 # are the build's own, and no SQL is copied here.
 #
-# Barrier positions are not cuts: a position on an FWA segment's start adds no
-# segment. So each count is given twice, as positions in gradient_barriers_minimal
+# Barrier positions are not cuts: a position on an FWA segment's start, or within
+# 1 m of another cut (the break step skips it), adds no segment. So each count is given twice, as positions in gradient_barriers_minimal
 # and as segment starts in streams.
 #
 # Controls, each of which stops the script:
