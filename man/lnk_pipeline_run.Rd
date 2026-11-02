@@ -117,11 +117,15 @@ per-model minimal reduction, base segments. Passes \code{conn} as
 \item \code{\link[=lnk_pipeline_crossings]{lnk_pipeline_crossings()}} — match PSCIS to modelled crossings.
 \item \code{\link[=lnk_pipeline_break]{lnk_pipeline_break()}} — observations, gradient minimal, definite,
 habitat endpoints, crossings — in config-defined order.
+\item \code{\link[=lnk_pipeline_species]{lnk_pipeline_species()}} — resolve the active species set for this
+AOI (cfg$species ∩ wsg_species_presence). Empty is a group where only
+species the bundle pauses are present: steps 7 and 8 and the habitat
+gate are skipped, and the group is persisted with its segments,
+barriers and access annotations but no habitat. A group where no rules
+species is present is an error.
 \item \code{\link[=lnk_pipeline_classify]{lnk_pipeline_classify()}} — assemble \code{streams_breaks} and run
 \code{frs_habitat_classify()}.
 \item \code{\link[=lnk_pipeline_connect]{lnk_pipeline_connect()}} — per-species cluster + connected_waterbody.
-\item \code{\link[=lnk_pipeline_species]{lnk_pipeline_species()}} — resolve the active species set for this
-AOI (cfg$species ∩ wsg_species_presence). Empty set is an error.
 \item \code{\link[=lnk_persist_init]{lnk_persist_init()}} — create persistent target tables if absent.
 \item \code{\link[=lnk_barriers_unify]{lnk_barriers_unify()}} — unify per-source barriers into a single
 working-schema table (always; promotes the mapping_code-only
@@ -135,7 +139,9 @@ is foundational — mapping_code depends on it — so it builds regardless
 of \code{mapping_code}. See link#187, #196.
 \item \code{\link[=lnk_pipeline_persist]{lnk_pipeline_persist()}} — copy per-WSG streams + per-species
 habitat + barriers + streams_access into \verb{<persist_schema>}
-(idempotent DELETE-WHERE-WSG + INSERT).
+(idempotent DELETE-WHERE-WSG + INSERT). The group's rows in the habitat
+tables of species not classified here (paused, or no longer present)
+are then deleted, so no earlier build's habitat outlives its segments.
 \item \code{\link[=lnk_habitat_gate]{lnk_habitat_gate()}} — settle the persisted habitat flags on
 \code{streams_access}: where \verb{access_<sp>} is 0, \code{accessible}, \code{spawning},
 \code{rearing}, \code{lake_rearing} and \code{wetland_rearing} go FALSE (link#349).

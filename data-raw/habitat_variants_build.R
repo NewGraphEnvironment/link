@@ -345,6 +345,15 @@ fs::dir_create(file.path(dir_out, "bundles"))
 
 # -- the base bundle, and one thin bundle per variant --------------------------------
 cfg_base <- lnk_config(base_bundle)
+# A variant of a species the base pauses (#432) would classify nothing, and a
+# new variant schema has no table to persist it in.
+local({
+  paused <- intersect(variants$species_code, cfg_base$species_paused)
+  if (length(paused) > 0L) {
+    stop("variants name ", paste(paused, collapse = ", "), ", which ",
+         base_bundle, " pauses (species_modelled.csv)", call. = FALSE)
+  }
+})
 cfg_base$pipeline$schema <- schema_of(base_variant)
 loaded <- suppressWarnings(lnk_load_overrides(cfg_base))
 path_thr_base <- cfg_base$files$parameters_habitat_thresholds$path
@@ -720,7 +729,9 @@ run_base <- function() {
   writeLines(closure, file.path(dir_out, "closure.txt"))
   sch <- cfg_base$pipeline$schema
   for (w in closure) {
-    active <- lnk_pipeline_species(cfg_base, loaded, w)
+    # Paused species count (#432): a group where only they are present is
+    # built for its barriers, which the focal groups' access reads.
+    active <- lnk_pipeline_species(cfg_base, loaded, w, paused = TRUE)
     if (length(active) == 0L) {
       say("base %s: no modelled species, skipped", w)
       next
@@ -799,13 +810,16 @@ run_base <- function() {
                  presence = lnk_presence(loaded$wsg_species_presence, w),
                  species = active)
       # Settle the persisted habitat on the recomputed access (link#349).
-      g <- lnk_habitat_gate(conn, aoi = w,
-                            table_habitat = paste0(sch, ".streams_habitat"),
-                            table_access = paste0(sch, ".streams_access"),
-                            table_streams = paste0(sch, ".streams"),
-                            species = active,
-                            overlay = .lnk_habitat_gate_overlay(cfg_base, loaded),
-                            table_access_prior = prior)
+      # A focal group with only paused species (#432) has none to settle.
+      g <- if (length(active) > 0L) {
+        lnk_habitat_gate(conn, aoi = w,
+                         table_habitat = paste0(sch, ".streams_habitat"),
+                         table_access = paste0(sch, ".streams_access"),
+                         table_streams = paste0(sch, ".streams"),
+                         species = active,
+                         overlay = .lnk_habitat_gate_overlay(cfg_base, loaded),
+                         table_access_prior = prior)
+      }
       lnk_wsg_downstream_check(conn, aoi = w, cfg = cfg_base,
                                loaded = loaded, on_fail = "error")
       g

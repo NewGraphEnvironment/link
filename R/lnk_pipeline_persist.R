@@ -25,7 +25,9 @@
 #' @param cfg An `lnk_config` object with `cfg$pipeline$schema` set.
 #' @param species Character vector of species codes to persist. Should
 #'   match what `lnk_persist_init()` was called with — typically
-#'   [lnk_pipeline_species()] output for the AOI.
+#'   [lnk_pipeline_species()] output for the AOI. Empty for a group where
+#'   only species the bundle pauses are present: no habitat table is
+#'   written, and the other tables are replaced as usual.
 #' @param schema Working schema (per-WSG staging). Default
 #'   `paste0("working_", tolower(aoi))`.
 #'
@@ -39,8 +41,11 @@ lnk_pipeline_persist <- function(conn, aoi, cfg, species,
   if (!inherits(cfg, "lnk_config")) {
     stop("cfg must be an lnk_config object", call. = FALSE)
   }
-  if (!is.character(species) || length(species) == 0L) {
-    stop("species must be a non-empty character vector", call. = FALSE)
+  # Empty is a group where only paused species are present (#432): its
+  # streams, barriers, overrides, access and mapping-code rows are replaced
+  # and no habitat table is written.
+  if (!is.character(species)) {
+    stop("species must be a character vector", call. = FALSE)
   }
 
   tn <- .lnk_table_names(cfg)
@@ -235,23 +240,7 @@ lnk_pipeline_persist <- function(conn, aoi, cfg, species,
       LIMIT 1;",
     DBI::dbQuoteString(conn, schema)
   ))) > 0L
-  near_pairs <- .lnk_near_river_pairs(cfg, c("cw", "mad"), species = species)
-  # fresh stores both numbers through its own formatter (.frs_sql_num(),
-  # "%.10g"), and the predicate matches them as that text; the same
-  # formatter here makes each comparison a literal against itself.
-  sql_num <- utils::getFromNamespace(".frs_sql_num", "fresh")
-  near_vals <- if (nrow(near_pairs) > 0L) {
-    paste(sprintf("(%s, %s::double precision, %s::double precision)",
-                  vapply(near_pairs$measure, .lnk_quote_literal, ""),
-                  vapply(near_pairs$threshold, sql_num, ""),
-                  vapply(near_pairs$distance_max, sql_num, "")),
-          collapse = ", ")
-  }
-  near_sets <- c(
-    if (!is.null(near_vals)) sprintf("SELECT * FROM (VALUES %s) v", near_vals),
-    if (near_present) sprintf(
-      "SELECT DISTINCT measure, threshold, distance_max
-         FROM %s.streams_habitat_near_river", schema))
+  near_sets <- .lnk_near_river_pair_sets(cfg, species, schema, near_present)
   if (length(near_sets) > 0L) {
     .lnk_db_execute(conn, sprintf(
       "DELETE FROM %1$s p
@@ -269,4 +258,81 @@ lnk_pipeline_persist <- function(conn, aoi, cfg, species,
   }
 
   invisible(conn)
+}
+
+#' The near_river pairs a build owns, as SQL row sets
+#'
+#' Every pair the build's species' rules read under either size model
+#' (fresh's resolver), plus the pairs the working walk holds (a classify given
+#' another thresholds or method table). `NULL` when there are none.
+#' @noRd
+.lnk_near_river_pair_sets <- function(cfg, species, schema, near_present) {
+  near_pairs <- .lnk_near_river_pairs(cfg, c("cw", "mad"), species = species)
+  # fresh stores both numbers through its own formatter (.frs_sql_num(),
+  # "%.10g"), and the predicate matches them as that text; the same
+  # formatter here makes each comparison a literal against itself.
+  sql_num <- utils::getFromNamespace(".frs_sql_num", "fresh")
+  near_vals <- if (nrow(near_pairs) > 0L) {
+    paste(sprintf("(%s, %s::double precision, %s::double precision)",
+                  vapply(near_pairs$measure, .lnk_quote_literal, ""),
+                  vapply(near_pairs$threshold, sql_num, ""),
+                  vapply(near_pairs$distance_max, sql_num, "")),
+          collapse = ", ")
+  }
+  c(
+    if (!is.null(near_vals)) sprintf("SELECT * FROM (VALUES %s) v", near_vals),
+    if (isTRUE(near_present)) sprintf(
+      "SELECT DISTINCT measure, threshold, distance_max
+         FROM %s.streams_habitat_near_river", schema))
+}
+
+#' Clear a group's rows that no species classified here owns
+#'
+#' `lnk_pipeline_persist()` replaces a group's rows only in the habitat tables
+#' of the species it writes, and only for the near_river pairs those species'
+#' rules read. After a full build, every other
+#' `<persist_schema>.streams_habitat_<sp>` table holding rows for the group,
+#' and every other near_river pair, holds them from an earlier build: a species
+#' the bundle now pauses (#432), or one no longer marked present. Their
+#' `id_segment` keys belong to that build's segmentation. Called by
+#' [lnk_pipeline_run()] only, right after its first persist (which replaces the
+#' group's streams): the variants harness persists one species at a time and
+#' must keep the others.
+#' @noRd
+.lnk_persist_clear_unmodelled <- function(conn, cfg, aoi, species,
+                                          schema = NULL) {
+  tn <- .lnk_table_names(cfg)
+  tables <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT table_name FROM information_schema.tables
+      WHERE table_schema = %s AND table_type = 'BASE TABLE'
+        AND table_name LIKE 'streams\\_habitat\\_%%' ESCAPE '\\'",
+    DBI::dbQuoteString(conn, tn$schema)))$table_name
+  sp_tables <- sub("^streams_habitat_", "", tables)
+  # Per-species tables only: lowercase letters after the prefix, as
+  # lnk_persist_init() names them (streams_habitat_near_river is not one).
+  stale <- setdiff(sp_tables[grepl("^[a-z]+$", sp_tables)], tolower(species))
+  aoi_lit <- .lnk_quote_literal(aoi)
+  for (sp in stale) {
+    .lnk_db_execute(conn, sprintf(
+      "DELETE FROM %s.streams_habitat_%s WHERE watershed_group_code = %s",
+      tn$schema, sp, aoi_lit))
+  }
+
+  near_table <- paste0(tn$schema, ".streams_near_river")
+  if (.lnk_table_exists(conn, near_table)) {
+    near_present <- !is.null(schema) && .lnk_table_exists(
+      conn, paste0(schema, ".streams_habitat_near_river"))
+    keep <- .lnk_near_river_pair_sets(cfg, species, schema, near_present)
+    .lnk_db_execute(conn, if (length(keep) == 0L) {
+      sprintf("DELETE FROM %s WHERE watershed_group_code = %s",
+              near_table, aoi_lit)
+    } else {
+      sprintf(
+        "DELETE FROM %1$s p
+          WHERE p.watershed_group_code = %2$s
+            AND (p.measure, p.threshold, p.distance_max) NOT IN (%3$s)",
+        near_table, aoi_lit, paste(keep, collapse = " UNION "))
+    })
+  }
+  invisible(stale)
 }

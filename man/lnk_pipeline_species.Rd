@@ -4,7 +4,7 @@
 \alias{lnk_pipeline_species}
 \title{Resolve the Species Set for an AOI}
 \usage{
-lnk_pipeline_species(cfg, loaded, aoi)
+lnk_pipeline_species(cfg, loaded, aoi, paused = FALSE)
 }
 \arguments{
 \item{cfg}{An \code{lnk_config} object from \code{\link[=lnk_config]{lnk_config()}}.}
@@ -15,6 +15,9 @@ Carries \code{parameters_fresh} and \code{wsg_species_presence}.}
 \item{aoi}{Character. AOI identifier — today a watershed group code
 (e.g. \code{"BULK"}) matched against
 \code{loaded$wsg_species_presence$watershed_group_code}.}
+
+\item{paused}{Logical. Also count the species the bundle pauses.
+Default \code{FALSE}: the species classified.}
 }
 \value{
 Character vector of species codes. Empty when neither
@@ -41,11 +44,24 @@ The returned set is the intersection of:
 When \code{loaded$wsg_species_presence} is not populated the function
 returns \code{cfg$species} unfiltered. When the AOI is not found in the
 table the function returns \code{character(0)}.
+
+A species the bundle pauses (\code{cfg$species_paused}, from its
+\code{species_modelled.csv}) is not classified, so it is left out unless
+\code{paused = TRUE}. That form answers whether a group is modelled at all: a
+group where only paused species are present is still built for its
+segments and barriers, which other groups' access reads, and gets no
+habitat.
 }
 \examples{
 cfg    <- lnk_config("bcfishpass")
 loaded <- lnk_load_overrides(cfg)
 lnk_pipeline_species(cfg, loaded, "BULK")
+
+# default pauses KO and RB: MURT is modelled, with nothing to classify
+cfg <- lnk_config("default")
+loaded <- lnk_load_overrides(cfg)
+lnk_pipeline_species(cfg, loaded, "MURT")
+lnk_pipeline_species(cfg, loaded, "MURT", paused = TRUE)
 lnk_pipeline_species(cfg, loaded, "ADMS")
 }
 \seealso{

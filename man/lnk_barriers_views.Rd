@@ -22,7 +22,9 @@ lnk_barriers_views(
 for the underlying persist-schema reference).}
 
 \item{species}{Character vector of species codes the views should
-cover. Default \code{c("BT","CH","CM","CO","PK","SK","ST","WCT")}.}
+cover. Default \code{c("BT","CH","CM","CO","PK","SK","ST","WCT")}. May be
+empty, which builds only the per-source views (a group where only
+paused species are present).}
 
 \item{barriers_table}{Character or \code{NULL}. Source barriers table the
 views read from. Default \code{NULL} → uses \verb{<persist_schema>.barriers}

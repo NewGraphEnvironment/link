@@ -39,16 +39,16 @@ There is no way to say "not now" short of removing the row. Steelhead have the s
 
 ## Phase 3: Readers and a group with no modelled species
 
-- [ ] `lnk_wsg_resolve()` (`R/lnk_wsg_resolve.R:94`) keeps a group with any rules species present, paused or not, so the 8 groups stay in the run and its closure.
-- [ ] `lnk_pipeline_run()`: with no modelled species, run setup, load, prepare, break and the barrier unify and persist. Skip classify, connect and the habitat persist. Persist `streams_access` and `streams_mapping_code` rows with no per-species values, and log the group with an empty species list.
-- [ ] Recompute (`lnk_access()`, `wsg_recompute_one.R`, the habitat gate): a group with no modelled species passes through instead of stopping on "species is empty".
-- [ ] The run clears a group's rows from `streams_habitat_<sp>` for each species in the schema that the build does not model.
-- [ ] Audit the remaining readers for the rules species where `cfg$species` is meant: classify and connect take species from `lnk_pipeline_species()`. Also check the validator, `lnk_presence_check` (its `modelled` column goes FALSE for KO and RB, as intended), `barriers_views_build.R`, `buckets_balance.R` and the variants harness. Fix any that read rules species directly.
+- [x] `lnk_wsg_resolve()` (`R/lnk_wsg_resolve.R:94`) keeps a group with any rules species present, paused or not, so the 8 groups stay in the run and its closure.
+- [x] `lnk_pipeline_run()`: with no modelled species, run setup, load, prepare, break and the barrier unify and persist. Skip classify, connect and the habitat persist. Persist `streams_access` and `streams_mapping_code` rows with no per-species values, and log the group with an empty species list.
+- [x] Recompute (`lnk_access()`, `wsg_recompute_one.R`, the habitat gate): a group with no modelled species passes through instead of stopping on "species is empty".
+- [x] The run clears a group's rows from `streams_habitat_<sp>` for each species in the schema that the build does not model.
+- [x] Audit the remaining readers for the rules species where `cfg$species` is meant: classify and connect take species from `lnk_pipeline_species()`. Also check the validator, `lnk_presence_check` (its `modelled` column goes FALSE for KO and RB, as intended), `barriers_views_build.R`, `buckets_balance.R` and the variants harness. Fix any that read rules species directly.
 - [ ] `study_area_verify.sql` and the driver accept a group whose log row carries no species. Check what they assert per group.
 
-## Phase 4: Measure #433 (one commit, scratch schemas on m4)
+## Phase 4: Measure #433 (before arm from a worktree at 07203cde, after arm at the Phase 3 commit; scratch schemas on m4)
 
-- [ ] Build `default` before (KO and RB modelled) and after (paused) on KOTL, two of the 71 RB-without-BT groups, MURT (one of the 8), and BULK as the control.
+- [ ] Build `default` before (KO and RB modelled) and after (paused) on KOTL, SALR and KETL (RB without BT), NBNK (RB only through the CT/DV/RB expansion), MURT (paused species only), and BULK as the control. Pin that MURT's barrier and override rows match across arms (review 15).
 - [ ] Report segments, breaks moved, BT and CH rearing km moved, and the gradient at fish records whose segment changed. The question is what tuning reads.
 - [ ] Write it up in `research/` (the segmentation write-up, or a short `species_paused.md` indexed in `research/README.md`). Evidence in `data-raw/logs/species_paused_432/` with a README.
 

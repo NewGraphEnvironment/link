@@ -80,6 +80,14 @@ if (anyDuplicated(bundles$schema)) {
 }
 species <- toupper(split_csv(opt("species", "CH,BT")))
 if (length(species) == 0L) stop("--species is empty", call. = FALSE)
+# A species a bundle pauses (#432) has no habitat to score in a build of it.
+for (b in bundles$config) {
+  paused <- intersect(species, lnk_config(b)$species_paused)
+  if (length(paused) > 0L) {
+    stop("--species names ", paste(paused, collapse = ", "),
+         ", which bundle ", b, " pauses (species_modelled.csv)", call. = FALSE)
+  }
+}
 buffers <- as.numeric(split_csv(opt("buffers", "0,100")))
 if (anyNA(buffers) || !0 %in% buffers) {
   stop("--buffers must be numbers and include 0 (the misses are buffer 0)",
