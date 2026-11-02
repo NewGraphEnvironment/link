@@ -345,15 +345,6 @@ fs::dir_create(file.path(dir_out, "bundles"))
 
 # -- the base bundle, and one thin bundle per variant --------------------------------
 cfg_base <- lnk_config(base_bundle)
-# A variant of a species the base pauses (#432) would classify nothing, and a
-# new variant schema has no table to persist it in.
-local({
-  paused <- intersect(variants$species_code, cfg_base$species_paused)
-  if (length(paused) > 0L) {
-    stop("variants name ", paste(paused, collapse = ", "), ", which ",
-         base_bundle, " pauses (species_modelled.csv)", call. = FALSE)
-  }
-})
 cfg_base$pipeline$schema <- schema_of(base_variant)
 loaded <- suppressWarnings(lnk_load_overrides(cfg_base))
 path_thr_base <- cfg_base$files$parameters_habitat_thresholds$path
@@ -588,6 +579,19 @@ write_bundle <- function(r) {
 # it runs in every variants pass, --only or not.
 run_variants <- unique(c(base_variant,
                          if (length(only) > 0L) only else variants$variant))
+# A variant of a species the base pauses (#432) classifies nothing: its bundle
+# extends the base, which leaves the species out of cfg$species. Refused for
+# the variants this run builds or writes, not for every row of the file
+# (variants_300/302/305 carry RB rows), and not for --step=base.
+if (step != "base") local({
+  sp <- variants$species_code[variants$variant %in% run_variants]
+  paused <- intersect(sp, cfg_base$species_paused)
+  if (length(paused) > 0L) {
+    stop("variants to build name ", paste(paused, collapse = ", "), ", which ",
+         base_bundle, " pauses (species_modelled.csv); leave them out with --only=",
+         call. = FALSE)
+  }
+})
 # A bundle is written when its variant is built (run_variant()), and
 # built.csv records the bundle sha each schema was built from once that
 # schema's checks pass; the score stops when the two disagree.
