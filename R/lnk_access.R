@@ -60,6 +60,8 @@
 #' @param presence An `lnk_presence` object or `NULL`. Per-species presence
 #'   for `aoi`; pass-through to [lnk_pipeline_access()].
 #' @param species Character vector of species codes. Default `cfg$species`.
+#'   An explicit `character(0)` (a group where only species the bundle pauses
+#'   are present) recomputes the per-source columns only.
 #' @param build_views Logical. `TRUE` (default) rebuilds the per-species
 #'   `_access` and per-source `_unified` views over `table_barriers` on every
 #'   call, via [lnk_barriers_views()]. Pass `FALSE` when the caller has
@@ -116,9 +118,14 @@ lnk_access <- function(conn, cfg, aoi, table_streams, table_barriers,
     is.logical(build_views), length(build_views) == 1L, !is.na(build_views)
   )
 
-  species <- if (is.null(species)) cfg$species else species
-  if (is.null(species) || length(species) == 0L) {
-    stop("species is empty (pass `species` or set cfg$species)", call. = FALSE)
+  # An explicit empty `species` is a group where only paused species are
+  # present (#432): the per-source columns (dams, PSCIS, anthropogenic) are
+  # still recomputed. Defaulting to an empty cfg$species is refused.
+  if (is.null(species)) {
+    species <- cfg$species
+    if (length(species) == 0L) {
+      stop("species is empty (pass `species` or set cfg$species)", call. = FALSE)
+    }
   }
   sp_set <- tolower(species)
 
@@ -126,8 +133,10 @@ lnk_access <- function(conn, cfg, aoi, table_streams, table_barriers,
   # read it + the sibling barrier_overrides). Derive it from the qualified name.
   view_schema <- sub("\\.[^.]+$", "", table_barriers)
 
+  # lapply, not paste0 over the set: paste0() over no species is one name.
   barriers_per_sp <- stats::setNames(
-    as.list(paste0(view_schema, ".barriers_", sp_set, "_access")), sp_set)
+    lapply(sp_set, function(sp) paste0(view_schema, ".barriers_", sp, "_access")),
+    sp_set)
   barrier_sources <- list(
     anthropogenic = paste0(view_schema, ".barriers_anthropogenic_unified"),
     pscis         = paste0(view_schema, ".barriers_pscis_unified"),

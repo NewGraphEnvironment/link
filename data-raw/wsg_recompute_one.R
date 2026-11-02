@@ -52,8 +52,12 @@ cfg    <- lnk_config(config)
 if (nzchar(.lnk_schema_env)) cfg$pipeline$schema <- .lnk_schema_env
 loaded <- lnk_load_overrides(cfg)
 
+# Species the bundle pauses (#432) are not classified, but a group where only
+# they are present is modelled for its segments and barriers, so it is
+# recomputed too: its per-source access columns (dams, PSCIS) read other
+# groups' barriers. `active` is then empty and the gate has nothing to settle.
 active <- lnk_pipeline_species(cfg, loaded, wsg)
-if (length(active) == 0L) {
+if (length(lnk_pipeline_species(cfg, loaded, wsg, paused = TRUE)) == 0L) {
   cat(sprintf("[wsg_recompute_one] %s SKIP - no modeled species\n", wsg))
   quit(status = 0)
 }
@@ -162,11 +166,14 @@ prior      <- paste0(sch, ".", prior_name)
 on.exit(try(DBI::dbExecute(conn, sprintf("DROP TABLE IF EXISTS %s", prior)),
             silent = TRUE), add = TRUE)
 DBI::dbExecute(conn, sprintf("DROP TABLE IF EXISTS %s", prior))
-DBI::dbExecute(conn, sprintf(
-  "CREATE TABLE %s AS SELECT id_segment, watershed_group_code, %s
-   FROM %s.streams_access WHERE watershed_group_code = %s",
-  prior, paste0("access_", tolower(active), collapse = ", "), sch,
-  DBI::dbQuoteLiteral(conn, wsg)))
+# Guarded: paste0() over an empty `active` is "access_", not nothing.
+if (length(active) > 0L) {
+  DBI::dbExecute(conn, sprintf(
+    "CREATE TABLE %s AS SELECT id_segment, watershed_group_code, %s
+     FROM %s.streams_access WHERE watershed_group_code = %s",
+    prior, paste0("access_", tolower(active), collapse = ", "), sch,
+    DBI::dbQuoteLiteral(conn, wsg)))
+}
 
 # 1. Surgically recompute streams_access (cross-WSG cols) in place.
 lnk_access(conn, cfg, aoi = wsg,
@@ -181,13 +188,15 @@ lnk_access(conn, cfg, aoi = wsg,
 # wetland_rearing go FALSE; known-habitat overlay rows keep spawning and
 # rearing. One-way: a segment this lifts back is counted, and only a re-model
 # restores its habitat.
-habitat_gate <<- lnk_habitat_gate(conn, aoi = wsg,
-  table_habitat = paste0(sch, ".streams_habitat"),
-  table_access  = paste0(sch, ".streams_access"),
-  table_streams = paste0(sch, ".streams"),
-  species = active,
-  overlay = .gate_overlay(cfg, loaded),
-  table_access_prior = prior)
+if (length(active) > 0L) {
+  habitat_gate <<- lnk_habitat_gate(conn, aoi = wsg,
+    table_habitat = paste0(sch, ".streams_habitat"),
+    table_access  = paste0(sch, ".streams_access"),
+    table_streams = paste0(sch, ".streams"),
+    species = active,
+    overlay = .gate_overlay(cfg, loaded),
+    table_access_prior = prior)
+}
 
 # 3. Rebuild mapping_code from the updated access and settled habitat ->
 # scratch -> persist (one transaction; lnk_pipeline_run builds it the same way).

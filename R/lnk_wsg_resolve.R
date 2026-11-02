@@ -9,8 +9,8 @@
 #' Three call patterns dispatched by `wsgs` + `expand`:
 #'
 #'   - `wsgs = NULL` — *province mode*: every WSG in
-#'     `loaded$wsg_species_presence` that has at least one of
-#'     `cfg$species` flagged present.
+#'     `loaded$wsg_species_presence` that has at least one of the bundle's
+#'     rules species flagged present.
 #'   - `wsgs = c(...)` + `expand = TRUE` (default) — *closure mode*:
 #'     expand the focal set to its drainage closure (focal + every WSG
 #'     they flow through, ordered downstream-first), then species-filter.
@@ -20,9 +20,12 @@
 #'   - `wsgs = c(...)` + `expand = FALSE` — *strict mode*: species-filter
 #'     the input verbatim, no closure expansion, no DB.
 #'
-#' Species filter: a WSG is kept if *any* of `tolower(cfg$species)`
-#' columns in `loaded$wsg_species_presence` carries `"t"` (or `"TRUE"` /
-#' `TRUE`, defensively). DS-first ordering from the closure is preserved.
+#' Species filter: a WSG is kept if *any* of the bundle's rules species
+#' (`cfg$species` and the paused `cfg$species_paused`) has a column in
+#' `loaded$wsg_species_presence` carrying `"t"` (or `"TRUE"` / `TRUE`,
+#' defensively). A group where only paused species are present is kept: it is
+#' modelled for its segments and barriers, which other groups' access reads,
+#' and gets no habitat. DS-first ordering from the closure is preserved.
 #'
 #' @param cfg An `lnk_config` object from [lnk_config()].
 #' @param loaded Named list of tibbles from [lnk_load_overrides()].
@@ -91,8 +94,11 @@ lnk_wsg_resolve <- function(cfg, loaded, wsgs = NULL, expand = TRUE,
     stop("loaded$wsg_species_presence is missing or empty — ",
          "did `lnk_load_overrides(cfg)` populate it?", call. = FALSE)
   }
-  spp_cols <- tolower(cfg$species %||%
-                        unique(loaded$parameters_fresh$species_code))
+  # Paused species count (#432): a group where only they are present is still
+  # modelled for its segments and barriers, which other groups' access reads.
+  spp_cols <- tolower(c(cfg$species %||%
+                          unique(loaded$parameters_fresh$species_code),
+                        cfg$species_paused))
   missing_cols <- setdiff(spp_cols, names(wp))
   if (length(missing_cols)) {
     stop("loaded$wsg_species_presence missing species columns: ",

@@ -21,7 +21,9 @@ lnk_pipeline_persist(
 
 \item{species}{Character vector of species codes to persist. Should
 match what \code{lnk_persist_init()} was called with — typically
-\code{\link[=lnk_pipeline_species]{lnk_pipeline_species()}} output for the AOI.}
+\code{\link[=lnk_pipeline_species]{lnk_pipeline_species()}} output for the AOI. Empty for a group where
+only species the bundle pauses are present: no habitat table is
+written, and the other tables are replaced as usual.}
 
 \item{schema}{Working schema (per-WSG staging). Default
 \code{paste0("working_", tolower(aoi))}.}

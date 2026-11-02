@@ -794,7 +794,7 @@ test_that(".lnk_log_run_start writes the output's vocabulary tokens", {
   vals <- regmatches(ins, gregexpr("'(cut|acc|grad|q)-[a-z0-9-]+'", ins))[[1]]
   expect_identical(cols[startsWith(cols, "token_")],
                    c("token_cut", "token_acc", "token_grad", "token_flow"))
-  expect_identical(vals, c("'cut-full-top'", "'acc-v4'", "'grad-seg'",
+  expect_identical(vals, c("'cut-full-top'", "'acc-v5'", "'grad-seg'",
                            "'q-wet-fill'"))
 })
 

@@ -34,6 +34,22 @@ cfg <- lnk_config(config)
 .lnk_schema_env <- Sys.getenv("LNK_SCHEMA")
 if (nzchar(.lnk_schema_env)) cfg$pipeline$schema <- .lnk_schema_env
 
+# A group where only species the bundle pauses are present (#432) is built
+# with no habitat and no mapping code, so there is nothing to compare.
+loaded  <- lnk_load_overrides(cfg)
+skipped <- wsgs[vapply(wsgs, function(w) {
+  length(lnk_pipeline_species(cfg, loaded, w)) == 0L
+}, logical(1))]
+if (length(skipped) > 0L) {
+  message(sprintf("[study_area_compare] NOTE: %d group(s) with no modelled species skipped: %s",
+                  length(skipped), paste(skipped, collapse = ",")))
+}
+wsgs <- setdiff(wsgs, skipped)
+if (length(wsgs) == 0L) {
+  cat("[study_area_compare] no group with a modelled species; nothing compared\n")
+  quit(status = 0)
+}
+
 rows <- list()
 for (w in wsgs) {
   r <- tryCatch(

@@ -83,15 +83,93 @@ test_that("lnk_pipeline_persist input validation", {
                "aoi must be a single non-empty WSG code")
   expect_error(lnk_pipeline_persist("c", aoi = "LRDO", cfg = list(), species = "BT"),
                "cfg must be an lnk_config object")
-  expect_error(lnk_pipeline_persist("c", aoi = "LRDO", cfg = cfg, species = character(0)),
-               "species must be a non-empty character vector")
+  expect_error(lnk_pipeline_persist("c", aoi = "LRDO", cfg = cfg, species = 1L),
+               "species must be a character vector")
+})
+
+test_that("persist with no species writes no habitat table (#432)", {
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql)
+      invisible(NULL)
+    }
+  )
+  m <- mock_dbi_no_barriers()
+  with_mocked_bindings(
+    dbGetQuery = m$dbGetQuery, dbQuoteString = m$dbQuoteString,
+    .package = "DBI",
+    lnk_pipeline_persist("c", aoi = "MURT", cfg = lnk_config("default"),
+                         species = character(0))
+  )
+  expect_true(any(grepl("INSERT INTO fresh\\.streams ", captured)))
+  expect_false(any(grepl("streams_habitat_", captured)))
+})
+
+test_that(".lnk_persist_clear_unmodelled deletes only species not classified (#432)", {
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql)
+      invisible(NULL)
+    },
+    .lnk_table_exists = function(conn, table) FALSE
+  )
+  with_mocked_bindings(
+    dbGetQuery = function(conn, sql, ...) {
+      data.frame(table_name = c("streams_habitat_bt", "streams_habitat_ko",
+                                "streams_habitat_rb", "streams_habitat_near_river"),
+                 stringsAsFactors = FALSE)
+    },
+    dbQuoteString = function(conn, x, ...) paste0("'", x, "'"),
+    .package = "DBI",
+    stale <- .lnk_persist_clear_unmodelled("c", lnk_config("default"),
+                                           aoi = "KOTL", species = "BT")
+  )
+  expect_setequal(stale, c("ko", "rb"))
+  # streams_habitat_near_river is not a species table; no near-river table
+  # in this mock, so only the two habitat deletes run.
+  expect_length(captured, 2L)
+  expect_true(all(grepl("^DELETE FROM fresh\\.streams_habitat_(ko|rb) WHERE watershed_group_code = 'KOTL'$",
+                        captured)))
+})
+
+test_that(".lnk_persist_clear_unmodelled keeps only the near-river pairs the build owns (#432)", {
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql)
+      invisible(NULL)
+    },
+    .lnk_table_exists = function(conn, table) table == "fresh.streams_near_river"
+  )
+  cfg <- lnk_config("default")
+  run <- function(species) {
+    captured <<- character(0)
+    with_mocked_bindings(
+      dbGetQuery = function(conn, sql, ...) data.frame(table_name = character(0)),
+      dbQuoteString = function(conn, x, ...) paste0("'", x, "'"),
+      .package = "DBI",
+      .lnk_persist_clear_unmodelled("c", cfg, aoi = "MURT", species = species,
+                                    schema = "w")
+    )
+    captured
+  }
+  # No species: every near-river row of the group goes.
+  expect_identical(run(character(0)),
+    "DELETE FROM fresh.streams_near_river WHERE watershed_group_code = 'MURT'")
+  # CH reads a pair: rows outside the pairs CH's rules read go.
+  sql <- run("CH")
+  expect_length(sql, 1L)
+  expect_match(sql, "NOT IN \\(SELECT \\* FROM \\(VALUES")
 })
 
 test_that("lnk_pipeline_persist accepts non-default schema", {
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql); invisible(NULL)
+      captured <<- c(captured, sql)
+      invisible(NULL)
     }
   )
   m <- mock_dbi_no_barriers()
@@ -115,7 +193,8 @@ test_that("lnk_pipeline_persist persists barriers when staging table present", {
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql); invisible(NULL)
+      captured <<- c(captured, sql)
+      invisible(NULL)
     }
   )
   # Probe returns one row → <schema>.barriers exists.
@@ -142,7 +221,8 @@ test_that("lnk_pipeline_persist persists barrier_overrides when staging table pr
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql); invisible(NULL)
+      captured <<- c(captured, sql)
+      invisible(NULL)
     }
   )
   # Probe returns one row → <schema>.barrier_overrides exists.
@@ -171,7 +251,8 @@ test_that("lnk_pipeline_persist skips barrier_overrides branch when staging tabl
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql); invisible(NULL)
+      captured <<- c(captured, sql)
+      invisible(NULL)
     }
   )
   m <- mock_dbi_no_barriers()
@@ -193,7 +274,8 @@ test_that("lnk_pipeline_persist skips barriers branch when staging table absent"
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql); invisible(NULL)
+      captured <<- c(captured, sql)
+      invisible(NULL)
     }
   )
   m <- mock_dbi_no_barriers()
@@ -218,7 +300,8 @@ test_that("lnk_pipeline_persist never deletes from a log table (link#354)", {
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql); invisible(NULL)
+      captured <<- c(captured, sql)
+      invisible(NULL)
     }
   )
   with_mocked_bindings(
@@ -254,7 +337,8 @@ test_that("a pair that found no river still clears the group's earlier rows (#36
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql); invisible(NULL)
+      captured <<- c(captured, sql)
+      invisible(NULL)
     }
   )
   # The working near-river table is absent (as when the walk found nothing
@@ -294,7 +378,8 @@ test_that("the delete writes a pair's numbers as fresh stores them (round 3)", {
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
-      captured <<- c(captured, sql); invisible(NULL)
+      captured <<- c(captured, sql)
+      invisible(NULL)
     }
   )
   cfg <- lnk_config("default")

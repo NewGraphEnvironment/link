@@ -41,7 +41,9 @@ surgically UPDATEs \code{table_to}'s \code{aoi} rows (recompute; see Merge mode)
 \item{presence}{An \code{lnk_presence} object or \code{NULL}. Per-species presence
 for \code{aoi}; pass-through to \code{\link[=lnk_pipeline_access]{lnk_pipeline_access()}}.}
 
-\item{species}{Character vector of species codes. Default \code{cfg$species}.}
+\item{species}{Character vector of species codes. Default \code{cfg$species}.
+An explicit \code{character(0)} (a group where only species the bundle pauses
+are present) recomputes the per-source columns only.}
 
 \item{build_views}{Logical. \code{TRUE} (default) rebuilds the per-species
 \verb{_access} and per-source \verb{_unified} views over \code{table_barriers} on every

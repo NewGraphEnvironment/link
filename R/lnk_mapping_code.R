@@ -234,6 +234,23 @@ lnk_mapping_code <- function(
   sp_anadromous <- intersect(sp_set, c("ch", "cm", "co", "pk", "sk", "st"))
   sp_spawn_only <- intersect(sp_set, c("cm", "pk"))
 
+  aoi_lit <- DBI::dbQuoteLiteral(conn, aoi)
+  # No species classified here (only paused species present, #432): the group
+  # keeps one row per segment with no code, as an absent species reads "".
+  if (length(sp_set) == 0L) {
+    DBI::dbWithTransaction(conn, {
+      .lnk_db_execute(conn, sprintf(
+        "DELETE FROM %s.streams_mapping_code WHERE watershed_group_code = %s",
+        schema, aoi_lit))
+      .lnk_db_execute(conn, sprintf(
+        "INSERT INTO %s.streams_mapping_code (id_segment, watershed_group_code)
+         SELECT id_segment, watershed_group_code FROM %s.streams
+         WHERE watershed_group_code = %s",
+        schema, schema, aoi_lit))
+    })
+    return(invisible(conn))
+  }
+
   mc_name    <- paste0("zz_lnk_mc_scratch_", tolower(aoi))
   mc_scratch <- paste0(schema, ".", mc_name)
   on.exit(try(.lnk_db_execute(conn, sprintf("DROP TABLE IF EXISTS %s", mc_scratch)),
@@ -258,7 +275,6 @@ lnk_mapping_code <- function(
   ins_cols <- paste(c("id_segment", "watershed_group_code", mc_cols), collapse = ", ")
   sel_cols <- paste(c("m.id_segment", "s.watershed_group_code",
                       paste0("m.", mc_cols)), collapse = ", ")
-  aoi_lit <- DBI::dbQuoteLiteral(conn, aoi)
   # Atomic DELETE + INSERT: a failed INSERT must not leave the group's rows
   # deleted (FINA lost its mapping codes that way on 2026-05-25, #203).
   DBI::dbWithTransaction(conn, {

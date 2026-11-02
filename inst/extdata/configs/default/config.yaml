@@ -31,6 +31,8 @@ files:
     path: species_pooling.csv
   species_groups:
     path: species_groups.csv
+  species_modelled:
+    path: species_modelled.csv
   user_habitat_classification:
     source: bcfp
     path: overrides/user_habitat_classification.csv
@@ -201,6 +203,11 @@ provenance:
     synced: '2026-09-26'
     checksum: sha256:e6e18111f635427a02c01627c5062db1f9b590aed882c5db3d0881309e56d5fb
     shape_checksum: sha256:f26bcf4fdd8096a93bed0c0ddd8f62bb50fe46186d82b121b66a4d5c84ad93e4
+  species_modelled.csv:
+    source: link (hand-authored; link#432). Which rules species the bundle models; a paused row carries its reason and date
+    synced: '2026-11-01'
+    checksum: sha256:53d7227a849dffe2f550a5f30fd9194fbfcce0d440beec18a8e6c11c1a3afcc6
+    shape_checksum: sha256:fa71e78291577055622a28a82276d23d0c0df1c1c6d5baaa7b577e1940551f30
   overrides/user_habitat_classification.csv:
     source: https://github.com/smnorris/bcfishpass
     path: data/user_habitat_classification.csv

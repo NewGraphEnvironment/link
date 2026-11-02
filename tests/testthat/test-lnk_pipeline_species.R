@@ -117,3 +117,15 @@ test_that("lnk_pipeline_species works against the bundled bcfishpass config", {
   bulk <- lnk_pipeline_species(cfg, loaded, "BULK")
   expect_true(all(c("BT", "CH", "CO", "SK", "ST") %in% bulk))
 })
+
+test_that("paused species are left out unless paused = TRUE (#432)", {
+  cfg <- lnk_config("default")
+  loaded <- lnk_load_overrides(cfg)
+  # MURT's only rules species present is RB, which default pauses.
+  expect_identical(lnk_pipeline_species(cfg, loaded, "MURT"), character(0))
+  expect_identical(lnk_pipeline_species(cfg, loaded, "MURT", paused = TRUE), "RB")
+  expect_false(any(c("KO", "RB") %in% lnk_pipeline_species(cfg, loaded, "KOTL")))
+  expect_true(all(c("KO", "RB") %in%
+                    lnk_pipeline_species(cfg, loaded, "KOTL", paused = TRUE)))
+  expect_error(lnk_pipeline_species(cfg, loaded, "MURT", paused = NA), "paused")
+})

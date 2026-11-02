@@ -206,8 +206,8 @@ from m4.
   in, and `cut-min` is named. No new issue filed here. Done once the PR exists.
 
 ## Owed at the end (reported, done after merge)
-- [ ] Second branch after #432 merges: the proof builds, `research/minimal_network.md`
-  (or a section of `bcfp_segmentation_parity.md`), #433's measurement folded in, and the
+- [ ] Second branch (#432 merged 2026-11-02, during this run): the proof builds, `research/minimal_network.md`
+  (or a section of `bcfp_segmentation_parity.md`), read beside #433's measurement in `research/species_paused.md`, and the
   parent-attribute issue drafted from the proof (how far lifts move the cuts, measured with
   the records left out: round 1 of the code check found gradient positions are reduced after
   observation lifts, so the network is not independent of the records; the `streams_parent` table, its `grad`

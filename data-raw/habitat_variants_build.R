@@ -579,6 +579,20 @@ write_bundle <- function(r) {
 # it runs in every variants pass, --only or not.
 run_variants <- unique(c(base_variant,
                          if (length(only) > 0L) only else variants$variant))
+# A variant of a species the base pauses (#432) would be scored on a base built
+# without that species: no gradient breaks of its own and no access_<sp>, so
+# its band scores would not describe the species' model. Refused for the
+# variants this run builds or writes, not for every row of the file
+# (variants_300/302/305 carry RB rows), and not for --step=base.
+if (step != "base") local({
+  sp <- variants$species_code[variants$variant %in% run_variants]
+  paused <- intersect(sp, cfg_base$species_paused)
+  if (length(paused) > 0L) {
+    stop("variants to build name ", paste(paused, collapse = ", "), ", which ",
+         base_bundle, " pauses (species_modelled.csv); leave them out with --only=",
+         call. = FALSE)
+  }
+})
 # A bundle is written when its variant is built (run_variant()), and
 # built.csv records the bundle sha each schema was built from once that
 # schema's checks pass; the score stops when the two disagree.
@@ -720,7 +734,9 @@ run_base <- function() {
   writeLines(closure, file.path(dir_out, "closure.txt"))
   sch <- cfg_base$pipeline$schema
   for (w in closure) {
-    active <- lnk_pipeline_species(cfg_base, loaded, w)
+    # Paused species count (#432): a group where only they are present is
+    # built for its barriers, which the focal groups' access reads.
+    active <- lnk_pipeline_species(cfg_base, loaded, w, paused = TRUE)
     if (length(active) == 0L) {
       say("base %s: no modelled species, skipped", w)
       next
@@ -799,13 +815,16 @@ run_base <- function() {
                  presence = lnk_presence(loaded$wsg_species_presence, w),
                  species = active)
       # Settle the persisted habitat on the recomputed access (link#349).
-      g <- lnk_habitat_gate(conn, aoi = w,
-                            table_habitat = paste0(sch, ".streams_habitat"),
-                            table_access = paste0(sch, ".streams_access"),
-                            table_streams = paste0(sch, ".streams"),
-                            species = active,
-                            overlay = .lnk_habitat_gate_overlay(cfg_base, loaded),
-                            table_access_prior = prior)
+      # A focal group with only paused species (#432) has none to settle.
+      g <- if (length(active) > 0L) {
+        lnk_habitat_gate(conn, aoi = w,
+                         table_habitat = paste0(sch, ".streams_habitat"),
+                         table_access = paste0(sch, ".streams_access"),
+                         table_streams = paste0(sch, ".streams"),
+                         species = active,
+                         overlay = .lnk_habitat_gate_overlay(cfg_base, loaded),
+                         table_access_prior = prior)
+      }
       lnk_wsg_downstream_check(conn, aoi = w, cfg = cfg_base,
                                loaded = loaded, on_fail = "error")
       g

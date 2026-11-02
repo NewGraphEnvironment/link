@@ -1,0 +1,6 @@
+column,type,group,owner,consumed_by,default_when_absent,description,related
+species_code,character,rule,link,R/lnk_config.R:446,required,"A species with an entry in the bundle's rules.yaml. Every rules species has exactly one row; a code the rules do not name is refused.",modelled
+modelled,character,rule,link,R/lnk_config.R:463,required,"t models the species; f pauses it: its rules and thresholds stay in the bundle, but it is not classified, adds no gradient breaks, and gets no access, habitat or mapping code. Exactly t or f; anything else is refused. A bundle that declares no file models every rules species.",reason
+reason,character,record,link,R/lnk_config.R:470,"required when modelled is f","Why the species is paused, and what would bring it back. Empty on a modelled row.",modelled
+date,date,record,link,R/lnk_config.R:475,"required when modelled is f",Date the species was paused (YYYY-MM-DD).,issue
+issue,character,record,link,- (not read; the record of why),-,The link issue that paused the species or last changed the row.,reason

@@ -59,7 +59,7 @@ With these axes, six configs take eight live tokens:
 |---|---|---|---|---|
 | `default` | `cut-full-top` | `acc-v4` | `grad-seg` | `q-fwapg` |
 | `default_tuned` | `cut-full-top` | `acc-v4` | `grad-seg` | `q-wet-fill` |
-| `default_minimal` | `cut-min` | `acc-v4` | `grad-seg` | `q-fwapg` |
+| `default_minimal` | `cut-min` | `acc-v5` | `grad-seg` | `q-fwapg` |
 | `bcfishpass` | `cut-full-ssf-all` | `acc-bcfp-4` | `grad-seg` | `q-fwapg` |
 | `default_extrabreaks` | none | none | `grad-seg` | `q-fwapg` |
 | `default_rearbreaks` | none | none | `grad-seg` | `q-fwapg` |

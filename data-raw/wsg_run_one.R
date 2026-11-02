@@ -60,7 +60,9 @@ loaded <- lnk_load_overrides(cfg)
 # modelled — lnk_pipeline_run errors "No species resolved for AOI". The
 # study-area closure is already species-filtered (study_area_wsgs.R), so this
 # is belt-and-suspenders: skip cleanly (exit 0) rather than fail the host run.
-active <- lnk_pipeline_species(cfg, loaded, wsg)
+# Species the bundle pauses count (#432): a group where only they are present
+# is built for its segments and barriers, with no habitat.
+active <- lnk_pipeline_species(cfg, loaded, wsg, paused = TRUE)
 if (length(active) == 0L) {
   cat(sprintf("[wsg_run_one] %s SKIP — no modeled species in this AOI\n", wsg))
   quit(status = 0)

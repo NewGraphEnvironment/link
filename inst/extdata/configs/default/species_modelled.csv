@@ -1,0 +1,12 @@
+species_code,modelled,reason,date,issue
+BT,t,,,
+CH,t,,,
+CM,t,,,
+CO,t,,,
+PK,t,,,
+SK,t,,,
+ST,t,,,
+WCT,t,,,
+KO,f,"The kokanee presence column was never sourced: it was added with four test values (CARP, KOTL, NATR, PARS; PR #107), bcfishpass's presence table has no kokanee column, and 137 groups with kokanee records are unmarked (#402). Modelled again once the column is sourced.",2026-11-01,#432
+RB,f,"Field records do not reliably separate rainbow trout from steelhead, so neither the presence cells nor the records that lift barriers and set code 2 can be trusted for rainbow alone. Modelled again once the identification question is settled.",2026-11-01,#432
+GR,t,,,

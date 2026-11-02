@@ -1,0 +1,14 @@
+[pre] start 2026-11-02T01:12:17Z at 07203cde
+[pre] KOTL model rc=0 232s
+[pre] SALR model rc=0 76s
+[pre] KETL model rc=0 268s
+[pre] NBNK model rc=0 46s
+[pre] MURT model rc=0 115s
+[pre] BULK model rc=0 415s
+[pre] KOTL recompute rc=1 24s
+[pre] SALR recompute rc=0 4s
+[pre] KETL recompute rc=0 17s
+[pre] NBNK recompute rc=0 3s
+[pre] MURT recompute rc=0 6s
+[pre] BULK recompute rc=0 24s
+[pre] end 2026-11-02T01:32:47Z

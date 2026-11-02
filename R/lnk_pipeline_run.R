@@ -29,11 +29,15 @@
 #' 4. [lnk_pipeline_crossings()] — match PSCIS to modelled crossings.
 #' 5. [lnk_pipeline_break()] — observations, gradient minimal, definite,
 #'    habitat endpoints, crossings — in config-defined order.
-#' 6. [lnk_pipeline_classify()] — assemble `streams_breaks` and run
+#' 6. [lnk_pipeline_species()] — resolve the active species set for this
+#'    AOI (cfg$species ∩ wsg_species_presence). Empty is a group where only
+#'    species the bundle pauses are present: steps 7 and 8 and the habitat
+#'    gate are skipped, and the group is persisted with its segments,
+#'    barriers and access annotations but no habitat. A group where no rules
+#'    species is present is an error.
+#' 7. [lnk_pipeline_classify()] — assemble `streams_breaks` and run
 #'    `frs_habitat_classify()`.
-#' 7. [lnk_pipeline_connect()] — per-species cluster + connected_waterbody.
-#' 8. [lnk_pipeline_species()] — resolve the active species set for this
-#'    AOI (cfg$species ∩ wsg_species_presence). Empty set is an error.
+#' 8. [lnk_pipeline_connect()] — per-species cluster + connected_waterbody.
 #' 9. [lnk_persist_init()] — create persistent target tables if absent.
 #' 10. [lnk_barriers_unify()] — unify per-source barriers into a single
 #'     working-schema table (always; promotes the mapping_code-only
@@ -47,7 +51,9 @@
 #'      of `mapping_code`. See link#187, #196.
 #' 11. [lnk_pipeline_persist()] — copy per-WSG streams + per-species
 #'     habitat + barriers + streams_access into `<persist_schema>`
-#'     (idempotent DELETE-WHERE-WSG + INSERT).
+#'     (idempotent DELETE-WHERE-WSG + INSERT). The group's rows in the habitat
+#'     tables of species not classified here (paused, or no longer present)
+#'     are then deleted, so no earlier build's habitat outlives its segments.
 #' 12. [lnk_habitat_gate()] — settle the persisted habitat flags on
 #'     `streams_access`: where `access_<sp>` is 0, `accessible`, `spawning`,
 #'     `rearing`, `lake_rearing` and `wetland_rearing` go FALSE (link#349).
@@ -212,21 +218,29 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
                          loaded = loaded, schema = schema)
   lnk_pipeline_break(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
                      loaded = loaded, schema = schema)
-  lnk_pipeline_classify(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
-                        loaded = loaded, schema = schema)
-  lnk_pipeline_connect(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
-                       loaded = loaded, schema = schema)
 
-  # Resolve active species set BEFORE persist. Empty here means the WSG
-  # has no presence for any bundle species — nothing to persist. Error
-  # out before calling persist (which would otherwise run with an empty
-  # species vector and either no-op silently or fail downstream with a
-  # less-clear message).
+  # The species classified here: the bundle's modelled species present in
+  # the group. Empty is a group where only species the bundle pauses are
+  # present (#432): it is still built for its segments, barriers and access
+  # annotations, which other groups' recompute reads, and gets no habitat.
+  # A group where no rules species is present at all is refused.
   active_species <- lnk_pipeline_species(cfg, loaded, aoi) # nolint: object_usage_linter
-  if (length(active_species) == 0L) {
+  if (length(active_species) == 0L &&
+      length(lnk_pipeline_species(cfg, loaded, aoi, paused = TRUE)) == 0L) { # nolint: object_usage_linter
     stop("no active species in ", aoi,
-         " — cfg$species intersected with wsg_species_presence is empty.",
+         ": no rules species of the bundle is present in wsg_species_presence.",
          call. = FALSE)
+  }
+  if (length(active_species) > 0L) {
+    lnk_pipeline_classify(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
+                          loaded = loaded, schema = schema)
+    lnk_pipeline_connect(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
+                         loaded = loaded, schema = schema)
+  } else {
+    message("[lnk_pipeline_run] ", aoi, ": only paused species present (",
+            paste(lnk_pipeline_species(cfg, loaded, aoi, paused = TRUE), # nolint: object_usage_linter
+                  collapse = ", "),
+            "); segments and barriers only, no habitat")
   }
 
   # Persist DDL sized to the FULL bundle (cfg$species), not the per-WSG
@@ -268,6 +282,14 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
   # idempotently and adds streams_access. link#196.
   lnk_pipeline_persist(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
                        species = active_species, schema = schema)
+  # That persist replaced this group's streams, and its habitat rows only for
+  # the species classified here. A species no longer classified (paused in the
+  # bundle, #432, or no longer present) keeps rows from an earlier build, cut
+  # to segments that no longer exist, and readers that find species from the
+  # tables (lnk_compare_rollup()) would count them. Cleared here, before the
+  # access walks, so a later failure cannot leave them beside the new streams.
+  .lnk_persist_clear_unmodelled(conn, cfg, aoi = aoi, species = active_species,
+                                schema = schema)
 
   # 1. Per-species + per-source barrier views over PERSIST
   # <persist_schema>.barriers (default — see #196). Province-wide,
@@ -312,7 +334,11 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
     aoi             = aoi,
     to              = paste0(schema, ".streams_access"),
     barriers_per_sp = barriers_per_sp,
-    observations    = paste0(schema, ".observations_province"),
+    # No species classified here (only paused ones present, #432): nothing
+    # reads code 2, so the province-wide walk is skipped.
+    observations    = if (length(active_species) > 0L) {
+      paste0(schema, ".observations_province")
+    },
     observations_gate = if (identical(.lnk_observation_upstream(cfg),
                                       "group_gated")) {
       paste0(schema, ".observations")
@@ -335,7 +361,7 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
   # only; access_<sp> is the province-wide answer, so the flags follow it.
   tn <- .lnk_table_names(cfg)
   gate <- NULL
-  if (isTRUE(habitat_gate)) {
+  if (isTRUE(habitat_gate) && length(active_species) > 0L) {
     gate <- lnk_habitat_gate(conn, aoi = aoi, # nolint: object_usage_linter
       table_habitat = paste0(tn$schema, ".streams_habitat"),
       table_access  = paste0(tn$schema, ".streams_access"),

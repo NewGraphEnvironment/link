@@ -19,12 +19,21 @@
 #' returns `cfg$species` unfiltered. When the AOI is not found in the
 #' table the function returns `character(0)`.
 #'
+#' A species the bundle pauses (`cfg$species_paused`, from its
+#' `species_modelled.csv`) is not classified, so it is left out unless
+#' `paused = TRUE`. That form answers whether a group is modelled at all: a
+#' group where only paused species are present is still built for its
+#' segments and barriers, which other groups' access reads, and gets no
+#' habitat.
+#'
 #' @param cfg An `lnk_config` object from [lnk_config()].
 #' @param loaded Named list of tibbles from [lnk_load_overrides()].
 #'   Carries `parameters_fresh` and `wsg_species_presence`.
 #' @param aoi Character. AOI identifier — today a watershed group code
 #'   (e.g. `"BULK"`) matched against
 #'   `loaded$wsg_species_presence$watershed_group_code`.
+#' @param paused Logical. Also count the species the bundle pauses.
+#'   Default `FALSE`: the species classified.
 #'
 #' @return Character vector of species codes. Empty when neither
 #'   config nor AOI carries species.
@@ -37,8 +46,14 @@
 #' cfg    <- lnk_config("bcfishpass")
 #' loaded <- lnk_load_overrides(cfg)
 #' lnk_pipeline_species(cfg, loaded, "BULK")
+#'
+#' # default pauses KO and RB: MURT is modelled, with nothing to classify
+#' cfg <- lnk_config("default")
+#' loaded <- lnk_load_overrides(cfg)
+#' lnk_pipeline_species(cfg, loaded, "MURT")
+#' lnk_pipeline_species(cfg, loaded, "MURT", paused = TRUE)
 #' lnk_pipeline_species(cfg, loaded, "ADMS")
-lnk_pipeline_species <- function(cfg, loaded, aoi) {
+lnk_pipeline_species <- function(cfg, loaded, aoi, paused = FALSE) {
   if (!inherits(cfg, "lnk_config")) {
     stop("cfg must be an lnk_config object (from lnk_config())",
          call. = FALSE)
@@ -50,9 +65,13 @@ lnk_pipeline_species <- function(cfg, loaded, aoi) {
   if (!is.character(aoi) || length(aoi) != 1L || !nzchar(aoi)) {
     stop("aoi must be a single non-empty string", call. = FALSE)
   }
+  if (!is.logical(paused) || length(paused) != 1L || is.na(paused)) {
+    stop("paused must be TRUE or FALSE", call. = FALSE)
+  }
 
   configured <- cfg$species %||%
     unique(loaded$parameters_fresh$species_code)
+  if (paused) configured <- c(configured, cfg$species_paused)
 
   wsg_sp <- loaded$wsg_species_presence
   if (is.null(wsg_sp)) return(configured)
