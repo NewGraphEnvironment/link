@@ -15,7 +15,7 @@
 - Code-check over the branch, three rounds. Round 1: one build of the bundle's own ended the short-history guard; the launch refusal named a remedy that fails. Round 2, inside round 1's fix: two lines still assumed a borrowing bundle has no own rows, two judgements exited as "could not run", no route for a group added after both histories. Round 3, same family: a bad own build read as a bad borrowed history. Ended on an enumeration (`findings.md`, "Code-check enumeration"; round 3's message table; `data-raw/logs/gate_borrow_442/messages.txt`).
 - A full suite run showed 16 validator failures after I killed an earlier run mid-file; the file alone passes 470, and a clean full run passes 5,232 with 0 failed.
 
-- Phase 2 on branch `415-proof-builds-lifts`, stacked on PR #443 (the merge is the operator's): `lifts.R` committed before the builds; `run.sh` on BULK, SETN, MORK, COTR at `6bf9ca06` (47 min, every step passed); `proof.R` every check passed; `lifts.R` both controls passed, re-run at `234425e8` after a fix to how it reads counts, same numbers. Parent tables gzipped (11.8 to 3.7 MB). Filed #444 (parent attributes); #415's body ticked.
+- Phase 2 on branch `415-proof-builds-lifts`, stacked on PR #443 (the merge is the operator's): `lifts.R` committed before the builds; `run.sh` on BULK, SETN, MORK, COTR at `6bf9ca06` (47 min, every step passed); `proof.R` every check passed; `lifts.R` both controls passed; review found it counted barrier positions as cuts, so it now counts segment starts too, with a control that can fail (final CSVs from `lifts.R` as of `ac52e150`). Parent tables gzipped (11.8 to 3.7 MB). Filed #444 (parent attributes); #415's body ticked.
 
 ### Resume
 
