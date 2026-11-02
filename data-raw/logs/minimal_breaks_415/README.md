@@ -1,6 +1,6 @@
 # minimal_breaks_415 — is the minimal network the full network with fewer cuts? (#415)
 
-**Status: scripts ready, real proof not run.** This directory holds the scripts for the proof builds. Pausing KO and RB (#432, merged) moved which species cut streams, so the real run is at or after that release, read beside #433's measurement (`research/species_paused.md`). Its evidence and the write-up land on a second branch. A smoke run exercised the scripts and is not evidence: ADMS on 2026-11-02 at `c86e8871` (after #432 merged), on the installed fresh 0.52.0 against the `v0.48.0` pin. `run.sh` and the recompute passed, `proof.R` passed its checks and wrote every CSV, and the scratch schemas were dropped. An earlier `proof.R` with the two schema names swapped stopped on the commit-and-token, superset and census checks, so those guards fire, and the final `proof.R` stopped on a dirtied tree. No smoke group has a dam below it, so neither `BLOCKED` branch has run on real data.
+**Status: proof run 2026-11-02 on BULK, SETN, MORK and COTR at link `6bf9ca06` (0.78.0), fresh 0.52.0, every check passed. The write-up is `research/minimal_network.md`.** The groups are the top four of `pick_groups.sql` by combined rank (chinook sites plus modelled crossings), all on `cw`, built downstream-first in that order. `lifts.R` was committed before the builds and re-run at `234425e8`, which changed only how it reads counts; both runs gave the same numbers. Before the run, a smoke run exercised the scripts and is not evidence: ADMS on 2026-11-02 at `c86e8871` (after #432 merged), on the installed fresh 0.52.0 against the `v0.48.0` pin. `run.sh` and the recompute passed, `proof.R` passed its checks and wrote every CSV, and the scratch schemas were dropped. An earlier `proof.R` with the two schema names swapped stopped on the commit-and-token, superset and census checks, so those guards fire, and the final `proof.R` stopped on a dirtied tree. No smoke group has a dam below it, so neither `BLOCKED` branch has run on real data.
 
 ## Question
 
@@ -22,13 +22,15 @@ Rscript data-raw/logs/minimal_breaks_415/proof.R --wsgs=BULK,<WSG>,<WSG>
 
 ## Checks
 
+`lifts.R` (run after `proof.R`, while `working_<wsg>` holds the minimal build) writes `lifts.csv` and `lifts_obs.csv`: how far observation lifts move the minimal cuts, from a counterfactual with no fish records in the barrier overrides. It stops unless the build's own overrides reproduce the build and a species with no observation lift keeps its cuts.
+
 | file | what it answers | stops on |
 |---|---|---|
 | `status.tsv` | minutes, exit, pass rule and segments per step | |
 | `builds.csv` | which commit, fresh and tokens each build and recompute carries | not one clean commit and fresh, wrong tokens, an open build, a recompute missing, older than its build or failed other than on the post-condition |
 | `segments.csv` | segments and km per schema; the overlap must cover both, and each segment must have a `streams_access` row | pieces not covering either side, a missing access row, a species on one network only |
 | `superset.csv` | every minimal cut has a full cut within 1 m, and km of full segments straddling a minimal cut | an unmatched cut |
-| `parent_<wsg>.csv` | the parent table's prototype: each full segment's largest-overlap minimal segment, its gradient and length, the overlap and what straddles | |
+| `parent_<wsg>.csv.gz` (gzipped after the run, 11.8 MB raw) | the parent table's prototype: each full segment's largest-overlap minimal segment, its gradient and length, the overlap and what straddles | |
 | `access_km.csv` | `access_<sp>` km by code (-9, 0, 1, 2) on each network | |
 | `access_open.csv`, `access_differences.csv` | pieces where a species reads -9, 0 or open differently | any piece of 1.01 m or more |
 | `crossing_fields.csv` | km on which `dam_dnstr_ind`, `remediated_dnstr_ind` and each `has_barriers_*_dnstr` differ | |
