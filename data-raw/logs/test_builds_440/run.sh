@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # run.sh — #440: `default` at the minimal run's code on four test groups, into the
 # scratch schema zz440_default on m4's local fwapg, built then recomputed, so
-# compare.R can set it beside zz432_post (the same groups at fresh 0.52.0, link
-# a6942b5d). MURT is the group where only paused species are present.
+# compare.R can set it beside zz432_post (the same groups' last builds; see the README for
+# each group's commit). MURT is the group where only paused species are present.
 # Usage: bash data-raw/logs/test_builds_440/run.sh MURT KOTL BULK KETL
 set -uo pipefail
 [ "$#" -ge 1 ] || { echo "usage: run.sh <WSG> ..." >&2; exit 2; }

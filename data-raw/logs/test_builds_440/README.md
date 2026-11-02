@@ -12,7 +12,7 @@ lies in a group this schema does not hold, and the check runs after the recomput
 barrier and override rows, accessible, spawning and rearing km per species, and the segment under each fish record
 are the same in all four groups (`summary.csv`, `km.csv`, `obs.csv`, `compare.log`). The code since those builds moves nothing in `default`'s output on these groups.
 
-## Against the last provincial build (m1 `fresh_default`, 2026-10-23, link 0.68.0, fresh 0.42.0)
+## Against the last provincial build (m1 `fresh_default`, run `20261023_074321-24d85e8c`, link 0.68.0, fresh 0.42.0; `provenance_m1_fresh_default.csv`)
 
 `summary.R`, run on each host against its own schema (`summary_m1_fresh_default.csv`, `summary_zz440_default.csv`;
 `summary_zz432_post.csv` beside them):

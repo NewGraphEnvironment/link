@@ -49,21 +49,21 @@ stamp is in `data-raw/logs/parity_0.78.0/README.md`.
 
 ## What moved at v0.78.0 (2026-11-02, #440)
 
-The v0.68.0 score (run `20261023_215312-16fb3aae`, `fresh_parity361`) was 48/50; so is this one. Inputs
-were held equal in value (the same primitive load; the reference's values moved on 0 of 50 pairs; no barrier
-override added or lost), so every move is code. The reference build did change, from `v0.7.15-50-g620dbe4` to
-`v0.7.15-51-g3bd2824` (`run.log`), whose change codes steelhead; it moved no scored value, and `mapping_code_moves.csv`
-may carry it. 40 of the 50 pairs moved by 0.1 km or more, all 17 accessible pairs among them (`pair_moves.csv`):
+The v0.68.0 score (run `20261023_215312-16fb3aae`, `fresh_parity361`) was 48/50; so is this one. Of the inputs,
+the four snapshot primitives are the same load (their load stamps), the reference is m1's view load of
+2026-10-23 (`v0.7.15-50-g620dbe4`, the newest snapshot row in `bcfp_baselines.csv`) and its values moved on 0 of 50
+pairs, and no barrier override was added or lost. FWA and discharge were not compared. So the moves are put down to
+code. About 40 of the 50 pairs moved by 0.1 km or more in totals each rounded to 0.1 km (`pair_moves.csv`):
 
-- **Rearing rose in BULK and BABL** for BT, CH, CO and ST, by 4.6 to 23.3 km a pair, toward the reference for
-  every pair but BULK CO, which crossed it (−0.14 % to +0.38 %). On segments both builds share the gain is already
-  there (BULK BT +22.1 km of +21.4, `segment_diff.csv`), so it is a rule, not where streams break. This is the direction
-  #326's order-1 rearing exception (`rear_stream_order_bypass`, BT, CH, CO, ST and WCT in this bundle) moves rearing,
-  and the only change in the range that adds rearing here.
+- **Rearing rose in BULK and BABL** for BT, CH, CO and ST, by 4.6 to 23.3 km a pair. BULK CH, CO and ST crossed the
+  reference; all but BULK CO ended nearer it. Most of the gain is on segments both builds share (BULK BT +22.1 km of
+  +21.4, `segment_diff.csv`), where it can come from a rule or from rearing clusters that re-broken lines join or cut
+  (#324). It is consistent with #326's order-1 rearing exception (`rear_stream_order_bypass`, BT, CH, CO, ST and WCT
+  in this bundle), which was not isolated here.
 - **Spawning fell toward the reference** in ADMS BT (−4.5 km), ELKR BT (−8.2) and ELKR WCT (−9.1). It changed on
-  0 km of shared segments, so every spawning move is on lines the two builds break differently: #326's segmentation.
-  ELKR WCT rearing fell 15.5 km, also toward the reference.
-- **Accessible km fell 0.1 to 2.1 km a pair,** every pair still within 0.11 % of the reference.
+  0 km of shared segments, so every spawning move is on lines the two builds break differently. ELKR WCT rearing fell
+  15.5 km, also toward the reference.
+- **Accessible km fell up to 2.1 km a pair,** every pair still within 0.11 % of the reference.
 - **Eight pairs moved away from the reference**, counted in km of difference: BULK CO rearing (3.3 to 8.5 km) and seven
   by 0.2 to 2.1 km, the most ELKR WCT accessible (1.8 to 3.9 km).
 
@@ -133,19 +133,16 @@ species with no barrier in a group, and every one of the 86 rows has barriers. I
 
 ## What is not yet explained
 
-Against `bcfp_divergence_taxonomy.yml` at its 2 % tolerance, five pairs are UNEXPLAINED and one is
+Against `bcfp_divergence_taxonomy.yml` at its 2 % tolerance, two pairs are UNEXPLAINED at v0.78.0 and one is
 class C (BULK SK spawning, `sk-lake-clustering-divergence`):
 
 | Pair | link vs bcfishpass |
 |---|---|
 | BULK SK rearing | +7.39 % |
-| BABL ST rearing | −2.05 % |
-| BABL CH rearing | −2.44 % |
-| ELKR WCT spawning | +3.33 % |
-| ELKR WCT rearing | +2.50 % |
+| ELKR WCT spawning | +2.72 % |
 
-The same five as on 2026-10-17. Where streams break is the first suspect for the 2–3 % rows
-(`bcfp_segmentation_parity.md`, #324), not measured on these pairs.
+BABL ST rearing, BABL CH rearing and ELKR WCT rearing, UNEXPLAINED at v0.68.0, are within 2 % now. Where streams
+break is the first suspect for ELKR WCT spawning (`bcfp_segmentation_parity.md`, #324), not measured on this pair.
 
 ## What these four groups cannot show
 

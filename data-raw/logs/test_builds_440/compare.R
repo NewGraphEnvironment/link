@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 # #440 (copied from species_paused_432/compare.R, output path changed): `default` at the
-# minimal run's code (zz440_default) against its last build at fresh 0.52.0 (zz432_post).
+# minimal run's code (zz440_default) against the same groups' last builds (zz432_post; the README names each one's commit).
 # Original header: #432 / #433: what pausing KO and RB in `default` does to segmentation and to
 # what tuning reads. Compares two builds of the same groups, one commit apart
 # in behaviour only: zz432_pre (KO and RB modelled, link 07203cde) and

@@ -1,6 +1,6 @@
 # moves.R — what moved between the v0.68.0 parity build (fresh_parity361, 2026-10-23, #361)
 # and the link 0.78.0 build (fresh_parity441), for link#440. Adapted from ../parity_0.68.0/moves.R;
-# unlike that one it does not assume a fixed bcfishpass reference (see below).
+# like that one it reports the reference's change per pair rather than assuming none.
 #
 #   1. pair_moves.csv   every scored pair, joined to the v0.68.0 annotated score
 #   2. segment_diff.csv per (WSG, species): segments on one segmentation whose access,
@@ -34,9 +34,8 @@ m <- merge(old[, c(key, "link_value", "ref_value", "diff_pct", "class")],
            new[, c(key, "link_value", "ref_value", "diff_pct", "class")],
            by = key, suffixes = c("_0.68.0", "_0.78.0"), all = TRUE)
 stopifnot(nrow(m) == nrow(old), nrow(m) == nrow(new))
-# The reference is NOT fixed between these two builds: the provincial run of 2026-10-23 reloaded the
-# bcfishpass views with --refresh-primitives. So the reference's move is reported per pair, not
-# asserted away; a pair's diff_pct change is link_km_change against ref_km_change.
+# The reference's move is reported per pair, not asserted away (both builds read m1's views of
+# 2026-10-23, so it should be zero); a pair's diff_pct change is link_km_change against ref_km_change.
 m$ref_km_change <- round(m$ref_value_0.78.0 - m$ref_value_0.68.0, 1)
 cat(sprintf("reference moved on %d of %d pairs (values compared, not the build that produced them)\n",
             sum(m$ref_km_change != 0), nrow(m)))

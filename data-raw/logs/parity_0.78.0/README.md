@@ -13,14 +13,15 @@ write-up is `research/bcfishpass_parity.md`.
 | link | 0.78.0, `34c4c598` (PR #443's head) |
 | fresh | 0.52.0, `245c8d8d`, installed on m1 by `remotes::install_github()` (m1's GitHub token is refused, so pak could not) |
 | primitives | m1's 2026-10-23 load, the one `fresh_parity361` was built on; `--preflight-note` recorded it |
-| bcfp reference | m1's `fresh.streams_vw_bcfp`, pinned at `v0.7.15-51-g3bd2824` (`run.log`); `fresh_parity361` was scored at `-50-g620dbe4`. No scored value moved. |
+| bcfp reference | m1's `fresh.streams_vw_bcfp`, loaded 2026-10-23 at `v0.7.15-50-g620dbe4` (the newest m1 snapshot row in `../bcfp_baselines.csv`), as for `fresh_parity361`. The driver's pin in `run.log` and every `fresh_parity441.log` row read `-51-g3bd2824`: the pin takes the newest ledger row of any kind, here a CSV-sync row that loaded no view (#446). `expected.txt`'s inputs note repeated that pin. |
 | gate | `--pretest-note`: the gate for this code runs on `default_minimal` before the provincial run |
 
 ## Result
 
 **48/50, PASS, as at v0.68.0** (`parity_crosssection.log`, `parity_annotated.csv`). `run_verify.log`: PASS. The
-reference moved on 0 of 50 pairs and no barrier override was added or lost (`override_diff.csv`), so every move in
-`pair_moves.csv` is code; what moved is in the write-up. `expected.txt` was committed before scoring, and three of its
+reference's values moved on 0 of 50 pairs and no barrier override was added or lost (`override_diff.csv`); FWA and
+discharge were not compared. What moved is in the write-up. `expected.txt` was committed at 09:24:51Z in the command that
+then ran the score (the score's log carries no time), and three of its
 four bounds were wrong: accessible and spawning moved more than it allowed, and BULK CO rearing moved away from the reference.
 
 ## Files
