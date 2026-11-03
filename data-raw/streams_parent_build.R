@@ -43,7 +43,8 @@ main <- function() {
          call. = FALSE)
   }
   for (s in c(schema, schema_minimal)) {
-    if (!grepl("^[a-z_][a-z0-9_]*$", s)) stop("not a schema name: ", s, call. = FALSE)
+    # As lnk_streams_parent(): lower case, at most 63 bytes (Postgres truncates).
+    if (!grepl("^[a-z_][a-z0-9_]{0,62}$", s)) stop("not a schema name: ", s, call. = FALSE)
   }
   wsgs <- toupper(opt("wsgs", "all"))
   verify <- "--verify" %in% argv
@@ -92,8 +93,10 @@ main <- function() {
              "data-raw/pretest_inputs.csv", "data-raw/streams_parent.R",
              "data-raw/streams_parent_build.R", "data-raw/wsg_run_one.R")
   dirty <- e$pretest_git(repo, c("status", "--porcelain", "--untracked-files=all", "--", loads))
-  # git status lists an ignored file only with --ignored.
-  ignored <- e$pretest_git(repo, c("status", "--porcelain", "--ignored", "--", "R/", "data/", "src/"))
+  # git status lists an ignored file only with --ignored, and lists none under
+  # status.showUntrackedFiles=no unless --untracked-files is given.
+  ignored <- e$pretest_git(repo, c("status", "--porcelain", "--ignored", "--untracked-files=all",
+                                   "--", "R/", "data/", "src/"))
   dirty <- c(dirty, grep("^!! ", ignored, value = TRUE))
   if (length(dirty)) {
     stop("the checkout has uncommitted changes; build from a clean tree:\n",

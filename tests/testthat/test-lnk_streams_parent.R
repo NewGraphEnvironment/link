@@ -213,6 +213,10 @@ test_that("a schema is not paired with itself, and arguments are checked", {
   expect_error(lnk_streams_parent(fake_conn(), "TEST", "a;drop", "b"), "schema")
   # Postgres folds an unquoted name, so these are one schema.
   expect_error(lnk_streams_parent(fake_conn(), "TEST", "x", "X"), "lower-case")
+  # Postgres truncates an unquoted name at 63 bytes, so these would be one too.
+  long <- strrep("a", 63)
+  expect_error(lnk_streams_parent(fake_conn(), "TEST", paste0(long, "x"), paste0(long, "y")),
+               "lower-case")
 })
 
 test_that("the table's DDL carries the columns, key and group index", {
