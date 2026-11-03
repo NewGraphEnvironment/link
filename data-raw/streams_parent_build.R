@@ -60,6 +60,7 @@ main <- function() {
   conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
                       user = "postgres", password = "postgres")
   on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
+  DBI::dbExecute(conn, "SET client_min_messages = warning")
 
   pair <- e$streams_parent_pair_read(conn, schema, schema_minimal)
   if (!identical(wsgs, "ALL")) {
