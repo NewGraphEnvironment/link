@@ -2606,9 +2606,9 @@ one `--focal=` list per worker after the dispatcher's and before the cyphers'
   leaves rows, and the next run refuses the worker: it fails closed.
 - **A worker's consolidate runs at the speed of its path from the dispatcher.**
   Workers are reached by their ssh target, which on the tailnet may go through a
-  relay; cloud hosts are reached at their droplets' public addresses. During
-  #441's run m4 reached m1 `via DERP(sea)` (`tailscale ping m1` mid-copy: direct
-  connection not established), and m1's 49 groups copied at 550 to 870 kB/s by table, 47.6
+  relay; cloud hosts are reached at their droplets' public addresses. Mid-copy in
+  #441's run m4 reached m1 `via DERP(sea)` (one `tailscale ping m1`: direct
+  connection not established), and m1's `barriers` and `streams` copied at about 550 and 870 kB/s, 47.6
   min against about 13 for each cloud host's 48; about two hours later the same probe
   went direct (`research/study_area_run.md`). The path can change between runs,
   so check `tailscale ping <worker>` just before launch, and pack less onto a

@@ -103,7 +103,7 @@ Phases 1 to 5 about 7 to 9 hours (PR 1 about 1.5 h with CI; proof builds about 2
 ## Phase 4: PR 4, #439's hosts and primitives
 
 - [x] `snapshot_bcfp.sh --with-bcfp-views --force` on m4, and on m1 under `bash -lc` as RUNBOOK §8d gives it. Confirm load stamps on both.
-- [x] Cloud hosts install fresh and snapshot at prep, from whatever S3 holds then; the run's `--auto-install` and `preflight_hosts` confirm fresh. Just before launch, compare S3's `log.json` with both hosts' ledger rows (`verify_extra.sql` check 5 fails on a mismatch), and refresh again if it moved; a refresh does not void the gate.
+- [ ] Cloud hosts install fresh and snapshot at prep, from whatever S3 holds then; the run's `--auto-install` and `preflight_hosts` confirm fresh. Just before launch, compare S3's `log.json` with both hosts' ledger rows (`verify_extra.sql` check 5 fails on a mismatch), and refresh again if it moved; a refresh does not void the gate. *Not done as written:* the resume message replaced the `log.json` compare with a HEAD of the two bchamp objects, which matched `load_stamps.csv` at 20:30 UTC (`progress.md`); the cloud hosts' prep and `preflight_hosts` passed (`run.log`), and `verify_extra.sql` check 5 passed after the run (`checks/verify_extra.log`).
 - [x] Ledger and evidence committed. `/code-check branch` (three rounds, ended on round 3's enumeration), PR stacked on PR 3. `Relates` #439, not `Fixes`: the cloud hosts get fresh at prep, and m1's `--auto-install` waits on its token.
 
 ## Phase 5: PR 5, the gate and the rehearsal (#418)
@@ -116,7 +116,7 @@ Phases 1 to 5 about 7 to 9 hours (PR 1 about 1.5 h with CI; proof builds about 2
 
 ## Phase 6: PR 6, the run
 
-- [x] Run branch from `main`, pushed; `--preflight-only` passes in full. Launch decisions written into `progress.md` and pushed before launch.
+- [x] Run branch from `main`, pushed; `--preflight-only` passes in full (`minimal_run_441/checks/preflight_only.log`). Launch decisions written into `progress.md` and pushed before launch.
 - [x] Pack, launch detached, wait on the driver's own end marker with a foreground re-read of its exit and verifiers. **Nothing is edited or committed in this worktree while it runs, the PWF included:** each dispatcher group stamps this worktree's HEAD and dirty state into its `log` row, and `study_area_verify.sql` raises on a second `link_sha`. Only remote legs check that HEAD moved. The progress entry is written after the driver exits.
 - [x] A second full launch would need a new gate (the first run's rows become the history and are not ancestors of the gate's sha); the fallback for a partial failure is `--recompute-only`, which skips the pre-flight. Not needed: no group failed.
 - [x] Verifiers, audit, calibrator, `research/study_area_run.md`, #377's runs row, RUNBOOK if the run taught anything, `CLAUDE.md` Status.

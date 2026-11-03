@@ -315,7 +315,7 @@ of 2,191 dependency pairs in order, no host kept, no droplet left. Evidence:
 
 | stage | measured | planned (packing) |
 |---|---|---|
-| modelling, per leg | m1 87.4 min (49 groups), m4 103.3 (48), job2 159.8, job3 168.1, job1 183.0 (48 each) | 202 each |
+| modelling, per leg | m1 87.4 min (49 groups), m4 103.3 (48), job2 159.8, job3 168.1, job1 183.0 (48 each) | 202 to 203 each |
 | group minutes | 690.2 summed, median 2.3; QUES 20.9, MORK 12.8, BULK 10.7 (all on cloud hosts) | 1,012 (the history's minutes, KTSU and OKAN at the median) |
 | consolidate | m1 47.6 min (49 groups); job2 13.1, job3 13.3, job1 12.8 | — |
 | recompute, 241 groups, `-j8`, early | 21:51 to 00:15 UTC, 126.8 min summed (median 0.41, HOMA 5.0); 29.4 min after the last leg ended, 12.3 after the last consolidate | — |
@@ -330,7 +330,7 @@ of 2,191 dependency pairs in order, no host kept, no droplet left. Evidence:
   1.61, m4 at 1.36 and the cloud hosts at 0.82; the calibrator's first update (damped) moved them to 1.18,
   1.11 and 0.95 (`data-raw/logs/host_speeds.tsv`). The next run packs more groups onto m1 and m4.
 - **m1's consolidate took 47.6 min against about 13 for each cloud host, and m4 reached m1 through a Tailscale
-  relay while it ran.** At about 22:36 UTC, mid-copy, `tailscale ping m1` answered `via DERP(sea)` with no
+  relay mid-copy.** At about 22:36 UTC, mid-copy, `tailscale ping m1` answered `via DERP(sea)` with no
   direct connection, and the copy ran at about 550 kB/s for `barriers` (309 MB of row text in 9.4 min) and 870 kB/s for `streams` (1.83 GB in 34.9 min); at 00:31
   UTC, after the run, the same probe went direct (`minimal_run_441/checks/tailscale_path.txt`). So the path
   is not a property of the pair. Cloud hosts are reached at their droplets' public addresses, outside
