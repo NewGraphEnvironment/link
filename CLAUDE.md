@@ -11,7 +11,19 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
-## Status (2026-11-02, latest) — #441's run is ready to launch; its five PRs are merged (0.78.1)
+## Status (2026-11-03, latest) — `fresh_default_minimal` is one provincial build of all 241 groups (#441)
+
+**run_uid `20261102_203300-60ab009d` built `default_minimal` into `fresh_default_minimal` on m4 (dispatcher), m1 (worker) and three cloud hosts, at link `193cb8aa` (0.78.1) on fresh 0.52.0, tokens `cut-min acc-v5 grad-seg q-fwapg` on every row.** Driver exit 0 in 228.2 min; both verifiers pass at `expected_n=241`, the audit finds 2,191 of 2,191 pairs in order, no host kept, no droplet left. 4.99 M segments, 19 GB. knowledge#120 can read it. Record: `research/study_area_run.md`, "The province-wide `default_minimal` run"; evidence `data-raw/logs/minimal_run_441/` and `data-raw/logs/study_area_run/20261102_203300_*`.
+
+**Owed:** knowledge#120, the first consumer. #418's gated rehearsal script. The calibrator's second and third runs (#163). **`fresh_default` and `fresh` were not rebuilt:** every re-model earlier status blocks owe them (#326, #396, #399, #401, #402, #429, #432) is still owed, at the next `default` or `bcfishpass` provincial run, which needs a gate of its own.
+
+**Facts not worth re-deriving:**
+- **m4 reaches m1 through a Tailscale relay** (`tailscale ping m1`: `via DERP(sea)`), so m1's consolidate ran at about 700 KB/s, 47.6 min against about 13 for each cloud host. Check before packing a worker last to finish (RUNBOOK §8d, "Persistent workers").
+- **Learned speeds after one run:** m1 1.18, m4 1.11, cloud 0.95 (`data-raw/logs/host_speeds.tsv`). At equal speeds the cloud legs ran 160 to 183 min against m1's 87 and m4's 103.
+- **`verify_extra.sql`'s per-host FWA row counts are `reltuples` estimates**, so their spread across hosts is planner statistics, not different FWA data.
+- **The launcher's `run.log` sits outside the driver's redaction;** `minimal_run_441/run.log` was redacted with the driver's own rule before commit.
+
+## Status (2026-11-02, before launch) — #441's run is ready to launch; its five PRs are merged (0.78.1)
 
 **Five PRs carried Phases 1 to 5 of #441, all merged 2026-11-02:** #443 (the gate borrows history; fresh 0.52.0; 0.78.0), #445 (#415's proof: the minimal network is the full one with fewer cuts; observation lifts move 0 to 1.2 % of km), #447 (`default` at this code equals its last builds; `bcfishpass` parity 48/50), #448 (m4 and m1 primitives refreshed 2026-11-02), and #449 (the gate passed on `default_minimal`, borrowing `fresh_default_history`; the rehearsal passed every check on its second try). 0.78.0 is #443; 0.78.1 releases the rest (no code change). Plan and launch decisions: `planning/active/task_plan.md`.
 

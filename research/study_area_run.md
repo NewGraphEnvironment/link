@@ -1,8 +1,8 @@
 # Study-area run (tunnel-free, M1-dispatch)
 
-**Verified:** 2026-10-30 (groups outside a partial run, #274); 2026-10-29 (the pre-run gate, #372); 2026-10-28 (how hosts are packed, #259); 2026-10-26 (the early recompute, #374); 2026-10-17 (the province-wide section and the corrected lines) · **Issues:** #175, #246, #347, #348, #374, #259, #372, #274 ·
+**Verified:** 2026-11-02 (the minimal provincial run, #441); 2026-10-30 (groups outside a partial run, #274); 2026-10-29 (the pre-run gate, #372); 2026-10-28 (how hosts are packed, #259); 2026-10-26 (the early recompute, #374); 2026-10-17 (the province-wide section and the corrected lines) · **Issues:** #175, #246, #347, #348, #374, #259, #372, #274, #441 ·
 **Produced by:** `data-raw/study_area_run.sh`; logs `data-raw/logs/provincial_246/`, `data-raw/logs/packing_259/`,
-`data-raw/logs/study_area_run/20261017_*`, `data-raw/logs/pretest_372/`, `data-raw/logs/partial_readers_274/`
+`data-raw/logs/study_area_run/20261017_*`, `data-raw/logs/study_area_run/20261102_203300_*`, `data-raw/logs/minimal_run_441/`, `data-raw/logs/pretest_372/`, `data-raw/logs/partial_readers_274/`
 
 Lean alternative to the 5-host `provincial_run_runbook.md` for running
 **study-area** mapping_code parity.
@@ -299,6 +299,44 @@ Scored out of sample, fitted on the 2026-10-17 run and tested on 2026-10-23's ac
 - **#326 moves both weights.** It does not change FWA segments, but it cuts persisted segments 2.1 to
   2.7-fold, so the minutes a group takes, and with them the minutes-per-segment rate, change with it.
   The next provincial run re-fits both (`fit.R` on its rows).
+
+## The province-wide `default_minimal` run (2026-11-02, 241 groups; #441)
+
+run_uid `20261102_203300-60ab009d`, `default_minimal` into the new `fresh_default_minimal` (tokens
+`cut-min acc-v5 grad-seg q-fwapg` on all 241 `log` rows), from m4 as dispatcher with m1 as a persistent
+worker and three cloud hosts, packed by group on the 241-group `default` history's minutes
+(`study_area_buckets.R --atom=group --minutes-schema=fresh_default_history --minutes-exclude=KTSU,OKAN`,
+equal speeds), `--buckets-exact`, `--recompute-jobs=8`, early recompute, each cloud host burned as its
+leg ended. Link `193cb8aa` (0.78.1) on fresh `245c8d8d` (0.52.0), one sha of each across five hosts.
+The pre-run gate's record at `24b2cbb3` cleared it (11 picks, borrowed history). Driver exit 0;
+`study_area_verify.sql` and `verify_extra.sql` pass at `expected_n=241`, `recompute_audit.R` finds 2,191
+of 2,191 dependency pairs in order, no host kept, no droplet left. Evidence:
+`data-raw/logs/minimal_run_441/` (launch, packing, checks) and `data-raw/logs/study_area_run/20261102_203300_*`.
+
+| stage | measured | planned (packing) |
+|---|---|---|
+| modelling, per leg | m1 87.4 min (49 groups), m4 103.3 (48), job2 159.8, job3 168.1, job1 183.0 (48 each) | 202 each |
+| group minutes | 690.2 summed, median 2.3; QUES 20.9, MORK 12.8, BULK 10.7 (all on cloud hosts) | 1,012 (history) |
+| consolidate | m1 47.6 min (49 groups); job2 13.1, job3 13.3, job1 12.8 | — |
+| recompute, 241 groups, `-j8`, early | 21:51 to 00:15 UTC, 126.8 min summed (median 0.41, HOMA 5.0); 29.4 min after the last leg ended, 12.3 after the last consolidate | — |
+| critical path, launch to driver exit | 228.2 min (20:33 to 00:21 UTC); prep 10.0 min | — |
+| cloud hosts | about 9.9 host-hours, spin 20:33 to burns at 23:36, 23:50 and 00:03 UTC | — |
+| `fresh_default_minimal` | 19 GB, 4.99 M segments | — |
+
+- **The minimal network modelled at 0.69 of the history's minutes overall**, with no group failed and no
+  statement bounded. The history is `default` at 0.68.0 on the full network (11.39 M segments, before #326's
+  and #396's cuts), so the drop is network and code together, not a speed measure of either.
+- **The cloud hosts set the end, and packing at equal speeds is why.** Against the run-wide ratio m1 ran at
+  1.61, m4 at 1.36 and the cloud hosts at 0.82; the calibrator's first update (damped) moved them to 1.18,
+  1.11 and 0.95 (`data-raw/logs/host_speeds.tsv`). The next run packs more groups onto m1 and m4.
+- **m1's consolidate took 47.6 min against 13 for each cloud host because m4 reached m1 through a Tailscale
+  relay.** `tailscale ping m1` answered `via DERP(sea)` with no direct connection, and the copy ran at about
+  700 KB/s (`barriers` 9.4 min, `streams` 34.9 min). Cloud hosts are reached at their droplets' public
+  addresses, outside Tailscale. It did not reach the critical path this time (m1 finished first), but on a
+  run where the worker's leg is last it would. Check `tailscale ping <worker>` before launch.
+- **`verify_extra.sql`'s per-host FWA row counts differ** (`fwa_stream_networks_sp` 4,898,813 to 4,910,797),
+  as in October. They are `pg_class.reltuples` estimates (`row_count_estimated`), so they are each host's
+  planner statistics, not different FWA data.
 
 ## The province-wide `default` run (2026-10-23, 241 groups; #361)
 
