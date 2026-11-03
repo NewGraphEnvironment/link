@@ -18,7 +18,7 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Owed:** knowledge#120, the first consumer. #418's gated rehearsal script. The calibrator's second and third runs (#163). **`fresh_default` and `fresh` were not rebuilt:** every re-model earlier status blocks owe them (#326, #396, #399, #401, #402, #429, #432) is still owed, at the next `default` or `bcfishpass` provincial run, which needs a gate of its own.
 
 **Facts not worth re-deriving:**
-- **m4 reaches m1 through a Tailscale relay** (`tailscale ping m1`: `via DERP(sea)`), so m1's consolidate ran at about 700 KB/s, 47.6 min against about 13 for each cloud host. Check before packing a worker last to finish (RUNBOOK §8d, "Persistent workers").
+- **During the run m4 reached m1 through a Tailscale relay** (`tailscale ping m1` mid-copy: `via DERP(sea)`), so m1's consolidate ran at about 700 KB/s, 47.6 min against about 13 for each cloud host; after the run the path was direct again. The path is not fixed: probe it just before launch (RUNBOOK §8d, "Persistent workers").
 - **Learned speeds after one run:** m1 1.18, m4 1.11, cloud 0.95 (`data-raw/logs/host_speeds.tsv`). At equal speeds the cloud legs ran 160 to 183 min against m1's 87 and m4's 103.
 - **`verify_extra.sql`'s per-host FWA row counts are `reltuples` estimates**, so their spread across hosts is planner statistics, not different FWA data.
 - **The launcher's `run.log` sits outside the driver's redaction;** `minimal_run_441/run.log` was redacted with the driver's own rule before commit.

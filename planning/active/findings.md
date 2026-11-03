@@ -97,6 +97,6 @@ The umbrella of `track:minimal-run`: the next provincial run, built on #415's mi
 
 ## Measured in the run (2026-11-02 20:33 to 2026-11-03 00:21 UTC)
 
-- **The m4 to m1 path is a Tailscale DERP relay** (`tailscale ping m1`: `via DERP(sea)`, direct connection not established); m1's consolidate copied at about 700 KB/s (`barriers` 562 s, `streams` 2,093 s), 47.6 min in all against about 13 for each cloud host. Planning's connection probes measured latency and loss only, which a relay passes.
+- **The m4 to m1 path was a Tailscale DERP relay during m1's consolidate** (`tailscale ping m1` at about 22:36 UTC: `via DERP(sea)`, direct connection not established; direct again at 00:31 UTC, `checks/tailscale_path.txt`); m1's consolidate copied at about 700 KB/s (`barriers` 562 s, `streams` 2,093 s), 47.6 min in all against about 13 for each cloud host. Planning's connection probes measured latency and loss only, which a relay passes.
 - **`fresh_default_minimal`:** 4,987,761 segments over 241 groups, 19 GB. Group minutes summed 690.2 (median 2.32; QUES 20.9 on job3). Recompute 126.8 min summed (median 0.41; HOMA 5.0).
 - **`verify_extra.sql`'s FWA row counts per host differ** (m4 4,910,797 `fwa_stream_networks_sp`, m1 4,907,804, cloud 4,898,813): `reltuples` estimates (`R/lnk_log.R`, `row_count_estimated`), not data.

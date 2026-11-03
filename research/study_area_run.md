@@ -323,17 +323,19 @@ of 2,191 dependency pairs in order, no host kept, no droplet left. Evidence:
 | cloud hosts | about 9.9 host-hours, spin 20:33 to burns at 23:36, 23:50 and 00:03 UTC | — |
 | `fresh_default_minimal` | 19 GB, 4.99 M segments | — |
 
-- **The minimal network modelled at 0.69 of the history's minutes overall**, with no group failed and no
+- **The minimal network modelled at 0.69 of the history's minutes** (the legs' 701.6 min against the plan's 1,012; group minutes alone 690.2, 0.68), with no group failed and no
   statement bounded. The history is `default` at 0.68.0 on the full network (11.39 M segments, before #326's
   and #396's cuts), so the drop is network and code together, not a speed measure of either.
 - **The cloud hosts set the end, and packing at equal speeds is why.** Against the run-wide ratio m1 ran at
   1.61, m4 at 1.36 and the cloud hosts at 0.82; the calibrator's first update (damped) moved them to 1.18,
   1.11 and 0.95 (`data-raw/logs/host_speeds.tsv`). The next run packs more groups onto m1 and m4.
-- **m1's consolidate took 47.6 min against 13 for each cloud host because m4 reached m1 through a Tailscale
-  relay.** `tailscale ping m1` answered `via DERP(sea)` with no direct connection, and the copy ran at about
-  700 KB/s (`barriers` 9.4 min, `streams` 34.9 min). Cloud hosts are reached at their droplets' public
-  addresses, outside Tailscale. It did not reach the critical path this time (m1 finished first), but on a
-  run where the worker's leg is last it would. Check `tailscale ping <worker>` before launch.
+- **m1's consolidate took 47.6 min against about 13 for each cloud host, and m4 reached m1 through a Tailscale
+  relay while it ran.** At about 22:36 UTC, mid-copy, `tailscale ping m1` answered `via DERP(sea)` with no
+  direct connection, and the copy ran at about 700 KB/s (`barriers` 9.4 min, `streams` 34.9 min); at 00:31
+  UTC, after the run, the same probe went direct (`minimal_run_441/checks/tailscale_path.txt`). So the path
+  is not a property of the pair. Cloud hosts are reached at their droplets' public addresses, outside
+  Tailscale. It did not reach the critical path this time (m1 finished first), but on a run where the
+  worker's leg is last it would. Check `tailscale ping <worker>` before launch.
 - **`verify_extra.sql`'s per-host FWA row counts differ** (`fwa_stream_networks_sp` 4,898,813 to 4,910,797),
   as in October. They are `pg_class.reltuples` estimates (`row_count_estimated`), so they are each host's
   planner statistics, not different FWA data.
