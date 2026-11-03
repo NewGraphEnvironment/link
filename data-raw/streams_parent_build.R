@@ -65,7 +65,9 @@ main <- function() {
   pair <- e$streams_parent_pair_read(conn, schema, schema_minimal)
   if (!identical(wsgs, "ALL")) {
     want <- strsplit(wsgs, ",", fixed = TRUE)[[1]]
-    if (!all(grepl("^[A-Z]{4}$", want))) stop("--wsgs takes group codes or all", call. = FALSE)
+    if (!length(want) || !all(grepl("^[A-Z]{4}$", want))) {
+      stop("--wsgs takes group codes or all", call. = FALSE)
+    }
     miss <- setdiff(want, intersect(pair$wsg[pair$side == "full"], pair$wsg[pair$side == "minimal"]))
     if (length(miss)) {
       stop("not built in both schemas: ", paste(miss, collapse = ", "), call. = FALSE)
@@ -74,7 +76,10 @@ main <- function() {
   }
   if (verify) return(verify_groups(conn, pair, schema, out))
 
-  dirty <- e$pretest_git(repo, c("status", "--porcelain", "--untracked-files=no"))
+  # The code a build loads must be committed; its own logs (data-raw/logs, where
+  # --out writes by default) are not code, as in pretest_check.R.
+  dirty <- e$pretest_git(repo, c("status", "--porcelain", "--untracked-files=no", "--",
+                                 ":(top,exclude)data-raw/logs"))
   if (length(dirty)) {
     stop("the checkout has uncommitted changes; build from a clean tree:\n",
          paste(dirty, collapse = "\n"), call. = FALSE)
@@ -219,6 +224,10 @@ verify_groups <- function(conn, pair, schema, out) {
   }, "")
   utils::write.table(v, file.path(out, "verify.tsv"), sep = "\t", quote = FALSE,
                      row.names = FALSE, na = "")
+  if (!nrow(v)) {
+    message("[streams_parent] no groups to verify")
+    return(1L)
+  }
   stale <- v$wsg[nzchar(v$why)]
   if (length(stale)) {
     message("[streams_parent] ", length(stale), " group(s) stale: ", paste(stale, collapse = ", "))

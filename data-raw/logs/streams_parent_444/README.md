@@ -10,6 +10,7 @@ Rscript data-raw/streams_parent_build.R --schema=fresh_default --schema-minimal=
 |---|---|
 | `pair.tsv` | the judged pair, one row per side: schema, groups, config, `config_hash`, `link_sha`, `fresh_sha`, the four tokens, `run_uid`, the commit that judged it, and the verdict |
 | `build.tsv` | one row per group, in build order (largest first): minutes, full and minimal segments, km, segments straddling a minimal cut by 1 cm or more, their km, the largest straddle |
+| `verify.tsv` | `--verify` right after the build: per group, the newest builds against the rows' provenance, segments without a row, rows without a segment, rows off the segment's length, and why a group is stale (empty for all 241) |
 | `prototype_check.R`, `prototype_check.csv` | acceptance 2: the table against #415's `minimal_breaks_415/parent_<wsg>.csv.gz` on BULK, SETN, MORK and COTR |
 
 ## Result
