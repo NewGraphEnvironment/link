@@ -1,0 +1,32 @@
+[study_area_compare] NOTE: 7 group(s) with no modelled species skipped: BRID,GRNL,LEUT,LNRS,MURT,PITR,UISR
+[study_area_compare] ATLL ERROR: no shared mapping_code_<sp> columns to compare for ATLL (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] CRYL ERROR: no shared mapping_code_<sp> columns to compare for CRYL (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] KAHN ERROR: no shared mapping_code_<sp> columns to compare for KAHN (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] KUSR ERROR: no shared mapping_code_<sp> columns to compare for KUSR (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] LFRT ERROR: no shared mapping_code_<sp> columns to compare for LFRT (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] LKEC ERROR: no shared mapping_code_<sp> columns to compare for LKEC (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] LPET ERROR: no shared mapping_code_<sp> columns to compare for LPET (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] LSIK ERROR: no shared mapping_code_<sp> columns to compare for LSIK (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] MFRT ERROR: no shared mapping_code_<sp> columns to compare for MFRT (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] MILL ERROR: no shared mapping_code_<sp> columns to compare for MILL (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] SAHD ERROR: no shared mapping_code_<sp> columns to compare for SAHD (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] TSEA ERROR: no shared mapping_code_<sp> columns to compare for TSEA (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] TUTR ERROR: no shared mapping_code_<sp> columns to compare for TUTR (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] UFRT ERROR: no shared mapping_code_<sp> columns to compare for UFRT (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] UPET ERROR: no shared mapping_code_<sp> columns to compare for UPET (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+There were 36 warnings (use warnings() to see them)
+[study_area_compare] 782 rows across 219/234 WSGs -> /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_203300_compare.csv
+# A tibble: 782 × 7
+   wsg   species total_segs match_pct n_diffs top_pattern      top_pattern_count
+ * <chr> <chr>        <int>     <dbl>   <int> <chr>                        <int>
+ 1 ADMS  BT           11909      96.8     377 REAR;NONE | ACC…               156
+ 2 ADMS  CH           11909      94.7     628 REAR;NONE | ACC…               441
+ 3 ADMS  CO           11909      95.0     601 REAR;NONE | ACC…               424
+ 4 ADMS  PK           11909      91.4    1019 SPAWN;NONE | AC…               750
+ 5 ADMS  SK           11909      95.7     513 SPAWN;NONE | AC…               332
+ 6 ALBN  CH           18124      91.6    1517 REAR;NONE | ACC…               461
+ 7 ALBN  CM           18124      97.0     547 SPAWN;NONE | SP…               168
+ 8 ALBN  CO           18124      90.6    1698 REAR;NONE | ACC…               511
+ 9 ALBN  PK           18124      87.1    2330 SPAWN;NONE | AC…              1130
+10 ALBN  SK           18124      96.1     710 SPAWN;DAM | ACC…               150
+# ℹ 772 more rows

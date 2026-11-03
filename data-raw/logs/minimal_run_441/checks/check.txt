@@ -1,0 +1,15 @@
+logs: data-raw/logs/minimal_run_441/checks
+driver exit                  PASS
+study_area_verify.sql        PASS
+verify negative cases        PASS
+TS names the run_uid         PASS
+recompute_audit.R            PASS (2191 of 2191 pairs ok)
+phases: model on dispatcher  PASS
+phases: model on worker1     PASS
+phases: model on job1        PASS
+phases: model on job2        PASS
+phases: model on job3        PASS
+no host kept                 PASS
+cloud hosts burned           PASS
+outside_readers.tsv          PASS
+REHEARSAL: PASS
