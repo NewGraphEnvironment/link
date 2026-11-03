@@ -338,7 +338,7 @@ of 2,191 dependency pairs in order, no host kept, no droplet left. Evidence:
   worker's leg is last it would. Check `tailscale ping <worker>` before launch.
 - **`verify_extra.sql`'s per-host FWA row counts differ** (`fwa_stream_networks_sp` 4,898,813 to 4,910,797),
   as in October. They are `pg_class.reltuples` estimates (`row_count_estimated`), so they are each host's
-  planner statistics, not different FWA data.
+  planner statistics; they say nothing either way about whether the hosts hold the same FWA rows, which was not measured.
 
 ## The province-wide `default` run (2026-10-23, 241 groups; #361)
 

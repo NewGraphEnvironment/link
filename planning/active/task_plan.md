@@ -156,7 +156,7 @@ Mac sleep is not a risk: caffeinate holds it on m4 and m1 has sleep off.
 
 ## Validation
 
-- [x] Tests pass (full suite at PRs 1 to 5; PR 6 changes no code, docs and logs only, so no suite was run for it)
+- [ ] Tests pass. *Recorded:* the full suite at PR 1 (5,232 expectations, 0 failed) and `test-worker_prep.R` at PR 5; PRs 2 to 4 record no suite here; CI's R-CMD-check (which skips the database tests) was green on every merge. PR 6 changes no code and ran none.
 - [ ] `/code-check` clean (once over each PR's branch with `/code-check branch`)
 - [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
