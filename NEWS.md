@@ -1,3 +1,9 @@
+# link 0.78.2
+
+No code change. The minimal provincial run ([#441](https://github.com/NewGraphEnvironment/link/issues/441)) built `default_minimal` into `fresh_default_minimal` for all 241 groups (run `20261102_203300-60ab009d`), and its record lands: the launch, the checks and the first host-speed calibration (`data-raw/logs/minimal_run_441/`, `research/study_area_run.md`).
+
+- **RUNBOOK §8d says a worker's consolidate runs at the speed of its path from the dispatcher.** Mid-copy in this run m4 reached m1 through a Tailscale relay and m1's 49 groups took 47.6 min against about 13 for each cloud host's 48, while two hours later the path was direct; probe it just before launch.
+
 # link 0.78.1
 
 No code change. The records behind the minimal provincial run ([#441](https://github.com/NewGraphEnvironment/link/issues/441)) land: the minimal network's proof, test builds of `default` and the `bcfishpass` parity re-score, the hosts on fresh 0.52.0 with fresh primitives, the pre-run gate's pass on `default_minimal` and a rehearsal across four hosts.
