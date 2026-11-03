@@ -19,7 +19,7 @@ Experimental package — breaking all the time and loving the learning curve. St
 
 **Facts not worth re-deriving:**
 - **`default` cannot borrow a gate history,** because `--history-config` must be a config the bundle extends and `default` extends nothing. Seed the schema's `log` from the history (`CREATE TABLE <s>.log (LIKE fresh_default_history.log INCLUDING ALL)` and copy the rows) and run the gate with no history flags.
-- **Learned speeds after two runs:** m1 1.310, m4 1.181, cloud 0.910 (`data-raw/logs/host_speeds.tsv`). Packed at the first run's speeds, m4 and m1 still ended 57 and 69 min before the last cloud leg (legs at 0.55, 0.62 and 0.80 to 0.90 of their projections).
+- **Learned speeds after two runs:** m1 1.310, m4 1.181, cloud 0.910 (`data-raw/logs/host_speeds.tsv`). Packed at the first run's speeds, m4 and m1 still ended 57 and 69 min before the last cloud leg (m4's leg at 0.62 of its projection, m1's at 0.55, the cloud hosts' at 0.80 to 0.90).
 - **The cloud hosts are finished one at a time:** job1's leg ended at 19:46 UTC and its consolidate waited 10.0 min while the driver finished job3.
 - **QUES took 27.0 min on a cloud host,** against 15.5 in the gate on m4 and 9.3 in its 0.68.0 history; under the 30 min statement bound, and the longest group in both provincial runs.
 - **The launcher `exec`s the driver,** so `run.log` carries no exit line: read the status from the driver's own summary.

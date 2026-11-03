@@ -298,7 +298,7 @@ Scored out of sample, fitted on the 2026-10-17 run and tested on 2026-10-23's ac
   pass or fail them.
 - **#326 moves both weights.** It does not change FWA segments, but it cuts persisted segments 2.1 to
   2.7-fold, so the minutes a group takes, and with them the minutes-per-segment rate, change with it.
-  The next provincial run re-fits both (`fit.R` on its rows). Still owed after the 2026-11-02 minimal run, which did not re-fit.
+  The next provincial run re-fits both (`fit.R` on its rows). Still owed after the 2026-11-02 minimal run and the 2026-11-03 `default` run, neither of which re-fit.
 
 ## The province-wide `default` run (2026-11-03, 241 groups; #454)
 
@@ -350,6 +350,8 @@ line. Evidence: `data-raw/logs/default_run_454/` (launch, packing, checks) and
 - **Segments fell to 0.49 of the 0.68.0 build's** (5.55 M against 11.39 M), and the full network holds 1.11
   times the minimal one's 4.99 M, so #444's join of full segments to their minimal parent has both schemas
   at one code in one database.
+- **Not done at this run:** #259's `fit.R` re-fit and #261's `predictors.R` / `correlations.R` re-run on
+  these post-#326 minutes.
 
 ## The province-wide `default_minimal` run (2026-11-02, 241 groups; #441)
 
