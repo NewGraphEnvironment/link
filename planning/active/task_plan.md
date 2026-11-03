@@ -55,10 +55,10 @@ Each phase lands its own tests, written first within the phase, so every commit'
 - [x] NEWS.md entry under the development heading.
 
 ## Phase 4: the province, and the prototype check
-- [ ] Run the driver on m4 for all 241 groups into `fresh_default.streams_parent` (from a clean committed tree; `load_all`); commit `data-raw/logs/streams_parent_444/{README.md,build.tsv,pair.tsv}`.
-- [ ] `data-raw/logs/streams_parent_444/prototype_check.R` on BULK, SETN, MORK, COTR against `minimal_breaks_415/parent_<wsg>.csv.gz`, joined on `id_segment` with the length guards (decision 6); commit `prototype_check.csv`.
-- [ ] `research/minimal_network.md`: a "Parent attributes" section with the province's numbers (segments, straddling km, max straddle, minutes) and the prototype result; header `Verified` date updated.
-- [ ] Tick #444's boxes in the issue body that landed; add the table's shape for knowledge#120.
+- [x] Run the driver on m4 for all 241 groups into `fresh_default.streams_parent` (from a clean committed tree; `load_all`); commit `data-raw/logs/streams_parent_444/{README.md,build.tsv,pair.tsv}`.
+- [x] `data-raw/logs/streams_parent_444/prototype_check.R` on BULK, SETN, MORK, COTR against `minimal_breaks_415/parent_<wsg>.csv.gz`, joined on `id_segment` with the length guards (decision 6); commit `prototype_check.csv`.
+- [x] `research/minimal_network.md`: a "Parent attributes" section with the province's numbers (segments, straddling km, max straddle, minutes) and the prototype result; header `Verified` date updated.
+- [x] Tick #444's boxes in the issue body that landed; add the table's shape for knowledge#120.
 
 ## Phase 5: release
 - [ ] `/code-check branch` (three-round floor), `devtools::test()`, `lintr::lint_package()`, `devtools::document()` (`_pkgdown.yml` has no `reference:` index, so no entry is needed for the new export).
