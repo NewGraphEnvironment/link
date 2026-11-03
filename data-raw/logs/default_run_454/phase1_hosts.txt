@@ -1,0 +1,15 @@
+# Phase 1 host probes, 2026-11-03T15:30:37Z, m4 (addresses left out)
+tailscale ping m1: pong from m1 (<addr>) via <addr> (direct, no DERP relay) in 87ms
+ssh m1 round trip 1: ok 0.22 s
+ssh m1 round trip 2: ok 0.14 s
+ssh m1 round trip 3: ok 0.17 s
+active clients on m4: 0
+active clients on m1: 0
+free disk m4: 283G
+free disk m1: 287Gi
+droplets named cypher-*: 0
+bchamp modelled_stream_crossings.gpkg.zip x-amz-version-id: 1793134826715
+bchamp bcfishobs/observations.parquet x-amz-version-id: 1790057230537
+load_stamps.csv: observations 1790057230537, crossings 1793134826715
+fresh on m4: 0.52.0 245c8d8db60b446f1fedb72340f55faa25f32f24 v0.52.0
+fresh on m1: 0.52.0 245c8d8db60b446f1fedb72340f55faa25f32f24 v0.52.0
