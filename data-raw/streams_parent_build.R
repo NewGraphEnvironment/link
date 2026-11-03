@@ -84,21 +84,23 @@ main <- function() {
     }
     pair <- pair[pair$wsg %in% want, , drop = FALSE]
   }
-  if (verify) return(verify_groups(conn, pair, schema, out))
-
-  # The code a build loads and judges with must be HEAD's: load_all() sources
-  # every R/*.R, tracked or not, so untracked files there count too.
-  loads <- c("R/", "inst/", "DESCRIPTION", "NAMESPACE", "data-raw/pretest.R",
+  # The code a run loads and judges with must be HEAD's, for --verify too: its
+  # verdict is what a rebuild acts on. pkgload's load_all() reads R/, data/
+  # (data/*.R is run), src/ (compiled), inst/, DESCRIPTION and NAMESPACE (test
+  # helpers are off, above); untracked and ignored files there count too.
+  loads <- c("R/", "data/", "src/", "inst/", "DESCRIPTION", "NAMESPACE", "data-raw/pretest.R",
              "data-raw/pretest_inputs.csv", "data-raw/streams_parent.R",
              "data-raw/streams_parent_build.R", "data-raw/wsg_run_one.R")
   dirty <- e$pretest_git(repo, c("status", "--porcelain", "--untracked-files=all", "--", loads))
-  # load_all() also sources an ignored R/*.R, which status lists only with --ignored.
-  ignored <- e$pretest_git(repo, c("status", "--porcelain", "--ignored", "--", "R/"))
+  # git status lists an ignored file only with --ignored.
+  ignored <- e$pretest_git(repo, c("status", "--porcelain", "--ignored", "--", "R/", "data/", "src/"))
   dirty <- c(dirty, grep("^!! ", ignored, value = TRUE))
   if (length(dirty)) {
     stop("the checkout has uncommitted changes; build from a clean tree:\n",
          paste(dirty, collapse = "\n"), call. = FALSE)
   }
+  if (verify) return(verify_groups(conn, pair, schema, out))
+
   ns <- asNamespace("link")
   if (is.null(attr(get("lnk_pipeline_run", ns), "srcref"))) {
     stop("link loaded without srcrefs; the modelling path's reach cannot be read", call. = FALSE)

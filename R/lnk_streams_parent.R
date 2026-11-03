@@ -140,8 +140,10 @@ lnk_streams_parent <- function(conn, wsg, schema, schema_minimal,
     stop("wsg must be one watershed group code (four capital letters)", call. = FALSE)
   }
   for (s in list(schema, schema_minimal)) {
-    if (!is.character(s) || length(s) != 1L || !grepl("^[A-Za-z_][A-Za-z0-9_]*$", s)) {
-      stop("schema and schema_minimal must each be one plain schema name", call. = FALSE)
+    # Lower case only: the SQL names them unquoted, so Postgres folds case, and
+    # "x" and "X" would pass the different-schemas test below as one schema.
+    if (!is.character(s) || length(s) != 1L || !grepl("^[a-z_][a-z0-9_]*$", s)) {
+      stop("schema and schema_minimal must each be one plain lower-case schema name", call. = FALSE)
     }
   }
   if (identical(schema, schema_minimal)) {

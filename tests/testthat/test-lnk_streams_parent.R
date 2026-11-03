@@ -211,6 +211,8 @@ test_that("a schema is not paired with itself, and arguments are checked", {
   )
   expect_error(lnk_streams_parent(fake_conn(), "test", "a", "b"), "one watershed group code")
   expect_error(lnk_streams_parent(fake_conn(), "TEST", "a;drop", "b"), "schema")
+  # Postgres folds an unquoted name, so these are one schema.
+  expect_error(lnk_streams_parent(fake_conn(), "TEST", "x", "X"), "lower-case")
 })
 
 test_that("the table's DDL carries the columns, key and group index", {
