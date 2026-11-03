@@ -1,0 +1,242 @@
+wsg	host_key	name	speed	speed_source	weight_unit	weight	minutes	measured_by
+LFRA	job2	cloud	1	learned	min	6.60915863333333	6.60915863333333	m1
+HARR	worker1	m1	1	learned	min	5.7461535	5.7461535	m1
+CHWK	worker1	m1	1	learned	min	2.44034786666667	2.44034786666667	m1
+FRCN	dispatcher	m4	1	median (no learned speed)	min	6.73051528333333	6.73051528333333	m1
+LILL	job2	cloud	1	learned	min	7.0270396	7.0270396	m1
+SETN	dispatcher	m4	1	median (no learned speed)	min	16.2681749	16.2681749	m1
+THOM	job1	cloud	1	learned	min	5.17210253333333	5.17210253333333	m1
+BBAR	job1	cloud	1	learned	min	5.2674658	5.2674658	m1
+BONP	dispatcher	m4	1	median (no learned speed)	min	3.96188743333333	3.96188743333333	m1
+DEAD	job1	cloud	1	learned	min	2.12092081666667	2.12092081666667	m1
+LNIC	dispatcher	m4	1	median (no learned speed)	min	4.54043451666667	4.54043451666667	m1
+LNTH	job1	cloud	1	learned	min	6.02020638333333	6.02020638333333	m1
+STHM	job2	cloud	1	learned	min	3.76687993333333	3.76687993333333	m1
+ADMS	job3	cloud	1	learned	min	4.33285331666667	4.33285331666667	m1
+CLWR	job1	cloud	1	learned	min	3.89684643333333	3.89684643333333	m1
+DOGC	job2	cloud	1	learned	min	3.85234293333333	3.85234293333333	m1
+GRNL	job3	cloud	1	learned	min	1.04049178333333	1.04049178333333	m1
+GUIC	job3	cloud	1	learned	min	2.05310508333333	2.05310508333333	m1
+NICL	dispatcher	m4	1	median (no learned speed)	min	2.08042245	2.08042245	m1
+SHUL	worker1	m1	1	learned	min	6.6014031	6.6014031	m1
+UNTH	job1	cloud	1	learned	min	6.37787908333333	6.37787908333333	m1
+MAHD	job2	cloud	1	learned	min	3.2637822	3.2637822	m1
+MFRA	worker1	m1	1	learned	min	2.80091773333333	2.80091773333333	m1
+MURT	job1	cloud	1	learned	min	1.68263595	1.68263595	m1
+USHU	worker1	m1	1	learned	min	7.64522636666667	7.64522636666667	m1
+BRID	job1	cloud	1	learned	min	1.2961878	1.2961878	m1
+LCHR	dispatcher	m4	1	median (no learned speed)	min	3.06220796666667	3.06220796666667	m1
+TWAC	job1	cloud	1	learned	min	2.90685336666667	2.90685336666667	m1
+BIGC	job3	cloud	1	learned	min	1.28514353333333	1.28514353333333	m1
+CHIR	job3	cloud	1	learned	min	2.57501238333333	2.57501238333333	m1
+NARC	dispatcher	m4	1	median (no learned speed)	min	4.4882733	4.4882733	m1
+SAJR	job2	cloud	1	learned	min	1.5926803	1.5926803	m1
+UCHR	job1	cloud	1	learned	min	2.61135485	2.61135485	m1
+COTR	worker1	m1	1	learned	min	5.0628475	5.0628475	m1
+QUES	job3	cloud	1	learned	min	9.34727506666667	9.34727506666667	m1
+TASR	dispatcher	m4	1	median (no learned speed)	min	2.54513176666667	2.54513176666667	m1
+BLAR	worker1	m1	1	learned	min	2.11687426666667	2.11687426666667	m1
+CARR	worker1	m1	1	learned	min	3.69829316666667	3.69829316666667	m1
+HORS	worker1	m1	1	learned	min	2.56928245	2.56928245	m1
+TABR	job1	cloud	1	learned	min	2.41395408333333	2.41395408333333	m1
+EUCH	job2	cloud	1	learned	min	0.925945033333333	0.925945033333333	m1
+EUCL	dispatcher	m4	1	median (no learned speed)	min	1.31099381666667	1.31099381666667	m1
+LCHL	worker1	m1	1	learned	min	2.12806098333333	2.12806098333333	m1
+LSAL	job3	cloud	1	learned	min	1.07355908333333	1.07355908333333	m1
+MORK	job2	cloud	1	learned	min	8.22566173333333	8.22566173333333	m1
+NAZR	worker1	m1	1	learned	min	1.69049136666667	1.69049136666667	m1
+WILL	job3	cloud	1	learned	min	2.28585333333333	2.28585333333333	m1
+BOWR	job1	cloud	1	learned	min	3.61132286666667	3.61132286666667	m1
+CHIL	job1	cloud	1	learned	min	1.04109815	1.04109815	m1
+MCGR	job3	cloud	1	learned	min	3.19910708333333	3.19910708333333	m1
+MUSK	worker1	m1	1	learned	min	0.695072766666667	0.695072766666667	m1
+NECR	job2	cloud	1	learned	min	2.9383096	2.9383096	m1
+SALR	job1	cloud	1	learned	min	1.40562966666667	1.40562966666667	m1
+STUR	dispatcher	m4	1	median (no learned speed)	min	1.74796091666667	1.74796091666667	m1
+UFRA	job3	cloud	1	learned	min	5.55631811666667	5.55631811666667	m1
+CHES	worker1	m1	1	learned	min	1.53629068333333	1.53629068333333	m1
+FRAN	worker1	m1	1	learned	min	4.62879613333333	4.62879613333333	m1
+HERR	job2	cloud	1	learned	min	2.07977028333333	2.07977028333333	m1
+STUL	job1	cloud	1	learned	min	1.80143566666667	1.80143566666667	m1
+LNRS	dispatcher	m4	1	median (no learned speed)	min	0.813086016666667	0.813086016666667	m1
+LTRE	job3	cloud	1	learned	min	1.77095108333333	1.77095108333333	m1
+LEUT	worker1	m1	1	learned	min	0.754555266666667	0.754555266666667	m1
+UTRE	job1	cloud	1	learned	min	1.06463475	1.06463475	m1
+MIDR	job1	cloud	1	learned	min	1.4868319	1.4868319	m1
+UEUT	job2	cloud	1	learned	min	1.35490358333333	1.35490358333333	m1
+UNRS	job2	cloud	1	learned	min	1.8224048	1.8224048	m1
+TAKL	worker1	m1	1	learned	min	3.15163518333333	3.15163518333333	m1
+DRIR	job2	cloud	1	learned	min	1.88304636666667	1.88304636666667	m1
+DUNE	job1	cloud	1	learned	min	2.9799766	2.9799766	cloud
+BEAV	job2	cloud	1	learned	min	3.54783963333333	3.54783963333333	cloud
+LFRT	job3	cloud	1	learned	min	2.21307326666667	2.21307326666667	cloud
+LIAR	job2	cloud	1	learned	min	7.68147945	7.68147945	cloud
+MFRT	worker1	m1	1	learned	min	1.69452121666667	1.69452121666667	cloud
+TOAD	job3	cloud	1	learned	min	5.98834675	5.98834675	cloud
+COAL	worker1	m1	1	learned	min	3.60750698333333	3.60750698333333	cloud
+LMUS	job1	cloud	1	learned	min	3.72374866666667	3.72374866666667	cloud
+UFRT	worker1	m1	1	learned	min	1.8659589	1.8659589	cloud
+FONT	job2	cloud	1	learned	min	2.32829168333333	2.32829168333333	cloud
+LPRO	worker1	m1	1	learned	min	1.89339038333333	1.89339038333333	cloud
+LSIK	dispatcher	m4	1	median (no learned speed)	min	1.85424521666667	1.85424521666667	cloud
+MMUS	job2	cloud	1	learned	min	4.87536023333333	4.87536023333333	cloud
+ULRD	worker1	m1	1	learned	min	3.55108773333333	3.55108773333333	cloud
+DEAR	job1	cloud	1	learned	min	1.99846101666667	1.99846101666667	cloud
+KAHN	dispatcher	m4	1	median (no learned speed)	min	1.57956553333333	1.57956553333333	cloud
+LKEC	dispatcher	m4	1	median (no learned speed)	min	2.0460877	2.0460877	cloud
+LRAN	dispatcher	m4	1	median (no learned speed)	min	2.65252156666667	2.65252156666667	cloud
+MPRO	job3	cloud	1	learned	min	2.95225161666667	2.95225161666667	cloud
+UMUS	job1	cloud	1	learned	min	5.14560408333333	5.14560408333333	cloud
+USIK	worker1	m1	1	learned	min	5.23367135	5.23367135	cloud
+BLUR	dispatcher	m4	1	median (no learned speed)	min	2.52313736666667	2.52313736666667	cloud
+MDEA	job3	cloud	1	learned	min	3.5109115	3.5109115	cloud
+UKEC	job2	cloud	1	learned	min	3.34448043333333	3.34448043333333	cloud
+UPRO	job2	cloud	1	learned	min	5.2609017	5.2609017	cloud
+CRYL	job2	cloud	1	learned	min	1.79380353333333	1.79380353333333	cloud
+DEAL	dispatcher	m4	1	median (no learned speed)	min	3.47041003333333	3.47041003333333	cloud
+FROG	job3	cloud	1	learned	min	4.82390288333333	4.82390288333333	cloud
+TURN	worker1	m1	1	learned	min	8.17807478333333	8.17807478333333	cloud
+GATA	job1	cloud	1	learned	min	4.29713003333333	4.29713003333333	cloud
+LPCE	job2	cloud	1	learned	min	2.1535375	2.1535375	cloud
+KISK	dispatcher	m4	1	median (no learned speed)	min	3.06296083333333	3.06296083333333	cloud
+LBTN	worker1	m1	1	learned	min	3.90600581666667	3.90600581666667	cloud
+MURR	dispatcher	m4	1	median (no learned speed)	min	5.82492193333333	5.82492193333333	cloud
+PINE	job1	cloud	1	learned	min	7.78462316666667	7.78462316666667	cloud
+UPCE	dispatcher	m4	1	median (no learned speed)	min	3.7424	3.7424	cloud
+LHAF	job3	cloud	1	learned	min	4.4733075	4.4733075	cloud
+PCEA	worker1	m1	1	learned	min	4.92570523333333	4.92570523333333	cloud
+UBTN	job3	cloud	1	learned	min	2.78327613333333	2.78327613333333	cloud
+MILL	job2	cloud	1	learned	min	1.23645268333333	1.23645268333333	cloud
+PARA	job3	cloud	1	learned	min	2.62949771666667	2.62949771666667	cloud
+UHAF	job2	cloud	1	learned	min	4.54861901666667	4.54861901666667	cloud
+CARP	job3	cloud	1	learned	min	1.8706861	1.8706861	cloud
+FINA	worker1	m1	1	learned	min	4.84904266666667	4.84904266666667	cloud
+NATR	job1	cloud	1	learned	min	4.6114212	4.6114212	cloud
+PARS	dispatcher	m4	1	median (no learned speed)	min	8.79897768333333	8.79897768333333	cloud
+CRKD	job2	cloud	1	learned	min	2.03136373333333	2.03136373333333	cloud
+FINL	job2	cloud	1	learned	min	4.98183221666667	4.98183221666667	cloud
+INGR	worker1	m1	1	learned	min	4.4985216	4.4985216	cloud
+LOMI	job3	cloud	1	learned	min	3.84010628333333	3.84010628333333	cloud
+MESI	job3	cloud	1	learned	min	3.39656413333333	3.39656413333333	cloud
+OSPK	job1	cloud	1	learned	min	3.4319155	3.4319155	cloud
+TOOD	job3	cloud	1	learned	min	5.65952783333333	5.65952783333333	cloud
+UOMI	job1	cloud	1	learned	min	3.549922	3.549922	cloud
+FIRE	dispatcher	m4	1	median (no learned speed)	min	5.03817575	5.03817575	cloud
+FOXR	job2	cloud	1	learned	min	4.48022658333333	4.48022658333333	cloud
+LSTR	dispatcher	m4	1	median (no learned speed)	min	4.82001663333333	4.82001663333333	cloud
+LISR	job2	cloud	1	learned	min	5.99255981666667	5.99255981666667	cloud
+STIR	dispatcher	m4	1	median (no learned speed)	min	4.3367234	4.3367234	cloud
+BARR	job1	cloud	1	learned	min	4.88897025	4.88897025	cloud
+ISKR	job1	cloud	1	learned	min	2.79668645	2.79668645	cloud
+MESC	worker1	m1	1	learned	min	2.70912826666667	2.70912826666667	cloud
+MSTR	job3	cloud	1	learned	min	7.00939385	7.00939385	cloud
+TAHR	job3	cloud	1	learned	min	2.45478783333333	2.45478783333333	cloud
+TUYR	worker1	m1	1	learned	min	2.33635306666667	2.33635306666667	cloud
+KAKC	job3	cloud	1	learned	min	1.53095055	1.53095055	cloud
+KLAR	job3	cloud	1	learned	min	4.0426124	4.0426124	cloud
+PITR	dispatcher	m4	1	median (no learned speed)	min	1.64179998333333	1.64179998333333	cloud
+UISR	job2	cloud	1	learned	min	2.45740165	2.45740165	cloud
+USTK	job1	cloud	1	learned	min	3.71129426666667	3.71129426666667	cloud
+SPAT	job1	cloud	1	learned	min	4.51365368333333	4.51365368333333	cloud
+LARL	job3	cloud	1	learned	min	5.32953086666667	5.32953086666667	cloud
+KOTL	job2	cloud	1	learned	min	9.3552981	9.3552981	cloud
+SLOC	dispatcher	m4	1	median (no learned speed)	min	3.8655408	3.8655408	cloud
+UARL	job2	cloud	1	learned	min	4.74232415	4.74232415	cloud
+BULL	job1	cloud	1	learned	min	4.66425556666667	4.66425556666667	cloud
+DUNC	dispatcher	m4	1	median (no learned speed)	min	4.10783106666667	4.10783106666667	cloud
+REVL	job3	cloud	1	learned	min	4.91405765	4.91405765	cloud
+CLRH	worker1	m1	1	learned	min	5.47292411666667	5.47292411666667	cloud
+ELKR	job3	cloud	1	learned	min	11.00608855	11.00608855	cloud
+SMAR	dispatcher	m4	1	median (no learned speed)	min	7.07464025	7.07464025	cloud
+CANO	dispatcher	m4	1	median (no learned speed)	min	2.7845894	2.7845894	cloud
+KOTR	job3	cloud	1	learned	min	6.70183058333333	6.70183058333333	cloud
+KHOR	job1	cloud	1	learned	min	5.79085313333333	5.79085313333333	cloud
+COLR	job3	cloud	1	learned	min	5.22243786666667	5.22243786666667	cloud
+LSKE	job3	cloud	1	learned	min	11.66266295	11.66266295	cloud
+KLUM	worker1	m1	1	learned	min	8.37248446666667	8.37248446666667	cloud
+LKEL	dispatcher	m4	1	median (no learned speed)	min	2.26980428333333	2.26980428333333	cloud
+KISP	job2	cloud	1	learned	min	10.6816497166667	10.6816497166667	cloud
+ZYMO	job2	cloud	1	learned	min	5.77927893333333	5.77927893333333	cloud
+BULK	job1	cloud	1	learned	min	13.6968073	13.6968073	cloud
+MSKE	worker1	m1	1	learned	min	9.48738276666667	9.48738276666667	cloud
+BABR	job1	cloud	1	learned	min	6.84424646666667	6.84424646666667	cloud
+MORR	job1	cloud	1	learned	min	9.0130578	9.0130578	cloud
+SUST	job3	cloud	1	learned	min	8.54076078333333	8.54076078333333	cloud
+USKE	job3	cloud	1	learned	min	8.17900838333333	8.17900838333333	cloud
+BABL	job2	cloud	1	learned	min	8.68099251666667	8.68099251666667	cloud
+LNAR	worker1	m1	1	learned	min	13.7661730166667	13.7661730166667	cloud
+NASR	job3	cloud	1	learned	min	4.5187125	4.5187125	cloud
+KINR	dispatcher	m4	1	median (no learned speed)	min	3.69589345	3.69589345	cloud
+LBIR	job2	cloud	1	learned	min	4.39183343333333	4.39183343333333	cloud
+UNAR	dispatcher	m4	1	median (no learned speed)	min	4.7501416	4.7501416	cloud
+TAYR	job1	cloud	1	learned	min	1.9573973	1.9573973	cloud
+UBIR	job2	cloud	1	learned	min	2.9468094	2.9468094	cloud
+TESR	worker1	m1	1	learned	min	3.01180238333333	3.01180238333333	cloud
+GLAR	job2	cloud	1	learned	min	2.5272343	2.5272343	cloud
+JENR	worker1	m1	1	learned	min	1.98883701666667	1.98883701666667	cloud
+SWIR	job2	cloud	1	learned	min	2.75685453333333	2.75685453333333	cloud
+UJER	job3	cloud	1	learned	min	1.85446841666667	1.85446841666667	cloud
+INKR	dispatcher	m4	1	median (no learned speed)	min	8.25495831666667	8.25495831666667	cloud
+NAHR	job1	cloud	1	learned	min	3.17598636666667	3.17598636666667	cloud
+NAKR	dispatcher	m4	1	median (no learned speed)	min	5.33051576666667	5.33051576666667	cloud
+SHER	dispatcher	m4	1	median (no learned speed)	min	5.49882261666667	5.49882261666667	cloud
+LPET	worker1	m1	1	learned	min	1.1989403	1.1989403	cloud
+TSEA	job3	cloud	1	learned	min	1.37468743333333	1.37468743333333	cloud
+SAHD	dispatcher	m4	1	median (no learned speed)	min	1.10293755	1.10293755	cloud
+UPET	worker1	m1	1	learned	min	1.17103795	1.17103795	cloud
+KUSR	job1	cloud	1	learned	min	2.10163528333333	2.10163528333333	cloud
+TUTR	job2	cloud	1	learned	min	2.69331205	2.69331205	cloud
+ATLL	worker1	m1	1	learned	min	3.45313276666667	3.45313276666667	cloud
+BELA	worker1	m1	1	learned	min	3.85081933333333	3.85081933333333	cloud
+ATNA	worker1	m1	1	learned	min	4.64540673333333	4.64540673333333	cloud
+TSAY	job2	cloud	1	learned	min	4.06028086666667	4.06028086666667	cloud
+KITL	worker1	m1	1	learned	min	6.94186611666667	6.94186611666667	cloud
+LDEN	job3	cloud	1	learned	min	4.79571895	4.79571895	cloud
+UDEN	job2	cloud	1	learned	min	5.47289428333333	5.47289428333333	cloud
+ALBN	dispatcher	m4	1	median (no learned speed)	min	6.05567541666667	6.05567541666667	cloud
+BRKS	worker1	m1	1	learned	min	4.17941473333333	4.17941473333333	cloud
+CAMB	job3	cloud	1	learned	min	3.69865848333333	3.69865848333333	cloud
+CLAY	job1	cloud	1	learned	min	4.29316558333333	4.29316558333333	cloud
+COMX	job1	cloud	1	learned	min	2.35494713333333	2.35494713333333	cloud
+COWN	job1	cloud	1	learned	min	3.81225435	3.81225435	cloud
+GOLD	worker1	m1	1	learned	min	3.79810768333333	3.79810768333333	cloud
+GRAI	job2	cloud	1	learned	min	11.7642901666667	11.7642901666667	cloud
+HOLB	dispatcher	m4	1	median (no learned speed)	min	1.8686315	1.8686315	m1
+HOMA	dispatcher	m4	1	median (no learned speed)	min	7.76895213333333	7.76895213333333	cloud
+JERV	worker1	m1	1	learned	min	5.92702121666667	5.92702121666667	cloud
+KEEC	worker1	m1	1	learned	min	1.39367621666667	1.39367621666667	cloud
+KETL	job1	cloud	1	learned	min	5.64727478333333	5.64727478333333	cloud
+KHTZ	job3	cloud	1	learned	min	2.94240486666667	2.94240486666667	m1
+KITR	worker1	m1	1	learned	min	9.12425446666667	9.12425446666667	cloud
+KLIN	job1	cloud	1	learned	min	8.36107733333333	8.36107733333333	cloud
+KNIG	job3	cloud	1	learned	min	7.65823346666667	7.65823346666667	cloud
+KSHR	job2	cloud	1	learned	min	5.34420406666667	5.34420406666667	cloud
+KTSU	job3	cloud	1	learned	min	3.72330088333333		
+KUMR	dispatcher	m4	1	median (no learned speed)	min	3.47529928333333	3.47529928333333	cloud
+LRDO	job1	cloud	1	learned	min	2.61825936666667	2.61825936666667	cloud
+MBNK	dispatcher	m4	1	median (no learned speed)	min	1.30482518333333	1.30482518333333	cloud
+MORI	job2	cloud	1	learned	min	3.95769018333333	3.95769018333333	cloud
+NASC	job3	cloud	1	learned	min	3.67520315	3.67520315	cloud
+NBNK	job2	cloud	1	learned	min	1.11938803333333	1.11938803333333	cloud
+NECL	job1	cloud	1	learned	min	4.84035446666667	4.84035446666667	cloud
+NEVI	job3	cloud	1	learned	min	2.03820568333333	2.03820568333333	cloud
+NIEL	job2	cloud	1	learned	min	4.96090313333333	4.96090313333333	cloud
+NIMP	worker1	m1	1	learned	min	4.31713228333333	4.31713228333333	cloud
+OKAN	dispatcher	m4	1	median (no learned speed)	min	3.72330088333333		
+OWIK	dispatcher	m4	1	median (no learned speed)	min	9.35593495	9.35593495	cloud
+PARK	dispatcher	m4	1	median (no learned speed)	min	2.91228576666667	2.91228576666667	cloud
+PORI	dispatcher	m4	1	median (no learned speed)	min	2.14260383333333	2.14260383333333	cloud
+SALM	job2	cloud	1	learned	min	3.72330088333333	3.72330088333333	cloud
+SANJ	job3	cloud	1	learned	min	5.08232721666667	5.08232721666667	cloud
+SEYM	job2	cloud	1	learned	min	3.63488156666667	3.63488156666667	m1
+SIML	worker1	m1	1	learned	min	5.36634906666667	5.36634906666667	cloud
+SKGT	job2	cloud	1	learned	min	1.59202718333333	1.59202718333333	cloud
+SMOK	dispatcher	m4	1	median (no learned speed)	min	5.25348065	5.25348065	cloud
+SQAM	job1	cloud	1	learned	min	7.53469251666667	7.53469251666667	cloud
+TAHS	worker1	m1	1	learned	min	2.8084804	2.8084804	cloud
+TATR	dispatcher	m4	1	median (no learned speed)	min	5.65382646666667	5.65382646666667	cloud
+TOBA	job1	cloud	1	learned	min	10.3121946833333	10.3121946833333	cloud
+TSIT	job3	cloud	1	learned	min	4.10656466666667	4.10656466666667	cloud
+UNUR	job3	cloud	1	learned	min	1.63091243333333	1.63091243333333	m1
+VICT	job1	cloud	1	learned	min	1.71946705	1.71946705	cloud
+WORC	dispatcher	m4	1	median (no learned speed)	min	4.95851021666667	4.95851021666667	cloud

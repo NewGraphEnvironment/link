@@ -1,0 +1,218 @@
+=== study_area_run 20261102_203300 ===
+  run_uid:      20261102_203300-60ab009d
+  run_label:    minimal-provincial-441
+  config:       default_minimal
+  branch:       441-minimal-run (cyphers run this ref)
+  persist:      fresh_default_minimal
+  cyphers:      job1 job2 job3 (3)
+  workers:      worker1 (1; persistent, never burned)
+  log dir:      /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run
+  vintage max:  7 d
+  recompute -j: 8
+  recompute:    early (each group once it and every group it reads have landed; link#374)
+  statement:    30 min per modelling statement (PGOPTIONS, both legs); recompute 10 min (wsg_recompute_one.R)
+  buckets:      exact (--buckets-exact; each --focal= list as given; the recompute settles access)
+  phases:       /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_203300_phases.tsv
+  [phase] refresh skipped
+=== pre-flight (local; pre-spend) ===
+  ✓ dispatcher fresh exports what the pipeline calls
+  ✓ output tokens: cut-min acc-v5 grad-seg q-fwapg 
+  ✓ origin/441-minimal-run is at HEAD
+  ✓ fwapg_sha 9a62b0c24b4f (exported to all hosts)
+  ✓ bcfishobs_sha dd9a5e5d2ddc (exported to all hosts)
+  ✓ fresh_sha 245c8d8db60b (clean)
+  ✓ pre-run gate: gate passed at 24b2cbb3dc2c (2026-11-02 11:08 UTC), range from 1d00c04cc5b2: SETN:pass,BULK:pass,QUES:pass,LFRA:pass,TOAD:pass,HARR:pass,UPCE:pass,OKAN:pass,TAKL:pass,HORS:pass,SAJR:pass
+  ✓ bcfp reference pinned at v0.7.15-51-g3bd2824 (exported to all hosts)
+    ok   discharge (fwapg) loaded: whse_basemapping.fwa_stream_networks_discharge
+  ✓ discharge (fwapg) loaded on the dispatcher
+    [preflight] primitive vintage (window 7 d) - OK, oldest 0.5 d (whse_fish.pscis_assessment_svw) [judged by load stamp: 4, statistics: 0, none: 0]
+  ✓ dispatcher primitives within 7 d
+  ✓ doctl token valid (DO API reachable)
+  ✓ tofu do_token valid (HTTP 200 /v2/account)
+  ✓ tofu s3 backend reachable
+  ✓ worker1: answers, its own database
+  ✓ pre-flight clean (tunnel-free)
+=== resolve exact buckets (--buckets-exact; order as given, species filter only) ===
+  dispatcher (focal=FRCN,SETN,BONP,LNIC,NICL,LCHR,NARC,TASR,EUCL,STUR,LNRS,LSIK,KAHN,LKEC,LRAN,BLUR,DEAL,KISK,MURR,UPCE,PARS,FIRE,LSTR,STIR,PITR,SLOC,DUNC,SMAR,CANO,LKEL,KINR,UNAR,INKR,NAKR,SHER,SAHD,ALBN,HOLB,HOMA,KUMR,MBNK,OKAN,OWIK,PARK,PORI,SMOK,TATR,WORC): FRCN,SETN,BONP,LNIC,NICL,LCHR,NARC,TASR,EUCL,STUR,LNRS,LSIK,KAHN,LKEC,LRAN,BLUR,DEAL,KISK,MURR,UPCE,PARS,FIRE,LSTR,STIR,PITR,SLOC,DUNC,SMAR,CANO,LKEL,KINR,UNAR,INKR,NAKR,SHER,SAHD,ALBN,HOLB,HOMA,KUMR,MBNK,OKAN,OWIK,PARK,PORI,SMOK,TATR,WORC
+  worker1 (focal=HARR,CHWK,SHUL,MFRA,USHU,COTR,BLAR,CARR,HORS,LCHL,NAZR,MUSK,CHES,FRAN,LEUT,TAKL,MFRT,COAL,UFRT,LPRO,ULRD,USIK,TURN,LBTN,PCEA,FINA,INGR,MESC,TUYR,CLRH,KLUM,MSKE,LNAR,TESR,JENR,LPET,UPET,ATLL,BELA,ATNA,KITL,BRKS,GOLD,JERV,KEEC,KITR,NIMP,SIML,TAHS): HARR,CHWK,SHUL,MFRA,USHU,COTR,BLAR,CARR,HORS,LCHL,NAZR,MUSK,CHES,FRAN,LEUT,TAKL,MFRT,COAL,UFRT,LPRO,ULRD,USIK,TURN,LBTN,PCEA,FINA,INGR,MESC,TUYR,CLRH,KLUM,MSKE,LNAR,TESR,JENR,LPET,UPET,ATLL,BELA,ATNA,KITL,BRKS,GOLD,JERV,KEEC,KITR,NIMP,SIML,TAHS
+  cy[job1] (focal=THOM,BBAR,DEAD,LNTH,CLWR,UNTH,MURT,BRID,TWAC,UCHR,TABR,BOWR,CHIL,SALR,STUL,UTRE,MIDR,DUNE,LMUS,DEAR,UMUS,GATA,PINE,NATR,OSPK,UOMI,BARR,ISKR,USTK,SPAT,BULL,KHOR,BULK,BABR,MORR,TAYR,NAHR,KUSR,CLAY,COMX,COWN,KETL,KLIN,LRDO,NECL,SQAM,TOBA,VICT): THOM,BBAR,DEAD,LNTH,CLWR,UNTH,MURT,BRID,TWAC,UCHR,TABR,BOWR,CHIL,SALR,STUL,UTRE,MIDR,DUNE,LMUS,DEAR,UMUS,GATA,PINE,NATR,OSPK,UOMI,BARR,ISKR,USTK,SPAT,BULL,KHOR,BULK,BABR,MORR,TAYR,NAHR,KUSR,CLAY,COMX,COWN,KETL,KLIN,LRDO,NECL,SQAM,TOBA,VICT
+  cy[job2] (focal=LFRA,LILL,STHM,DOGC,MAHD,SAJR,EUCH,MORK,NECR,HERR,UEUT,UNRS,DRIR,BEAV,LIAR,FONT,MMUS,UKEC,UPRO,CRYL,LPCE,MILL,UHAF,CRKD,FINL,FOXR,LISR,UISR,KOTL,UARL,KISP,ZYMO,BABL,LBIR,UBIR,GLAR,SWIR,TUTR,TSAY,UDEN,GRAI,KSHR,MORI,NBNK,NIEL,SALM,SEYM,SKGT): LFRA,LILL,STHM,DOGC,MAHD,SAJR,EUCH,MORK,NECR,HERR,UEUT,UNRS,DRIR,BEAV,LIAR,FONT,MMUS,UKEC,UPRO,CRYL,LPCE,MILL,UHAF,CRKD,FINL,FOXR,LISR,UISR,KOTL,UARL,KISP,ZYMO,BABL,LBIR,UBIR,GLAR,SWIR,TUTR,TSAY,UDEN,GRAI,KSHR,MORI,NBNK,NIEL,SALM,SEYM,SKGT
+  cy[job3] (focal=ADMS,GRNL,GUIC,BIGC,CHIR,QUES,LSAL,WILL,MCGR,UFRA,LTRE,LFRT,TOAD,MPRO,MDEA,FROG,LHAF,UBTN,PARA,CARP,LOMI,MESI,TOOD,MSTR,TAHR,KAKC,KLAR,LARL,REVL,ELKR,KOTR,COLR,LSKE,SUST,USKE,NASR,UJER,TSEA,LDEN,CAMB,KHTZ,KNIG,KTSU,NASC,NEVI,SANJ,TSIT,UNUR): ADMS,GRNL,GUIC,BIGC,CHIR,QUES,LSAL,WILL,MCGR,UFRA,LTRE,LFRT,TOAD,MPRO,MDEA,FROG,LHAF,UBTN,PARA,CARP,LOMI,MESI,TOOD,MSTR,TAHR,KAKC,KLAR,LARL,REVL,ELKR,KOTR,COLR,LSKE,SUST,USKE,NASR,UJER,TSEA,LDEN,CAMB,KHTZ,KNIG,KTSU,NASC,NEVI,SANJ,TSIT,UNUR
+=== workers: prior rows ===
+  ✓ worker1: fresh_default_minimal holds no rows for its bucket
+  run groups: /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_203300_run_wsgs.tsv
+=== dispatcher persist (fresh_default_minimal): init ===
+  ✓ fresh_default_minimal initialised (see /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_203300_persist_init.log)
+=== early recompute: log tables, barrier views, dependency map ===
+  ✓ log tables present in fresh_default_minimal
+  ✓ barrier views built once for fresh_default_minimal
+  [phase] views ok 2026-11-02T20:33:16Z -> 2026-11-02T20:33:18Z (0.0 min)
+=== dispatcher persist (fresh_default_minimal): backup in the background ===
+  backup -> /tmp/fresh_default_minimal_pre_run_20261102_203300.dump (see /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_203300_backup.log)
+=== prep workers (worker_prep.sh): worker1 ===
+=== spin cyphers: job1 job2 job3 ===
+  cy[job1] = <host>
+  cy[job2] = <host>
+  cy[job3] = <host>
+=== prep cyphers (cypher_prep.sh) ===
+  [phase] prep job1 ok 2026-11-02T20:33:18Z -> 2026-11-02T20:42:47Z (9.5 min)
+  [phase] prep job2 ok 2026-11-02T20:33:18Z -> 2026-11-02T20:42:32Z (9.2 min)
+  [phase] prep job3 ok 2026-11-02T20:33:18Z -> 2026-11-02T20:42:42Z (9.4 min)
+  ✓ cyphers prepped
+  [phase] prep worker1 ok 2026-11-02T20:33:18Z -> 2026-11-02T20:33:25Z (0.1 min)
+  ✓ workers prepped
+=== pre-flight (hosts; post-prep, pre-write) ===
+[preflight] host parity - OK across 5 host(s): m4, <worker1>, cypher-job1, cypher-job2, cypher-job3
+  ✓ host parity clean (5 hosts)
+  ✓ cy[worker1] primitives within 7 d
+  ✓ cy[job1] primitives within 7 d
+  ✓ cy[job2] primitives within 7 d
+  ✓ cy[job3] primitives within 7 d
+  [phase] backup ok 2026-11-02T20:33:18Z -> 2026-11-02T20:33:19Z (0.0 min)
+  ✓ pre-run backup taken (see /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_203300_backup.log)
+  ✓ dependency map: 2211 pairs (see /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_203300_recompute_deps.log)
+  [phase] prep ok 2026-11-02T20:33:00Z -> 2026-11-02T20:43:02Z (10.0 min, 241 groups)
+=== run buckets (DS-first) ===
+=== legs: each remote host is consolidated when its own leg ends (a cypher then burned, a worker released) ===
+  early recompute scheduler started (-j8; see /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_203300_recompute_scheduler.log)
+  [phase] model worker1 ok 2026-11-02T20:43:08Z -> 2026-11-02T22:10:30Z (87.4 min, 49 groups)
+=== worker1: leg ended (exit 0); account, consolidate, release ===
+  ✓ worker1: 49/49 WSGs accounted for (49 finished, 0 SKIP; database)
+  [phase] account worker1 ok 2026-11-02T22:10:30Z -> 2026-11-02T22:10:31Z (0.0 min, 49 groups)
+  consolidating worker1: 49 groups (see /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_203300_consolidate_worker1.log)
+  ✓ worker1: consolidated
+  ✓ worker1: no finished group left on the host after consolidate — may be released
+  [phase] consolidate worker1 ok 2026-11-02T22:10:31Z -> 2026-11-02T22:58:06Z (47.6 min, 49 groups)
+  [phase] burn worker1 skipped
+  [phase] model dispatcher ok 2026-11-02T20:43:02Z -> 2026-11-02T22:26:18Z (103.3 min, 48 groups)
+  [phase] model job2 ok 2026-11-02T20:43:08Z -> 2026-11-02T23:22:53Z (159.8 min, 48 groups)
+=== cy[job2]: leg ended (exit 0); account, consolidate, burn ===
+  ✓ cy[job2]: 48/48 WSGs accounted for (48 finished, 0 SKIP; database)
+  [phase] account job2 ok 2026-11-02T23:22:53Z -> 2026-11-02T23:22:55Z (0.0 min, 48 groups)
+  consolidating cy[job2]: 48 groups (see /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_203300_consolidate_job2.log)
+  ✓ cy[job2]: consolidated
+  ✓ cy[job2]: no finished group left on the host after consolidate — may be burned
+  [phase] consolidate job2 ok 2026-11-02T23:22:55Z -> 2026-11-02T23:36:01Z (13.1 min, 48 groups)
+=== BURN CYPHERS: job2 ===
+  cy[job2]: 0 tofu resources (expect 0)
+  ✓ burn clean
+  [phase] burn job2 ok 2026-11-02T23:36:01Z -> 2026-11-02T23:36:29Z (0.5 min)
+  [phase] model job3 ok 2026-11-02T20:43:08Z -> 2026-11-02T23:31:14Z (168.1 min, 48 groups)
+=== cy[job3]: leg ended (exit 0); account, consolidate, burn ===
+  ✓ cy[job3]: 48/48 WSGs accounted for (48 finished, 0 SKIP; database)
+  [phase] account job3 ok 2026-11-02T23:36:29Z -> 2026-11-02T23:36:31Z (0.0 min, 48 groups)
+  consolidating cy[job3]: 48 groups (see /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_203300_consolidate_job3.log)
+  ✓ cy[job3]: consolidated
+  ✓ cy[job3]: no finished group left on the host after consolidate — may be burned
+  [phase] consolidate job3 ok 2026-11-02T23:36:31Z -> 2026-11-02T23:49:50Z (13.3 min, 48 groups)
+=== BURN CYPHERS: job3 ===
+  cy[job3]: 0 tofu resources (expect 0)
+  ✓ burn clean
+  [phase] burn job3 ok 2026-11-02T23:49:50Z -> 2026-11-02T23:50:18Z (0.5 min)
+  [phase] model job1 ok 2026-11-02T20:43:08Z -> 2026-11-02T23:46:07Z (183.0 min, 48 groups)
+=== cy[job1]: leg ended (exit 0); account, consolidate, burn ===
+  ✓ cy[job1]: 48/48 WSGs accounted for (48 finished, 0 SKIP; database)
+  [phase] account job1 ok 2026-11-02T23:50:18Z -> 2026-11-02T23:50:21Z (0.1 min, 48 groups)
+  consolidating cy[job1]: 48 groups (see /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_203300_consolidate_job1.log)
+  ✓ cy[job1]: consolidated
+  ✓ cy[job1]: no finished group left on the host after consolidate — may be burned
+  [phase] consolidate job1 ok 2026-11-02T23:50:21Z -> 2026-11-03T00:03:11Z (12.8 min, 48 groups)
+=== BURN CYPHERS: job1 ===
+  cy[job1]: 0 tofu resources (expect 0)
+  ✓ burn clean
+  [phase] burn job1 ok 2026-11-03T00:03:11Z -> 2026-11-03T00:03:39Z (0.5 min)
+  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)
+=== dispatcher completeness (database) ===
+  ✓ dispatcher: 48/48 WSGs accounted for (48 finished, 0 SKIP; database)
+  [phase] account dispatcher ok 2026-11-03T00:03:39Z -> 2026-11-03T00:03:39Z (0.0 min, 48 groups)
+=== verify WSG coverage in fresh_default_minimal (run_uid 20261102_203300-60ab009d) ===
+  241/241 run WSGs have rows from a build this run finished
+  classes: /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_203300_coverage.tsv
+  [phase] coverage ok 2026-11-03T00:03:40Z -> 2026-11-03T00:03:40Z (0.0 min, 241 groups)
+=== groups outside the run that read it (fresh_default_minimal) ===
+  ✓ outside readers: 0 to recompute, 0 named (/Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_203300_outside_readers.tsv)
+=== post-consolidate recompute (lnk_access, 241 WSGs, -j8) ===
+  77 of 241 group(s) recomputed while the legs ran (see /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_203300_recompute_scheduler.log)
+[fanout] recompute - OK: 241/241 job(s) succeeded
+  ✓ recompute: 241/241 WSGs
+  ✓ recompute audit: no group started before a group it reads had landed
+  [phase] recompute ok 2026-11-02T21:51:32Z -> 2026-11-03T00:15:30Z (144.0 min, 241 groups)
+=== compare (tunnel-free) ===
+  ✓ compare CSV: /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_203300_compare.csv
+  [phase] compare ok 2026-11-03T00:15:30Z -> 2026-11-03T00:21:12Z (5.7 min, 241 groups)
+=== summary ===
+  phases (/Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_203300_phases.tsv):
+    phase       host       start_utc            end_utc              minutes groups status
+    refresh                                                                         skipped
+    views                  2026-11-02T20:33:16Z 2026-11-02T20:33:18Z     0.0        ok
+    backup                 2026-11-02T20:33:18Z 2026-11-02T20:33:19Z     0.0        ok
+    prep        worker1    2026-11-02T20:33:18Z 2026-11-02T20:33:25Z     0.1        ok
+    prep        job2       2026-11-02T20:33:18Z 2026-11-02T20:42:32Z     9.2        ok
+    prep        job3       2026-11-02T20:33:18Z 2026-11-02T20:42:42Z     9.4        ok
+    prep        job1       2026-11-02T20:33:18Z 2026-11-02T20:42:47Z     9.5        ok
+    prep                   2026-11-02T20:33:00Z 2026-11-02T20:43:02Z    10.0    241 ok
+    model       worker1    2026-11-02T20:43:08Z 2026-11-02T22:10:30Z    87.4     49 ok
+    account     worker1    2026-11-02T22:10:30Z 2026-11-02T22:10:31Z     0.0     49 ok
+    model       dispatcher 2026-11-02T20:43:02Z 2026-11-02T22:26:18Z   103.3     48 ok
+    consolidate worker1    2026-11-02T22:10:31Z 2026-11-02T22:58:06Z    47.6     49 ok
+    burn        worker1                                                             skipped
+    model       job2       2026-11-02T20:43:08Z 2026-11-02T23:22:53Z   159.8     48 ok
+    account     job2       2026-11-02T23:22:53Z 2026-11-02T23:22:55Z     0.0     48 ok
+    model       job3       2026-11-02T20:43:08Z 2026-11-02T23:31:14Z   168.1     48 ok
+    consolidate job2       2026-11-02T23:22:55Z 2026-11-02T23:36:01Z    13.1     48 ok
+    burn        job2       2026-11-02T23:36:01Z 2026-11-02T23:36:29Z     0.5        ok
+    account     job3       2026-11-02T23:36:29Z 2026-11-02T23:36:31Z     0.0     48 ok
+    model       job1       2026-11-02T20:43:08Z 2026-11-02T23:46:07Z   183.0     48 ok
+    consolidate job3       2026-11-02T23:36:31Z 2026-11-02T23:49:50Z    13.3     48 ok
+    burn        job3       2026-11-02T23:49:50Z 2026-11-02T23:50:18Z     0.5        ok
+    account     job1       2026-11-02T23:50:18Z 2026-11-02T23:50:21Z     0.1     48 ok
+    consolidate job1       2026-11-02T23:50:21Z 2026-11-03T00:03:11Z    12.8     48 ok
+    burn        job1       2026-11-03T00:03:11Z 2026-11-03T00:03:39Z     0.5        ok
+    account     dispatcher 2026-11-03T00:03:39Z 2026-11-03T00:03:39Z     0.0     48 ok
+    coverage               2026-11-03T00:03:40Z 2026-11-03T00:03:40Z     0.0    241 ok
+    recompute              2026-11-02T21:51:32Z 2026-11-03T00:15:30Z   144.0    241 ok
+    compare                2026-11-03T00:15:30Z 2026-11-03T00:21:12Z     5.7    241 ok
+  critical path: 228.2 min (first start to last end)
+  longest model leg: 183.0 min (job1)
+  consolidate tail: 17.1 min (last consolidate end past the last model end)
+  learn host speeds from this run's legs (a plan packed on --minutes-schema):
+    Rscript data-raw/host_speeds_calibrate.R --plan=<study_area_buckets.R --plan-out> \
+      --phases=/Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_203300_phases.tsv [--skip=<name>:<reason>] [--dry-run]
+  run WSGs:        ADMS,ALBN,ATLL,ATNA,BABL,BABR,BARR,BBAR,BEAV,BELA,BIGC,BLAR,BLUR,BONP,BOWR,BRID,BRKS,BULK,BULL,CAMB,CANO,CARP,CARR,CHES,CHIL,CHIR,CHWK,CLAY,CLRH,CLWR,COAL,COLR,COMX,COTR,COWN,CRKD,CRYL,DEAD,DEAL,DEAR,DOGC,DRIR,DUNC,DUNE,ELKR,EUCH,EUCL,FINA,FINL,FIRE,FONT,FOXR,FRAN,FRCN,FROG,GATA,GLAR,GOLD,GRAI,GRNL,GUIC,HARR,HERR,HOLB,HOMA,HORS,INGR,INKR,ISKR,JENR,JERV,KAHN,KAKC,KEEC,KETL,KHOR,KHTZ,KINR,KISK,KISP,KITL,KITR,KLAR,KLIN,KLUM,KNIG,KOTL,KOTR,KSHR,KTSU,KUMR,KUSR,LARL,LBIR,LBTN,LCHL,LCHR,LDEN,LEUT,LFRA,LFRT,LHAF,LIAR,LILL,LISR,LKEC,LKEL,LMUS,LNAR,LNIC,LNRS,LNTH,LOMI,LPCE,LPET,LPRO,LRAN,LRDO,LSAL,LSIK,LSKE,LSTR,LTRE,MAHD,MBNK,MCGR,MDEA,MESC,MESI,MFRA,MFRT,MIDR,MILL,MMUS,MORI,MORK,MORR,MPRO,MSKE,MSTR,MURR,MURT,MUSK,NAHR,NAKR,NARC,NASC,NASR,NATR,NAZR,NBNK,NECL,NECR,NEVI,NICL,NIEL,NIMP,OKAN,OSPK,OWIK,PARA,PARK,PARS,PCEA,PINE,PITR,PORI,QUES,REVL,SAHD,SAJR,SALM,SALR,SANJ,SETN,SEYM,SHER,SHUL,SIML,SKGT,SLOC,SMAR,SMOK,SPAT,SQAM,STHM,STIR,STUL,STUR,SUST,SWIR,TABR,TAHR,TAHS,TAKL,TASR,TATR,TAYR,TESR,THOM,TOAD,TOBA,TOOD,TSAY,TSEA,TSIT,TURN,TUTR,TUYR,TWAC,UARL,UBIR,UBTN,UCHR,UDEN,UEUT,UFRA,UFRT,UHAF,UISR,UJER,UKEC,ULRD,UMUS,UNAR,UNRS,UNTH,UNUR,UOMI,UPCE,UPET,UPRO,USHU,USIK,USKE,USTK,UTRE,VICT,WILL,WORC,ZYMO
+  recomputed WSGs: ADMS,ALBN,ATLL,ATNA,BABL,BABR,BARR,BBAR,BEAV,BELA,BIGC,BLAR,BLUR,BONP,BOWR,BRID,BRKS,BULK,BULL,CAMB,CANO,CARP,CARR,CHES,CHIL,CHIR,CHWK,CLAY,CLRH,CLWR,COAL,COLR,COMX,COTR,COWN,CRKD,CRYL,DEAD,DEAL,DEAR,DOGC,DRIR,DUNC,DUNE,ELKR,EUCH,EUCL,FINA,FINL,FIRE,FONT,FOXR,FRAN,FRCN,FROG,GATA,GLAR,GOLD,GRAI,GRNL,GUIC,HARR,HERR,HOLB,HOMA,HORS,INGR,INKR,ISKR,JENR,JERV,KAHN,KAKC,KEEC,KETL,KHOR,KHTZ,KINR,KISK,KISP,KITL,KITR,KLAR,KLIN,KLUM,KNIG,KOTL,KOTR,KSHR,KTSU,KUMR,KUSR,LARL,LBIR,LBTN,LCHL,LCHR,LDEN,LEUT,LFRA,LFRT,LHAF,LIAR,LILL,LISR,LKEC,LKEL,LMUS,LNAR,LNIC,LNRS,LNTH,LOMI,LPCE,LPET,LPRO,LRAN,LRDO,LSAL,LSIK,LSKE,LSTR,LTRE,MAHD,MBNK,MCGR,MDEA,MESC,MESI,MFRA,MFRT,MIDR,MILL,MMUS,MORI,MORK,MORR,MPRO,MSKE,MSTR,MURR,MURT,MUSK,NAHR,NAKR,NARC,NASC,NASR,NATR,NAZR,NBNK,NECL,NECR,NEVI,NICL,NIEL,NIMP,OKAN,OSPK,OWIK,PARA,PARK,PARS,PCEA,PINE,PITR,PORI,QUES,REVL,SAHD,SAJR,SALM,SALR,SANJ,SETN,SEYM,SHER,SHUL,SIML,SKGT,SLOC,SMAR,SMOK,SPAT,SQAM,STHM,STIR,STUL,STUR,SUST,SWIR,TABR,TAHR,TAHS,TAKL,TASR,TATR,TAYR,TESR,THOM,TOAD,TOBA,TOOD,TSAY,TSEA,TSIT,TURN,TUTR,TUYR,TWAC,UARL,UBIR,UBTN,UCHR,UDEN,UEUT,UFRA,UFRT,UHAF,UISR,UJER,UKEC,ULRD,UMUS,UNAR,UNRS,UNTH,UNUR,UOMI,UPCE,UPET,UPRO,USHU,USIK,USKE,USTK,UTRE,VICT,WILL,WORC,ZYMO
+  compare CSV: /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_203300_compare.csv
+[study_area_compare] NOTE: 7 group(s) with no modelled species skipped: BRID,GRNL,LEUT,LNRS,MURT,PITR,UISR
+[study_area_compare] ATLL ERROR: no shared mapping_code_<sp> columns to compare for ATLL (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] CRYL ERROR: no shared mapping_code_<sp> columns to compare for CRYL (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] KAHN ERROR: no shared mapping_code_<sp> columns to compare for KAHN (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] KUSR ERROR: no shared mapping_code_<sp> columns to compare for KUSR (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] LFRT ERROR: no shared mapping_code_<sp> columns to compare for LFRT (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] LKEC ERROR: no shared mapping_code_<sp> columns to compare for LKEC (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] LPET ERROR: no shared mapping_code_<sp> columns to compare for LPET (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] LSIK ERROR: no shared mapping_code_<sp> columns to compare for LSIK (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] MFRT ERROR: no shared mapping_code_<sp> columns to compare for MFRT (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] MILL ERROR: no shared mapping_code_<sp> columns to compare for MILL (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] SAHD ERROR: no shared mapping_code_<sp> columns to compare for SAHD (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] TSEA ERROR: no shared mapping_code_<sp> columns to compare for TSEA (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] TUTR ERROR: no shared mapping_code_<sp> columns to compare for TUTR (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] UFRT ERROR: no shared mapping_code_<sp> columns to compare for UFRT (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+[study_area_compare] UPET ERROR: no shared mapping_code_<sp> columns to compare for UPET (link: GR; ref: BT,CH,CM,CO,PK,SK,ST,WCT).
+There were 36 warnings (use warnings() to see them)
+[study_area_compare] 782 rows across 219/234 WSGs -> /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run/20261102_203300_compare.csv
+# A tibble: 782 × 7
+   wsg   species total_segs match_pct n_diffs top_pattern      top_pattern_count
+ * <chr> <chr>        <int>     <dbl>   <int> <chr>                        <int>
+ 1 ADMS  BT           11909      96.8     377 REAR;NONE | ACC…               156
+ 2 ADMS  CH           11909      94.7     628 REAR;NONE | ACC…               441
+ 3 ADMS  CO           11909      95.0     601 REAR;NONE | ACC…               424
+ 4 ADMS  PK           11909      91.4    1019 SPAWN;NONE | AC…               750
+ 5 ADMS  SK           11909      95.7     513 SPAWN;NONE | AC…               332
+ 6 ALBN  CH           18124      91.6    1517 REAR;NONE | ACC…               461
+ 7 ALBN  CM           18124      97.0     547 SPAWN;NONE | SP…               168
+ 8 ALBN  CO           18124      90.6    1698 REAR;NONE | ACC…               511
+ 9 ALBN  PK           18124      87.1    2330 SPAWN;NONE | AC…              1130
+10 ALBN  SK           18124      96.1     710 SPAWN;DAM | ACC…               150
+# ℹ 772 more rows
+=== study_area_run done ===
+  ✓ redacted host addresses in 51 log file(s)
+DRIVER_EXIT=0

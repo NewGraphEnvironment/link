@@ -1,3 +1,6 @@
 run_uid	date_utc	name	packed	old	correction	observed	damped	clamped	new	run_ratio	action
 seed	2026-10-28T00:00:00Z	cloud							1.0000		seed: equal; 2026-10-23 cannot tell the classes apart (data-raw/logs/packing_259/fit.md)
 seed	2026-10-28T00:00:00Z	m1							1.0000		seed: equal; the reference
+20261102_203300-60ab009d	2026-11-03T00:23:04Z	cloud	1.0000	1.0000	1.2141	0.8237	0.9471	FALSE	0.9471	0.6932	updated
+20261102_203300-60ab009d	2026-11-03T00:23:04Z	m1	1.0000	1.0000	0.6215	1.6091	1.1827	FALSE	1.1827	0.6932	updated
+20261102_203300-60ab009d	2026-11-03T00:23:04Z	m4	1.0000	1.0000	0.7369	1.3570	1.1071	FALSE	1.1071	0.6932	updated

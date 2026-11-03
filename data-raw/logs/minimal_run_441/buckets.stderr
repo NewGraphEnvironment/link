@@ -1,0 +1,10 @@
+focal: 246 WSGs | config: default_minimal | hosts: 5
+resolving per-WSG drainage closures ...
+union-find: 246 focal WSGs -> 62 drainage-independent components
+resolving modelable DS-first sets per component ...
+minutes excluded (median weight): KTSU, OKAN
+minutes normalized by: cloud (learned) 167 groups; m1 (learned) 72 groups
+weights: measured modelling minutes (newest finished row per group in fresh_default_history.log, normalized by the learned speed of the host that measured them); 2 of 241 groups have no value and take the median (3.72 min)
+group atoms: the drainage-closed assertion is skipped; the recompute settles access
+verifying DS-first order within each host ...
+wrote the plan (241 groups, min) to data-raw/logs/minimal_run_441/plan.tsv

@@ -2604,6 +2604,15 @@ one `--focal=` list per worker after the dispatcher's and before the cyphers'
   The drop runs only on a settled worker whose rows before dispatch were known
   and empty, never on unknown-provenance groups. A drop that does not finish
   leaves rows, and the next run refuses the worker: it fails closed.
+- **A worker's consolidate runs at the speed of its path from the dispatcher.**
+  Workers are reached by their ssh target, which on the tailnet may go through a
+  relay; cloud hosts are reached at their droplets' public addresses. Mid-copy in
+  #441's run m4 reached m1 `via DERP(sea)` (one `tailscale ping m1`: direct
+  connection not established), and m1's `barriers` and `streams` copied at about 550 and 870 kB/s, 47.6
+  min against about 13 for each cloud host's 48; about two hours later the same probe
+  went direct (`research/study_area_run.md`). The path can change between runs,
+  so check `tailscale ping <worker>` just before launch, and pack less onto a
+  relayed worker or put it first to finish.
 - **Consolidate and the drop touch link's tables only** (`consolidate_link_tables()`:
   the persist tables and the log tables). A persist schema can hold others: in
   `fresh` the snapshot primitives (`modelled_stream_crossings`) and the bcfp
