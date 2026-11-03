@@ -120,7 +120,7 @@ Phases 1 to 5 about 7 to 9 hours (PR 1 about 1.5 h with CI; proof builds about 2
 - [x] Pack, launch detached, wait on the driver's own end marker with a foreground re-read of its exit and verifiers. **Nothing is edited or committed in this worktree while it runs, the PWF included:** each dispatcher group stamps this worktree's HEAD and dirty state into its `log` row, and `study_area_verify.sql` raises on a second `link_sha`. Only remote legs check that HEAD moved. The progress entry is written after the driver exits.
 - [x] A second full launch would need a new gate (the first run's rows become the history and are not ancestors of the gate's sha); the fallback for a partial failure is `--recompute-only`, which skips the pre-flight. Not needed: no group failed.
 - [x] Verifiers, audit, calibrator, `research/study_area_run.md`, #377's runs row, RUNBOOK if the run taught anything, `CLAUDE.md` Status.
-- [ ] `/planning-archive`, `/code-check branch`, PR, merge, `Fixes #441`.
+- [ ] `/planning-archive`, `/code-check branch`, PR, merge, `Fixes #441`. *Code-check done (four rounds); archive and PR in this session; the merge is the operator's.*
 
 ## What would stop the run, and what to do instead of waiting
 
@@ -157,7 +157,7 @@ Mac sleep is not a risk: caffeinate holds it on m4 and m1 has sleep off.
 ## Validation
 
 - [ ] Tests pass. *Recorded:* the full suite at PR 1 (5,232 expectations, 0 failed) and `test-worker_prep.R` at PR 5; PRs 2 to 4 record no suite here; CI's R-CMD-check (which skips the database tests) was green on every merge. PR 6 changes no code and ran none.
-- [ ] `/code-check` clean (once over each PR's branch with `/code-check branch`)
+- [x] `/code-check` clean (once over each PR's branch with `/code-check branch`; PR 6: four rounds, ended on `review-run-enumeration.md`)
 - [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
