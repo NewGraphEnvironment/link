@@ -4,7 +4,7 @@
 #
 #   Rscript data-raw/streams_parent_build.R --schema=fresh_default \
 #     --schema-minimal=fresh_default_minimal [--wsgs=BULK,SETN | all] \
-#     [--out=<dir>] [--verify]
+#     --out=<new dir> [--verify]
 #
 # Runs on the host holding both persist schemas (the dispatcher), against its
 # local fwapg, from a clean checkout loaded with pkgload::load_all().
@@ -47,7 +47,10 @@ main <- function() {
   }
   wsgs <- toupper(opt("wsgs", "all"))
   verify <- "--verify" %in% argv
-  out <- opt("out", file.path("data-raw", "logs", "streams_parent_444"))
+  # No default: a default would be a committed evidence directory, and a later
+  # run would overwrite its record.
+  out <- opt("out")
+  if (!nzchar(out)) stop("give --out=<a new directory for pair.tsv, build.tsv or verify.tsv>", call. = FALSE)
   dir.create(out, recursive = TRUE, showWarnings = FALSE)
 
   file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
@@ -76,10 +79,12 @@ main <- function() {
   }
   if (verify) return(verify_groups(conn, pair, schema, out))
 
-  # The code a build loads must be committed; its own logs (data-raw/logs, where
-  # --out writes by default) are not code, as in pretest_check.R.
-  dirty <- e$pretest_git(repo, c("status", "--porcelain", "--untracked-files=no", "--",
-                                 ":(top,exclude)data-raw/logs"))
+  # The code a build loads and judges with must be HEAD's: load_all() sources
+  # every R/*.R, tracked or not, so untracked files there count too.
+  loads <- c("R/", "inst/", "DESCRIPTION", "NAMESPACE", "data-raw/pretest.R",
+             "data-raw/pretest_inputs.csv", "data-raw/streams_parent.R",
+             "data-raw/streams_parent_build.R", "data-raw/wsg_run_one.R")
+  dirty <- e$pretest_git(repo, c("status", "--porcelain", "--untracked-files=all", "--", loads))
   if (length(dirty)) {
     stop("the checkout has uncommitted changes; build from a clean tree:\n",
          paste(dirty, collapse = "\n"), call. = FALSE)

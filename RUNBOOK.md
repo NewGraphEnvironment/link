@@ -2074,8 +2074,9 @@ have caught link#246 on day one regardless of cause.
 **A run under `default` or `default_minimal` also owes `streams_parent` (link#444).**
 The driver neither rebuilds nor clears it, so after the run, on the dispatcher, run
 `Rscript data-raw/streams_parent_build.R --schema=fresh_default
---schema-minimal=fresh_default_minimal --verify`, and rebuild (the same command without
-`--verify`) if it names a group. It refuses a pair whose modelling code differs, so a run
+--schema-minimal=fresh_default_minimal --out=data-raw/logs/streams_parent_<run_uid> --verify`,
+and rebuild (the same command without `--verify`) if it names a group. `--out` has no
+default, so a later run never overwrites an earlier record. It refuses a pair whose modelling code differs, so a run
 of one network at new code waits for the other's (§6b, "Parent attributes").
 
 ### A missing group costs only itself (link#348)

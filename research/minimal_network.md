@@ -69,7 +69,7 @@ Raw numbers: `lifts.csv` (per species and per group), `lifts_obs.csv`.
 
 ## Parent attributes: each full segment reads its minimal parent
 
-**Every full segment of the province lies in one minimal segment, and `fresh_default.streams_parent` names it** (#444). The two provincial builds, `fresh_default` (`cut-full-top`, link `4dfbfa49`) and `fresh_default_minimal` (`cut-min`, link `193cb8aa`), differ on the modelling paths only in `DESCRIPTION`, so they pass the pair guard, and `lnk_streams_parent()` joined all 241 groups on m4 in 3.9 min summed (RUNBOOK §6b, "Parent attributes: `streams_parent`").
+**Every full segment of the province takes the minimal segment it overlaps most, and all but 96 lie wholly inside it; `fresh_default.streams_parent` names it** (#444). The two provincial builds, `fresh_default` (`cut-full-top`, link `4dfbfa49`) and `fresh_default_minimal` (`cut-min`, link `193cb8aa`), differ on the modelling paths only in `DESCRIPTION`, so they pass the pair guard, and `lnk_streams_parent()` joined all 241 groups on m4 in 3.9 min summed (RUNBOOK §6b, "Parent attributes: `streams_parent`").
 
 | measure | value |
 |---|---|

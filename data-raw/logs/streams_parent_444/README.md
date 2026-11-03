@@ -6,6 +6,8 @@ Built 2026-11-03 on m4's local fwapg, from link `a97044e2` (clean tree, `load_al
 Rscript data-raw/streams_parent_build.R --schema=fresh_default --schema-minimal=fresh_default_minimal
 ```
 
+`--out` defaulted to this directory then; it has no default since, so give `--out=data-raw/logs/streams_parent_444` to write here again.
+
 | file | what it holds |
 |---|---|
 | `pair.tsv` | the judged pair, one row per side: schema, groups, config, `config_hash`, `link_sha`, `fresh_sha`, the four tokens, `run_uid`, the commit that judged it, and the verdict |
