@@ -39,7 +39,7 @@ calibrator, as task_plan.md's Phase 6 says. Cloud spend is approved through the 
 ## Session 2026-11-02 to 03 (the run, Phase 6)
 
 - Pre-flight passed in full at `193cb8aa` (gate record at `24b2cbb3`, 11 picks; primitives 0.5 d; credentials, tofu, worker). Launched detached 20:33 UTC with `minimal_run_441/launch.sh`; run_uid `20261102_203300-60ab009d`.
-- Host pre-flight passed on all five (parity, primitives). Legs: m1 87.4 min (49), m4 103.3 (48), job2 159.8, job3 168.1, job1 183.0 (48 each); no failed group, no statement bound. Consolidates m1 47.6 min (Tailscale relay, ~700 KB/s), cloud 12.8 to 13.3 min; each cloud host burned as its leg ended. Early recompute 21:51 to 00:15 UTC. Driver exit 0 at 00:21 UTC, critical path 228.2 min.
+- Host pre-flight passed on all five (parity, primitives). Legs: m1 87.4 min (49), m4 103.3 (48), job2 159.8, job3 168.1, job1 183.0 (48 each); no failed group, no statement bound. Consolidates m1 47.6 min (Tailscale relay mid-copy, 550 to 870 kB/s by table), cloud 12.8 to 13.3 min; each cloud host burned as its leg ended. Early recompute 21:51 to 00:15 UTC. Driver exit 0 at 00:21 UTC, critical path 228.2 min.
 - Checks (`minimal_run_441/checks/`): `check.sh` all PASS (verify at 241, negative cases, audit 2,191 of 2,191 pairs, model rows on every host, no host kept, no droplet up, outside readers written); `verify_extra.sql` exit 0; 241 rows with tokens `cut-min acc-v5 grad-seg q-fwapg`, one fresh sha, one link sha, clean.
 - Calibrator: cloud 0.95, m1 1.18, m4 1.11 (run-wide ratio 0.693). Commits `193cb8aa` (pack, launch), then the evidence.
 - Written: `research/study_area_run.md` section, RUNBOOK §8d worker relay note, `CLAUDE.md` Status, #377's runs row.

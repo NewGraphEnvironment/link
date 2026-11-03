@@ -298,7 +298,7 @@ Scored out of sample, fitted on the 2026-10-17 run and tested on 2026-10-23's ac
   pass or fail them.
 - **#326 moves both weights.** It does not change FWA segments, but it cuts persisted segments 2.1 to
   2.7-fold, so the minutes a group takes, and with them the minutes-per-segment rate, change with it.
-  The next provincial run re-fits both (`fit.R` on its rows).
+  The next provincial run re-fits both (`fit.R` on its rows). Still owed after the 2026-11-02 minimal run, which did not re-fit.
 
 ## The province-wide `default_minimal` run (2026-11-02, 241 groups; #441)
 
@@ -316,14 +316,14 @@ of 2,191 dependency pairs in order, no host kept, no droplet left. Evidence:
 | stage | measured | planned (packing) |
 |---|---|---|
 | modelling, per leg | m1 87.4 min (49 groups), m4 103.3 (48), job2 159.8, job3 168.1, job1 183.0 (48 each) | 202 each |
-| group minutes | 690.2 summed, median 2.3; QUES 20.9, MORK 12.8, BULK 10.7 (all on cloud hosts) | 1,012 (history) |
+| group minutes | 690.2 summed, median 2.3; QUES 20.9, MORK 12.8, BULK 10.7 (all on cloud hosts) | 1,012 (the history's minutes, KTSU and OKAN at the median) |
 | consolidate | m1 47.6 min (49 groups); job2 13.1, job3 13.3, job1 12.8 | — |
 | recompute, 241 groups, `-j8`, early | 21:51 to 00:15 UTC, 126.8 min summed (median 0.41, HOMA 5.0); 29.4 min after the last leg ended, 12.3 after the last consolidate | — |
 | critical path, launch to driver exit | 228.2 min (20:33 to 00:21 UTC); prep 10.0 min | — |
 | cloud hosts | about 9.9 host-hours, spin 20:33 to burns at 23:36, 23:50 and 00:03 UTC | — |
 | `fresh_default_minimal` | 19 GB, 4.99 M segments | — |
 
-- **The minimal network modelled at 0.69 of the history's minutes** (the legs' 701.6 min against the plan's 1,012; group minutes alone 690.2, 0.68), with no group failed and no
+- **The minimal network modelled at 0.69 of the plan's minutes** (the legs' 701.6 min against the plan's 1,012, which is the history's 1,004.4 plus KTSU and OKAN at the median; group minutes alone 690.2, 0.68), with no group failed and no
   statement bounded. The history is `default` at 0.68.0 on the full network (11.39 M segments, before #326's
   and #396's cuts), so the drop is network and code together, not a speed measure of either.
 - **The cloud hosts set the end, and packing at equal speeds is why.** Against the run-wide ratio m1 ran at
@@ -331,7 +331,7 @@ of 2,191 dependency pairs in order, no host kept, no droplet left. Evidence:
   1.11 and 0.95 (`data-raw/logs/host_speeds.tsv`). The next run packs more groups onto m1 and m4.
 - **m1's consolidate took 47.6 min against about 13 for each cloud host, and m4 reached m1 through a Tailscale
   relay while it ran.** At about 22:36 UTC, mid-copy, `tailscale ping m1` answered `via DERP(sea)` with no
-  direct connection, and the copy ran at about 700 KB/s (`barriers` 9.4 min, `streams` 34.9 min); at 00:31
+  direct connection, and the copy ran at about 550 kB/s for `barriers` (309 MB of row text in 9.4 min) and 870 kB/s for `streams` (1.83 GB in 34.9 min); at 00:31
   UTC, after the run, the same probe went direct (`minimal_run_441/checks/tailscale_path.txt`). So the path
   is not a property of the pair. Cloud hosts are reached at their droplets' public addresses, outside
   Tailscale. It did not reach the critical path this time (m1 finished first), but on a run where the
