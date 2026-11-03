@@ -38,7 +38,7 @@ Launched detached (`nohup /opt/homebrew/bin/bash data-raw/logs/default_run_454/l
 
 - Tailscale to m1 is direct (`tailscale ping -c 3 m1`: 6 ms, no relay); m1 answers over ssh with fresh 0.52.0 (`RemoteSha 245c8d8d`, `RemoteRef v0.52.0`), `fresh_default` 241 groups at 0.68.0, 288 GB free on `/`, no active client.
 - m4: no active client, 283 GB free; `fresh_default_history` holds 242 rows (m1 75, cypher-job1 57, job2 68, job3 42, all 0.68.0); `fresh_default_minimal` 241 rows at `cut-min`, 19 GB.
-- `doctl` lists two droplets that are not ours to touch (`geopro`, `qwc-prod`); `check.sh`'s burn check counts cypher droplets only.
+- `doctl` lists two droplets that are not ours to touch; `check.sh`'s burn check counts cypher droplets only.
 - `~/Projects/repo/bcfishobs` still holds the two unrelated files (`planning/active/task_plan.md` modified, `duplicates.csv` untracked), HEAD `dd9a5e5d`.
 - `fresh_default.log_pretest` does not exist on m4: the `default` gate has never run here, so no record can clear the launch until Phase 2 passes.
 - Plan review (2026-11-03, `review-plan.md`): the issue's gate command is refused by the code (above), so the schema is seeded and the gate runs with no history flags; `--preflight-only` does not check a worker's prior rows; the launcher needs `BCFISHOBS_DIR`; the launch flags, `--focal` order, packer names, `check.sh` and the pak reinstall were each verified against the code. The two foreign droplets are ignored by the driver and by `check.sh` (`^cypher-` only). Not verified by the review: the timeline and spend, that m4's `~/.Renviron` sets no `FRESH_GIT_SHA`, that the fresh checkout holds both tags.

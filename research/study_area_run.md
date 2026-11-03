@@ -303,7 +303,8 @@ Scored out of sample, fitted on the 2026-10-17 run and tested on 2026-10-23's ac
 ## The province-wide `default` run (2026-11-03, 241 groups; #454)
 
 run_uid `20261103_163715-269b585a`, `default` into a new `fresh_default` on m4 (tokens
-`cut-full-top acc-v5 grad-seg q-fwapg` on all 241 `log` rows), from m4 as dispatcher with m1 as a
+`cut-full-top acc-v5 grad-seg q-fwapg` on all 241 of the run's `log` rows; the 242 0.68.0 history rows seeded
+for the gate stay in `log`, token columns NULL), from m4 as dispatcher with m1 as a
 persistent worker and three cloud hosts, packed by group on the 241-group 0.68.0 history's minutes at the
 **learned** host speeds (m4 1.107, m1 1.183, cloud 0.947; `study_area_buckets.R --atom=group
 --minutes-schema=fresh_default_history --minutes-exclude=KTSU,OKAN --host-names=m4,m1,cloud,cloud,cloud`),
@@ -323,9 +324,9 @@ line. Evidence: `data-raw/logs/default_run_454/` (launch, packing, checks) and
 | stage | measured | planned (packing) |
 |---|---|---|
 | modelling, per leg | m1 109.8 min (55 groups), m4 121.9 (52), job2 159.2 (45), job3 175.5 (44), job1 178.6 (45) | 197.2 to 198.1 each |
-| group minutes | 734.0 summed, median 2.58; QUES 27.0 (job3), GRAI 10.3, BULK 9.6, LFRA 8.9 (cloud hosts) | 1,004.4 raw over 239 groups (KTSU and OKAN at the median) |
+| group minutes | 734.0 summed, median 2.58; QUES 27.0 (job3), GRAI 10.3, BULK 9.6, LFRA 8.9 (cloud hosts) | 1,015.4 (the history's minutes at learned speeds, KTSU and OKAN at the median) |
 | consolidate | m1 42.9 min (55 groups); job2 11.7, job3 12.6, job1 14.0 | — |
-| recompute, 241 groups, `-j8`, early | 18:26 to 20:26 UTC, 156.2 min summed (median 0.57, SETN 5.5); 82 groups while the legs ran; 39.7 min after the last leg ended, 15.6 after the last consolidate | — |
+| recompute, 241 groups, `-j8`, early | 18:26 to 20:26 UTC, 156.2 min summed (median 0.57, SETN 5.5); 82 launched early, 46 of them before the last leg ended; 39.7 min after the last leg ended, 15.6 after the last consolidate | — |
 | critical path, launch to driver done | 237.2 min (16:37 to 20:34 UTC); prep 10.5 min | — |
 | cloud hosts | about 9.9 host-hours, spin 16:37 to burns at 19:39, 19:56 and 20:11 UTC | — |
 | `fresh_default` | 19 GB, 5.55 M segments (`fresh_default_minimal` 4.99 M; the 0.68.0 build 11.39 M) | — |
@@ -342,8 +343,8 @@ line. Evidence: `data-raw/logs/default_run_454/` (launch, packing, checks) and
   a cloud host in #441's run. Its statements stayed under the 30 min bound. QUES is the gate's
   `near_river_conn` pick (63.3 km of connector), the longest group in both runs.
 - **m1's consolidate took 42.9 min against 11.7 to 14.0 for each cloud host,** with `barriers` copied in
-  532 s and `streams` in 1,755.5 s (`20261103_163715_consolidate_worker1.log`), close to #441's 9.4 and
-  34.9 min. `tailscale ping m1` went direct before launch (87 ms, `default_run_454/phase1_hosts.txt`) and
+  8.9 min and `streams` in 29.3 (`20261103_163715_consolidate_worker1.log`), against #441's 9.4 and 34.9 over
+  a relay. `tailscale ping m1` went direct before launch (87 ms, `default_run_454/phase1_hosts.txt`) and
   after the run (64 ms, `checks/tailscale_path.txt`); it was not probed mid-copy, so this run does not say
   whether the slow copy is the path.
 - **Segments fell to 0.49 of the 0.68.0 build's** (5.55 M against 11.39 M), and the full network holds 1.11

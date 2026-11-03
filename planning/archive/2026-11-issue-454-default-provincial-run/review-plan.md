@@ -23,7 +23,7 @@ Reviewed `task_plan.md` against the issue body, `pretest_run.sh` / `pretest.R`, 
 - The fresh checkout's branch does not matter to the pick (it diffs tags and walks a temporary worktree, `pretest.R:139-146, 521-526`); it needs both tags fetched. Not verified.
 - About 11 picks: #441's gate on the same range picked 11; `default`'s changed set is that minus the minimal bundle's files.
 - Timeline and spend: not verified.
-- `geopro` and `qwc-prod` do not block the launch: `hosts_preflight_droplets` acts on `^cypher(-|$)` only (`study_area_hosts.sh:471-488`); `check.sh:78-80` counts `^cypher-`. Verified.
+- The two droplets that are not cloud hosts of this driver do not block the launch: `hosts_preflight_droplets` acts on `^cypher(-|$)` only (`study_area_hosts.sh:471-488`); `check.sh:78-80` counts `^cypher-`. Verified.
 
 ## Scope
 
