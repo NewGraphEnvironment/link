@@ -17,6 +17,7 @@
 - Probes (`data-raw/logs/default_run_454/phase1_hosts.txt`): m1 direct over Tailscale, both databases quiet, 283 and 287 GB free, no cypher droplet, bchamp objects unmoved (1790057230537, 1793134826715), fresh 0.52.0 on both.
 - `--preflight-only` (`checks/preflight_phase1.log`): every line passes but the gate (no `log_pretest` yet), as planned.
 - Next: the gate, on a clean tree at this commit.
+- Gate (15:32 to 16:24 UTC, at `68a6196f`, no history flags): **PASS**, 11 of 11, 0 other sessions seen. Minutes this run against last build: SETN 7.7/16.3, BULK 4.8/13.7, QUES 15.5/9.3 (bound 28.0), LFRA 4.2/6.6, TOAD 4.8/6.0, HARR 3.4/5.7, UPCE 2.0/3.7, OKAN 2.8/3.7 (median), TAKL 2.3/3.2, HORS 1.8/2.6, SAJR 1.0/1.6. Report `data-raw/logs/pretest/20261103_153249_default/`, log `checks/gate.log`.
 
 ### Resume
 

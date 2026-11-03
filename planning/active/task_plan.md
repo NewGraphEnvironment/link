@@ -59,8 +59,8 @@ Launched detached (`nohup /opt/homebrew/bin/bash data-raw/logs/default_run_454/l
 
 ## Phase 2: the pre-run gate (#372)
 
-- [ ] Quiet check, then `bash data-raw/pretest_run.sh --config=default --schema=fresh_default --minutes-exclude=KTSU,OKAN` (no history flags, per the gate decision above; the seeded `log` is the history) at the branch head. A real pass, recorded in `fresh_default.log_pretest`; its report `data-raw/logs/pretest/<UTC>_default/` committed. An unmapped changed file refuses: map it with its reason (`data-raw/pretest_inputs.csv`) and re-run.
-- [ ] A pick that fails its bound: check for load and other sessions, re-run on a quiet database; `--allow-busy` only if another session holds the database for over 30 min, recorded. A real stall or failure holds the launch and goes to a fix PR (which voids the gate; it runs again).
+- [x] Quiet check, then `bash data-raw/pretest_run.sh --config=default --schema=fresh_default --minutes-exclude=KTSU,OKAN` (no history flags, per the gate decision above; the seeded `log` is the history) at the branch head. A real pass, recorded in `fresh_default.log_pretest`; its report `data-raw/logs/pretest/<UTC>_default/` committed. An unmapped changed file refuses: map it with its reason (`data-raw/pretest_inputs.csv`) and re-run.
+- [x] (Not needed: every pick passed, 0 other sessions seen.) A pick that fails its bound: check for load and other sessions, re-run on a quiet database; `--allow-busy` only if another session holds the database for over 30 min, recorded. A real stall or failure holds the launch and goes to a fix PR (which voids the gate; it runs again).
 - [ ] `--preflight-only` again, in full, with the log kept (`checks/preflight_only.log`).
 
 ## Phase 3: pack and launch
