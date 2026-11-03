@@ -51,11 +51,18 @@ main <- function() {
   # run would overwrite its record.
   out <- opt("out")
   if (!nzchar(out)) stop("give --out=<a new directory for pair.tsv, build.tsv or verify.tsv>", call. = FALSE)
+  # A directory holding this mode's files is an earlier run's record: refuse it.
+  writes <- if (verify) "verify.tsv" else c("pair.tsv", "build.tsv")
+  held <- writes[file.exists(file.path(out, writes))]
+  if (length(held)) {
+    stop(out, " already holds ", paste(held, collapse = " and "),
+         ", an earlier run's record; give --out a new directory", call. = FALSE)
+  }
   dir.create(out, recursive = TRUE, showWarnings = FALSE)
 
   file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
   repo <- normalizePath(file.path(dirname(sub("^--file=", "", file_arg[1])), ".."))
-  suppressPackageStartupMessages(pkgload::load_all(repo, quiet = TRUE))
+  suppressPackageStartupMessages(pkgload::load_all(repo, helpers = FALSE, quiet = TRUE))
   e <- new.env()
   sys.source(file.path(repo, "data-raw", "pretest.R"), envir = e)
   sys.source(file.path(repo, "data-raw", "streams_parent.R"), envir = e)
@@ -85,6 +92,9 @@ main <- function() {
              "data-raw/pretest_inputs.csv", "data-raw/streams_parent.R",
              "data-raw/streams_parent_build.R", "data-raw/wsg_run_one.R")
   dirty <- e$pretest_git(repo, c("status", "--porcelain", "--untracked-files=all", "--", loads))
+  # load_all() also sources an ignored R/*.R, which status lists only with --ignored.
+  ignored <- e$pretest_git(repo, c("status", "--porcelain", "--ignored", "--", "R/"))
+  dirty <- c(dirty, grep("^!! ", ignored, value = TRUE))
   if (length(dirty)) {
     stop("the checkout has uncommitted changes; build from a clean tree:\n",
          paste(dirty, collapse = "\n"), call. = FALSE)
@@ -135,12 +145,14 @@ main <- function() {
   groups <- groups[order(-sizes$n[match(groups, sizes$wsg)], groups)]
 
   build_tsv <- file.path(out, "build.tsv")
-  if (file.exists(build_tsv)) file.remove(build_tsv)
   failed <- character()
   for (i in seq_along(groups)) {
     w <- groups[i]
     t0 <- Sys.time()
-    res <- tryCatch(lnk_streams_parent(conn, w, schema, schema_minimal),  # nolint: object_usage_linter.
+    judged <- function(side) pair$run_id[pair$side == side & pair$wsg == w]
+    res <- tryCatch(lnk_streams_parent(conn, w, schema, schema_minimal,  # nolint: object_usage_linter.
+                                       run_id_full = judged("full"),
+                                       run_id_minimal = judged("minimal")),
                     error = function(err) err)
     mins <- as.numeric(difftime(Sys.time(), t0, units = "mins"))
     if (inherits(res, "error")) {

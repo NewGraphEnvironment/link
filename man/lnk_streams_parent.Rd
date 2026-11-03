@@ -11,7 +11,9 @@ lnk_streams_parent(
   schema_minimal,
   tol_m = 1.01,
   sliver_m = 0.01,
-  cut_floor_m = 0.5
+  cut_floor_m = 0.5,
+  run_id_full = NULL,
+  run_id_minimal = NULL
 )
 }
 \arguments{
@@ -33,6 +35,11 @@ dropped.}
 
 \item{cut_floor_m}{Numeric. A minimal segment starting above this measure
 is a cut; one starting at or below it starts its line.}
+
+\item{run_id_full, run_id_minimal}{Character or \code{NULL}. When given, the
+\code{log.run_id} of the build a caller judged on each side; the join is
+refused if the group's newest build is another one (it was re-modelled
+after the judgement).}
 }
 \value{
 A one-row data frame, invisibly: \code{wsg}, \code{n_full}, \code{n_minimal},

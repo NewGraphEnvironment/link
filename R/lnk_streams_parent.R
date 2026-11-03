@@ -113,6 +113,10 @@ cols_streams_parent <- c(
 #'   dropped.
 #' @param cut_floor_m Numeric. A minimal segment starting above this measure
 #'   is a cut; one starting at or below it starts its line.
+#' @param run_id_full,run_id_minimal Character or `NULL`. When given, the
+#'   `log.run_id` of the build a caller judged on each side; the join is
+#'   refused if the group's newest build is another one (it was re-modelled
+#'   after the judgement).
 #' @return A one-row data frame, invisibly: `wsg`, `n_full`, `n_minimal`,
 #'   `km`, `n_straddle` (full segments with `straddle_m` of `sliver_m` or
 #'   more), `km_straddle`, `max_straddle_m`.
@@ -130,7 +134,8 @@ cols_streams_parent <- c(
 #'    WHERE s.watershed_group_code = 'BULK' LIMIT 5")
 #' }
 lnk_streams_parent <- function(conn, wsg, schema, schema_minimal,
-                               tol_m = 1.01, sliver_m = 0.01, cut_floor_m = 0.5) {
+                               tol_m = 1.01, sliver_m = 0.01, cut_floor_m = 0.5,
+                               run_id_full = NULL, run_id_minimal = NULL) {
   if (!is.character(wsg) || length(wsg) != 1L || !grepl("^[A-Z]{4}$", wsg)) {
     stop("wsg must be one watershed group code (four capital letters)", call. = FALSE)
   }
@@ -152,6 +157,12 @@ lnk_streams_parent <- function(conn, wsg, schema, schema_minimal,
   builds <- .lnk_streams_parent_builds(conn, schema, schema_minimal, wsg)
   bf <- builds[builds$side == "full", ]
   bm <- builds[builds$side == "minimal", ]
+  for (x in list(list(run_id_full, bf, "full"), list(run_id_minimal, bm, "minimal"))) {
+    if (!is.null(x[[1]]) && !identical(as.character(x[[1]]), x[[2]]$run_id)) {
+      stop(sprintf("the newest %s build of %s is %s, not the judged %s: it was re-modelled since",
+                   x[[3]], wsg, x[[2]]$run_id, paste(x[[1]], collapse = ",")), call. = FALSE)
+    }
+  }
   num <- function(sql) {
     d <- DBI::dbGetQuery(conn, sql)
     d[] <- lapply(d, as.numeric)

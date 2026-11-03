@@ -6,7 +6,7 @@ Built 2026-11-03 on m4's local fwapg, from link `a97044e2` (clean tree, `load_al
 Rscript data-raw/streams_parent_build.R --schema=fresh_default --schema-minimal=fresh_default_minimal
 ```
 
-`--out` defaulted to this directory then; it has no default since, so give `--out=data-raw/logs/streams_parent_444` to write here again.
+`--out` defaulted to this directory then. It has no default since, and it refuses a directory that already holds the files a run writes, so a later run goes to a directory of its own.
 
 | file | what it holds |
 |---|---|
