@@ -1,8 +1,8 @@
 # Study-area run (tunnel-free, M1-dispatch)
 
-**Verified:** 2026-11-02 (the minimal provincial run, #441); 2026-10-30 (groups outside a partial run, #274); 2026-10-29 (the pre-run gate, #372); 2026-10-28 (how hosts are packed, #259); 2026-10-26 (the early recompute, #374); 2026-10-17 (the province-wide section and the corrected lines) · **Issues:** #175, #246, #347, #348, #374, #259, #372, #274, #441 ·
+**Verified:** 2026-11-03 (the `default` provincial run, #454); 2026-11-02 (the minimal provincial run, #441); 2026-10-30 (groups outside a partial run, #274); 2026-10-29 (the pre-run gate, #372); 2026-10-28 (how hosts are packed, #259); 2026-10-26 (the early recompute, #374); 2026-10-17 (the province-wide section and the corrected lines) · **Issues:** #175, #246, #347, #348, #374, #259, #372, #274, #441, #454 ·
 **Produced by:** `data-raw/study_area_run.sh`; logs `data-raw/logs/provincial_246/`, `data-raw/logs/packing_259/`,
-`data-raw/logs/study_area_run/20261017_*`, `data-raw/logs/study_area_run/20261102_203300_*`, `data-raw/logs/minimal_run_441/`, `data-raw/logs/pretest_372/`, `data-raw/logs/partial_readers_274/`
+`data-raw/logs/study_area_run/20261017_*`, `data-raw/logs/study_area_run/20261102_203300_*`, `data-raw/logs/minimal_run_441/`, `data-raw/logs/study_area_run/20261103_163715_*`, `data-raw/logs/default_run_454/`, `data-raw/logs/pretest_372/`, `data-raw/logs/partial_readers_274/`
 
 Lean alternative to the 5-host `provincial_run_runbook.md` for running
 **study-area** mapping_code parity.
@@ -299,6 +299,56 @@ Scored out of sample, fitted on the 2026-10-17 run and tested on 2026-10-23's ac
 - **#326 moves both weights.** It does not change FWA segments, but it cuts persisted segments 2.1 to
   2.7-fold, so the minutes a group takes, and with them the minutes-per-segment rate, change with it.
   The next provincial run re-fits both (`fit.R` on its rows). Still owed after the 2026-11-02 minimal run, which did not re-fit.
+
+## The province-wide `default` run (2026-11-03, 241 groups; #454)
+
+run_uid `20261103_163715-269b585a`, `default` into a new `fresh_default` on m4 (tokens
+`cut-full-top acc-v5 grad-seg q-fwapg` on all 241 `log` rows), from m4 as dispatcher with m1 as a
+persistent worker and three cloud hosts, packed by group on the 241-group 0.68.0 history's minutes at the
+**learned** host speeds (m4 1.107, m1 1.183, cloud 0.947; `study_area_buckets.R --atom=group
+--minutes-schema=fresh_default_history --minutes-exclude=KTSU,OKAN --host-names=m4,m1,cloud,cloud,cloud`),
+`--buckets-exact`, `--recompute-jobs=8`, early recompute, each cloud host burned as its leg ended. Link
+`4dfbfa49` (0.78.2) on fresh `245c8d8d` (0.52.0), one sha of each across five hosts. It re-models every
+`default` group for each change since 0.68.0 (#326, #396, #399, #401, #402, #429, #432), at the code and
+primitives load `fresh_default_minimal` was built at, in the same database. The gate passed on m4 at
+`68a6196f` with no history flags, reading a `fresh_default.log` seeded from `fresh_default_history.log`
+(11 picks; `default` extends nothing, so it cannot borrow a history). m1's 0.68.0 build is kept as
+`fresh_default_20261023`. `check.sh` passes in full (`study_area_verify.sql` and its negative cases at
+`expected_n=241`, `recompute_audit.R` 2,191 of 2,191 pairs in order, model rows on every host, no host kept,
+cloud hosts burned), and `verify_extra.sql` exits 0. The launcher `exec`s the driver, so its exit status is
+read from the driver's own output: every phase `ok`, coverage and recompute 241 of 241, no incomplete
+line. Evidence: `data-raw/logs/default_run_454/` (launch, packing, checks) and
+`data-raw/logs/study_area_run/20261103_163715_*`.
+
+| stage | measured | planned (packing) |
+|---|---|---|
+| modelling, per leg | m1 109.8 min (55 groups), m4 121.9 (52), job2 159.2 (45), job3 175.5 (44), job1 178.6 (45) | 197.2 to 198.1 each |
+| group minutes | 734.0 summed, median 2.58; QUES 27.0 (job3), GRAI 10.3, BULK 9.6, LFRA 8.9 (cloud hosts) | 1,004.4 raw over 239 groups (KTSU and OKAN at the median) |
+| consolidate | m1 42.9 min (55 groups); job2 11.7, job3 12.6, job1 14.0 | — |
+| recompute, 241 groups, `-j8`, early | 18:26 to 20:26 UTC, 156.2 min summed (median 0.57, SETN 5.5); 82 groups while the legs ran; 39.7 min after the last leg ended, 15.6 after the last consolidate | — |
+| critical path, launch to driver done | 237.2 min (16:37 to 20:34 UTC); prep 10.5 min | — |
+| cloud hosts | about 9.9 host-hours, spin 16:37 to burns at 19:39, 19:56 and 20:11 UTC | — |
+| `fresh_default` | 19 GB, 5.55 M segments (`fresh_default_minimal` 4.99 M; the 0.68.0 build 11.39 M) | — |
+
+- **The first run packed on learned speeds still finished on the cloud hosts.** Against their projections
+  m1 ran at 0.55, m4 at 0.62 and the cloud hosts at 0.80 to 0.90 (run-wide 0.753). The projections read the
+  0.68.0 history on the full network before #326's and #396's cuts, so the absolute drop is network and code;
+  the spread between hosts is what the calibrator learns. Its second (damped) update moved m1 to 1.310, m4 to
+  1.181 and cloud to 0.910 (`data-raw/logs/host_speeds.tsv`, `default_run_454/checks/calibrate.log`).
+- **The local hosts ended 57 and 69 min before the last cloud leg,** so the critical path is the cloud legs
+  plus job1's consolidate and the recompute tail, 9.0 min longer than #441's at about the same total
+  modelling (745.0 leg-minutes here, 701.6 there).
+- **QUES took 27.0 min on job3** against 9.3 in its 0.68.0 history on m1, 15.5 in the gate on m4, and 20.9 on
+  a cloud host in #441's run. Its statements stayed under the 30 min bound. QUES is the gate's
+  `near_river_conn` pick (63.3 km of connector), the longest group in both runs.
+- **m1's consolidate took 42.9 min against 11.7 to 14.0 for each cloud host,** with `barriers` copied in
+  532 s and `streams` in 1,755.5 s (`20261103_163715_consolidate_worker1.log`), close to #441's 9.4 and
+  34.9 min. `tailscale ping m1` went direct before launch (87 ms, `default_run_454/phase1_hosts.txt`) and
+  after the run (64 ms, `checks/tailscale_path.txt`); it was not probed mid-copy, so this run does not say
+  whether the slow copy is the path.
+- **Segments fell to 0.49 of the 0.68.0 build's** (5.55 M against 11.39 M), and the full network holds 1.11
+  times the minimal one's 4.99 M, so #444's join of full segments to their minimal parent has both schemas
+  at one code in one database.
 
 ## The province-wide `default_minimal` run (2026-11-02, 241 groups; #441)
 

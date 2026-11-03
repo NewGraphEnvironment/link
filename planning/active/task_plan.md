@@ -77,7 +77,7 @@ Launched detached (`nohup /opt/homebrew/bin/bash data-raw/logs/default_run_454/l
 - [x] `verify_extra.sql` (`provincial_246/`) at `expected_n=241`; tokens `cut-full-top acc-v5 grad-seg q-fwapg` on all 241 `log` rows, one link sha (the branch's), fresh 0.52.0 with one `fresh_sha`, `link_dirty` false; `tailscale ping m1` after the run beside the pre-launch probe.
 - [x] `host_speeds_calibrate.R --plan=<plan.tsv> --phases=<TS>_phases.tsv`; `host_speeds.tsv` and its history committed (the calibrator's second run toward #163's three).
 - [x] `run.log` redacted with the driver's rule before commit (the launcher's stdout is outside the driver's redaction).
-- [ ] `research/study_area_run.md`: a section "The province-wide `default` run (2026-11-03, 241 groups; #454)" with the legs, consolidates, recompute, critical path, size, and each leg against `plan.tsv` (the first run packed on learned speeds); `fresh_default_minimal`'s segment count beside `fresh_default`'s for #444.
+- [x] `research/study_area_run.md`: a section "The province-wide `default` run (2026-11-03, 241 groups; #454)" with the legs, consolidates, recompute, critical path, size, and each leg against `plan.tsv` (the first run packed on learned speeds); `fresh_default_minimal`'s segment count beside `fresh_default`'s for #444.
 - [ ] #377's runs row; measured lines on #369, #371, #374, #375 and #376 (left open for the operator); `CLAUDE.md` Status; RUNBOOK §8d only if the run taught a mechanic. #444's body gains the line that `fresh_default` now exists at the same code.
 - [ ] #454's "Before launch" and "Acceptance" boxes ticked in the body, with the gate box's command replaced by the one that ran (no history flags, seeded `log`) and why.
 
