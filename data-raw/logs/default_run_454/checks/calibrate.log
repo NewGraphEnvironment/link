@@ -1,0 +1,19 @@
+run 20261103_163715-269b585a: 5 legs
+
+| host | name | speed | groups | projected min | actual min | skipped |
+|---|---|---|---|---|---|---|
+| job1 | cloud | 0.947 | 45 | 198.0 | 178.6 |  |
+| dispatcher | m4 | 1.107 | 52 | 198.0 | 121.9 |  |
+| job3 | cloud | 0.947 | 44 | 197.2 | 175.5 |  |
+| job2 | cloud | 0.947 | 45 | 198.1 | 159.2 |  |
+| worker1 | m1 | 1.183 | 55 | 198.1 | 109.8 |  |
+
+run-wide ratio (actual / projected at the stored speeds): 0.753
+
+| name | packed | old | correction | observed | new | clamped | action |
+|---|---|---|---|---|---|---|---|
+| cloud | 0.947 | 0.947 | 1.149 | 0.824 | 0.910 | FALSE | updated |
+| m4 | 1.107 | 1.107 | 0.818 | 1.354 | 1.181 | FALSE | updated |
+| m1 | 1.183 | 1.183 | 0.736 | 1.606 | 1.310 | FALSE | updated |
+
+wrote /Users/airvine/Projects/repo/link-breaks/data-raw/logs/host_speeds.tsv and appended 3 rows to /Users/airvine/Projects/repo/link-breaks/data-raw/logs/host_speeds_history.tsv
