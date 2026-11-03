@@ -1,3 +1,11 @@
+# link 0.79.0
+
+**Each segment of the full network can read the gradient of the minimal segment it lies in** ([#444](https://github.com/NewGraphEnvironment/link/issues/444)). A habitat rule tuned on the minimal network (`cut-min`) reads each minimal segment's gradient; the new `lnk_streams_parent()` writes `<full schema>.streams_parent`, one row per full segment naming its minimal parent, the parent's gradient and length, and how far the full segment straddles it, so the same rule can be applied on the network link ships.
+
+- **The join is refused unless it is well defined:** every minimal cut must have a full cut within 1.01 m, the pieces must cover both networks, and every full segment must get a row. A group's rows are replaced in one transaction.
+- **`data-raw/streams_parent_build.R` builds it for every group two schemas hold,** after judging the pair as the pre-run gate judges a record: one modelling code, fresh and token set per schema, `cut-min` against a `cut-full-*` token, the same species per group. `--verify` names groups a re-model has left stale. Nothing on the modelling path creates, copies or clears the table, so a re-model of either network owes a rebuild (RUNBOOK §6b and §8d).
+- **A new vocabulary token, `grad-parent`,** names the reading. No build writes it; a downstream archive uses it to tell the parent-gradient setup from `grad-seg` on the same build.
+
 # link 0.78.2
 
 No code change. The minimal provincial run ([#441](https://github.com/NewGraphEnvironment/link/issues/441)) built `default_minimal` into `fresh_default_minimal` for all 241 groups (run `20261102_203300-60ab009d`), and its record lands: the launch, the checks and the first host-speed calibration (`data-raw/logs/minimal_run_441/`, `research/study_area_run.md`).

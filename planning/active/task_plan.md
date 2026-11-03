@@ -49,10 +49,10 @@ Each phase lands its own tests, written first within the phase, so every commit'
 - [x] `data-raw/README.md` entry.
 
 ## Phase 3: vocabulary, docs
-- [ ] `test-lnk_vocabulary.R`, written first: `grad-parent` live, matched by no shipped config; every config's expected tokens unchanged.
-- [ ] `inst/extdata/vocabulary.csv`: `grad-parent` row (decision 5).
-- [ ] RUNBOOK §6b: a "Parent attributes (`streams_parent`)" subsection: what the table is, how it is built and guarded, that consolidate/verify/export ignore it, that a re-model owes a rebuild (`--verify`), the `grad-parent` token; a line in the provincial-run checklist (§8d).
-- [ ] NEWS.md entry under the development heading.
+- [x] `test-lnk_vocabulary.R`, written first: `grad-parent` live, matched by no shipped config; every config's expected tokens unchanged.
+- [x] `inst/extdata/vocabulary.csv`: `grad-parent` row (decision 5).
+- [x] RUNBOOK §6b: a "Parent attributes (`streams_parent`)" subsection: what the table is, how it is built and guarded, that consolidate/verify/export ignore it, that a re-model owes a rebuild (`--verify`), the `grad-parent` token; a line in the provincial-run checklist (§8d).
+- [x] NEWS.md entry under the development heading.
 
 ## Phase 4: the province, and the prototype check
 - [ ] Run the driver on m4 for all 241 groups into `fresh_default.streams_parent` (from a clean committed tree; `load_all`); commit `data-raw/logs/streams_parent_444/{README.md,build.tsv,pair.tsv}`.

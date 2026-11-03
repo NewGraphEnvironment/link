@@ -883,7 +883,7 @@ to its `log` row (`token_cut`, `token_acc`, `token_grad`, `token_flow`).
 |---|---|---|---|
 | cut | `cut-` | break sources in order, `observation_breaks` (when observations cut), gradient classes, and which of the definite-barrier, control and habitat-classification files the bundle declares | canonical string |
 | acc | `acc-` | the modelled species, each species' `access_gradient_max` and `observation_*` lifts, the presence table, `pipeline: observation_upstream` (resolved; #401), and the two access rules held in code (`.lnk_classes_bcfp`, `lnk_presence()`'s groups) | sha256 of the parsed values |
-| grad | `grad-` | how segment gradient is measured | `gradient=segment` |
+| grad | `grad-` | how segment gradient is measured | `gradient=segment` (`grad-seg`, every build); `grad-parent` names a reading no build writes (below) |
 | flow | `q-` | `discharge_source` and `discharge_fill` | canonical string |
 
 **How a cut token is keyed.** `cut-<source set>[-<qualifier>...]`: the source set says
@@ -963,6 +963,49 @@ so this only bites a recompute run later: compare its `config_hash` with the bui
 consolidate copies the columns both sides share after bringing the destination's log
 tables up to the dispatcher's link (`schema_consolidate.R`), so the dispatcher must run
 this link or newer; under `load_all` it does.
+
+### Parent attributes: `streams_parent` (link#444)
+
+A habitat rule tuned on the minimal network (`cut-min`) reads each minimal segment's
+gradient. To apply it unchanged on the full network, each full segment reads the gradient
+of the minimal segment it lies in. `<full schema>.streams_parent` holds that: one row per
+full segment, keyed `(id_segment, watershed_group_code)`, with `id_segment_minimal`,
+`gradient_minimal`, `length_minimal`, `overlap_m` and `straddle_m`, and the two builds it
+was joined from (`schema_minimal`, `run_id_minimal`, `run_uid_minimal`,
+`config_hash_minimal`, `link_sha_minimal`, `run_id_full`, `built_at`).
+
+**How it is built.** `lnk_streams_parent()` joins one group by measure overlap per
+`blue_line_key` (never by `id_segment`), drops pieces under 1 cm, and gives each full
+segment the minimal segment it overlaps most. It refuses a group unless every minimal cut
+above 0.5 m on its line has a full cut within 1.01 m (#415's superset), the pieces cover
+both networks' km, and every full segment gets a row. The group's rows are replaced in one
+transaction, so a refusal leaves the old ones. `data-raw/streams_parent_build.R` runs it
+over every group both schemas hold, after judging the pair once: both builds closed and
+clean, one `link_sha`, `fresh_sha`, `config_name`, `config_hash` and `acc`, `flow` and
+`grad` token per schema and the same across them, `cut-min` against a `cut-full-*` token,
+the same species per group, and no modelling-path change between the two `link_sha`s,
+judged as the pre-run gate judges a record (`pretest_inputs.csv`, the fresh pin, and a
+`none` file not reached from `wsg_run_one.R` at HEAD). Raw sha equality is not needed: the
+2026-11 pair is `193cb8aa` against `4dfbfa49`, which differ only in `DESCRIPTION`.
+
+**Nothing on the modelling path touches it.** `lnk_persist_init()` does not create it,
+consolidate does not copy it, `host_drop_partials` and the verifier do not read it, and the
+export does not ship it. So a re-model of either network leaves its rows behind. **After
+any `default` or `default_minimal` re-model, rebuild it:** `streams_parent_build.R --verify`
+names groups whose newest builds are not the ones the rows record, groups with no rows,
+segments without a row, and rows whose `overlap_m + straddle_m` is not the segment's
+`length_metre`. A reader can apply that last test itself: it is the guard against a stale
+row that `run_id_full` cannot give without the log.
+
+**Its token.** `grad-parent` (`gradient=parent;parent_cut=cut-min`) names reading the
+parent's gradient on a full network. No build writes it to `log.token_grad`, because no
+build reads `streams_parent`; it is for a downstream archive (knowledge's tuning) to name
+the "full network, parent gradient" setup apart from `grad-seg` on the same build.
+
+Only gradient is carried. Discharge needs no column: neither network crosses an FWA
+segment boundary, and discharge is per FWA segment, so a full segment and its parent read
+the same value. The crossing-based fields are not carried, because on the minimal network
+they read below a segment's start, not below a point.
 
 ## 6c. Run identity and the recompute log (link#262)
 
@@ -2027,6 +2070,13 @@ that DELETE, so a group's log history survives it; link#354.) So:
 
 The second is detection rather than prevention, and it is the one that would
 have caught link#246 on day one regardless of cause.
+
+**A run under `default` or `default_minimal` also owes `streams_parent` (link#444).**
+The driver neither rebuilds nor clears it, so after the run, on the dispatcher, run
+`Rscript data-raw/streams_parent_build.R --schema=fresh_default
+--schema-minimal=fresh_default_minimal --verify`, and rebuild (the same command without
+`--verify`) if it names a group. It refuses a pair whose modelling code differs, so a run
+of one network at new code waits for the other's (§6b, "Parent attributes").
 
 ### A missing group costs only itself (link#348)
 
