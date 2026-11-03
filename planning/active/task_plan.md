@@ -61,13 +61,13 @@ Launched detached (`nohup /opt/homebrew/bin/bash data-raw/logs/default_run_454/l
 
 - [x] Quiet check, then `bash data-raw/pretest_run.sh --config=default --schema=fresh_default --minutes-exclude=KTSU,OKAN` (no history flags, per the gate decision above; the seeded `log` is the history) at the branch head. A real pass, recorded in `fresh_default.log_pretest`; its report `data-raw/logs/pretest/<UTC>_default/` committed. An unmapped changed file refuses: map it with its reason (`data-raw/pretest_inputs.csv`) and re-run.
 - [x] (Not needed: every pick passed, 0 other sessions seen.) A pick that fails its bound: check for load and other sessions, re-run on a quiet database; `--allow-busy` only if another session holds the database for over 30 min, recorded. A real stall or failure holds the launch and goes to a fix PR (which voids the gate; it runs again).
-- [ ] `--preflight-only` again, in full, with the log kept (`checks/preflight_only.log`).
+- [x] `--preflight-only` again, in full, with the log kept (`checks/preflight_only.log`).
 
 ## Phase 3: pack and launch
 
-- [ ] Pack as decided (`buckets.md`, `buckets.stderr`, `plan.tsv` under `data-raw/logs/default_run_454/`); read the five legs' projected minutes and name the longest.
-- [ ] `data-raw/logs/default_run_454/launch.sh` on #441's pattern (`minimal_run_441/launch.sh`): the five `--focal` lists in driver order (dispatcher, worker1, job1, job2, job3), `--config=default --schema=fresh_default --run-label=default-provincial-454 --recompute-jobs=8 --statement-timeout=30 --auto-install --buckets-exact --workers=m1 --cy-workspaces=job1,job2,job3`; `PREFLIGHT=1` runs it with `--preflight-only`.
-- [ ] Launch decisions and the packing written to `progress.md`, committed and pushed before launch.
+- [x] Pack as decided (`buckets.md`, `buckets.stderr`, `plan.tsv` under `data-raw/logs/default_run_454/`); read the five legs' projected minutes and name the longest.
+- [x] `data-raw/logs/default_run_454/launch.sh` on #441's pattern (`minimal_run_441/launch.sh`): the five `--focal` lists in driver order (dispatcher, worker1, job1, job2, job3), `--config=default --schema=fresh_default --run-label=default-provincial-454 --recompute-jobs=8 --statement-timeout=30 --auto-install --buckets-exact --workers=m1 --cy-workspaces=job1,job2,job3`; `PREFLIGHT=1` runs it with `--preflight-only`.
+- [x] Launch decisions and the packing written to `progress.md`, committed and pushed before launch.
 - [ ] `BCFISHOBS_DIR=<clean clone> PREFLIGHT=1 /opt/homebrew/bin/bash data-raw/logs/default_run_454/launch.sh` passes, then launch detached with `BCFISHOBS_DIR=<clean clone> nohup /opt/homebrew/bin/bash data-raw/logs/default_run_454/launch.sh > data-raw/logs/default_run_454/run.log 2>&1 & disown` (the launcher aborts without the variable); note the launch time with `date -u`. Wait on the driver's own end (a background `until` loop on `run.log`'s final summary line, then a foreground re-read of the exit status and the `<TS>_*` files); nothing in the worktree changes meanwhile.
 - [ ] A failed group: the driver carries on and names it; re-model once on m4 under the `run_uid`, then `--recompute-only --run-uid=<uid>` (#348). A kept host holds the only copy of its groups and stays up with its burn command listed.
 

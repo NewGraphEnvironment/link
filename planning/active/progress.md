@@ -19,6 +19,17 @@
 - Next: the gate, on a clean tree at this commit.
 - Gate (15:32 to 16:24 UTC, at `68a6196f`, no history flags): **PASS**, 11 of 11, 0 other sessions seen. Minutes this run against last build: SETN 7.7/16.3, BULK 4.8/13.7, QUES 15.5/9.3 (bound 28.0), LFRA 4.2/6.6, TOAD 4.8/6.0, HARR 3.4/5.7, UPCE 2.0/3.7, OKAN 2.8/3.7 (median), TAKL 2.3/3.2, HORS 1.8/2.6, SAJR 1.0/1.6. Report `data-raw/logs/pretest/20261103_153249_default/`, log `checks/gate.log`.
 
+- `--preflight-only` in full after the gate (`checks/preflight_only.log`): exit 0, the gate line passes.
+- **Packed** (`data-raw/logs/default_run_454/buckets.md`, `plan.tsv`): `LNK_LOAD=loadall Rscript data-raw/study_area_buckets.R --hosts=5 --workers=1 --atom=group --config=default --focal=<fresh's 246 groups> --minutes-schema=fresh_default_history --minutes-exclude=KTSU,OKAN --host-names=m4,m1,cloud,cloud,cloud --plan-out=.../plan.tsv`. 241 modelable (5 dropped by presence), 1,015 dispatcher-equivalent min in all. Learned speeds m4 1.107, m1 1.183, cloud 0.947. Groups and raw minutes per host: m4 52 / 219, m1 55 / 234, job1 45 / 188, job2 45 / 188, job3 44 / 187; every host's load 197 to 198 dispatcher-equivalent min, job2 the longest by a fraction. Component atoms would give 231.
+- **Launch decisions** (as the gate table, unchanged): `default` into `fresh_default`, 241 groups `--buckets-exact`, m4 dispatcher, m1 `--workers=m1`, `job1,job2,job3`, `--recompute-jobs=8 --statement-timeout=30 --auto-install`, no `--refresh-primitives`, `--run-label=default-provincial-454`, `BCFISHOBS_DIR` the scratchpad clone. `launch.sh` holds the five lists in driver order; checked against `plan.tsv` (same 241, no duplicate). `PREFLIGHT=1` passes (`checks/preflight_launch.log`).
+- **Launch held:** m1 still holds `fresh_default` (16:25 UTC); the operator runs the rename, then the launch is one command (below).
+
+#### Launch, once m1's rename is done
+
+```
+cd ~/Projects/repo/link-breaks && BCFISHOBS_DIR=<clean bcfishobs clone at dd9a5e5d> nohup /opt/homebrew/bin/bash data-raw/logs/default_run_454/launch.sh > data-raw/logs/default_run_454/run.log 2>&1 & disown
+```
+
 ### Resume
 
 ```
