@@ -28,3 +28,8 @@ Start Phase 1 and run every phase to the PR (/code-check branch, /planning-archi
 /gh-pr-push). This message is the resume instruction that starts the run-to-PR
 mandate; the merge stays with me.
 ```
+
+## Session 2026-11-03 (resumed)
+
+- Resume checks passed in the `link-breaks` worktree (branch current with origin, main unmoved).
+- Phase 1: `lnk_streams_parent()` (`R/lnk_streams_parent.R`), `test-lnk_streams_parent.R` (52 expectations on a two-schema fixture), map row `none`. Each of four planted defects (smallest overlap, no transaction, loose superset, no row count) turns the file red. Full suite: FAIL 0, WARN 6 (all in `test-lnk_csv_sync.R` and `test-lnk_pipeline_access.R`), SKIP 1, PASS 5,273. Lint clean on the new files.
