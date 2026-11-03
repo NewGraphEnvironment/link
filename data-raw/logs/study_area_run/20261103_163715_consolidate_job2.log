@@ -1,0 +1,85 @@
+NOTICE:  schema "fresh_default" already exists, skipping
+
+NOTICE:  relation "log" already exists, skipping
+
+NOTICE:  relation "log_recompute" already exists, skipping
+
+NOTICE:  relation "log_input" already exists, skipping
+
+NOTICE:  relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  relation "log_dimensions" already exists, skipping
+
+[12:27:09] cypher@<host> -> DELETE bucket (45 WSGs) from 17 tables; 3 log tables keep their history
+[12:27:09] cypher@<host> -> COPY (bucket-filtered) for 20 tables
+[12:27:10] cypher@<host> -> barrier_overrides copied in 1.2 s
+[12:29:54] cypher@<host> -> barriers copied in 163.3 s
+[12:29:55] cypher@<host> -> log copied in 1.4 s
+[12:29:56] cypher@<host> -> log_input copied in 1.0 s
+[12:29:57] cypher@<host> -> log_recompute copied in 1.0 s
+[12:36:19] cypher@<host> -> streams copied in 381.8 s
+[12:36:42] cypher@<host> -> streams_access copied in 22.7 s
+[12:36:53] cypher@<host> -> streams_habitat_bt copied in 11.5 s
+[12:37:08] cypher@<host> -> streams_habitat_ch copied in 15.2 s
+[12:37:13] cypher@<host> -> streams_habitat_cm copied in 4.8 s
+[12:37:20] cypher@<host> -> streams_habitat_co copied in 7.1 s
+[12:37:25] cypher@<host> -> streams_habitat_gr copied in 5.1 s
+[12:37:26] cypher@<host> -> streams_habitat_ko copied in 0.8 s
+[12:37:31] cypher@<host> -> streams_habitat_pk copied in 5.0 s
+[12:37:32] cypher@<host> -> streams_habitat_rb copied in 0.8 s
+[12:37:43] cypher@<host> -> streams_habitat_sk copied in 11.3 s
+[12:37:50] cypher@<host> -> streams_habitat_st copied in 7.0 s
+[12:37:52] cypher@<host> -> streams_habitat_wct copied in 2.2 s
+[12:38:19] cypher@<host> -> streams_mapping_code copied in 26.3 s
+[12:38:23] cypher@<host> -> streams_near_river copied in 4.2 s
+[12:38:30] cypher@<host> -> DELETE bucket from source (post-COPY cleanup)
+$sources
+$sources$`cypher@<host>`
+$sources$`cypher@<host>`$ok
+[1] TRUE
+
+$sources$`cypher@<host>`$stage
+[1] "complete"
+
+$sources$`cypher@<host>`$pre_rows
+[1] 46
+
+$sources$`cypher@<host>`$post_rows
+[1] 8601119
+
+$sources$`cypher@<host>`$copied
+ [1] "barrier_overrides"    "barriers"             "log"                 
+ [4] "log_input"            "log_recompute"        "streams"             
+ [7] "streams_access"       "streams_habitat_bt"   "streams_habitat_ch"  
+[10] "streams_habitat_cm"   "streams_habitat_co"   "streams_habitat_gr"  
+[13] "streams_habitat_ko"   "streams_habitat_pk"   "streams_habitat_rb"  
+[16] "streams_habitat_sk"   "streams_habitat_st"   "streams_habitat_wct" 
+[19] "streams_mapping_code" "streams_near_river"  
+
+$sources$`cypher@<host>`$errored
+character(0)
+
+$sources$`cypher@<host>`$skipped_source_only
+character(0)
+
+$sources$`cypher@<host>`$skipped_dest_only
+character(0)
+
+
+
+$tables
+ [1] "barrier_overrides"                 "barriers"                         
+ [3] "log"                               "log_dimensions"                   
+ [5] "log_input"                         "log_parameters_fresh"             
+ [7] "log_parameters_habitat_thresholds" "log_pretest"                      
+ [9] "log_recompute"                     "streams"                          
+[11] "streams_access"                    "streams_habitat_bt"               
+[13] "streams_habitat_ch"                "streams_habitat_cm"               
+[15] "streams_habitat_co"                "streams_habitat_gr"               
+[17] "streams_habitat_ko"                "streams_habitat_pk"               
+[19] "streams_habitat_rb"                "streams_habitat_sk"               
+[21] "streams_habitat_st"                "streams_habitat_wct"              
+[23] "streams_mapping_code"              "streams_near_river"               
+

@@ -1,0 +1,85 @@
+NOTICE:  schema "fresh_default" already exists, skipping
+
+NOTICE:  relation "log" already exists, skipping
+
+NOTICE:  relation "log_recompute" already exists, skipping
+
+NOTICE:  relation "log_input" already exists, skipping
+
+NOTICE:  relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  relation "log_dimensions" already exists, skipping
+
+[11:37:45] <worker1> -> DELETE bucket (55 WSGs) from 17 tables; 3 log tables keep their history
+[11:37:45] <worker1> -> COPY (bucket-filtered) for 20 tables
+[11:37:46] <worker1> -> barrier_overrides copied in 0.7 s
+[11:46:38] <worker1> -> barriers copied in 532.0 s
+[11:46:39] <worker1> -> log copied in 0.4 s
+[11:46:39] <worker1> -> log_input copied in 0.5 s
+[11:46:39] <worker1> -> log_recompute copied in 0.4 s
+[12:15:55] <worker1> -> streams copied in 1755.5 s
+[12:17:28] <worker1> -> streams_access copied in 93.2 s
+[12:17:49] <worker1> -> streams_habitat_bt copied in 21.2 s
+[12:18:07] <worker1> -> streams_habitat_ch copied in 17.3 s
+[12:18:15] <worker1> -> streams_habitat_cm copied in 8.6 s
+[12:18:30] <worker1> -> streams_habitat_co copied in 15.3 s
+[12:18:42] <worker1> -> streams_habitat_gr copied in 11.2 s
+[12:18:42] <worker1> -> streams_habitat_ko copied in 0.4 s
+[12:18:53] <worker1> -> streams_habitat_pk copied in 10.8 s
+[12:18:53] <worker1> -> streams_habitat_rb copied in 0.4 s
+[12:19:08] <worker1> -> streams_habitat_sk copied in 15.1 s
+[12:19:21] <worker1> -> streams_habitat_st copied in 12.3 s
+[12:19:23] <worker1> -> streams_habitat_wct copied in 2.2 s
+[12:20:23] <worker1> -> streams_mapping_code copied in 60.4 s
+[12:20:29] <worker1> -> streams_near_river copied in 5.8 s
+[12:20:30] <worker1> -> DELETE bucket from source (post-COPY cleanup)
+$sources
+$sources$<worker1>
+$sources$<worker1>$ok
+[1] TRUE
+
+$sources$<worker1>$stage
+[1] "complete"
+
+$sources$<worker1>$pre_rows
+[1] 55
+
+$sources$<worker1>$post_rows
+[1] 10990544
+
+$sources$<worker1>$copied
+ [1] "barrier_overrides"    "barriers"             "log"                 
+ [4] "log_input"            "log_recompute"        "streams"             
+ [7] "streams_access"       "streams_habitat_bt"   "streams_habitat_ch"  
+[10] "streams_habitat_cm"   "streams_habitat_co"   "streams_habitat_gr"  
+[13] "streams_habitat_ko"   "streams_habitat_pk"   "streams_habitat_rb"  
+[16] "streams_habitat_sk"   "streams_habitat_st"   "streams_habitat_wct" 
+[19] "streams_mapping_code" "streams_near_river"  
+
+$sources$<worker1>$errored
+character(0)
+
+$sources$<worker1>$skipped_source_only
+character(0)
+
+$sources$<worker1>$skipped_dest_only
+character(0)
+
+
+
+$tables
+ [1] "barrier_overrides"                 "barriers"                         
+ [3] "log"                               "log_dimensions"                   
+ [5] "log_input"                         "log_parameters_fresh"             
+ [7] "log_parameters_habitat_thresholds" "log_pretest"                      
+ [9] "log_recompute"                     "streams"                          
+[11] "streams_access"                    "streams_habitat_bt"               
+[13] "streams_habitat_ch"                "streams_habitat_cm"               
+[15] "streams_habitat_co"                "streams_habitat_gr"               
+[17] "streams_habitat_ko"                "streams_habitat_pk"               
+[19] "streams_habitat_rb"                "streams_habitat_sk"               
+[21] "streams_habitat_st"                "streams_habitat_wct"              
+[23] "streams_mapping_code"              "streams_near_river"               
+

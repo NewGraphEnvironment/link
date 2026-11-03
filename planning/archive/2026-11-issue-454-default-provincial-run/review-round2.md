@@ -1,0 +1,28 @@
+# /code-check branch, round 2 (#454's records)
+
+## Checklist read
+
+`code-check.md`: the prose of every H3 under `## Mechanisms` (a guard that fails toward pass; a fixture that cannot reach the failure mode; a proxy is not the property; verification that reads its own output; a guard's scope; a fix in one of two callers; restore the bug; shared working tree; a wrapper's exit is not the work; zero-length/empty/unset; the probe is broken first; written data outlives the fix; serialization; one fact derived twice). `code-check-shell.md`: the sections on `&` binding to the `&&` list, `cd` without a guard, Tailscale SSH exit 0, `grep -c`, heredocs (the branch's only shell is `launch.sh`, which `exec`s the driver). `code-check-r.md` and `code-check-spatial.md`: no R or spatial code changes on the branch; index lines only.
+
+## Method
+
+Round 1's fixes (`git show 1ef8f16e`) checked against the artifacts, then every number and quantified claim in the new `research/study_area_run.md` section, the new `CLAUDE.md` Status block, the archive README and `progress.md` from "Session 2026-11-03 (run" on, recomputed from `20261103_163715_phases.tsv`, `run.log`, `plan.tsv`, `buckets.md`, `checks/*`, `host_speeds*.tsv`, `consolidate_worker1.log` (this run's and #441's), `recompute_launched.tsv`, the pretest report, read-only queries of m4's `fresh_default.log` / `log_recompute` / `streams`, `fresh_default_minimal`, `fresh_default_dev_20261103`, and of m1's `fresh_default_20261023` (exact count 11,388,268) and empty `fresh_default`.
+
+Verified correct: round 1's fixes (plan 1,015.4 weighted, 1,004.4 raw without KTSU/OKAN; raw per host 215.1/231.5/186.1/182.2/189.6; 82 early launches, 46 before 19:46:26; tokens on the 241 run rows with the 242 seeded 0.68.0 rows NULL; copy times 8.9 and 29.3 min against #441's 9.4 and 34.9; only `Version`/`Date` in `DESCRIPTION` between `193cb8aa` and `4dfbfa49`; the 0.68.0 build dated 2026-10-23 at 11.39 M; no droplet names); every leg, consolidate, burn, the 10.0 min wait, tails 24.1/39.7/15.6, critical path 237.2 and #441's 228.2 (9.0), 745.0 vs 701.6 leg-minutes, 9.9 host-hours, recompute 156.2/0.57/SETN 5.51, group minutes 734.0/2.58, QUES 27.0 (job3), GRAI/BULK/LFRA, QUES 20.9 in #441 (longest in both), gate picks and bound 28.0, 63.3 km, speeds and 0.753, projection ratios, 9.8 % under, segments 5,546,370 / 4,987,761 (0.49, 1.11), 19 GB, dev schema 30 groups / 8 `log` rows / 3,501 MB, no `TIMEOUT` in any run log, the `--history-config` refusal at `pretest.R:375-378`. Address scan: a dotted-quad pattern proven on a test string finds only `0.0.0.0/0` and the round-1 test string; no IPv6, no ssh target but `cypher@<host>`, no key or token; droplet ids in tofu logs have precedent in committed logs since 2026-05-25.
+
+## Findings
+
+- **[severity: bug]** CLAUDE.md:22 — "m4 and m1 still ended 57 and 69 min before the last cloud leg (legs at 0.55, 0.62 and 0.80 to 0.90 of their projections)". Round 1 swapped the host names to fit 57/69 but left the ratios in the old order, so the sentence now pairs m4 with 0.55 and m1 with 0.62. `checks/calibrate.log`: m4 121.9/198.0 = 0.62, m1 109.8/198.1 = 0.55 (research/study_area_run.md:335 has it right: "m1 ran at 0.55, m4 at 0.62"). Write "(legs at 0.62, 0.55 ...)" or name each.
+  - **Rule:** none
+
+- **[severity: fragile]** planning/archive/2026-11-issue-454-default-provincial-run/README.md:10 — "left the local hosts idle 57 and 69 min before the last cloud leg". They were not idle: per `20261103_163715_phases.tsv` m1 served its own consolidate copy 18:37:43 to 19:20:39 (42.9 of its 68.7 min), and m4, the dispatcher, ran the consolidates of m1 and job2 and the early recompute (46 launches before 19:46:26) in its 56.7 min. They were idle of modelling only; `CLAUDE.md:22` and research:339 say "ended ... before", which is right. (The same "idle" is in #376's body, outside the branch.)
+  - **Rule:** none
+
+- **[severity: fragile]** planning/archive/2026-11-issue-454-default-provincial-run/README.md:24 and task_plan.md:109 — "#259's `fit.R` re-fit and #261's `predictors.R` / `correlations.R` re-run ... (named in the record as still owed)". README:5 names the record as `research/study_area_run.md`; its new section names neither, its only mention (research/study_area_run.md:301) still reads "The next provincial run re-fits both (`fit.R` on its rows). Still owed after the 2026-11-02 minimal run", not updated for this run (the second provincial run since that line, also without a re-fit), and no file under `research/` names `predictors.R` or `correlations.R`. Only `CLAUDE.md`'s Owed line names both. Either add the line to research:301 (still owed after #454's run too) or drop the parenthetical.
+  - **Rule:** none
+
+- **[severity: fragile]** data-raw/logs/default_run_454/launch.sh:3 — "Decisions: planning/active/task_plan.md". After `/planning-archive`, `planning/active/` is empty; the decisions are in `planning/archive/2026-11-issue-454-default-provincial-run/task_plan.md`, "Decided at the gate". The file is evidence "exactly as launched", so leave it; `minimal_run_441/launch.sh:3` has the same dangling pointer. Low; noted so nobody follows it.
+  - **Rule:** none
+
+- **[outside the branch, for the operator]** #374's body, "82 of 241 groups launched early (before the last landing)": 8 of the 82 early launches are at 20:10:55, after the last consolidate ended at 20:10:33 (`recompute_launched.tsv`; the driver's own "while the legs ran" wording is what round 1 corrected). The branch's text ("82 launched early, 46 of them before the last leg ended") is right.
+  - **Rule:** none

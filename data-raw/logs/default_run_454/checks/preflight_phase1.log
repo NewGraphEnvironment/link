@@ -1,0 +1,38 @@
+=== study_area_run 20261103_153053 ===
+  run_uid:      20261103_153053-50dc3e62
+  run_label:    <none>
+  config:       default
+  branch:       454-default-run (cyphers run this ref)
+  persist:      fresh_default
+  cyphers:      job1 job2 job3 (3)
+  workers:      worker1 (1; persistent, never burned)
+  log dir:      /Users/airvine/Projects/repo/link-breaks/data-raw/logs/study_area_run
+  vintage max:  7 d
+  recompute -j: 4
+  recompute:    early (each group once it and every group it reads have landed; link#374)
+  statement:    30 min per modelling statement (PGOPTIONS, both legs); recompute 10 min (wsg_recompute_one.R)
+  buckets:      closure (each --focal= expanded to its drainage closure, DS-first)
+  MODE:         --preflight-only (no spend, no writes)
+=== pre-flight (local; pre-spend) ===
+  ✓ dispatcher fresh exports what the pipeline calls
+  ✓ output tokens: cut-full-top acc-v5 grad-seg q-fwapg 
+  ✓ origin/454-default-run is at HEAD
+  ✓ fwapg_sha 9a62b0c24b4f (exported to all hosts)
+  ✓ bcfishobs_sha dd9a5e5d2ddc (exported to all hosts)
+  ✓ fresh_sha 245c8d8db60b (clean)
+  ✗ pre-run gate not cleared: no gate record (fresh_default.log_pretest does not exist)
+    Run: bash data-raw/pretest_run.sh --config=default --schema=fresh_default
+      (a bundle that extends another, with no full history of its own, adds
+       --history-schema= and --history-config=: RUNBOOK §8d, "The pre-run gate")
+    or pass --pretest-note="<why>" (recorded; fresh_default must exist first)
+  ✓ bcfp reference pinned at v0.7.15-51-g3bd2824 (exported to all hosts)
+    ok   discharge (fwapg) loaded: whse_basemapping.fwa_stream_networks_discharge
+  ✓ discharge (fwapg) loaded on the dispatcher
+    [preflight] primitive vintage (window 7 d) - OK, oldest 1.2 d (whse_fish.pscis_assessment_svw) [judged by load stamp: 4, statistics: 0, none: 0]
+  ✓ dispatcher primitives within 7 d
+  ✓ doctl token valid (DO API reachable)
+  ✓ tofu do_token valid (HTTP 200 /v2/account)
+  ✓ tofu s3 backend reachable
+  ✓ worker1: answers, its own database
+FATAL: pre-flight failed; aborting before spend
+  ✓ redacted host addresses in 1 log file(s)

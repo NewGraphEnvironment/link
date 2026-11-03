@@ -1,0 +1,5 @@
+m4	0.78.2	4dfbfa4980eb	0.52.0	245c8d8db60b	4dfbfa4980eb	TRUE	sha256:b2d2f	9a62b0c24b4f	4.5.2
+<worker1>	0.78.2	4dfbfa4980eb	0.52.0	245c8d8db60b	4dfbfa4980eb	FALSE	sha256:b2d2f	9a62b0c24b4f	4.5.2
+cypher-job1	0.78.2	4dfbfa4980eb	0.52.0	245c8d8db60b	4dfbfa4980eb	TRUE	sha256:b2d2f	9a62b0c24b4f	4.6.2
+cypher-job2	0.78.2	4dfbfa4980eb	0.52.0	245c8d8db60b	4dfbfa4980eb	TRUE	sha256:b2d2f	9a62b0c24b4f	4.6.2
+cypher-job3	0.78.2	4dfbfa4980eb	0.52.0	245c8d8db60b	4dfbfa4980eb	TRUE	sha256:b2d2f	9a62b0c24b4f	4.6.2
