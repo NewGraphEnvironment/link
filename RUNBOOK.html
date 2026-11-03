@@ -32,7 +32,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="logo.png" class="logo" alt=""><h1>link RUNBOOK — how the system actually works</h1>
-      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.78.1/RUNBOOK.md" class="external-link"><code>RUNBOOK.md</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/RUNBOOK.md" class="external-link"><code>RUNBOOK.md</code></a></small>
     </div>
 
 <div id="link-runbook--how-the-system-actually-works" class="section level1">
@@ -1221,6 +1221,8 @@ Never the receiving river downstream. <code>mad_m3s_source</code> names the tier
 <strong>The leg</strong> is a cypher’s (<code>remote_leg_cmd</code>, the same exports), run from the clone with <code>LNK_LOAD=loadall</code>. Before each group it checks the clone’s HEAD against the run’s commit, and runs no group once it has moved (a second run’s prep, a hand <code>git checkout</code>): each group loads the code afresh.</li>
 <li>
 <strong>After its leg:</strong> account, consolidate and release, as for a cypher (<code>host_finish_leg</code>). Then no burn: consolidate already deleted what it copied, and a released worker’s partial groups (failed builds whose pre-persist left rows, <code>HOST_PARTIAL</code>) are dropped from its persist tables (<code>host_drop_partials</code>), so the next run’s prior-rows check finds it clean. Their log rows stay, because the open row is the only record of the failure. The drop runs only on a settled worker whose rows before dispatch were known and empty, never on unknown-provenance groups. A drop that does not finish leaves rows, and the next run refuses the worker: it fails closed.</li>
+<li>
+<strong>A worker’s consolidate runs at the speed of its path from the dispatcher.</strong> Workers are reached by their ssh target, which on the tailnet may go through a relay; cloud hosts are reached at their droplets’ public addresses. Mid-copy in #441’s run m4 reached m1 <code>via DERP(sea)</code> (one <code>tailscale ping m1</code>: direct connection not established), and m1’s <code>barriers</code> and <code>streams</code> copied at about 550 and 870 kB/s, 47.6 min against about 13 for each cloud host’s 48; about two hours later the same probe went direct (<code>research/study_area_run.md</code>). The path can change between runs, so check <code>tailscale ping &lt;worker&gt;</code> just before launch, and pack less onto a relayed worker or put it first to finish.</li>
 <li>
 <strong>Consolidate and the drop touch link’s tables only</strong> (<code>consolidate_link_tables()</code>: the persist tables and the log tables). A persist schema can hold others: in <code>fresh</code> the snapshot primitives (<code>modelled_stream_crossings</code>) and the bcfp reference (<code>streams_vw_bcfp</code>, <code>crossings_vw_bcfp</code>) carry <code>watershed_group_code</code> too. Before link#376 consolidate copied them as well, putting a source’s primitive rows over the dispatcher’s for its bucket, and step 5 deleted them from the source: harmless on a cypher about to be burned, not on a worker.</li>
 <li>
