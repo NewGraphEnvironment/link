@@ -11,7 +11,20 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
-## Status (2026-11-03, latest) — `fresh_default_minimal` is one provincial build of all 241 groups (#441)
+## Status (2026-11-03, latest) — `fresh_default` is one provincial build of all 241 groups at 0.78.2 (#454)
+
+**run_uid `20261103_163715-269b585a` rebuilt `default` into `fresh_default` on m4 (dispatcher), m1 (worker) and three cloud hosts, at link `4dfbfa49` (0.78.2) on fresh 0.52.0, tokens `cut-full-top acc-v5 grad-seg q-fwapg` on every row.** It pays every re-model owed since 0.68.0 (#326, #396, #399, #401, #402, #429, #432) for `default`, at the code and primitives load `fresh_default_minimal` was built at, in the same database. Done in 237.2 min; `check.sh` all PASS (both verifiers at `expected_n=241`, the audit 2,191 of 2,191 pairs), no host kept, no droplet left. 5.55 M segments (0.49 of the 0.68.0 build's 11.39 M), 19 GB. Record: `research/study_area_run.md`, "The province-wide `default` run (2026-11-03)"; evidence `data-raw/logs/default_run_454/` and `data-raw/logs/study_area_run/20261103_163715_*`.
+
+**Owed:** #444's parent table (its `link_sha` guard, as worded, refuses this pair: `193cb8aa` against `4dfbfa49`, only `DESCRIPTION` between them). The calibrator's third run. #259's `fit.R` re-fit and #261's re-run on post-#326 minutes. #369, #371, #374, #375 and #376 carry this run's measured lines and stay open for the operator. The `fresh` (`bcfishpass`) schema was not rebuilt: its owed re-models (#326, #399, #401, #429) wait for a provincial `bcfishpass` run with a gate of its own. m4 keeps `fresh_default_dev_20261103` (the 30 development groups, droppable) and m1 keeps `fresh_default_20261023` (the 0.68.0 build).
+
+**Facts not worth re-deriving:**
+- **`default` cannot borrow a gate history,** because `--history-config` must be a config the bundle extends and `default` extends nothing. Seed the schema's `log` from the history (`CREATE TABLE <s>.log (LIKE fresh_default_history.log INCLUDING ALL)` and copy the rows) and run the gate with no history flags.
+- **Learned speeds after two runs:** m1 1.310, m4 1.181, cloud 0.910 (`data-raw/logs/host_speeds.tsv`). Packed at the first run's speeds, m1 and m4 still ended 57 and 69 min before the last cloud leg (legs at 0.55, 0.62 and 0.80 to 0.90 of their projections).
+- **The cloud hosts are finished one at a time:** job1's leg ended at 19:46 UTC and its consolidate waited 10.0 min while the driver finished job3.
+- **QUES took 27.0 min on a cloud host,** against 15.5 in the gate on m4 and 9.3 in its 0.68.0 history; under the 30 min statement bound, and the longest group in both provincial runs.
+- **The launcher `exec`s the driver,** so `run.log` carries no exit line: read the status from the driver's own summary.
+
+## Status (2026-11-03, earlier) — `fresh_default_minimal` is one provincial build of all 241 groups (#441)
 
 **run_uid `20261102_203300-60ab009d` built `default_minimal` into `fresh_default_minimal` on m4 (dispatcher), m1 (worker) and three cloud hosts, at link `193cb8aa` (0.78.1) on fresh 0.52.0, tokens `cut-min acc-v5 grad-seg q-fwapg` on every row.** Driver exit 0 in 228.2 min; both verifiers pass at `expected_n=241`, the audit finds 2,191 of 2,191 pairs in order, no host kept, no droplet left. 4.99 M segments, 19 GB. knowledge#120 can read it. Record: `research/study_area_run.md`, "The province-wide `default_minimal` run"; evidence `data-raw/logs/minimal_run_441/` and `data-raw/logs/study_area_run/20261102_203300_*`.
 

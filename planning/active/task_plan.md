@@ -78,8 +78,8 @@ Launched detached (`nohup /opt/homebrew/bin/bash data-raw/logs/default_run_454/l
 - [x] `host_speeds_calibrate.R --plan=<plan.tsv> --phases=<TS>_phases.tsv`; `host_speeds.tsv` and its history committed (the calibrator's second run toward #163's three).
 - [x] `run.log` redacted with the driver's rule before commit (the launcher's stdout is outside the driver's redaction).
 - [x] `research/study_area_run.md`: a section "The province-wide `default` run (2026-11-03, 241 groups; #454)" with the legs, consolidates, recompute, critical path, size, and each leg against `plan.tsv` (the first run packed on learned speeds); `fresh_default_minimal`'s segment count beside `fresh_default`'s for #444.
-- [ ] #377's runs row; measured lines on #369, #371, #374, #375 and #376 (left open for the operator); `CLAUDE.md` Status; RUNBOOK §8d only if the run taught a mechanic. #444's body gains the line that `fresh_default` now exists at the same code.
-- [ ] #454's "Before launch" and "Acceptance" boxes ticked in the body, with the gate box's command replaced by the one that ran (no history flags, seeded `log`) and why.
+- [x] #377's runs row; measured lines on #369, #371, #374, #375 and #376 (left open for the operator); `CLAUDE.md` Status; RUNBOOK §8d only if the run taught a mechanic. #444's body gains the line that `fresh_default` now exists at the same code.
+- [x] #454's "Before launch" and "Acceptance" boxes ticked in the body, with the gate box's command replaced by the one that ran (no history flags, seeded `log`) and why.
 
 ## Phase 5: close
 
