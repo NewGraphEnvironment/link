@@ -83,7 +83,7 @@ Launched detached (`nohup /opt/homebrew/bin/bash data-raw/logs/default_run_454/l
 
 ## Phase 5: close
 
-- [ ] `/planning-archive` (done) (README with Measurement and Evidence), `/code-check branch` (three rounds at least, ended on an enumeration of the record's claims, each read from a committed artifact), `/gh-pr-push` with `Fixes #454`. The merge is the operator's.
+- [ ] `/planning-archive` (done) (README with Measurement and Evidence), `/code-check branch` (done) (three rounds at least, ended on an enumeration of the record's claims, each read from a committed artifact), `/gh-pr-push` with `Fixes #454`. The merge is the operator's.
 
 ## What would stop the run, and what to do instead of waiting
 
@@ -104,7 +104,7 @@ Launched detached (`nohup /opt/homebrew/bin/bash data-raw/logs/default_run_454/l
 
 ## Owed at the end (reported, done after merge)
 
-- [ ] #444's parent table, now buildable.
+- [ ] #444's parent table, now buildable once its `link_sha` guard is settled (see #444).
 - [ ] The calibrator's third run (#163's three-run acceptance) on the run that follows.
 - [ ] #259's `fit.R` re-fit and #261's `predictors.R` / `correlations.R` re-run on this run's minutes (named in the record as still owed).
 - [ ] fresh 0.53.0 back on m4 for whoever installed it, if they still need it.
@@ -112,7 +112,7 @@ Launched detached (`nohup /opt/homebrew/bin/bash data-raw/logs/default_run_454/l
 ## Validation
 
 - [x] (Not needed: no file under `R/`, `tests/`, `inst/` or the drivers changed, and the gate forced no `pretest_inputs.csv` row.) Tests pass (no code changes planned; if the gate forces a `pretest_inputs.csv` row, `test-pretest.R` runs)
-- [ ] `/code-check` clean (once over the branch with `/code-check branch`)
+- [x] `/code-check` clean (once over the branch with `/code-check branch`): three rounds, ended on round 3's enumeration of 96 facts across the records and issue bodies; its 5 mismatches fixed (`review-round1.md` to `review-round3.md`).
 - [x] PWF checkboxes match landed work
 - [x] `/planning-archive` on completion
 

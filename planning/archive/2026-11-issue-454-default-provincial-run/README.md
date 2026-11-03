@@ -19,7 +19,7 @@
 
 ## Owed
 
-- #444's parent table, now buildable.
+- #444's parent table, now buildable once its `link_sha` guard is settled (see #444).
 - The calibrator's third run (#163's three-run acceptance) on the run that follows.
 - #259's `fit.R` re-fit and #261's `predictors.R` / `correlations.R` re-run on this run's minutes (named in the record as still owed).
 - fresh 0.53.0 back on m4 for whoever installed it, if they still need it.

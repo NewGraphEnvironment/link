@@ -317,7 +317,7 @@ primitives load `fresh_default_minimal` was built at, in the same database. The 
 `fresh_default_20261023`. `check.sh` passes in full (`study_area_verify.sql` and its negative cases at
 `expected_n=241`, `recompute_audit.R` 2,191 of 2,191 pairs in order, model rows on every host, no host kept,
 cloud hosts burned), and `verify_extra.sql` exits 0. The launcher `exec`s the driver, so its exit status is
-read from the driver's own output: every phase `ok`, coverage and recompute 241 of 241, no incomplete
+read from the driver's own output: every phase `ok` or skipped by design (refresh, the worker's burn), coverage and recompute 241 of 241, no incomplete
 line. Evidence: `data-raw/logs/default_run_454/` (launch, packing, checks) and
 `data-raw/logs/study_area_run/20261103_163715_*`.
 
@@ -349,7 +349,9 @@ line. Evidence: `data-raw/logs/default_run_454/` (launch, packing, checks) and
   whether the slow copy is the path.
 - **Segments fell to 0.49 of the 0.68.0 build's** (5.55 M against 11.39 M), and the full network holds 1.11
   times the minimal one's 4.99 M, so #444's join of full segments to their minimal parent has both schemas
-  at one code in one database.
+  in one database at one modelling code. Their `link_sha`s differ (`193cb8aa`, 0.78.1; `4dfbfa49`, 0.78.2;
+  nothing under `R/`, `inst/`, tests or the drivers changed but `DESCRIPTION`'s version), so #444's guard
+  as worded refuses the pair.
 - **Not done at this run:** #259's `fit.R` re-fit and #261's `predictors.R` / `correlations.R` re-run on
   these post-#326 minutes.
 
