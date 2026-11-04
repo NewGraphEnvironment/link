@@ -1,6 +1,6 @@
 # The minimal network
 
-**Verified:** 2026-11-02 · **Issues:** #415 (and #441); spawned the parent-attribute issue · **Produced by:** `data-raw/logs/minimal_breaks_415/` (`run.sh`, `proof.R`, `lifts.R`) builds at link `6bf9ca06` (0.78.0), fresh 0.52.0, on m4's local fwapg; `lifts.csv` written by `lifts.R` as of `ac52e150`, with `R/` unchanged since the builds · **Status:** proof run on four groups; nothing built province-wide.
+**Verified:** 2026-11-03 (parent attributes; 2026-11-02 for the proof) · **Issues:** #415 (and #441); #444 (parent attributes) · **Produced by:** `data-raw/logs/minimal_breaks_415/` (`run.sh`, `proof.R`, `lifts.R`) builds at link `6bf9ca06` (0.78.0), fresh 0.52.0, on m4's local fwapg; `lifts.csv` written by `lifts.R` as of `ac52e150`, with `R/` unchanged since the builds · parent attributes by `data-raw/streams_parent_build.R`, evidence `data-raw/logs/streams_parent_444/` · **Status:** proof run on four groups; both networks built province-wide (#441, #454) and joined (#444).
 
 `default_minimal` cuts streams only at gradient barriers where a modelled species' access changes, falls and user-definite barriers. `default` also cuts at each species' highest fish record per line, at known-habitat end points and at crossings (modelled and PSCIS crossings, and dams). Read this beside `species_paused.md`, which measures the same kind of change for pausing a species.
 
@@ -66,6 +66,22 @@ A lift moves the minimal barrier positions, and a moved position is a cut only w
 - **Few records sit on a changed segment** (0 to 0.9 %), the scale #433 found for pausing a species (`research/species_paused.md`: 33 of KOTL's 1,473). The issue's framing of segments that know nothing about where fish were caught holds to that degree, with lifts held fixed. Where a tuning holds records out, as knowledge#131's leave-one-out does, a held-out BT record can still move a cut below it.
 
 Raw numbers: `lifts.csv` (per species and per group), `lifts_obs.csv`.
+
+## Parent attributes: each full segment reads its minimal parent
+
+**Every full segment of the province takes the minimal segment it overlaps most, and all but 96 lie wholly inside it; `fresh_default.streams_parent` names it** (#444). The two provincial builds, `fresh_default` (`cut-full-top`, link `4dfbfa49`) and `fresh_default_minimal` (`cut-min`, link `193cb8aa`), differ on the modelling paths only in `DESCRIPTION`, so they pass the pair guard, and `lnk_streams_parent()` joined all 241 groups on m4 in 3.9 min summed (RUNBOOK §6b, "Parent attributes: `streams_parent`").
+
+| measure | value |
+|---|---|
+| full segments, each with one row | 5,546,370 |
+| minimal segments | 4,987,761 |
+| km | 1,887,603 |
+| full segments straddling a minimal cut by 1 cm or more | 96 (0.096 km) |
+| largest straddle | 1.000 m |
+
+- **The superset holds province-wide:** every minimal cut has a full cut within 1.01 m in every group, as the proof found in four. The 96 straddling segments are cuts the full build skipped because they lay within 1 m of an existing end.
+- **The table is the proof's prototype.** On BULK, SETN, MORK and COTR it gives every full segment the parent `parent_<wsg>.csv.gz` gave it, with identical gradients and lengths within 5.5e-12 m (`prototype_check.csv`). The proof's segment ids still name the same segments, because both networks were cut the same way since.
+- **Only gradient is carried.** Discharge is per FWA segment and neither network crosses an FWA segment boundary, so a full segment and its parent read the same value.
 
 ## What is not measured
 

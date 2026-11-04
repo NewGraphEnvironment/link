@@ -11,7 +11,19 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
-## Status (2026-11-03, latest) — `fresh_default` is one provincial build of all 241 groups at 0.78.2 (#454)
+## Status (2026-11-03, latest) — each full segment reads its minimal parent: `fresh_default.streams_parent` (#444)
+
+**`lnk_streams_parent()` writes `<full schema>.streams_parent`, one row per full segment naming the `cut-min` segment it overlaps most (`id_segment_minimal`, `gradient_minimal`, `length_minimal`, `overlap_m`, `straddle_m`, both builds' provenance), and `data-raw/streams_parent_build.R` builds it for every group after judging the pair as the pre-run gate judges a record (0.79.0).** Built on m4 for all 241 groups from `fresh_default` (`4dfbfa49`) on `fresh_default_minimal` (`193cb8aa`): 5,546,370 rows, 96 straddling by at most 1.000 m, and the four proof groups equal #415's prototype. `grad-parent` names the reading; no build writes it. Mechanics: RUNBOOK §6b, "Parent attributes: `streams_parent`". Evidence: `data-raw/logs/streams_parent_444/`; write-up `research/minimal_network.md`.
+
+**Owed:** knowledge#120's rerun on the table (#444's acceptance line 1). After any `default` or `default_minimal` re-model, `streams_parent_build.R --verify --out=<new dir>` and a rebuild (RUNBOOK §8d). The next provincial run's pre-run gate runs again (`vocabulary.csv` moved).
+
+**Facts not worth re-deriving:**
+- **Nothing on the modelling path creates, copies or clears `streams_parent`,** so a re-model leaves it stale; `overlap_m + straddle_m` against `streams.length_metre` and the stored run ids are what tell. `lnk_persist_init()` must not create it (consolidate's test fails on a table it does not know).
+- **The driver's clean-tree check covers what `load_all()` reads** (`R/`, `data/`, `src/`, `inst/`, `DESCRIPTION`, `NAMESPACE`, untracked and ignored files, test helpers off) and runs before `--verify` too; `--out` has no default and refuses a directory holding its mode's files. Five review rounds each found a stand-in one axis from the last fix (`planning/archive/2026-11-issue-444-parent-attributes/`).
+- **Schema names in `lnk_streams_parent()` are lower case and at most 63 bytes,** because the SQL names them unquoted and Postgres folds case and truncates: "x" against "X", or two long names, joined a schema to itself.
+- **The gate's `git diff --name-only` lists only a renamed file's new path** under rename detection. Noted in review, not changed (editing `pretest.R` voids gate records).
+
+## Status (2026-11-03, later) — `fresh_default` is one provincial build of all 241 groups at 0.78.2 (#454)
 
 **run_uid `20261103_163715-269b585a` rebuilt `default` into `fresh_default` on m4 (dispatcher), m1 (worker) and three cloud hosts, at link `4dfbfa49` (0.78.2) on fresh 0.52.0, tokens `cut-full-top acc-v5 grad-seg q-fwapg` on all 241 of the run's `log` rows.** `fresh_default.log` also keeps the 242 seeded 0.68.0 history rows the gate read (token columns NULL). It pays every re-model owed since 0.68.0 (#326, #396, #399, #401, #402, #429, #432) for `default`, at the code and primitives load `fresh_default_minimal` was built at, in the same database. Done in 237.2 min; `check.sh` all PASS (both verifiers at `expected_n=241`, the audit 2,191 of 2,191 pairs), no host kept, no droplet left. 5.55 M segments (0.49 of the 0.68.0 build's 11.39 M), 19 GB. Record: `research/study_area_run.md`, "The province-wide `default` run (2026-11-03)"; evidence `data-raw/logs/default_run_454/` and `data-raw/logs/study_area_run/20261103_163715_*`.
 

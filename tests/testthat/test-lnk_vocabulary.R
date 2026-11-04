@@ -116,6 +116,25 @@ test_that("default_minimal differs from default only in its cut token (#415)", {
   expect_identical(minimal[others], def[others])
 })
 
+test_that("grad-parent is live and no shipped config resolves to it (#444)", {
+  v <- lnk_vocabulary_read()
+  row <- v[v$token == "grad-parent", ]
+  expect_equal(nrow(row), 1L)
+  expect_true(is.na(row$retired))
+  expect_identical(row$axis, "grad")
+  expect_identical(row$spec, "gradient=parent;parent_cut=cut-min")
+  configs <- list.files(system.file("extdata", "configs", package = "link"))
+  resolved <- 0L
+  for (cf in configs) {
+    tok <- tryCatch(lnk_vocabulary_resolve(lnk_config(cf)), error = function(e) NULL)
+    if (is.null(tok)) next
+    resolved <- resolved + 1L
+    expect_identical(tok[["grad"]], "grad-seg", info = cf)
+  }
+  # Four bundles resolve today; none resolving would pass the loop vacuously.
+  expect_gte(resolved, 4L)
+})
+
 test_that("the two stale gradient-class bundles have no tokens and refuse", {
   for (n in c("default_extrabreaks", "default_rearbreaks")) {
     expect_error(lnk_vocabulary_resolve(lnk_config(n)),

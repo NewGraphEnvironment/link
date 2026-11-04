@@ -1,0 +1,5 @@
+"wsg","n_csv","n_table","n_joined","n_csv_full_length_off","n_csv_minimal_length_off","n_table_full_length_off","n_id_minimal_differs","n_gradient_differs","max_gradient_diff","n_length_minimal_differs","n_overlap_differs","n_straddle_differs","max_length_diff"
+"BULK",42458,42458,42458,0,0,0,0,0,0,0,0,0,5.45696821063757e-12
+"SETN",80538,80538,80538,0,0,0,0,0,0,0,0,0,5.45696821063757e-12
+"MORK",51930,51930,51930,0,0,0,0,0,0,0,0,0,5.45696821063757e-12
+"COTR",28473,28473,28473,0,0,0,0,0,0,0,0,0,5.11590769747272e-12
