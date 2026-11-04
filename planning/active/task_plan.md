@@ -61,7 +61,7 @@ Each phase lands its own tests, written first within the phase, so every commit'
 - [x] Tick #444's boxes in the issue body that landed; add the table's shape for knowledge#120.
 
 ## Phase 5: release
-- [ ] `/code-check branch` (three-round floor), `devtools::test()`, `lintr::lint_package()`, `devtools::document()` (`_pkgdown.yml` has no `reference:` index, so no entry is needed for the new export).
+- [x] `/code-check branch` (three-round floor), `devtools::test()`, `lintr::lint_package()`, `devtools::document()` (`_pkgdown.yml` has no `reference:` index, so no entry is needed for the new export).
 - [ ] `DESCRIPTION` 0.79.0 as the final commit; `/planning-archive`; `/gh-pr-push`.
 
 ## Owed at the end (reported, done after merge)
@@ -72,9 +72,9 @@ Each phase lands its own tests, written first within the phase, so every commit'
 
 ## Validation
 
-- [ ] Tests pass
-- [ ] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
+- [x] Tests pass
+- [x] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
 How each change is proved:

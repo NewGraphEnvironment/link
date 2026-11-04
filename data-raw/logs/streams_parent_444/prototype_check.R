@@ -34,12 +34,13 @@ check <- function(w) {
             p.overlap_m, p.straddle_m, s.length_metre AS length_full
        FROM fresh_default.streams_parent p
        JOIN fresh_default.streams s USING (id_segment, watershed_group_code)
-      WHERE p.watershed_group_code = '%s'", w)
+      WHERE p.watershed_group_code = '%s'",
+    w
+  )
   tbl <- DBI::dbGetQuery(conn, sql)
-  full <- DBI::dbGetQuery(conn, sprintf(
-    "SELECT id_segment, length_metre FROM fresh_default.streams WHERE watershed_group_code = '%s'", w))
-  mini <- DBI::dbGetQuery(conn, sprintf(
-    "SELECT id_segment, length_metre FROM fresh_default_minimal.streams WHERE watershed_group_code = '%s'", w))
+  lengths <- "SELECT id_segment, length_metre FROM %s.streams WHERE watershed_group_code = '%s'"
+  full <- DBI::dbGetQuery(conn, sprintf(lengths, "fresh_default", w))
+  mini <- DBI::dbGetQuery(conn, sprintf(lengths, "fresh_default_minimal", w))
   j <- merge(csv, tbl, by = "id_segment", suffixes = c("_csv", "_tbl"))
   csv_full_len <- full$length_metre[match(csv$id_segment, full$id_segment)]
   csv_min_len <- mini$length_metre[match(csv$id_segment_minimal, mini$id_segment)]
