@@ -75,7 +75,7 @@ Each phase lands its own tests, written first within the phase, so every commit'
 - [x] Tests pass
 - [x] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
 - [x] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] `/planning-archive` on completion
 
 How each change is proved:
 - Tests: each phase's tests red before its code and green with it (`Rscript -e 'devtools::test()' 2>&1 | grep -E "(FAIL|ERROR|PASS)" | tail -5`).
