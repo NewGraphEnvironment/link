@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.78.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.79.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,16 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.79.0" id="link-0790">link 0.79.0<a class="anchor" aria-label="anchor" href="#link-0790"></a></h2>
+<p><strong>Each segment of the full network can read the gradient of the minimal segment it lies in</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/444" class="external-link">#444</a>). A habitat rule tuned on the minimal network (<code>cut-min</code>) reads each minimal segment’s gradient; the new <code><a href="../reference/lnk_streams_parent.html">lnk_streams_parent()</a></code> writes <code>&lt;full schema&gt;.streams_parent</code>, one row per full segment naming its minimal parent, the parent’s gradient and length, and how far the full segment straddles it, so the same rule can be applied on the network link ships.</p>
+<ul><li>
+<strong>The join is refused unless it is well defined:</strong> every minimal cut must have a full cut within 1.01 m, the pieces must cover both networks, and every full segment must get a row. A group’s rows are replaced in one transaction.</li>
+<li>
+<strong><code>data-raw/streams_parent_build.R</code> builds it for every group two schemas hold,</strong> after judging the pair as the pre-run gate judges a record: one modelling code, fresh and token set per schema, <code>cut-min</code> against a <code>cut-full-*</code> token, the same species per group. <code>--verify</code> names groups a re-model has left stale. Nothing on the modelling path creates, copies or clears the table, so a re-model of either network owes a rebuild (RUNBOOK §6b and §8d).</li>
+<li>
+<strong>A new vocabulary token, <code>grad-parent</code>,</strong> names the reading. No build writes it; a downstream archive uses it to tell the parent-gradient setup from <code>grad-seg</code> on the same build.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.78.2" id="link-0782">link 0.78.2<a class="anchor" aria-label="anchor" href="#link-0782"></a></h2>
 <p>No code change. The minimal provincial run (<a href="https://github.com/NewGraphEnvironment/link/issues/441" class="external-link">#441</a>) built <code>default_minimal</code> into <code>fresh_default_minimal</code> for all 241 groups (run <code>20261102_203300-60ab009d</code>), and its record lands: the launch, the checks and the first host-speed calibration (<code>data-raw/logs/minimal_run_441/</code>, <code>research/study_area_run.md</code>).</p>

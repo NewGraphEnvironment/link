@@ -197,6 +197,9 @@
 - [`lnk_stamp_finish()`](https://newgraphenvironment.github.io/link/reference/lnk_stamp_finish.md)
   : Finalize an in-progress run stamp
 
+- [`lnk_streams_parent()`](https://newgraphenvironment.github.io/link/reference/lnk_streams_parent.md)
+  : Join each full segment to the minimal segment it was cut from
+
 - [`lnk_thresholds()`](https://newgraphenvironment.github.io/link/reference/lnk_thresholds.md)
   : Load configurable severity scoring thresholds
 
