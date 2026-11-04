@@ -62,7 +62,7 @@ Each phase lands its own tests, written first within the phase, so every commit'
 
 ## Phase 5: release
 - [x] `/code-check branch` (three-round floor), `devtools::test()`, `lintr::lint_package()`, `devtools::document()` (`_pkgdown.yml` has no `reference:` index, so no entry is needed for the new export).
-- [ ] `DESCRIPTION` 0.79.0 as the final commit; `/planning-archive`; `/gh-pr-push`.
+- [x] `DESCRIPTION` 0.79.0 as the final commit; `/planning-archive`; `/gh-pr-push`.
 
 ## Owed at the end (reported, done after merge)
 
