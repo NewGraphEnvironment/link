@@ -1666,14 +1666,16 @@ The same rule covers process state: `ps` and task-status listings have both been
 wrong. Check the artifact (an output file's size, its mtime, the service's own API), not the
 wrapper, and the file, not a link to it (`ls -lL`; §2, "Don't trust status").
 
-**Measure in UTC; report clock times to the user in Vancouver time, and name the zone.**
-An ETA or a "finished at" for the user reads `9:22 AM PDT`, not `16:22Z`; add UTC only when the
-exact instant matters. Convert with a tool, never by hand (PDT and PST alternate):
-`TZ=America/Vancouver date`, or the converter in the reference file for a given instant; keep
+**Measure in UTC; report clock times to the user in Vancouver time, and write those words.**
+An ETA or a "finished at" for the user reads `9:22 AM Vancouver time`, not `16:22Z`, and never
+the tz abbreviation, which prints `MST` since BC dropped the clock change; add UTC only when the
+exact instant matters. Convert with a tool, never by hand, on a host whose tz database knows BC's
+change (`TZ=America/Vancouver date +%z` reads `-0700` in winter; `-0800` means a stale one):
+`TZ=America/Vancouver date '+%-I:%M %p Vancouver time'`, or the converter in the reference file for a given instant; keep
 an input's trailing `Z`, because a time with no offset is read as machine-local. Durations need
 no zone. Stored artifacts stay in UTC: commits, logs, filenames, `research/`, PR and issue bodies.
 
-*14 lines of evidence for this rule are in `conventions/agent-operations.md`.*
+*16 lines of evidence for this rule are in `conventions/agent-operations.md`.*
 
 ### The same blind spot picks the wrong waiting tool
 
@@ -1787,8 +1789,7 @@ blocking is explicit and visible.
 
 ### Don't trust status
 
-**Never report an agent as stalled, or as still working, on status alone.** Agent
-status and `TaskList` have both been observed to be wrong, and a subagent's
+**Never report an agent as stalled, or as still working, on status alone.** A subagent's
 `tasks/<id>.output` is a symlink that `ls -l` reports as frozen; `ls -lL` follows it.
 Never read the transcript itself, it overflows the context. Even a growing transcript shows
 activity, not that a report will arrive. So decide nothing on it; wait for the event,
@@ -1864,11 +1865,16 @@ anything git-backed, `git fetch` first: reading a local clone and reporting it a
 with a longer fuse. **And before hand-rolling a parser for a probe, check whether the code
 already has one**: a bespoke parser silently narrows the population it can see.
 
-**A host that times out from one machine is not blocked until the local link is ruled out**:
-ping the gateway (`ping -c 30 -i 0.2 <gateway>`) and try a second machine. A lossy link passes
-short exchanges and kills long ones, which mimics a selective block.
+**It also carries the artifact it was taken from, so two measurements that contradict are
+usually two artifacts rather than one wrong number.** A schema and a migrated database, a
+changelog and the code, a freshly built table and the persisted one it writes into: each
+answers differently, and a rule written from one is wrong about the other. Name the artifact
+each was taken from, and which one the claim is about, before calling either wrong.
 
-*15 lines of evidence for this rule are in `conventions/agent-operations.md`.*
+**A host that times out from one machine is not blocked until the local link is ruled out**:
+ping the gateway (`ping -c 30 -i 0.2 <gateway>`) and try a second machine.
+
+*23 lines of evidence for this rule are in `conventions/agent-operations.md`.*
 
 ### A share is not robust to an unresolved definition until you measure the spread
 
@@ -2085,8 +2091,8 @@ diagnose their design, offer rather than propose, and leave them every road to l
   requests are routinely merged. One open item per maintainer, timed around their load.
 - **About 200 words, no SRED line.** A design change goes in as a question.
 - **Say plainly that Claude Code helped,** in a sentence from the `upstream-draft` on, and offer
-  an `Assisted-by` reword in the pull request. Where AI-assisted contributions are unwelcome,
-  send no code.
+  an `Assisted-by` reword in the pull request unless the maintainer has already merged a Claude
+  co-authored commit (check their log). Where AI-assisted contributions are unwelcome, send no code.
 - **Never ping by accident:** in our repos' issues and pull requests an upstream item is
   backticked, never a URL, link or bare `#N` (a fork's reached upstream's once), unless the user
   wants the ping; commit messages name none, even backticked. An edit cannot take a ping
@@ -2099,26 +2105,30 @@ diagnose their design, offer rather than propose, and leave them every road to l
 
 *32 lines of evidence for this rule are in `conventions/agent-operations.md`.*
 
-### Credit Claude, link no session
+### Credit Claude; a session link only on a cloud PR in a private repo
 
-Nothing we write carries a session link. In our repos, commits end with `Co-Authored-By`, PR
-bodies with "Generated with Claude Code", and issues with no Claude line bar an
-`upstream-draft`'s sentence.
+In our repos, commits end with `Co-Authored-By`, PR bodies with "Generated with Claude Code",
+and issues carry no Claude line bar an `upstream-draft`'s sentence. A session link has one
+home: the PR body a **cloud** session opens in a **private** repo keeps the harness's footer;
+commits, local sessions and public repos carry none. The harness's attribution reminder asks
+for a `Claude-Session:` trailer and a URL, and defers to a repo's rule: this one.
+`attribution.sessionUrl: false` silences it after `/claude-settings-init`; a SessionStart hook
+says when it has not run. A cloud session reads no user settings: in a public repo only this
+line guards it until a repo-level setting lands. `/gh-pr-merge` step 3b strips a public PR
+body's link; trailers in commits stay.
+
+*13 lines of evidence for this rule are in `conventions/agent-operations.md`.*
 
 ### Auto mode refuses a production write whatever the chat says
 
 Auto mode's classifier can refuse a command as a production write: a live store rewritten,
-a deploy, a publish. When it does, approval given in chat does not reach it, and in the
-recorded case a restart did not clear it either. On the **first** such refusal, say so once and offer two routes:
+a deploy, a publish. When it does, approval given in chat does not reach it. On the **first** such refusal, say so once and offer two routes:
 the user leaves auto mode for that step (Shift+Tab) and approves the prompt, or runs the
 bare command themselves (below). Do not retry, and do not suggest a restart.
 
 It is not the secret-read clamp (`newgraph.md`, "Reading a secret clamps the rest of the
 session"), which names *earlier conversation content* and needs a restart. This refusal
-names a **category** of action, such as "Production Deploy" — and the category need not
-describe a deploy: a plain `git push` of local commits has been refused as "Excess
-Sensitive Detail". In a cloud session "External System Writes" covers a `gh api -X POST`
-issue comment; the `mcp__github__*` write tool makes the same write unprompted.
+names a **category** of action, such as "Production Deploy", and the category need not describe the command.
 
 **It classifies the command text, so it also fires on a write the file tools can make
 safely.** Where what was refused is an edit to a tracked file rather than the publish
@@ -2143,8 +2153,7 @@ not run, or runs from `$HOME`.
   error: join them with `&&` or a `for` loop over the list, still short enough not to wrap;
   past that, hand one per turn.
 
-**A file under `~/Downloads` may be unreadable by the agent process** (macOS folder
-protection, per app and per machine). Probe with
+**A file under `~/Downloads` may be unreadable by the agent process.** Probe with
 `ls ~/Downloads >/dev/null 2>&1 && echo readable || echo blocked`; Desktop and Documents are
 granted separately, so probe each. If blocked, ask for one copy into the repo, with absolute
 paths. Full Disk Access for the terminal app removes the block.
@@ -2246,8 +2255,13 @@ Install: `pak::pak("NewGraphEnvironment/gq")`
 - **A maptiles custom provider URL ends in `.jpg`** — in maptiles 0.11.0, `create_provider()` with an extensionless tile URL fails at `get_tiles()` with `cannot coerce type 'closure' to vector of type 'character'`; `.../MapServer/tile/{z}/{y}/{x}.jpg`, the form its built-in Esri providers use, works and Esri serves the same tiles
 - **Ask Wayback, not the map, for newer Esri imagery** — call `dft_wayback_captures(zoom = z)` once per zoom, 10 to 22, and compare: one call keeps one zoom per feature
 - **Give a web map hex colours, never R colour names** — `grey80` draws in tmap and ggplot2, but MapLibre (mapgl) cannot parse it and drops the whole layer: the console's first error is `Could not parse color from value 'grey80'`, then `Cannot style non-existing layer` when a control touches it. Convert with `m <- grDevices::col2rgb(x, alpha = TRUE); grDevices::rgb(t(m[1:3, ]), alpha = m[4, ], maxColorValue = 255)` or hard-code hex, and check for `NA` before converting: it comes back `#FFFFFF00`, a layer drawn transparent rather than an error
+- **Choose the window by measuring** — grid the area and draw the part where the story separates; the first window tried rarely shows it
+- **Every map places its reader** — town labels on every map, from `gns_geographical_names_sp` (the source gq's `town` style names), and the river named on the map and in the caption
+- **Labels follow the registry, with a halo, never a box**
+- **Compare two rules side by side** — a pair across the page, each map showing what that rule alone holds
+- **Draw in BC Albers with tiles warped to it** (`crs = 3005`), and rasterize a large polygon onto the window rather than `st_crop()` it: both failures cut the layer silently
 
-*11 lines of evidence for this rule are in `conventions/cartography.md`.*
+*17 lines of evidence for this rule are in `conventions/cartography.md`.*
 
 ## Self-Review (after every render)
 
@@ -2289,6 +2303,13 @@ are the half of the review that the placement list structurally cannot reach.
     7 in figure squeezed into a ~700 px column loses roughly 40% — text set at
     `size = 0.5` for the render lands at a few pixels on the page. Check the
     figure at its delivered width.
+13. **Does every layer's data cover the whole window?** Dim the part of the
+    window a layer's data does not reach, in every map that shares the window: a
+    layer read for some watershed groups, catalogue items or one model run leaves
+    the rest blank, and blank reads as none: no access, no floodplain. Two Bulkley
+    maps on newgraphenvironment.github.io#65 took in a group that the link query's
+    group list and the floodplain catalogue both left out, and the fix reached the
+    second map only in the next review round.
 
 ### Why this half exists
 
@@ -2328,14 +2349,45 @@ When this repo has GitHub Actions workflows, scan recent runs on session start, 
 
 ## On Session Start
 
+A failure counts only while it is the newest run of its workflow on its branch: a later run
+on the same branch that passed fixed it, and a branch whose PR has merged or closed is not the
+default branch's problem.
+
 ```bash
-gh run list --limit 5 --json status,conclusion,name,createdAt,databaseId \
-  --jq '.[] | select(.conclusion == "failure" or .conclusion == "cancelled")'
+DEF=$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name) || DEF=main
+gh run list --limit 20 --json databaseId,headBranch,event,workflowName,conclusion,createdAt \
+  --jq 'sort_by(.createdAt) | reverse | .[] | [.databaseId, .headBranch, .event, .workflowName, .conclusion, .createdAt] | @tsv' \
+| awk -F'\t' -v OFS='\t' '
+    { k = $4 "|" $2 }
+    !(k in top) { top[k] = $1; topc[k] = $5 }
+    $5 == "failure" || $5 == "cancelled" || $5 == "startup_failure" || $5 == "timed_out" || $5 == "action_required" {
+      line = $1 " " $4 " on " $2 " (" $3 ") " $5 " " $6
+      if (top[k] == $1) print $2, line (($2 == DEF) ? "" : " · BRANCH")
+      else if (topc[k] == "success") print $2, line " · fixed by run " top[k]
+      else print $2, line " · newest run " top[k] " " (topc[k] == "" ? "in_progress" : topc[k]) (($2 == DEF) ? "" : " · BRANCH")
+    }' DEF="$DEF" \
+| while IFS=$'\t' read -r b line; do
+    case "$line" in
+      *" · BRANCH")
+        st=$(gh pr list --head "$b" --state all --limit 1 --json state -q '.[0].state // "none"' 2>/dev/null) || st=unknown
+        case "$st" in MERGED|CLOSED) echo "${line% · BRANCH} · branch merged" ;; *) echo "${line% · BRANCH} · branch $b, PR $st" ;; esac ;;
+      *) echo "$line" ;;
+    esac
+  done
 ```
 
-Keep a `cancelled` row only if its annotations report a timeout ("A timed-out run reads `cancelled`"); say timed out, not failed.
+A row with no suffix is a live failure on the default branch; `· fixed by run <id>` and
+`· branch merged` are history, listed so the reader can see why nothing is raised. Only a
+`success` fixes a failure: a newer run that is still running, was skipped, or died at startup
+leaves the failure live, and the row says `· newest run <id> <conclusion>`. A `startup_failure`
+(a workflow file pushed broken), a `timed_out` and an `action_required` are failures in their own
+right and print as rows. Keep a
+`cancelled` row only if its annotations report a timeout ("A timed-out run reads `cancelled`");
+say timed out, not failed.
 
-If any failures since the last visit, surface to the user before starting other work:
+*6 lines of evidence for this rule are in `conventions/ci-monitoring.md`.*
+
+If any live failures since the last visit, surface to the user before starting other work:
 
 > Workflow `<name>` failed `<time>` ago (run `<id>`). Investigate with `gh run view <id> --log-failed`. Fix or proceed with current task?
 
@@ -2387,8 +2439,9 @@ something the next person has to go read a log about — and the log does not ex
 
 The routine follow-up is the one that bites, because it is the one nobody counts as a
 push: a typo fix, a `.gitignore` line, an untagged `CLAUDE.md` drift sync. `/compact-prep`
-step 6 runs `claude_md_drift.sh apply`, which **pushes**, and after `/gh-pr-merge` that
-lands seconds after the merge. A housekeeping push carries `[skip ci]`, starts no run and
+step 6 runs `claude_md_drift.sh apply`, which **pushes**. Run by hand after `/gh-pr-merge`,
+that lands seconds after the merge; `/gh-pr-merge` step 12, which runs it for you, waits for
+step 10's watch to read green first. A housekeeping push carries `[skip ci]`, starts no run and
 cancels nothing only where soul's `ci_skip.sh` admits it: every commit touches only
 `CLAUDE.md`, `comms/`, `planning/`, `research/` or `.claude/`, in an R package whose shape
 it admits. Anywhere else the sync pushes untagged, and this rule holds.
@@ -2506,6 +2559,11 @@ Before telling anyone a Pages URL is live, fetch it and compare the bytes with t
 
 *1 line of evidence for this rule is in `conventions/ci-monitoring.md`.*
 
+## A Quarto website renders every Markdown file unless `project: render:` lists its pages
+Set `render:` in `_quarto.yml` (`["*.qmd", "!comms/"]`, or the site's own pages): with none, a Quarto website renders every `.md` in the repo, `CLAUDE.md` and `comms/` included, so one file Quarto cannot read fails every publish and one it can is published.
+
+*1 line of evidence for this rule is in `conventions/ci-monitoring.md`.*
+
 ## `gh run list --commit` needs the full SHA, and `--workflow` cannot name the Pages run
 Key a CI waiter on `gh run list --commit "$(git rev-parse <ref>)"` and pick a run by name in `--jq`: a short SHA returns an empty list with exit 0, and `--workflow 'pages build and deployment'` fails, because GitHub's built-in Pages run has no workflow file.
 
@@ -2561,7 +2619,7 @@ A lint warning of `no visible binding` for a constant added on this branch is us
 `expect_snapshot()` **skips on CRAN**, and `testthat` treats a non-interactive run as CRAN by default.
 
 ### testthat counts an uncaught error under `error`, not `failed`
-Count `r$failed > 0 | r$error` over `r <- as.data.frame(testthat::test_file(f))`, never `failed` alone.
+Count `r$failed > 0 | r$error` over `r <- as.data.frame(testthat::test_file(f))`, never `failed` alone, and count skips from a `ProgressReporter`'s `n_skip`, never from the frame.
 
 ### A `skip_if_not()` skips only its own `test_that()` block
 Before blaming a failure, or its absence, on a skip, find the `test_that()` block the skip sits in.
@@ -2636,7 +2694,7 @@ Keep `drop = FALSE` on the scale and give the layer a named `show.legend` that a
 Leading empties survive and trailing ones do not, which is what makes it hard to reason about from memory.
 
 ### `identical()` on two reader results tests the reader, not the file
-`identical(read_csv(f), read_csv(f))` can be **FALSE** for the same unchanged bytes: readr tibbles carry a `problems` attribute — an external pointer — that differs between reads (readr 2.2.0; `spec` is identical, measured).
+Compare the file itself (`tools::md5sum()`) to show it was not modified, never two reader results.
 
 ### Under `R CMD check`, tests run from a temp dir against the INSTALLED package
 Two shapes, both green under `devtools::test()` and broken under `R CMD check`, `devtools::check()`, a tarball check, or an installed-tests run — the direction that costs the most time.
@@ -2651,7 +2709,7 @@ SQLite creates a database on connect.
 - "checking for portable file names" fails on any file in the built package whose name has a space.
 
 ### `sort()` and `order()` collate by `LC_COLLATE`, so a canonical form is locale-dependent
-Character sorting in R is locale-sensitive by default, which makes any *canonical* string built by sorting — an XML node with its attributes ordered, a joined key, a manifest — a function of the session's locale rather than of the data:
+Sort with `method = "radix"` wherever the order builds a canonical string.
 
 ### A library call that dispatches on a global option is not a pure function
 A function whose *units* or *algorithm* are chosen by a session-wide setting behaves differently depending on what the caller did before reaching your code.
@@ -2684,13 +2742,13 @@ A ~600-character free-text field in a `kable` cell wedged `pagedown::chrome_prin
 All three measured on R 4.5, all three met inside one 800-line script (drift#67).
 
 ### `stats::mad()` is already scaled to an SD
-Use `stats::mad(x)` itself as the robust standard deviation, or `mad(x, constant = 1)` for the raw median absolute deviation: the default `constant = 1.4826` already scales it, so multiplying by 1.4826 again inflates the SD by half.
+Use `stats::mad(x)` itself as the robust standard deviation: its default `constant = 1.4826` already scales it, so multiplying by 1.4826 again inflates the SD by half.
 
 ### `deparse(body(f))` excludes formal defaults, so a body scan cannot see a default
 A guard that scans function bodies for a forbidden literal is blind to that literal in a **signature**.
 
 ### `deparse()` re-encodes non-ASCII, so it answers about itself rather than the file
-Scan R source for non-ASCII the way `R CMD check` does (`tools:::.check_package_ASCII_code()`: raw lines, comments skipped), not through `parse()` and `deparse()`, which turn `\uXXXX` escapes into literal characters and back.
+Scan R source for non-ASCII with `tools:::.check_package_ASCII_code()`, as `R CMD check` does, never through `parse()` and `deparse()`.
 
 ### `package_version()` errors on a pre-release version string
 `package_version("3.9.0beta1")` raises rather than returning `NA`, so strip a pre-release suffix before asserting a version floor.
@@ -2708,7 +2766,7 @@ Record a flag in the `withCallingHandlers()` handler, `invokeRestart("muffleWarn
 testthat 3e captures the first message the expression emits and matches the regexp against **that one**.
 
 ### `pak` refuses to install a package that needs no compiler
-Install a pure-R package with `R CMD INSTALL <checkout>` when `pak::pak()` reports missing build tools: on macOS its check fails whenever `xcode-select -p` names Xcode.app and only the Command Line Tools are installed.
+Install a pure-R package with `R CMD INSTALL <checkout>` when `pak::pak()` reports missing build tools.
 
 ### `as.integer("NaN")` is `0`, and `as.integer(NaN)` is `NA`
 The string round trip is the bug.
@@ -2756,25 +2814,25 @@ End every `ORDER BY` on a unique key, order any fetch whose rows are summed, and
 A numeric formatter such as `sprintf("%.10g", x)` has no SQL form for non-finite values.
 
 ### Verify a float-formatting fix in its consumer, not through `as.numeric()`
-Compare where the literal is parsed (in Postgres, `SELECT <literal>::float8 = <stored>`) or compare IEEE 754 bytes: R's `as.numeric()` is not correctly rounded, so a correct `%.17g` string can fail to round-trip through R.
+Compare where the literal is parsed, or compare IEEE 754 bytes, never through `as.numeric()`.
 
 ### An `information_schema` lookup by the literal table name misses what Postgres resolves
 `WHERE table_schema = 's' AND table_name = 'T'` compares the text you passed.
 
 ### Rscript reads a script as it runs, so never edit a script while a run of it is in flight
-Copy the script and run the copy (`cp scripts/x.R "${TMPDIR:-/tmp}/x_frozen.R" && Rscript "${TMPDIR:-/tmp}/x_frozen.R"`) for anything long-running, or leave the file alone until the run exits.
+Run a copy of the script for anything long-running, or leave the file alone until the run exits.
 
 ### A range total taken as the difference of two large running totals loses the small ranges
 Sum a range directly (segment tree, per-range `sum()`, or grouped sums) rather than as `cumsum[hi] - cumsum[lo]` when ranges are small relative to the running total.
 
 ### A `pkg::` call in a test passes `devtools::test()` and fails `R CMD check` if `pkg` is undeclared
-`R CMD check` warns "'::' or ':::' import not declared from" for any package a test reaches with `::` that `DESCRIPTION` does not list, and under `error-on: "warning"` that reddens every runner.
+List every package a test reaches with `::` in `DESCRIPTION`, and run `tools:::.check_packages_used_in_tests` on the source tree before pushing.
 
 ### Inside a dplyr verb, a column named like a local variable wins
 Inject a local value into a data-masked verb with `!!x` or `.env$x`, never a bare `x`.
 
 ### `earthdatalogin`'s search and download calls overwrite the netrc when they find no Earthdata entry
-Call NASA's CMR search with `curl` and download with `curl` given the netrc directly (`netrc = 1, netrc_file = <path>, cookiefile = ""` follows the URS redirect), or check `earthdatalogin:::has_edl_netrc()` yourself first.
+Search NASA's CMR and download with `curl` given the netrc directly, or check `earthdatalogin:::has_edl_netrc()` yourself first.
 
 ### A fetcher's test helper must make the network fail, not just mock the reader
 When a test mocks a downloader's reader and supplies fixture files, also mock the search and download functions to `stop()` by default, and re-mock them only in the tests that exercise that path.
@@ -2815,6 +2873,9 @@ Read a TSV you wrote unquoted with `quote = "", na.strings = character(), commen
 ### duckdb in R: the query that autoloads `icu` binds unreliably, so `LOAD icu` before it
 Run `LOAD icu` on the connection before any query that needs it (`epoch()`, `year()`, a cast to `DATE` on a `TIMESTAMPTZ`), or use a function that needs no extension (`epoch_ms()`).
 
+### duckdb refuses a parent delete in the transaction that deleted its children
+Delete rows a foreign key still points at as separate autocommit statements, children first, never inside one `DBI::dbWithTransaction()`.
+
 ### `fs::path()` collapses the `//` after a URL scheme, so it cannot build URLs
 Join a URL with `paste(base, key, sep = "/")` or `file.path()`, never `fs::path()`.
 
@@ -2825,7 +2886,7 @@ Set a user-agent on every R fetch of a `canada.ca` page, because R's default fai
 Keep only the observed series (`DATASET == "<obs_ts_dataset>"`, four-digit `PERIOD`) before averaging climr output over years.
 
 ### A `function(...)` mock hides arguments the real callee no longer accepts
-Stubbing a callee with `function(...) invisible("mock")` accepts any argument name, so a wrapper still passing a parameter the callee dropped stays green while every real call errors with `unused argument`.
+Assert a `function(...)` mock's argument names against the real callee's `formals()`.
 
 ### `expect_message(regexp = "...$")` never matches, because `message()` appends `"\n"`
 The condition message carries the trailing newline, so an end anchor fails and the test reports "did not throw a message" even though the message printed.
@@ -2862,6 +2923,9 @@ Resolve NA before an `ifelse()` whose result must keep a type (`blocked <- !is.n
 
 ### `sub()` takes one replacement, not one per element
 Paste a per-element suffix on instead (`paste0(sub("]$", "", x), suffix)`): a `replacement` longer than one is used as its first element everywhere, with only a warning.
+
+### `officer::body_replace_all_text()` misses a phrase that spans Word runs
+Replace whole paragraphs, not phrases inside them: officer matches within one text run, and Word splits a paragraph into runs wherever formatting or editing history changes.
 
 # Code Check — Shell
 Tool-level traps in bash, sed, git and `gh`, and in the host toolchain those commands depend on.
@@ -2934,8 +2998,8 @@ Never chain a destructive setup and its undo (`git stash && slow && git stash po
 ### `git checkout <path>` restores from the index, not from HEAD
 After a `git add`, `git checkout <path>` reinstates the broken *staged* copy — so the "fix" reproduces the failure and reads as though the edit was wrong.
 
-### Six git plumbing calls whose default answers a different question
-Pass the flag that names the question you mean: `git log -m` and `--name-only`, `update-ref HEAD`, a checkout over an ignored file, `rev-parse --git-path` and a check of the `*_HEAD` files each succeed having answered or written something else.
+### Git plumbing calls whose default answers a different question
+Pass the flag that names the question you mean.
 
 ### A value validated with one numeric grammar and consumed with another
 Normalise a numeric string once (digits only and at most 9 of them, then `x=$((10#$x))`, then a bounded range): `test` reads base 10, `$(( ))` reads a leading zero as octal and wraps past 2^63.
@@ -3004,7 +3068,7 @@ Write `n=$(grep -c …) || n=0`, never `|| echo 0` inside the substitution: `gre
 `git fetch` and the check that follows it are two commands, and nothing links them.
 
 ### macOS `/usr/bin/awk` aborts when a regex meets a byte slice that cuts a multibyte character
-Test a `substr()` slice with `==`, never with `~`, `match()` or `sub()`: the stock macOS awk counts bytes in `substr()` but converts a regex operand to wide characters, and a partial UTF-8 sequence kills the whole program.
+Test a `substr()` slice with `==`, never with `~`, `match()` or `sub()`.
 
 ### macOS `sed` dies on an invalid byte, and GNU sed misparses it
 Parse logs with `LC_ALL=C sed`: a regex that scans an invalid UTF-8 byte exits 1 on macOS and misparses silently with GNU sed.
@@ -3031,13 +3095,13 @@ Count instead: `while :; do left=0; for i in $ids; do done_yet "$i" || left=$((l
 Write `cd "$D" || exit 1` (or `cd "$D" && …`), never `cd "$D"; …`: without the guard, a missing directory prints one error and the rest of the line runs wherever the shell stood, including its file writes.
 
 ### macOS `/bin/bash` 3.2 quote-matches a heredoc inside `$( )`, so an apostrophe in the body is a syntax error
-Pass multi-line text through a file (`--body-file`, `-F`), never `"$(cat <<'EOF' … EOF)"`: bash 3.2 matches quotes inside `$( )` before it reads the heredoc, so an unpaired apostrophe in the body is a syntax error.
+Pass multi-line text through a file (`--body-file`, `-F`), never `"$(cat <<'EOF' … EOF)"`.
 
 ### A skill's bash blocks run as separate calls, and its `$` + digits are replaced by its arguments
 Open every block after the first with guards on what it inherits: re-set its variables, confirm the path is the expected tree, and refuse edits or commits the previous block did not check.
 
 ### An apostrophe in a `${VAR:?message}` inside double quotes is an unterminated quote
-Keep apostrophes out of the message of a `"${VAR:?…}"` guard (`the REL: line of step 5`, not `step 5's REL: line`): bash 3.2 and 5 both read the `'` as opening a quote, and the whole script fails to parse before the guard can run.
+Keep apostrophes out of the message of a `"${VAR:?…}"` guard.
 
 ### A `git push` can land and still report failure, so confirm the ref rather than the exit code
 After a rejected push, read the remote ref before concluding anything: `git fetch -q origin && git merge-base --is-ancestor HEAD origin/<branch>`.
@@ -3478,7 +3542,7 @@ When the published site **is** the repository — GitHub Pages serving `docs/`, 
 Configuration patterns and false-positive handling for the `gitleaks` pre-commit hook (kdot's Brewfile ships `gitleaks` + `pre-commit`; cyclops standardizes the hook):
 
 ### "Public bucket" ≠ listable: GetObject vs ListBucket
-- A bucket policy granting only `s3:GetObject` on `bucket/*` makes exact-key fetches public but NOT listing — and dataset discovery (`arrow::open_dataset()`, duckdb globs, STAC `/vsicurl/` directory reads) requires `s3:ListBucket` on the **bucket ARN** (no `/*`; it's a bucket-level action).
+- A bucket policy granting only `s3:GetObject` on `bucket/*` makes exact-key fetches public but NOT listing.
 
 ## Spreadsheets and PDFs
 
@@ -3489,7 +3553,7 @@ Before reporting that a spreadsheet value is off by a factor, check the cell's *
 `pdftotext` returns anchor text, not the href.
 
 ### Extracted PDF text carries corrupted glyphs, and a tolerant parser turns them into wrong numbers
-Never strip non-digits to clean a number extracted from PDF text: corrupted glyphs (an `O` for a `0`, a Private Use Area micron sign) become plausible wrong values, so anchor on the label and check against an independent identity.
+Never strip non-digits to clean a number extracted from PDF text.
 
 
 # NGE Feature Workflow
@@ -3720,7 +3784,8 @@ organisation, and it names internal work as it does so.
 - **A scrub covers the surfaces you were editing; re-grep the others before merging.** The
   issue body is drafted at plan time and the code later, so scrubbing the tree and the PR
   body leaves the body untouched. `/gh-pr-merge` step 3b is the moment to grep it, then
-  read it for the bare names a grep misses.
+  read it for the bare names a grep misses. It also refuses a branch whose diff adds a
+  private repo's URL or `name#N` to tracked files (`private_refs.sh`).
 - **A leaked body is recreated, not edited: GitHub shows its edit history to anyone.** A fresh
   issue with no discussion is deleted (`gh issue delete`, admin) and refiled clean, the private
   side in a private-repo issue. Where the number must stay, edit it, then delete each older
@@ -4035,7 +4100,8 @@ Skip planning for single-file edits, quick fixes, or tasks with obvious next ste
    (`code-check.md`), and a subagent given it edits the same files the parent is testing.
    From the parent's side the result is a test run that reports failures belonging to
    nobody's code — the reviewer's planted defect, caught mid-flight. Tell reviewers to work
-   in a copy (`cp -r` to a temp dir, or a worktree) and say so in the prompt; they honour it
+   in a copy (`git worktree add --detach <tmp> <ref>` or `git clone`, never `cp -r` of a
+   checkout whose `.git` is a file) and say so in the prompt; they honour it
    when asked. Then snapshot the files you care about and `cmp` them before **and after**
    every run whose result you intend to act on, so "the tree was intact for this
    measurement" is a fact rather than an assumption. Same hazard as a mid-flight edit in
@@ -4383,6 +4449,41 @@ behaviour, the domain convention otherwise.
 | `/planning-update` | Mid-session — sync checkboxes and progress |
 | `/planning-archive` | Issue complete — archive and create fresh active/ |
 
+# Provenance
+How an output says what made it and what came out, and how a rebuild is judged against it.
+
+*Index only: each rule's heading and first sentence. The full text is soul's `conventions/provenance.md`; read it before writing or reviewing code in its area.*
+
+### One receipt per output, in one shape: output, recipe, result, context
+Once the receipt writer for its language ships (rule 4), write one `receipt.json` per output, replacing a `manifest.json` or `provenance.json` when the writer is next touched; until then, write the repo's current format and map its names (rule 10).
+
+### Keep what changes on every rebuild out of the output's bytes
+Write time, host and run id beside an output, never inside it, and pin what a format would stamp (GeoPackage `last_change`, layer order), so one recipe writes the same bytes: in new outputs, and in a writer when it is next touched.
+
+### A recipe identity and a result identity; the machine is context
+Hash code, config, seed and each input's **recipe** identity into one recipe hash (a receipt's `recipe_id`); never fold an input's result into it, and never let the host or toolchain into either identity, nor the host into a record that is published.
+
+### crate holds the contract; each language implements it once against its test vectors
+Write receipts through crate's contract (schema, RFC 8785 `recipe_id`, table fingerprint, test vectors): R packages call `crt_receipt_write()`, Python `stacs.receipt`, and any other writer passes the same vectors.
+
+### Compare two records to one of three verdicts, and name the side that differed
+Compare a rebuild with its reference copy and report `identical` (same recipe, same result), `equivalent` (same recipe, result within the declared tolerance) or `different` (another recipe, or past the tolerance), naming which of recipe or result differed and where.
+
+### Declare tolerances per output, beside the code that writes it
+State each output's tolerance where its writer lives: exact for a table of counts, a rounding for a floating sum, a declared spread or an invariant ("the same pick and region") for a model fitted with random draws.
+
+### A published output keeps its result and record as the reference copy
+Keep what is published, its bytes and its record, as the reference copy in the bucket; anything not published is rebuilt from its recipe and compared to that copy, never assumed equal.
+
+### Read a record to report a difference; refuse only on integrity or same-operation parity
+Read a provenance record to **report** what differs; refuse on one only when bytes received differ from what the sender listed, two parties in one operation must hold the same bytes now, or the record is older than its input.
+
+### A per-field register says what a difference in each field does
+Keep a register, one row per record field, saying whether a difference refuses, warns or is recorded, make it the comparison's input rather than a description of it, and test it with two records that differ in one field each.
+
+### Map existing names to the shared keys and to STAC's; converge forward-only
+Map each existing field name to its key in the receipt and, on a catalogue, to STAC's own (`file:checksum`, `file:size`, `processing:software`, `processing:datetime`), and rename only when the writer moves to a receipt (rule 1).
+
 
 # R Package Development Conventions
 
@@ -4618,6 +4719,21 @@ Then keep the vignette and its bundle true as both move:
 ## lintr
 
 Run `lintr::lint_package()` before committing R package code. Fix all warnings — every lint should be worth fixing.
+
+Where the package already carries a standing count, its total cannot say whether the branch
+added a lint: compare per file, linter class and source line, in a `git worktree` of `origin/main` and on
+the branch, then diff the two. Never stash for the baseline (`code-check-shell.md`, "A destructive
+setup and its undo must not share one timeout-able command"), and reinstall before trusting a lint
+on a name the branch added (`code-check-r.md`, "`lintr` also resolves against the installed
+package, not the source tree").
+
+```r
+as.data.frame(lintr::lint_package()) |>
+  dplyr::count(filename, linter, line) |>   # `line` is the source text, so it survives renumbering
+  readr::write_csv("<side>.csv")   # once per side, then diff the two files
+```
+
+*4 lines of evidence for this rule are in `conventions/r-packages.md`.*
 
 ### Recommended .lintr config
 
