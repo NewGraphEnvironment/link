@@ -11,6 +11,10 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-11-09) — the open issues are batched into moves: `planning/backlog.md` (#468)
+
+**Take the next move from `planning/backlog.md`** (`bash <soul>/skills/_shared/backlog_moves.sh next planning/backlog.md`; `/compact-prep` names it): 13 moves, umbrellas #469–#481, each planned with one `/planning-init <umbrella>` and landed in one PR, ticked by `/gh-pr-merge`. Moves 12 and 13 wait on knowledge#139's flow-method decision and fresh 0.54.0. A link issue knowledge waits on says so in its batch section. A new issue joins the open move whose batches touch its files; run `/backlog-sweep` again when one fits none. Record: `planning/archive/2026-11-issue-468-backlog-pass/`.
+
 ## Status (2026-11-03, latest) — each full segment reads its minimal parent: `fresh_default.streams_parent` (#444)
 
 **`lnk_streams_parent()` writes `<full schema>.streams_parent`, one row per full segment naming the `cut-min` segment it overlaps most (`id_segment_minimal`, `gradient_minimal`, `length_minimal`, `overlap_m`, `straddle_m`, both builds' provenance), and `data-raw/streams_parent_build.R` builds it for every group after judging the pair as the pre-run gate judges a record (0.79.0).** Built on m4 for all 241 groups from `fresh_default` (`4dfbfa49`) on `fresh_default_minimal` (`193cb8aa`): 5,546,370 rows, 96 straddling by at most 1.000 m, and the four proof groups equal #415's prototype. `grad-parent` names the reading; no build writes it. Mechanics: RUNBOOK §6b, "Parent attributes: `streams_parent`". Evidence: `data-raw/logs/streams_parent_444/`; write-up `research/minimal_network.md`.
