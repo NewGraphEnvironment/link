@@ -20,20 +20,21 @@ ticked and not **waiting**; `/planning-init <umbrella>` plans it, one phase per 
 | - [ ] 1 | UMB-1 | 1: the parent gradient and the grad tokens (4 issues) | open: start here |
 | - [ ] 2 | UMB-2 | 2, 3: which records count, what each lift rests on (7 issues) | open |
 | - [ ] 3 | UMB-3 | 4: docs, and a check that fails on warnings (4 issues) | open |
-| - [ ] 4 | UMB-4 | 5: `default`'s presence table as a copy plus an overlay (4 issues) | open |
-| - [ ] 5 | UMB-5 | 6, 7: the export contract, one-group runs that read downstream (6 issues) | open: after move 2, whose rule for code 2 the export's new column carries |
-| - [ ] 6 | UMB-6 | 8, 9: what a run stamps and checks before launch, how primitives load (9 issues) | open |
+| - [ ] 4 | UMB-4 | 5: `default`'s presence table as a copy plus an overlay (4 issues) | open: after move 2, whose record rule the presence check reads; one provincial re-model covers both moves' `acc` rows |
+| - [ ] 5 | UMB-5 | 6, 7: the export contract, one-group runs that read downstream (6 issues) | open: after move 2, whose rule for code 2 the export's new column carries, and after the provenance track's #466, which rewrites the same manifest |
+| - [ ] 6 | UMB-6 | 8, 9: what a run stamps and checks before launch, how primitives load (10 issues) | open |
 | - [ ] 7 | UMB-7 | 10: drivers (6 issues) | open |
 | - [ ] 8 | UMB-8 | 11: the rules builder and `dimensions.csv` (7 issues) | open |
-| - [ ] 9 | UMB-9 | 12, 13: mapping codes as rules, the persist and run API (8 issues) | open: after move 8, whose residence columns the mapping-code rules read |
+| - [ ] 9 | UMB-9 | 12, 13: mapping codes as rules, the persist and run API (8 issues) | open: after move 7, whose legacy-path decision sets what #176's rename is worth, and move 8, whose residence columns the mapping-code rules read |
 | - [ ] 10 | UMB-10 | 14, 15: snapping, habitat upstream of each crossing (6 issues) | open |
 | - [ ] 11 | UMB-11 | 16: what blocks access at a barrier (4 issues) | open: after move 10, whose per-crossing totals the barrier scenarios are compared on |
 | - [ ] 12 | UMB-12 | 17, 18, 19: thresholds from knowledge's table, MAD everywhere, the PARS vignette (7 issues) | **waiting** on knowledge#139's decision of which method sets link's flow numbers |
-| - [ ] 13 | UMB-13 | 20: the next fresh pin (4 issues) | **waiting** on fresh 0.54.0's release |
+| - [ ] 13 | UMB-13 | 20: the next fresh pin (3 issues) | **waiting** on fresh 0.54.0's release; once it ships, take this move next |
 
 Tracks are separate efforts, not moves: speed (`track:speed`; its umbrella is in the skills repository: #377,
-#410, #411, #418, next #418), provenance (`track:provenance`; umbrella likewise: #466) and minimal-run
-(knowledge#120, `track:minimal-run`: #418).
+#410, #411, #418, next #418; a follow-on from #369, hosts finished one at a time so a cloud host's consolidate waited 10.0 min at run 20261103, is for this track), provenance (`track:provenance`; umbrella likewise: #466) and minimal-run
+(knowledge#120, a task issue labelled `track:minimal-run`: #418). Track members are placed by this line,
+not by a batch.
 
 What knowledge waits on, placed (#468's table): #460, #462 and #463 in batch 1; #400 in batch 2; #434 in
 batch 3; #402 and rainbow trout's return in batch 5; #346 and #343 in batch 17. #444 is closed: its table is
@@ -50,19 +51,19 @@ built and knowledge#120 reads it.
 | 5 | UMB-4 | presence table as a copy plus an overlay: #402, #431, #436, #292 | 4 | #436's option; UTRE CH and QUES ST; rainbow trout's return | one presence file, one overlay mechanism, one `acc` row |
 | 6 | UMB-5 | the export contract: #423, #333, #334, #465 | 4 | #423's column shape; #334's refusals and the bucket; #466 first or inside | all edit `R/lnk_scenario_export.R`; one crate release and one republish |
 | 7 | UMB-5 | one-group runs that read downstream: #464, #461 | 2 | none | both edit `R/lnk_wsg_downstream_check.R` |
-| 8 | UMB-6 | what a run stamps and checks before launch: #451, #446, #266, #458, #450 | 5 | retire or refill `bcfishobs_sha`; one bcfishpass build rule; #450's range | `R/lnk_log.R` and the driver's pre-flight; one release before the next provincial run |
+| 8 | UMB-6 | what a run stamps and checks before launch: #451, #446, #266, #458, #450, #269 | 6 | retire or refill `bcfishobs_sha`; one bcfishpass build rule; #450's range; tag pins or an `Imports:` floor | `R/lnk_log.R` and the driver's pre-flight; one release before the next provincial run |
 | 9 | UMB-6 | how primitives load: #459, #276, #273, #270 | 4 | ETag change or age per table | `snapshot_bcfp.sh` and the vintage gate; one primitives reload proves it |
 | 10 | UMB-7 | drivers: #278, #281, #166, #181, #179, #110 | 6 | retire the legacy `wsgs_*` path | one pass over `data-raw/` argument handling |
 | 11 | UMB-8 | rules builder and `dimensions.csv`: #75, #86, #129, #189, #212, #316, #327 | 7 | #212 to GR only; #316 and #327 adopt or decline; #86 cut | one rules regeneration and diff |
 | 12 | UMB-9 | mapping codes as rules: #197, #153, #191, #351 | 4 | `""` for absent species | one parity run shows the output unchanged |
-| 13 | UMB-9 | the persist and run API: #177, #176, #159, #204 | 4 | shims or hard renames | one release carries the deprecations |
+| 13 | UMB-9 | the persist and run API: #177, #176, #159, #204 | 4 | shims or hard renames; #204 against #169 | one release carries the deprecations |
 | 14 | UMB-10 | snapping: #313, #314, #383 | 3 | wrap or retire; the tie rule | one re-snap, then a re-model of both configs |
 | 15 | UMB-10 | habitat upstream of each crossing: #321, #232, #356 | 3 | none | one live parity against bcfishpass's crossings |
 | 16 | UMB-11 | what blocks access at a barrier: #201, #83, #341, #386 | 4 | a deliberate departure from bcfishpass; #386's rule | one `acc` row and one provincial re-model |
 | 17 | UMB-12 | thresholds from knowledge's table: #346, #343, #322 | 3 | knowledge#139's flow method; the table version | `default_tuned`'s thresholds file, read from one published table |
 | 18 | UMB-12 | MAD everywhere on wet's flows: #387, #389 | 2 | the same flow decision | one five-group build |
 | 19 | UMB-12 | the PARS vignette: #390, #342 | 2 | none | #342 shows batch 17's values |
-| 20 | UMB-13 | the next fresh pin: #452, #269, #288, #222 | 4 | tag pins or an `Imports:` floor | one pin bump and one host re-prep |
+| 20 | UMB-13 | the next fresh pin: #452, #288, #222 | 3 | which variables both connection helpers read | one pin bump and one host re-prep |
 
 ### 1. The parent gradient and the grad tokens
 
@@ -73,9 +74,10 @@ built and knowledge#120 reads it.
 the near-river exception's distance does not transfer from the minimal network: about 1,042 km of rearing)
 and #463 (classify habitat and run the connectivity pass on `streams_parent.gradient_minimal`, refusing a
 stale parent table). Touches `inst/extdata/vocabulary.csv`, `research/output_vocabulary.md`,
-`R/lnk_pipeline_classify.R`, `R/lnk_pipeline_run.R`, `R/lnk_streams_parent.R`,
-`data-raw/streams_parent_build.R`, RUNBOOK §6b. Gate: #462's option (carry the parent's near-river distance,
-or report the gap as transfer cost); whether #420's older-build tokens are still wanted. One full-network
+`R/lnk_vocabulary.R` (the resolver that names a build's grad token), `R/lnk_pipeline_classify.R`,
+`R/lnk_pipeline_run.R`, `R/lnk_streams_parent.R`, `data-raw/streams_parent_build.R`, RUNBOOK §6b. Gate:
+#462's option (carry the parent's near-river distance, which fresh's classify computes and so may need a fresh
+change, or report the gap as transfer cost); whether #420's older-build tokens are still wanted. One full-network
 build under `grad-parent` on the dispatcher proves it.
 
 knowledge waits on it: #460 is the last task of knowledge#120 (the Atlas-line setup's archive refuses a
@@ -176,11 +178,13 @@ without changing pass, fail or override). Touches `R/lnk_wsg_downstream_check.R`
 dirty), #446 (the bcfishpass reference pin reads a CSV-sync ledger row as the loaded view), #266 (link and
 flooded select the bcfishpass reference build by different rules), #458 (`<schema>.log` keeps earlier runs'
 rows; say in RUNBOOK that readers key on `run_uid`) and #450 (the pre-run gate finds its history through
-`extends:` and a committed record of build minutes). Touches `R/lnk_log.R`, `R/lnk_stamp.R`,
+`extends:` and a committed record of build minutes) and #269 (`scripts/update_hosts.sh` installs fresh from main while
+`DESCRIPTION` pins a tag, so a host re-prep can pull a fresh newer than the pin; the worker's refused GitHub
+token is the other residue, from #439). Touches `R/lnk_log.R`, `R/lnk_stamp.R`,
 `data-raw/study_area_run.sh` (the bcfishobs gate), `data-raw/study_area_remote.sh`,
-`data-raw/study_area_verify.sql`, `data-raw/pretest_*`, RUNBOOK §8d. Gate: retire or refill
-`bcfishobs_sha`; one selection rule for the bcfishpass build (#266 with #446); #450's range rule. One
-release before the next provincial run.
+`data-raw/study_area_verify.sql`, `data-raw/pretest_*`, `scripts/update_hosts.sh`, `DESCRIPTION`, RUNBOOK §8d.
+Gate: retire or refill `bcfishobs_sha`; one selection rule for the bcfishpass build (#266 with #446); #450's
+range rule; tag pins or an `Imports:` floor for fresh. One release before the next provincial run.
 
 ### 9. How primitives load
 
@@ -240,7 +244,8 @@ shows the output unchanged.
 `lnk_compare_run()`), #159 (`lnk_pipeline_run()` drops its working schema only on success; clean up on error)
 and #204 (`lnk_persist_init()` checks only generated columns, so species-column drift passes). Touches
 `R/lnk_pipeline_persist.R`, `R/lnk_pipeline_run.R`, `R/lnk_compare_wsg.R`, `R/lnk_persist_init.R`,
-NAMESPACE, tests. Gate: deprecation shims or hard renames. One release carries the deprecations.
+NAMESPACE, tests. Gate: deprecation shims or hard renames; #204 extends the column check that single #169
+would remove, so decide which. One release carries the deprecations.
 
 ### 14. Snapping
 
@@ -315,12 +320,12 @@ the Parsnip, side by side). Touches `data-raw/wsg_vignette_data.R`, `vignettes/`
 - [ ] Carried by move 13, UMB-13
 
 #452 (`cols_streams_near_river` gains `linear_feature_id` with fresh 0.54.0, and the validator passes
-`near_river_lfid`), #269 (`update_hosts.sh` installs fresh from main while `DESCRIPTION` pins a tag), #288
+`near_river_lfid`), #288
 (`lnk_db_conn()` reads `PG_*_SHARE` first, fresh reads `PG*` first) and #222 (the live `lnk_wsg_resolve`
 tests route to another database than their skip gate; the failure is gone, the mismatch is not). Touches
 `R/lnk_persist_init.R`, `R/lnk_pipeline_persist.R`, `R/lnk_habitat_validate.R`, `DESCRIPTION`,
-`scripts/update_hosts.sh`, `R/lnk_db_conn.R`, `tests/testthat/test-lnk_wsg_resolve.R`. Gate: tag pins or an
-`Imports:` floor; the worker's refused GitHub token. One pin bump and one host re-prep.
+`R/lnk_db_conn.R`, `tests/testthat/test-lnk_wsg_resolve.R`. Gate: which variables both connection helpers read.
+Only #452 waits on fresh 0.54.0; #288 and #222 ride its pin bump and host re-prep.
 
 ## Singles
 
@@ -342,24 +347,24 @@ tests route to another database than their skip gate; the failure is gone, the m
 
 ## Closed and transferred
 
-- #444: done; PR #457 (0.79.0) built `streams_parent` on all 241 groups, every acceptance line ticked (knowledge#120 ticked the first on 2026-11-05). Follow-ups #462, #463.
-- #439: done; the minimal run and the `default` run it readied hosts for ran on fresh 0.52.0 with both verifiers passing. The worker's refused token moves to batch 20.
-- #376: done; persistent workers shipped (PR #380), acceptance 2 met at run 20261103 (longest leg 9.8 % under its estimate).
-- #375: done; phase times shipped (PR #378), criterion 2 met at run 20261103.
-- #374: done; early recompute shipped (PR #382), tail 15.6 min against 60.6 and every pair in order at run 20261103.
-- #371: done; the statement bound shipped (PR #373), no group timed out at run 20261103.
-- #369: done; consolidate-on-finish shipped (PR #379), every host burned within 0.5 min of its consolidate at run 20261103.
-- #196: done in 0.40.3 (NEWS; commit 46b2042b).
-- #185: done in 0.39.0 (NEWS: "Closes #180 and #185").
-- #183: done; absorbed by #246 (`lnk_preflight_parity()`, commit fb8e6428).
-- #128: done; the runner it names became `wsgs_run_host.R`, whose resume gate reads persist rows and has `--force`.
-- #95: done in effect; every pipeline step writes `<schema>.streams`.
-- #84: done; fresh#186 shipped and the remaining gaps closed except BULK SK (#130).
+- #444: superseded by PR #457 (0.79.0), which built `streams_parent` on all 241 groups, every acceptance line ticked (knowledge#120 ticked the first on 2026-11-05). Follow-ups #462, #463.
+- #439: no consequence now; the minimal run and the `default` run it readied hosts for ran on fresh 0.52.0 with both verifiers passing. The worker's refused token moves to #269 (batch 8).
+- #376: superseded by PR #380 (persistent workers): acceptance 2 met at run 20261103 (longest leg 9.8 % under its estimate).
+- #375: superseded by PR #378 (phase times): criterion 2 met at run 20261103.
+- #374: superseded by PR #382 (early recompute): tail 15.6 min against 60.6 and every pair in order at run 20261103; its digest match against `--recompute-at-end` was measured on ten groups, not provincially, which the speed track's rehearsal (#418) can carry.
+- #371: superseded by PR #373 (the statement bound): no group timed out at run 20261103.
+- #369: superseded by PR #379 (consolidate-on-finish): every host burned within 0.5 min of its consolidate at run 20261103; its overlap-minutes item was left as not meaningful at this code, and its follow-on is on the tracks line.
+- #196: superseded by commit 46b2042b (0.40.3, NEWS), which added the columns.
+- #185: superseded by the 0.39.0 release (NEWS: "Closes #180 and #185"), never closed.
+- #183: superseded by #246 (`lnk_preflight_parity()`, commit fb8e6428).
+- #128: superseded by PR #173 (#168's resume gate on persist rows, with `--force`) and PR #174 (the runner's rename to `wsgs_run_host.R`).
+- #95: superseded by #113 (d481f369 removed the `fresh.streams` literals; every pipeline step writes `<schema>.streams`).
+- #84: superseded by fresh#186: after it, #130 records BULK SK as the only outlier over 5 % across ten groups and both configs, and `research/bcfishpass_methodology.md` records the MORR ST gap closed by the `rear_stream_in_waterbody` change.
 - #353: superseded by #466, which makes the verify a report.
 - #293: superseded by #356, which names the same line.
 - #167: superseded; its own close condition, a tunnel-free compare, was met by #175.
-- #131: superseded by the cloud-host and worker runs of `study_area_run.sh`.
+- #131: superseded by #369 and #376 (cloud hosts finished as their legs end, persistent workers): run #454 built 241 groups in 237 min.
 - #126: superseded; `consolidate_schema()` is gone and `schema_consolidate.R` never restores or drops a source.
 - #295: premise disproved; knowledge is public, and the read by URL lives in #346.
-- #388: premise disproved; no run reads `data-raw/_targets.R`.
-- #268: its own close clause; three provincial `default` runs since replaced the run it was for.
+- #388: no consequence; no run driver reads `data-raw/_targets.R` (last touched 2026-09-25), and #389's province-wide run goes through `study_area_run.sh --config=default_mad`.
+- #268: no consequence, by its own close clause; three provincial `default` runs since replaced the run it was for.
