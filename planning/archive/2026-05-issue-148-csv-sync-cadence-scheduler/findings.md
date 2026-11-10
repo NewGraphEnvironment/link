@@ -4,7 +4,7 @@
 
 ## Problem
 
-Two-part Wednesday-morning sync gap. After `NewGraphEnvironment/db_newgraph#6` shifts the upstream CSV dump to Wed 3 AM PDT, link side needs to follow:
+Two-part Wednesday-morning sync gap. After an internal issue shifts the upstream CSV dump to Wed 3 AM PDT, link side needs to follow:
 
 1. **csv-sync cadence shift.** `.github/workflows/sync-bcfishpass-csvs.yml` is `0 13 * * WED` (Wed 6 AM PDT / 13:00 UTC). Should be `0 11 * * WED` (Wed 4 AM PDT / 11:00 UTC) — 1 hour after the upstream dump.
 2. **No scheduler for `data-raw/snapshot_bcfp.sh`.** The script is portable and stamps `bcfp_baselines.csv` per run, but installation is ad-hoc — every host (M4, M1, cypher) currently relies on the user running it manually. For weekly tunnel-parity work to survive without babysitting, we need install-able scheduler entries.
@@ -54,5 +54,5 @@ Output goes to a per-host log directory (`~/.local/state/snapshot-bcfp/$(date +%
 
 ## Cross-references
 
-- Upstream dependency: `NewGraphEnvironment/db_newgraph#7` (cadence shift to Wed 3 AM PDT) — merged 0bec7be 2026-05-08.
-- Fork-pattern context: `NewGraphEnvironment/db_newgraph#8` (newgraph as default branch) — closed 2026-05-08.
+- Upstream dependency: an internal issue (cadence shift to Wed 3 AM PDT) — merged 0bec7be 2026-05-08.
+- Fork-pattern context: an internal issue (newgraph as default branch) — closed 2026-05-08.

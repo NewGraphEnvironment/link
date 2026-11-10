@@ -13,7 +13,7 @@ The per-species methodology question — "should default-bundle make some dam cl
 - [x] Query `cabd.dams` over the tunnel — **2,594 raw rows, 2,478 as barrier (passability_status_code=1)**
 - [x] Compare to `bcfishpass.dams` (post-edits) — **2,559 rows, 2,441 as barrier**. Net delta ≈ 35 (12 exclusions + snap-failures, partially offset by 4 US additions). Edit layer applies cleanly.
 - [x] Verify named dams present in bcfp output — confirmed: John Hart, Ladore Falls, Strathcona (CAMB), Mica (CLRH), Hugh Keenleyside (LARL), Alouette, Coquitlam, Stave Falls, Ruskin (LFRA), Revelstoke (REVL), Jordan Diversion (SANJ), and others. Heights 1.6–243 m, mostly Hydroelectricity. All `passability_status_code=1` (treated as barriers in CABD).
-- [x] Source path decision: **DB join via tunnel** (consistent with link#102's resolution; cypher / M4 / M1 all have tunnel access per rtj#82)
+- [x] Source path decision: **DB join via tunnel** (consistent with link#102's resolution; cypher / M4 / M1 all have tunnel access per an internal issue)
 - [x] Verify clean separation — fresh's bundled `falls.csv` has no dam-named rows; CABD's `feature_type` column cleanly partitions waterfalls vs dams
 
 ## Phase 2: Consume bcfp's pre-built `bcfishpass.dams` via tunnel

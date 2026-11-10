@@ -58,12 +58,12 @@ lnk_baseline_append(log, run_label, link_schema = "n/a", notes = "",
 - [x] Drop `GH_TOKEN` env from sync step (no `gh api`); keep `GITHUB_TOKEN` for PR creation.
 - [x] Stage `data-raw/logs/bcfp_baselines.csv` alongside `inst/extdata/configs/` in the auto-commit.
 - [x] Install link locally via `local::.` so the script's `library(link)` call resolves.
-- [x] Update header comment: weekly cadence rationale, S3 source, NewGraphEnvironment/db_newgraph#4 cross-ref.
+- [x] Update header comment: weekly cadence rationale, S3 source, an internal issue cross-ref.
 - [x] Existing byte/shape gate logic stays unchanged.
 
-## Live smoke test (blocked on rtj#114)
+## Live smoke test (blocked on an internal issue)
 
-- [ ] Once `s3://fresh-bc/bcfishpass/*` is publicly readable (rtj#114 applies bucket policy):
+- [ ] Once `s3://fresh-bc/bcfishpass/*` is publicly readable (an internal issue applies bucket policy):
   - [ ] Local `Rscript -e 'devtools::load_all("."); source("data-raw/sync_bcfishpass_csvs.R")' --dry-run` returns expected drift (bundle was last synced from SHA `4879bba`; bucket is at `6e9cf1c`).
   - [ ] `gh workflow run sync-bcfishpass-csvs.yml --repo NewGraphEnvironment/link` opens a clean PR.
 
@@ -73,8 +73,8 @@ lnk_baseline_append(log, run_label, link_schema = "n/a", notes = "",
 - [x] NEWS.md 0.31.0 entry.
 - [ ] `/code-check` clean on staged diff.
 - [ ] `devtools::test()` + `lintr::lint_package()` + `devtools::check()` clean.
-- [ ] Commit, push, open DRAFT PR closing #117 with SRED tag in PR body. Note: live smoke pending NewGraphEnvironment/rtj#114.
-- [ ] After rtj#114 lands: smoke test + mark PR ready + `/gh-pr-merge` (squash + tag v0.31.0).
+- [ ] Commit, push, open DRAFT PR closing #117 with SRED tag in PR body. Note: live smoke pending an internal issue.
+- [ ] After an internal issue lands: smoke test + mark PR ready + `/gh-pr-merge` (squash + tag v0.31.0).
 
 ## Phase 7: Close 8 stale daily csv-sync PRs as superseded
 

@@ -34,7 +34,7 @@ annotated CSV. Surviving UNEXPLAINED rows are the investigation queue.
 
 ## Distributed dispatch — 5-host LPT
 
-bcfp tunnel rebuilt 2026-05-12 20:28 PDT (model 122). The Phase 5 orchestrator dispatched across 5 hosts via tofu workspaces (rtj#116/#118):
+bcfp tunnel rebuilt 2026-05-12 20:28 PDT (model 122). The Phase 5 orchestrator dispatched across 5 hosts via tofu workspaces (an internal issue/#118):
 
 | Host | Workspace | Speed factor | WSGs (LPT) | Wall | Median per-WSG |
 |---|---|---:|---:|---:|---:|

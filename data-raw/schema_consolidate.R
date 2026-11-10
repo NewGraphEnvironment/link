@@ -40,7 +40,7 @@
 # from the source once copied. The config-snapshot log tables carry no
 # `watershed_group_code`, so they are never discovered and never travel.
 #
-# Cross-refs: rtj#94 (general orchestrator); link#112 (first usage);
+# Cross-refs: an internal issue (general orchestrator); link#112 (first usage);
 # link#180 (additive Step 0 unblocked by this source-filter fix).
 
 #' Split discovered tables into persist tables and log (history) tables.

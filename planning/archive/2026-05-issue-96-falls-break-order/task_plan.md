@@ -48,7 +48,7 @@
 
 ## Provincial-scale follow-up (out of #96 scope)
 
-After this PR merges, the next provincial run should use the 3-host split per [rtj#79 / cypher](https://github.com/NewGraphEnvironment/rtj/pull/79):
+After this PR merges, the next provincial run should use the 3-host split per an internal pull request:
 
 - M4 + M1 + cypher each take ~33% of WSGs
 - Theoretical wall time ~30 min (was 4h 55m single-host)

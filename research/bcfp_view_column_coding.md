@@ -1,6 +1,6 @@
 # `fresh.streams_vw_bcfp` column coding — the parity predicates
 
-Migrated from machine-local memory 2026-08-31 (soul#47). Durable: this is the
+Migrated from machine-local memory 2026-08-31. Durable: this is the
 bcfishpass view's schema, not a run state. Found 2026-07-03 during #223
 validation.
 

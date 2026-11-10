@@ -342,13 +342,13 @@ Per-species WSG counts reflect species presence: BT in 136 WSGs (most widespread
 
 ### Cypher hygiene
 
-- **Issue surfaced**: cypher's `snapshot_bcfp.sh` fails on non-interactive SSH (`FATAL: ogr2ogr lacks Parquet driver`) because the conda `geo` env's activate scripts aren't sourced. `which ogr2ogr` resolves to the conda-forge binary, but the parquet driver doesn't load. Documented and filed as **rtj#129**.
+- **Issue surfaced**: cypher's `snapshot_bcfp.sh` fails on non-interactive SSH (`FATAL: ogr2ogr lacks Parquet driver`) because the conda `geo` env's activate scripts aren't sourced. `which ogr2ogr` resolves to the conda-forge binary, but the parquet driver doesn't load. Documented and filed as **an internal issue**.
 - **Workaround used**: pg_dump | ssh from M4 for `cabd` / `whse_fish.pscis_assessment_svw` / `fresh.modelled_stream_crossings` (~3 min, ~400 MB). Inferior to a working `snapshot_bcfp.sh` because (a) couples cypher's state to M4's upstream-data freshness, (b) doesn't refresh `bcfishobs.observations` parquet load.
 - **Cypher destroyed**: `cypher_down.sh` complete, reserved IP <host> retained.
 
 ### Open follow-ups
 
-- **rtj#129** (filed) — bake conda-geo-activate into cypher snapshot (`/etc/profile.d/conda-geo-activate.sh`).
+- **an internal issue** (filed) — bake conda-geo-activate into cypher snapshot (`/etc/profile.d/conda-geo-activate.sh`).
 - **link#159** (filed) — wrap per-WSG body in `tryCatch({...}, finally = drop_working_schema)` for error-path cleanup.
 - **schema_consolidate.R** — investigate the m1 `streams_habitat_<sp>` pg_restore failure pattern. Probably need a `--clean-wsg-keys` arg that DELETEs source-host-bucket rows on dest before pg_restore.
 - **Full provincial mapping_code re-run** to validate #158 fix province-wide (BBAR + THOM confirmed ≥99.93%; remaining 215 WSGs extrapolated). Deferred — ~2 hr separate run.

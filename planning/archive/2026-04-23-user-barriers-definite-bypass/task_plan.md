@@ -38,7 +38,7 @@ Only `natural_barriers` caller outside prep_natural is `.lnk_pipeline_prep_overr
 - [ ] `/code-check` on staged diff — 2 rounds minimum.
 - [ ] Commit atomically (code + tests, then verification, then artifacts).
 - [ ] Push branch.
-- [ ] Open PR with SRED tag (`Relates to NewGraphEnvironment/sred-2025-2026#24`), link to #48, note closing of #48.
+- [ ] Open PR with SRED tag (`Relates to an internal issue`), link to #48, note closing of #48.
 
 ## Versions at start
 

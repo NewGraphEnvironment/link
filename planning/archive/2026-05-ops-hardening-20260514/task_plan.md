@@ -36,9 +36,9 @@ Session started 2026-05-13. Today's full provincial run (link 0.36.0, bcfp model
 
 - [x] **link#167** — bcfp tunnel drops cause silent per-WSG errors (autossh proposed)
 - [x] **link#168** — Decouple bcfp compare from link pipeline (pair with #167)
-- [x] **link#169** — Simplify `lnk_persist_init` after rtj#145 lands
+- [x] **link#169** — Simplify `lnk_persist_init` after an internal issue lands
 - [x] **link#170** — S3-based consolidate (route pg_dumps through s3://newgraph/)
-- [x] **rtj#145** — Rebuild cypher snapshot with fwa dump tables ONLY
+- [x] **an internal issue** — Rebuild cypher snapshot with fwa dump tables ONLY
 - [x] **fresh#199** (reopened) — M4 PG over-tuning evidence + fix-up plan
 
 ## Phase 4: Documentation + commit

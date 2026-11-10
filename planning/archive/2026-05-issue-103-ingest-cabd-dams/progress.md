@@ -24,7 +24,7 @@
 
 **Top 10 WSGs by dam count:** OKAN (233), SAJR (109), VICT (105), STHM (95), MFRA (74), THOM (68), NICL (65), LFRA (65), LNIC (65), SIML (60). Heavy in southern interior + south coast.
 
-**Decision:** source via tunnel-DB join (consistent with link#102 resolution). cypher / M4 / M1 all have tunnel access per rtj#82.
+**Decision:** source via tunnel-DB join (consistent with link#102 resolution). cypher / M4 / M1 all have tunnel access per an internal issue.
 
 ### Phase 2 → 7 implementation
 

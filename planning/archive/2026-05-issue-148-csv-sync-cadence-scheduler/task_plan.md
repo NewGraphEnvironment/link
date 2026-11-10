@@ -1,10 +1,10 @@
 # Task: csv-sync cadence shift + weekly snapshot scheduler templates (#148)
 
-After `db_newgraph#7` shifted the upstream CSV dump to Wed 3 AM PDT, link's downstream csv-sync still fires at Wed 6 AM PDT — a 3-hour gap that makes the bundle stale-by-design for anyone running parity work Wednesday morning. Plus, every snapshot consumer (M4, M1, cypher) currently runs `data-raw/snapshot_bcfp.sh` manually. Without per-host scheduling, weekly tunnel-parity work doesn't survive a vacation week.
+After an internal issue shifted the upstream CSV dump to Wed 3 AM PDT, link's downstream csv-sync still fires at Wed 6 AM PDT — a 3-hour gap that makes the bundle stale-by-design for anyone running parity work Wednesday morning. Plus, every snapshot consumer (M4, M1, cypher) currently runs `data-raw/snapshot_bcfp.sh` manually. Without per-host scheduling, weekly tunnel-parity work doesn't survive a vacation week.
 
 This issue does three things:
 
-1. Shift link's csv-sync workflow to Wed 4 AM PDT (1 h after the upstream dump in `db_newgraph#7`).
+1. Shift link's csv-sync workflow to Wed 4 AM PDT (1 h after the upstream dump in an internal issue).
 2. Add an `lnk_baseline_skip_p()` exported function so `snapshot_bcfp.sh` can short-circuit when this host already has a ledger row for the current upstream SHA (avoids redundant snapshots when launchd fires twice per cycle, e.g. after a wake-from-sleep).
 3. Ship `data-raw/scheduler/` with launchd plist + cron line + README so each host's install is one copy + `launchctl load` (or `crontab -e`).
 

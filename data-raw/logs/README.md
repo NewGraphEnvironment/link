@@ -2,7 +2,7 @@
 
 **These are retained deliberately as contemporaneous evidence of measurement
 runs, not accumulated by accident.** They are tracked in git, not gitignored,
-and should stay that way — see NewGraphEnvironment/soul#129.
+and should stay that way — see an internal issue.
 
 Every number quoted in a `research/` run record, a NEWS entry or a PR body
 should be traceable to a file here.

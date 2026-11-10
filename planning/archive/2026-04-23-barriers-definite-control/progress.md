@@ -21,5 +21,5 @@
 - 5-WSG rebuild reproducibility confirmed: two consecutive `tar_destroy + tar_make` produce rollup digest `210c3f8254c47ac88573a80d96a2701e`, 46 rows, identical.
 - Phase 4 (f52dcbc): NEWS 0.6.0, DESCRIPTION 0.5.0→0.6.0, research doc (DEAD table + key-fixes row + three-part-fix subsection + DAG update), vignette (5-WSG narrative + pivot column), bcfishpass config README updated, vignette artifacts regenerated.
 - Follow-up filed: #46 (migrate `.lnk_pipeline_prep_gradient()` + `.lnk_pipeline_prep_overrides()` probes to manifest-driven gating).
-- Branch pushed. PR #47 opened. SRED tag `Relates to NewGraphEnvironment/sred-2025-2026#24` in body.
+- Branch pushed. PR #47 opened. SRED tag `Relates to an internal issue` in body.
 - Flagged in PR: commit 22ac1dd ("comms(→link): M1 verified as R-worker host") landed on this branch from a parallel session's branch-landing policy; orthogonal to #44 scope.

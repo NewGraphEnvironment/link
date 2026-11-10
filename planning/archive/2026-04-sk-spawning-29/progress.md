@@ -62,7 +62,7 @@
 
 ### Phase 4: bcfishobs (complete)
 - Homebrew libpq installed (psql on PATH)
-- MacPorts removed, Homebrew GDAL 3.12.3 with Parquet driver installed (rtj#65)
+- MacPorts removed, Homebrew GDAL 3.12.3 with Parquet driver installed
 - bcfishobs setup.sh: removed fragile idempotency checks, fixed MultiPoint geometry
 - Clean build: 372,420 observations (matches tunnel 372,418), 592 in ADMS
 - Commit on bcfishobs nge-setup branch
@@ -71,7 +71,7 @@
 - fresh#69: observation-based access override with bcfishpass thresholds (BT>=1, CH/CO>=5, date/buffer filters)
 - fresh#90: override CSVs moving to link with weekly sync from bcfishpass
 - fresh#124: gradient_recompute parameter
-- rtj#65: updated with Parquet blocker, GDAL consolidation plan
+- An internal issue: updated with Parquet blocker, GDAL consolidation plan
 
 ### Current comparison (fresh 0.12.3)
 BT -8.6% rearing, CH -20.7%, CO -23.3%. Remaining gap: gradient_recompute + observations.

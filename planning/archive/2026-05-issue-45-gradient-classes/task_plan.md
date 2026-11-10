@@ -49,7 +49,7 @@ Lets variants declare break vectors at the bundle level without R code edits.
 
 - [x] `NEWS.md` entry under 0.27.0 (override + per-species derivation; bit-identical to bcfp parity).
 - [x] `DESCRIPTION` version bump 0.26.0 → 0.27.0.
-- [x] Open PR with body referencing #45 + SRED tag (`Relates to NewGraphEnvironment/sred-2025-2026#24`). PR #114.
+- [x] Open PR with body referencing #45 + SRED tag (`Relates to an internal issue`). PR #114.
 - [x] File follow-up: "Auto-derive `gradient_classes` default from `parameters_fresh$access_gradient_max`" (issue #45 scope item 1, separated). Issue #115.
 
 ## Validation

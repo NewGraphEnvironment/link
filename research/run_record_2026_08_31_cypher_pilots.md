@@ -1,7 +1,7 @@
 # Does the v0.47.0 orchestration work on a real cypher? — 2026-08-31
 
 First run record under the shape proposed in
-[soul#129](https://github.com/NewGraphEnvironment/soul/issues/129).
+an internal issue.
 Logs: `data-raw/logs/study_area_run/20260831_*`.
 
 ## Question
@@ -59,7 +59,7 @@ Four defects found, all fixed:
 | defect | where |
 |---|---|
 | readiness loop exhausted then ran `scp` anyway — no failure branch | link#251 |
-| `cypher_up`'s marker is baked into the snapshot, so it never waited | rtj#248 → rtj#250 |
+| `cypher_up`'s marker is baked into the snapshot, so it never waited | an internal issue → an internal issue |
 | parity gate's dirty check fires on every run (the run dirties its own repo) | link#252 |
 | vintage gate conflated "table absent" with "statistics not yet collected" | link#252 |
 

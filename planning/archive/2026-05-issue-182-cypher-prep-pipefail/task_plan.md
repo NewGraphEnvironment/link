@@ -4,7 +4,7 @@
 
 `data-raw/cypher_prep.sh:43` uses `set -e` (NOT `set -euo pipefail`). At line 58, `bash snapshot_bcfp.sh 2>&1 | tail -5` masks snapshot failures under `tail`'s exit 0. Same bug at line 67-77 for the `lnk_persist_init` Rscript. The script proceeds past silent failures and prints `=== READY`, leaving the umbrella's downstream marker-grep as the only safety net.
 
-Hit twice in this session (2026-05-15 Peace Tier 2 retry + post-#185 re-spin). Tour-mode (M1 driving cyphers from Europe per rtj#165 RUNBOOK.md) needs loud surface-level failures. Sibling rtj#163 already swept rtj's cypher orchestration scripts for the same bug class — this is the link-side complement.
+Hit twice in this session (2026-05-15 Peace Tier 2 retry + post-#185 re-spin). Tour-mode (M1 driving cyphers from Europe per an internal issue RUNBOOK.md) needs loud surface-level failures. Sibling an internal issue already swept rtj's cypher orchestration scripts for the same bug class — this is the link-side complement.
 
 ## Phase 1 — Fix cypher_prep.sh
 
@@ -30,7 +30,7 @@ Live cypher smoke is the gold standard but adds ~$0.50 + ~5 min overhead and a b
 ## Phase 4 — Release v0.39.1
 
 - [x] Update `DESCRIPTION`: `Version: 0.39.0 → 0.39.1`, `Date: 2026-05-19`.
-- [x] Update `NEWS.md` with v0.39.1 entry. Cite rtj#163 as the cross-repo companion fix.
+- [x] Update `NEWS.md` with v0.39.1 entry. Cite an internal issue as the cross-repo companion fix.
 - [x] Update `CLAUDE.md` branch reference to `v0.39.1`.
 - [ ] Commit `Release v0.39.1`.
 - [ ] `/planning-archive` with slug `cypher-prep-pipefail`.

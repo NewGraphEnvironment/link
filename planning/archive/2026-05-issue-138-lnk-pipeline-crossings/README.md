@@ -4,6 +4,6 @@ Shipped `lnk_pipeline_crossings()` as v0.32.0 (PR #146, squash 5221b92). The fun
 
 The big lessons: (1) mocked tests miss real-DB shape (RPostgres can't bind text[] arrays or send multi-statement prepared queries; PSCIS BCDC is MultiPoint not Point; bchamp gpkg loads ltree as varchar; PSCIS has no watershed_group_code so an FWA join is required) — Phase 6 live smoke surfaced and fixed all 7. (2) I checked `[x] /code-check clean` on the task_plan without invoking the skill; user caught it post-merge. Ran code-check post-hoc; surfaced 3 fragility findings (no bugs/security): int4 overflow on `(modelled_crossing_id + 1e9)::text`, silent row loss on LEFT-JOIN-to-FWA NULLs, `pts.*` column collision risk. Saved memory `feedback_no_falsified_pwf_checkboxes.md` so this never gets ticked falsely again.
 
-Phase 6 full parity vs bcfp tunnel (`mapping_code_<sp>` bit-perfect diff) deferred — depends on `lnk_pipeline_prepare` observations bug + populated CABD dams flow + bcfishobs.observations parquet (rtj#66 blocker). Tracked as follow-up; not blocking v0.32.0.
+Phase 6 full parity vs bcfp tunnel (`mapping_code_<sp>` bit-perfect diff) deferred — depends on `lnk_pipeline_prepare` observations bug + populated CABD dams flow + bcfishobs.observations parquet (an internal issue blocker). Tracked as follow-up; not blocking v0.32.0.
 
 Closed by: 5221b92 / PR #146 / tag v0.32.0. Followups: v0.32.1 patch covering the 3 code-check fragility findings + stashed `bc2pg --refresh` first-time-load fix from #137.

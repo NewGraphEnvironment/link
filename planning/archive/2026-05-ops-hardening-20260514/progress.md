@@ -35,9 +35,9 @@
 
 - **link#167** — bcfp tunnel drops cause silent per-WSG errors (autossh proposed)
 - **link#168** — Decouple bcfp compare from link pipeline run (high-leverage)
-- **link#169** — Simplify `lnk_persist_init` after rtj#145 lands
+- **link#169** — Simplify `lnk_persist_init` after an internal issue lands
 - **link#170** — S3-based consolidate (route pg_dumps through s3://newgraph/)
-- **rtj#145** — Rebuild cypher snapshot with fwa dump tables ONLY
+- **an internal issue** — Rebuild cypher snapshot with fwa dump tables ONLY
 - **fresh#199** (reopened) — M4 PG over-tuning evidence + fix-up plan
 
 ### Lessons captured in findings.md (12 gotchas)
@@ -66,4 +66,4 @@ Documented in findings.md: `--smoke-only` flag for province_run.sh + `province_r
 3. Implement `--smoke-only` flag in province_run.sh
 4. Run `province_run.sh --smoke-only` to validate the wrapper machinery
 5. Strategy: M4-only as the simple baseline next provincial run; add hosts incrementally only after smoke validates each addition
-6. Refactor (link#168 decouple, rtj#145 snapshot rebuild) on a separate branch
+6. Refactor (link#168 decouple, an internal issue snapshot rebuild) on a separate branch

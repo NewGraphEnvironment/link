@@ -22,7 +22,6 @@ The CH scope was revised by the operator on the scoring evidence (`wetland_flow`
 
 **Owed after merge:** re-prep cyphers for the fresh pin. Re-model every group in the next provincial run. Re-score bcfishpass parity. Two operator decisions with these numbers: the W polygon rule's `area_only`, and lake lines as "a river" (fresh#262). File the rule-table issue (draft in the archive). #346: CO's pair and CH's 0.75 m³/s floor.
 
-- Relates to NewGraphEnvironment/sred#24
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 

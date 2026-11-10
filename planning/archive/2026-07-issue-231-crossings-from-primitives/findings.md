@@ -4,8 +4,8 @@
 
 Repoint the pipeline off fresh's stale bundled `crossings.csv` onto the fresh,
 weekly-refreshed `s3://newgraph/bcfishpass.crossings.csv` (produced by
-`db_newgraph jobs/dump_weekly`, merged upstream via `smnorris/db_newgraph#57` on
-2026-07-09). Depends-on/context: `db_newgraph#15` (now closed — the CSV is live).
+`db_newgraph jobs/dump_weekly`, merged upstream via `smnorris/an internal issue` on
+2026-07-09). Depends-on/context: an internal issue (now closed — the CSV is live).
 
 ## Exploration (two Explore agents, 2026-07-09)
 

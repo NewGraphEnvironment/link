@@ -1,6 +1,6 @@
 # Study areas: funders, and the two scopes that get conflated
 
-Migrated from machine-local memory 2026-09-01 (soul#47) so every machine has it.
+Migrated from machine-local memory 2026-09-01 so every machine has it.
 Assembled 2026-08-31 by reading each GIS project's own AOI layer against
 `whse_basemapping.fwa_watershed_groups_poly` — "not invented" — which is why it
 is worth keeping rather than re-deriving.

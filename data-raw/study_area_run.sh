@@ -152,7 +152,7 @@
 #   --prep-ssh-wait=N       seconds to wait for a fresh droplet to accept a
 #                           connection as the `cypher` user (default 600).
 #                           cypher_up returns early on snapshot spins
-#                           (NewGraphEnvironment/rtj#248), so this wait — not
+#                           (an internal issue), so this wait — not
 #                           cypher_up's — is what covers cloud-init's runcmd.
 #   --run-label="text"      operator name for this campaign, written to
 #                           <persist>.log.run_label and
@@ -225,7 +225,7 @@ PRETEST_NOTE=""
 RUN_LABEL=""
 # How long to wait for a fresh droplet to accept a connection as the `cypher`
 # user. 600s, not the old effective ~150s: cypher_up returns early on snapshot
-# spins (rtj#248), so this wait is what actually covers cloud-init's runcmd —
+# spins, so this wait is what actually covers cloud-init's runcmd —
 # Docker, apt, micromamba and Tailscale all run before the SSH keys are copied
 # to the cypher user. cypher_up's own comment puts a snapshot spin at 3-5 min.
 PREP_SSH_WAIT_S=600
@@ -656,7 +656,7 @@ CONSOLIDATING=0
 # trap exists.
 
 # Host addresses must not reach a public repo. The logs below are committed
-# deliberately as evidence (soul#129), but a worker's address is infrastructure
+# deliberately as evidence, but a worker's address is infrastructure
 # identity, not evidence -- nothing in a log is less useful for its removal.
 #
 # Runs from the EXIT trap so it covers every path, including the one where the
@@ -1840,7 +1840,7 @@ if [ "$N_CY" -gt 0 ]; then
       # /var/lib/cloud/cypher-provisioned, which is baked into the snapshot
       # image, so on a snapshot spin the marker is already present at first
       # contact and the check returns before runcmd has copied root's SSH keys
-      # to the cypher user (NewGraphEnvironment/rtj#248). root@ works the whole
+      # to the cypher user. root@ works the whole
       # time — DO injects keys every boot — so probing anything but `cypher@`
       # would be a false green.
       #
@@ -1874,7 +1874,7 @@ if [ "$N_CY" -gt 0 ]; then
         echo "  every boot, while the cypher user's authorized_keys is copied by" >&2
         echo "  cloud-init runcmd. Check with:" >&2
         echo "    ssh root@$IP 'ls -l /home/cypher/.ssh/authorized_keys; cloud-init status'" >&2
-        echo "  See NewGraphEnvironment/rtj#248. Raise the wait with --prep-ssh-wait=<seconds>." >&2
+        echo "  Raise the wait with --prep-ssh-wait=<seconds>." >&2
         exit 1
       fi
       scp -q "$REPO_ROOT/data-raw/cypher_prep.sh" "cypher@$IP:/tmp/cypher_prep.sh" \

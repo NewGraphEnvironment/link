@@ -50,8 +50,8 @@ Added detailed comment to the script. Calibrated from today's empirical timing C
 `lnk_persist_init(force_recreate=TRUE)` only drops tables when DDL drift is detected (the GENERATED column check). For tables with correct DDL, it leaves data alone.
 
 **Filed**:
-- **rtj#145** — Rebuild cypher snapshot with fwa dump tables ONLY (no bcfishobs / cabd / whse_fish / fresh.* baked in)
-- **link#169** — Simplify `lnk_persist_init` after rtj#145 lands (drop DDL-drift detection complexity)
+- **an internal issue** — Rebuild cypher snapshot with fwa dump tables ONLY (no bcfishobs / cabd / whse_fish / fresh.* baked in)
+- **link#169** — Simplify `lnk_persist_init` after an internal issue lands (drop DDL-drift detection complexity)
 
 **Workaround for today**: full DROP SCHEMA fresh CASCADE before re-running.
 

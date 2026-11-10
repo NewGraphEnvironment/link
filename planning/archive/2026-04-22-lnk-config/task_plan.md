@@ -47,7 +47,7 @@ Deferred — the `default` variant belongs in its own PR where real departures f
 - [x] NEWS.md entry
 - [x] Bump to 0.2.0
 - [x] `/code-check` on staged diff — one real issue found (name-shadowing foot-gun), fixed + regression test added
-- [ ] PR with SRED tag (NewGraphEnvironment/sred-2025-2026#24) — Fixes #37
+- [ ] PR with SRED tag — Fixes #37
 
 ## Versions at start
 

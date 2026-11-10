@@ -91,7 +91,7 @@ HORS:
 ## Out of scope (separate issues if they come up)
 
 - fresh-side changes (fresh#158 stream-order bypass, fresh#190/191 SK new-geographies) — bake them into the taxonomy with `status: INTENTIONAL_FRESH_DEFERRED` for now.
-- Cypher infra (rtj#129 closed; if a different infra issue surfaces, file separately in rtj).
+- Cypher infra (an internal issue closed; if a different infra issue surfaces, file separately in rtj).
 - Default bundle parity — same machinery should work but defer to a follow-up after bcfishpass bundle reaches "zero unexplained".
 
 ## Acceptance

@@ -86,7 +86,7 @@
   - pipeline discharge from wet;
   - desktop GeoPackage;
   - crate registration of the schema;
-  - PUBLISH gate on `run_uid`, together with versioning/versionId (rtj#263);
+  - PUBLISH gate on `run_uid`, together with versioning/versionId;
   - webmap PMTiles.
 
 ## Validation

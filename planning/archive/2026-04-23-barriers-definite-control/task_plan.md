@@ -81,7 +81,7 @@ Province-wide hunt for TRUE control rows with ≥ threshold observations upstrea
 - [ ] `/code-check` on full staged diff
 - [ ] Commit atomically per the plan's commit layout
 - [ ] Push branch
-- [ ] Open PR with SRED tag `Relates to NewGraphEnvironment/sred-2025-2026#24`
+- [ ] Open PR with SRED tag `Relates to an internal issue`
 - [ ] **File follow-up issue** (before closing PR 44): "Migrate remaining pipeline probes to manifest-driven gating". See `/Users/airvine/.claude/plans/stateful-hopping-feather.md` for scope.
 
 ## Versions at start

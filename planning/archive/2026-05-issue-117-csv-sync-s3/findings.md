@@ -40,7 +40,7 @@ Issue body was edited 2026-05-07 to reflect the new architecture + automation pa
 
 ## Cross-refs
 
-- NewGraphEnvironment/db_newgraph#4 + PR #5 — upstream dump that populates s3://fresh-bc/bcfishpass/. Manual workflow_dispatch validated 2026-05-07 (model_version=v0.7.14-125-g6e9cf1c, head_sha=6e9cf1c928ac01aae7e3aa5789ac9c29957e847b).
+- An internal issue + PR #5 — upstream dump that populates s3://fresh-bc/bcfishpass/. Manual workflow_dispatch validated 2026-05-07 (model_version=v0.7.14-125-g6e9cf1c, head_sha=6e9cf1c928ac01aae7e3aa5789ac9c29957e847b).
 - link#137, link#138 — companion self-sufficiency issues; same drift-monitor pattern; will follow this rewrite.
 - link#64 (closed) — original byte/shape distinction.
 

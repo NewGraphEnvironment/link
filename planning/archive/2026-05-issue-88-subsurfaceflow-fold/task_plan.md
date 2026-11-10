@@ -33,5 +33,5 @@
 
 ## Phase 6: Ship
 - [x] Atomic commits with PWF checkbox flips
-- [x] PR with `Fixes #88` and `Relates to NewGraphEnvironment/sred-2025-2026#24` — PR #89 merged 2026-05-01 as part of link 0.20.0
+- [x] PR with `Fixes #88` and `Relates to an internal issue` — PR #89 merged 2026-05-01 as part of link 0.20.0
 - [x] Archive PWF after merge
