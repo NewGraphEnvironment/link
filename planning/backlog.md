@@ -17,19 +17,19 @@ ticked and not **waiting**; `/planning-init <umbrella>` plans it, one phase per 
 
 | move | umbrella | batches | state |
 |---|---|---|---|
-| - [ ] 1 | UMB-1 | 1: the parent gradient and the grad tokens (4 issues) | open: start here |
-| - [ ] 2 | UMB-2 | 2, 3: which records count, what each lift rests on (7 issues) | open |
-| - [ ] 3 | UMB-3 | 4: docs, and a check that fails on warnings (4 issues) | open |
-| - [ ] 4 | UMB-4 | 5: `default`'s presence table as a copy plus an overlay (4 issues) | open: after move 2, whose record rule the presence check reads; one provincial re-model covers both moves' `acc` rows |
-| - [ ] 5 | UMB-5 | 6, 7: the export contract, one-group runs that read downstream (6 issues) | open: after move 2, whose rule for code 2 the export's new column carries, and after the provenance track's #466, which rewrites the same manifest |
-| - [ ] 6 | UMB-6 | 8, 9: what a run stamps and checks before launch, how primitives load (10 issues) | open |
-| - [ ] 7 | UMB-7 | 10: drivers (6 issues) | open |
-| - [ ] 8 | UMB-8 | 11: the rules builder and `dimensions.csv` (7 issues) | open |
-| - [ ] 9 | UMB-9 | 12, 13: mapping codes as rules, the persist and run API (8 issues) | open: after move 7, whose legacy-path decision sets what #176's rename is worth, and move 8, whose residence columns the mapping-code rules read |
-| - [ ] 10 | UMB-10 | 14, 15: snapping, habitat upstream of each crossing (6 issues) | open |
-| - [ ] 11 | UMB-11 | 16: what blocks access at a barrier (4 issues) | open: after move 10, whose per-crossing totals the barrier scenarios are compared on |
-| - [ ] 12 | UMB-12 | 17, 18, 19: thresholds from knowledge's table, MAD everywhere, the PARS vignette (7 issues) | **waiting** on knowledge#139's decision of which method sets link's flow numbers |
-| - [ ] 13 | UMB-13 | 20: the next fresh pin (3 issues) | **waiting** on fresh 0.54.0's release; once it ships, take this move next |
+| - [ ] 1 | #469 | 1: the parent gradient and the grad tokens (4 issues) | open: start here |
+| - [ ] 2 | #470 | 2, 3: which records count, what each lift rests on (7 issues) | open |
+| - [ ] 3 | #471 | 4: docs, and a check that fails on warnings (4 issues) | open |
+| - [ ] 4 | #472 | 5: `default`'s presence table as a copy plus an overlay (4 issues) | open: after move 2, whose record rule the presence check reads; one provincial re-model covers both moves' `acc` rows |
+| - [ ] 5 | #473 | 6, 7: the export contract, one-group runs that read downstream (6 issues) | open: after move 2, whose rule for code 2 the export's new column carries, and after the provenance track's #466, which rewrites the same manifest |
+| - [ ] 6 | #474 | 8, 9: what a run stamps and checks before launch, how primitives load (10 issues) | open |
+| - [ ] 7 | #475 | 10: drivers (6 issues) | open |
+| - [ ] 8 | #476 | 11: the rules builder and `dimensions.csv` (7 issues) | open |
+| - [ ] 9 | #477 | 12, 13: mapping codes as rules, the persist and run API (8 issues) | open: after move 7, whose legacy-path decision sets what #176's rename is worth, and move 8, whose residence columns the mapping-code rules read |
+| - [ ] 10 | #478 | 14, 15: snapping, habitat upstream of each crossing (6 issues) | open |
+| - [ ] 11 | #479 | 16: what blocks access at a barrier (4 issues) | open: after move 10, whose per-crossing totals the barrier scenarios are compared on |
+| - [ ] 12 | #480 | 17, 18, 19: thresholds from knowledge's table, MAD everywhere, the PARS vignette (7 issues) | **waiting** on knowledge#139's decision of which method sets link's flow numbers |
+| - [ ] 13 | #481 | 20: the next fresh pin (3 issues) | **waiting** on fresh 0.54.0's release; once it ships, take this move next |
 
 Tracks are separate efforts, not moves: speed (`track:speed`; its umbrella is in the skills repository: #377,
 #410, #411, #418, next #418; a follow-on from #369, hosts finished one at a time so a cloud host's consolidate waited 10.0 min at run 20261103, is for this track), provenance (`track:provenance`; umbrella likewise: #466) and minimal-run
@@ -44,30 +44,30 @@ built and knowledge#120 reads it.
 
 | # | tracking | batch | issues | gate | why here |
 |---|---|---|---:|---|---|
-| 1 | UMB-1 | parent gradient and grad tokens: #460, #420, #462, #463 | 4 | #462's option; #420 cut to the older builds' tokens | one vocabulary edit and one full-network build under `grad-parent` |
-| 2 | UMB-2 | which records count: #400, #398, #425 | 3 | #400's date and pooling rule; #425's two-way codes | one species-code rule read by the filter, the walk and the checks; one `acc` row |
-| 3 | UMB-2 | what each lift rests on: #434, #426, #427, #236 | 4 | `>=` or `>` at 1990-01-01; #427's threshold; #236 cut or closed | all edit `R/lnk_barrier_overrides.R`; the same `acc` row as batch 2 |
-| 4 | UMB-3 | docs and a check that fails on warnings: #456, #279, #275, #385 | 4 | none | cheap, and every later move is checked on warnings |
-| 5 | UMB-4 | presence table as a copy plus an overlay: #402, #431, #436, #292 | 4 | #436's option; UTRE CH and QUES ST; rainbow trout's return | one presence file, one overlay mechanism, one `acc` row |
-| 6 | UMB-5 | the export contract: #423, #333, #334, #465 | 4 | #423's column shape; #334's refusals and the bucket; #466 first or inside | all edit `R/lnk_scenario_export.R`; one crate release and one republish |
-| 7 | UMB-5 | one-group runs that read downstream: #464, #461 | 2 | none | both edit `R/lnk_wsg_downstream_check.R` |
-| 8 | UMB-6 | what a run stamps and checks before launch: #451, #446, #266, #458, #450, #269 | 6 | retire or refill `bcfishobs_sha`; one bcfishpass build rule; #450's range; tag pins or an `Imports:` floor | `R/lnk_log.R` and the driver's pre-flight; one release before the next provincial run |
-| 9 | UMB-6 | how primitives load: #459, #276, #273, #270 | 4 | ETag change or age per table | `snapshot_bcfp.sh` and the vintage gate; one primitives reload proves it |
-| 10 | UMB-7 | drivers: #278, #281, #166, #181, #179, #110 | 6 | retire the legacy `wsgs_*` path | one pass over `data-raw/` argument handling |
-| 11 | UMB-8 | rules builder and `dimensions.csv`: #75, #86, #129, #189, #212, #316, #327 | 7 | #212 to GR only; #316 and #327 adopt or decline; #86 cut | one rules regeneration and diff |
-| 12 | UMB-9 | mapping codes as rules: #197, #153, #191, #351 | 4 | `""` for absent species | one parity run shows the output unchanged |
-| 13 | UMB-9 | the persist and run API: #177, #176, #159, #204 | 4 | shims or hard renames; #204 against #169 | one release carries the deprecations |
-| 14 | UMB-10 | snapping: #313, #314, #383 | 3 | wrap or retire; the tie rule | one re-snap, then a re-model of both configs |
-| 15 | UMB-10 | habitat upstream of each crossing: #321, #232, #356 | 3 | none | one live parity against bcfishpass's crossings |
-| 16 | UMB-11 | what blocks access at a barrier: #201, #83, #341, #386 | 4 | a deliberate departure from bcfishpass; #386's rule | one `acc` row and one provincial re-model |
-| 17 | UMB-12 | thresholds from knowledge's table: #346, #343, #322 | 3 | knowledge#139's flow method; the table version | `default_tuned`'s thresholds file, read from one published table |
-| 18 | UMB-12 | MAD everywhere on wet's flows: #387, #389 | 2 | the same flow decision | one five-group build |
-| 19 | UMB-12 | the PARS vignette: #390, #342 | 2 | none | #342 shows batch 17's values |
-| 20 | UMB-13 | the next fresh pin: #452, #288, #222 | 3 | which variables both connection helpers read | one pin bump and one host re-prep |
+| 1 | #469 | parent gradient and grad tokens: #460, #420, #462, #463 | 4 | #462's option; #420 cut to the older builds' tokens | one vocabulary edit and one full-network build under `grad-parent` |
+| 2 | #470 | which records count: #400, #398, #425 | 3 | #400's date and pooling rule; #425's two-way codes | one species-code rule read by the filter, the walk and the checks; one `acc` row |
+| 3 | #470 | what each lift rests on: #434, #426, #427, #236 | 4 | `>=` or `>` at 1990-01-01; #427's threshold; #236 cut or closed | all edit `R/lnk_barrier_overrides.R`; the same `acc` row as batch 2 |
+| 4 | #471 | docs and a check that fails on warnings: #456, #279, #275, #385 | 4 | none | cheap, and every later move is checked on warnings |
+| 5 | #472 | presence table as a copy plus an overlay: #402, #431, #436, #292 | 4 | #436's option; UTRE CH and QUES ST; rainbow trout's return | one presence file, one overlay mechanism, one `acc` row |
+| 6 | #473 | the export contract: #423, #333, #334, #465 | 4 | #423's column shape; #334's refusals and the bucket; #466 first or inside | all edit `R/lnk_scenario_export.R`; one crate release and one republish |
+| 7 | #473 | one-group runs that read downstream: #464, #461 | 2 | none | both edit `R/lnk_wsg_downstream_check.R` |
+| 8 | #474 | what a run stamps and checks before launch: #451, #446, #266, #458, #450, #269 | 6 | retire or refill `bcfishobs_sha`; one bcfishpass build rule; #450's range; tag pins or an `Imports:` floor | `R/lnk_log.R` and the driver's pre-flight; one release before the next provincial run |
+| 9 | #474 | how primitives load: #459, #276, #273, #270 | 4 | ETag change or age per table | `snapshot_bcfp.sh` and the vintage gate; one primitives reload proves it |
+| 10 | #475 | drivers: #278, #281, #166, #181, #179, #110 | 6 | retire the legacy `wsgs_*` path | one pass over `data-raw/` argument handling |
+| 11 | #476 | rules builder and `dimensions.csv`: #75, #86, #129, #189, #212, #316, #327 | 7 | #212 to GR only; #316 and #327 adopt or decline; #86 cut | one rules regeneration and diff |
+| 12 | #477 | mapping codes as rules: #197, #153, #191, #351 | 4 | `""` for absent species | one parity run shows the output unchanged |
+| 13 | #477 | the persist and run API: #177, #176, #159, #204 | 4 | shims or hard renames; #204 against #169 | one release carries the deprecations |
+| 14 | #478 | snapping: #313, #314, #383 | 3 | wrap or retire; the tie rule | one re-snap, then a re-model of both configs |
+| 15 | #478 | habitat upstream of each crossing: #321, #232, #356 | 3 | none | one live parity against bcfishpass's crossings |
+| 16 | #479 | what blocks access at a barrier: #201, #83, #341, #386 | 4 | a deliberate departure from bcfishpass; #386's rule | one `acc` row and one provincial re-model |
+| 17 | #480 | thresholds from knowledge's table: #346, #343, #322 | 3 | knowledge#139's flow method; the table version | `default_tuned`'s thresholds file, read from one published table |
+| 18 | #480 | MAD everywhere on wet's flows: #387, #389 | 2 | the same flow decision | one five-group build |
+| 19 | #480 | the PARS vignette: #390, #342 | 2 | none | #342 shows batch 17's values |
+| 20 | #481 | the next fresh pin: #452, #288, #222 | 3 | which variables both connection helpers read | one pin bump and one host re-prep |
 
 ### 1. The parent gradient and the grad tokens
 
-- [ ] Carried by move 1, UMB-1
+- [ ] Carried by move 1, #469
 
 #460 (a `grad-fwa` vocabulary row for the Freshwater Atlas segment's own gradient, which no build writes),
 #420 (tokens for builds older than the vocabulary; its Atlas-line item is #460 now), #462 (under `grad-parent`
@@ -86,7 +86,7 @@ parent-gradient pick.
 
 ### 2. Which records count
 
-- [ ] Carried by move 2, UMB-2
+- [ ] Carried by move 2, #470
 
 #400 (one written rule for which records make code 2 and the observation breaks: date cut and pooling; the
 count is decided, one record), #398 (cutthroat alias records reach the observation tables but never make CT
@@ -102,7 +102,7 @@ knowledge waits on it: #400 decides which records lift a barrier and make code 2
 
 ### 3. What each lift rests on
 
-- [ ] Carried by move 2, UMB-2
+- [ ] Carried by move 2, #470
 
 #434 (each build publishes the barriers each observation override lifted, with the records and the rule
 behind each, checked against `access_<sp>`), #426 (lifts count records dated exactly 1990-01-01, which
@@ -119,7 +119,7 @@ on link's own lifts rather than re-implementing `lnk_barrier_overrides()`.
 
 ### 4. Docs, and a check that fails on warnings
 
-- [ ] Carried by move 3, UMB-3
+- [ ] Carried by move 3, #471
 
 #456 (the README says fish habitat definitions, not rules, as the website and the registry do), #279 (link
 `research/README.md` from `CLAUDE.md` once; the index and cutover line already exist), #275 (two study-area
@@ -131,7 +131,7 @@ undocumented `presence` arguments; then drop `error-on`). Touches `README.md`, `
 
 ### 5. `default`'s presence table as a copy plus an overlay
 
-- [ ] Carried by move 4, UMB-4
+- [ ] Carried by move 4, #472
 
 #402 (the presence check and its tracker: 154 rows pending, 141 of them KO and RB held since #432 paused
 those species), #431 (`default`'s `wsg_species_presence.csv` as bcfishpass's synced copy, with link's
@@ -150,7 +150,7 @@ knowledge#177, move 8) waits on to bring rainbow trout rearing back through a pr
 
 ### 6. The export contract
 
-- [ ] Carried by move 5, UMB-5
+- [ ] Carried by move 5, #473
 
 #423 (the habitat export carries whether the species is recorded upstream, access code 2), #333 (register
 the export's column contract in crate as `nge/habitat/fwa/v1/segment`), #334 (gates before a floodplain item
@@ -163,7 +163,7 @@ One crate release and one republish. A cloud loader in the infrastructure reposi
 
 ### 7. One-group runs that read downstream
 
-- [ ] Carried by move 5, UMB-5
+- [ ] Carried by move 5, #473
 
 #464 (`lnk_wsg_downstream_check()` passes when the downstream groups are not loaded; refuse and name them)
 and #461 (the same check takes 371 s of a 975 s one-group run; time its steps and make the dominant one fast
@@ -172,7 +172,7 @@ without changing pass, fail or override). Touches `R/lnk_wsg_downstream_check.R`
 
 ### 8. What a run stamps and checks before launch
 
-- [ ] Carried by move 6, UMB-6
+- [ ] Carried by move 6, #474
 
 #451 (the run stamps a local bcfishobs checkout's commit that no run reads, and refuses to launch when it is
 dirty), #446 (the bcfishpass reference pin reads a CSV-sync ledger row as the loaded view), #266 (link and
@@ -188,7 +188,7 @@ range rule; tag pins or an `Imports:` floor for fresh. One release before the ne
 
 ### 9. How primitives load
 
-- [ ] Carried by move 6, UMB-6
+- [ ] Carried by move 6, #474
 
 #459 (`snapshot_bcfp.sh`: the two-argument `--config` form for GDAL 3.8, and fallbacks for the Parquet and
 bcdata paths), #276 (the snapshot skip guard keys on a code SHA and is scoped per host; hosts should reach
@@ -201,7 +201,7 @@ on a host proves it.
 
 ### 10. Drivers
 
-- [ ] Carried by move 7, UMB-7
+- [ ] Carried by move 7, #475
 
 #278 (drivers default `--config` to `bcfishpass`: make it required and print the resolved decision set),
 #281 (a standalone `wsg_run_one.R` writes NULL `run_uid` and `run_label`; decided with #278), #166 (the
@@ -213,7 +213,7 @@ RUNBOOK. Gate: retire the legacy `wsgs_*` path, which closes #179 and #110 and s
 
 ### 11. The rules builder and `dimensions.csv`
 
-- [ ] Carried by move 8, UMB-8
+- [ ] Carried by move 8, #476
 
 #75 (the column dictionary documents and validates: a generated README, and `lnk_rules_build()` warns on an
 unknown column), #86 (config audit: row counts are what remains), #129 (sync `parameters_habitat_rules.yaml`
@@ -227,7 +227,7 @@ row counts or closed. One rules regeneration and diff; a `default` re-model if #
 
 ### 12. Mapping codes as rules
 
-- [ ] Carried by move 9, UMB-9
+- [ ] Carried by move 9, #477
 
 #197 (mapping-code second tokens from a rules CSV, not hard-coded chains), #153 (presence definitions for
 mapping codes: absent species read `""`), #191 (tests for `lnk_mapping_code()`, `lnk_pipeline_mapping_code()`
@@ -238,7 +238,7 @@ shows the output unchanged.
 
 ### 13. The persist and run API
 
-- [ ] Carried by move 9, UMB-9
+- [ ] Carried by move 9, #477
 
 #177 (`lnk_persist_{init, write}`: rename `lnk_pipeline_persist`), #176 (`lnk_compare_wsg()` to
 `lnk_compare_run()`), #159 (`lnk_pipeline_run()` drops its working schema only on success; clean up on error)
@@ -249,7 +249,7 @@ would remove, so decide which. One release carries the deprecations.
 
 ### 14. Snapping
 
-- [ ] Carried by move 10, UMB-10
+- [ ] Carried by move 10, #478
 
 #313 (`lnk_points_snap()` can snap to placeholder `999` segments: `<@` rather than `!=`), #314 (wrap or retire
 it in favour of `fresh::frs_point_snap()`) and #383 (fwapg's tie rule and stream-head fix across the
@@ -260,7 +260,7 @@ re-model of both configs.
 
 ### 15. Habitat upstream of each crossing
 
-- [ ] Carried by move 10, UMB-10
+- [ ] Carried by move 10, #478
 
 #321 (per-crossing upstream habitat per species on `fresh::frs_aggregate()`, checked against bcfishpass),
 #232 (link-built crossings against bcfishpass's complete crossings table) and #356 (float length sums depend
@@ -270,7 +270,7 @@ script, `research/bcfishpass_parity.md`. No gate. One live parity against bcfish
 
 ### 16. What blocks access at a barrier
 
-- [ ] Carried by move 11, UMB-11
+- [ ] Carried by move 11, #479
 
 #201 (carry barrier ingredients and classify access late, per species, with an evidence-based dam
 override), #83 (species-dependent dam handling), #341 (barrier rules as config, compared as scenarios on
@@ -283,7 +283,7 @@ bcfishpass (dams per species, evidence over dams); #386 owner-only persistence o
 
 ### 17. Thresholds from knowledge's published table
 
-- [ ] Carried by move 12, UMB-12
+- [ ] Carried by move 12, #480
 
 #346 (`default_tuned` takes its thresholds from knowledge's published, versioned table and link retires its
 per-threshold ladders), #343 (GR, RB and KO MAD minima on wet's discharge) and #322 (WCT thresholds from
@@ -298,7 +298,7 @@ proposed `default` beside #343.
 
 ### 18. MAD everywhere on wet's flows
 
-- [ ] Carried by move 12, UMB-12
+- [ ] Carried by move 12, #480
 
 #387 (report the stream lines whose model reads a flow the bundle's discharge source does not have) and #389
 (a `default_mad` bundle: MAD in every group on wet's flows, proven on five groups). Touches
@@ -308,7 +308,7 @@ dispatcher.
 
 ### 19. The PARS vignette
 
-- [ ] Carried by move 12, UMB-12
+- [ ] Carried by move 12, #480
 
 #390 (the vignette's data cannot be rebuilt once the two configs segment differently: take geometry from one
 schema and join the other by measure overlap) and #342 (`default` against `default_tuned` for bull trout in
@@ -317,7 +317,7 @@ the Parsnip, side by side). Touches `data-raw/wsg_vignette_data.R`, `vignettes/`
 
 ### 20. The next fresh pin
 
-- [ ] Carried by move 13, UMB-13
+- [ ] Carried by move 13, #481
 
 #452 (`cols_streams_near_river` gains `linear_feature_id` with fresh 0.54.0, and the validator passes
 `near_river_lfid`), #288

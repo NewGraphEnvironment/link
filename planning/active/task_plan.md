@@ -140,14 +140,14 @@ and a members table `issue | title`. Titles and the opening lines:
 - [x] Coverage check against the frozen set passes.
 
 ## Phase 3: Scan
-- [ ] Draft the 13 umbrella bodies to `umbrella_<n>.md` in the git dir; `public_leak_scan` clean on them and the file (rewrite and re-show any body it flags).
+- [x] Draft the 13 umbrella bodies to `umbrella_<n>.md` in the git dir; `public_leak_scan` clean on them and the file (rewrite and re-show any body it flags).
 
 ## Phase 4: File umbrellas
-- [ ] File the 13 umbrellas via `--body-file`; write their numbers into the Moves table and batch sections.
-- [ ] Every open move ticks cleanly on a copy (`backlog_moves.sh`); `next` names move 1.
+- [x] File the 13 umbrellas via `--body-file`; write their numbers into the Moves table and batch sections.
+- [x] Every open move ticks cleanly on a copy (`backlog_moves.sh`); `next` names move 1.
 
 ## Phase 5: Close
-- [ ] Close the agreed issues, each with a comment giving its reason and what would have changed.
+- [x] Close the agreed issues, each with a comment giving its reason and what would have changed.
 
 ## Phase 6: Land
 - [ ] Commit the file, archive the PWF, open the PR with `/gh-pr-push`.
