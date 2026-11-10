@@ -2392,8 +2392,7 @@ re-verified against the new assignment by restoring the bug, not
 inherited from the old one.
 
 Adds `research/run_record_2026_08_31_cypher_pilots.md` and
-`data-raw/logs/README.md` — the first record under
-[soul#129](https://github.com/NewGraphEnvironment/soul/issues/129),
+`data-raw/logs/README.md` — the first record under an internal issue,
 covering the four cypher pilots that produced the rates above and the
 four defects they exposed, including the ones where a correct diagnosis
 was retracted on a bad inference and where two gates passed tests that
@@ -2447,8 +2446,7 @@ image while `runcmd` — which copies root’s SSH keys to the `cypher` user
 specific user and fails loudly rather than falling through to
 `scp: Connection closed` (shipped in 0.47.0’s line of work as
 [\#251](https://github.com/NewGraphEnvironment/link/pull/251)); the root
-cause is fixed upstream in
-[NewGraphEnvironment/rtj#250](https://github.com/NewGraphEnvironment/rtj/pull/250).
+cause is fixed upstream in an internal pull request.
 
 ## link 0.47.0
 
@@ -3364,10 +3362,9 @@ is in Europe.
   umbrella surfaces the non-zero exit, marker-grep continues to work as
   belt-and-suspenders. Hit twice in 2026-05-15 (Peace Tier 2 retry +
   post-#185 re-spin; transient bcdata openmaps WFS timeout in both
-  cases). Sibling fix shipped in
-  [rtj#163](https://github.com/NewGraphEnvironment/rtj/pull/163) for the
-  cypher orchestration scripts; this is the link-side complement
-  covering the per-cypher prep script.
+  cases). Sibling fix shipped in an internal pull request for the cypher
+  orchestration scripts; this is the link-side complement covering the
+  per-cypher prep script.
 
 ## link 0.39.0
 
@@ -3602,10 +3599,11 @@ Follow-up issues filed (not closed here):
 autossh, [\#168](https://github.com/NewGraphEnvironment/link/issues/168)
 decouple bcfp compare from pipeline,
 [\#169](https://github.com/NewGraphEnvironment/link/issues/169) simplify
-`lnk_persist_init` after rtj#145,
+`lnk_persist_init` after an internal issue,
 [\#170](https://github.com/NewGraphEnvironment/link/issues/170) S3-based
-consolidate. Plus rtj#145 (rebuild cypher snapshot with fwa-dump tables
-ONLY) and fresh#199 (reopened — M4 PG over-tuning evidence).
+consolidate. Plus an internal issue (rebuild cypher snapshot with
+fwa-dump tables ONLY) and fresh#199 (reopened — M4 PG over-tuning
+evidence).
 
 Run result: 217-WSG BC stream network model in M4 `fresh` schema.
 Annotated parity CSV at
@@ -3719,9 +3717,9 @@ refinement; currently uses static CLI defaults).
   Under `set -euo pipefail`, `grep -q` closes the pipe on first match,
   `ogr2ogr` gets SIGPIPE (exit 141), `pipefail` propagates, `!` flips
   it, and the script FATALs even though the Parquet driver IS present.
-  Originally chased as a non-interactive ssh / conda env issue
-  (NewGraphEnvironment/rtj#129) — that was a misdiagnosis; PATH from
-  rtj#66/#123 was always correct.
+  Originally chased as a non-interactive ssh / conda env issue — that
+  was a misdiagnosis; PATH from an internal issue/#123 was always
+  correct.
 
 ## link 0.35.0
 
@@ -3825,8 +3823,7 @@ schedulable per host without manual install gymnastics.
 
 - `.github/workflows/sync-bcfishpass-csvs.yml` cron: Wed 6 AM PDT (13:00
   UTC) → Wed 4 AM PDT (11:00 UTC). Runs 1 h after the upstream dump in
-  `NewGraphEnvironment/db_newgraph#7` (which itself shifted to Wed 3 AM
-  PDT).
+  an internal issue (which itself shifted to Wed 3 AM PDT).
 - New exported `lnk_baseline_current(log, host, path)` predicate.
   Returns `TRUE` when this host’s most-recent
   `data-raw/logs/bcfp_baselines.csv` row already stamps the upstream
