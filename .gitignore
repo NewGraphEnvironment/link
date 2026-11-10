@@ -14,6 +14,8 @@ data-raw/maps/data/
 data-raw/maps/*.html
 data-raw/maps/*_files/
 
+# Per-machine Claude Code permissions: never tracked
+.claude/settings.local.json
 # Track public-visibility marker even though ~/.gitignore excludes .claude/
 !.claude/visibility
 
