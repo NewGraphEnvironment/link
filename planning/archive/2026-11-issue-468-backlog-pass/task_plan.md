@@ -150,7 +150,7 @@ and a members table `issue | title`. Titles and the opening lines:
 - [x] Close the agreed issues, each with a comment giving its reason and what would have changed.
 
 ## Phase 6: Land
-- [ ] Commit the file, archive the PWF, open the PR with `/gh-pr-push`.
+- [x] Commit the file and archive the PWF; the PR follows with `/gh-pr-push`.
 
 ## Owed at the end (reported, done after merge)
 
@@ -158,10 +158,10 @@ None in link. knowledge's backlog line pointing at link#468 is refreshed at know
 
 ## Validation
 
-- [ ] Tests pass (no code changes; the tick check on a copy is the test)
-- [ ] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] Tests pass (no code changes; the tick check on a copy, coverage and the public scan are the tests, all clean)
+- [ ] `/code-check` not run: the diff is `planning/` only (no code, script or convention); it was reviewed by the Plan review instead, whose corrections are in commit aadaad42
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
 
 - Coverage: every frozen issue appears in the file (step 5 check).
 - Tick: every open move ticks cleanly on a copy; `backlog_moves.sh next` names move 1.
