@@ -133,11 +133,11 @@ and a members table `issue | title`. Titles and the opening lines:
 
 
 ## Phase 1: Freeze
-- [ ] Re-list open issues, write the frozen set (`backlog_frozen.txt` in the git dir); place any issue filed since this plan.
+- [x] Re-list open issues, write the frozen set (`backlog_frozen.txt` in the git dir); place any issue filed since this plan.
 
 ## Phase 2: Write `planning/backlog.md`
-- [ ] Header (`**Verified:**` naming #468, the measurements), Moves table (umbrella cells as placeholders), tracks line, Order table, 20 batch sections (each with its knowledge line in words), Singles, Closed and transferred.
-- [ ] Coverage check against the frozen set passes.
+- [x] Header (`**Verified:**` naming #468, the measurements), Moves table (umbrella cells as placeholders), tracks line, Order table, 20 batch sections (each with its knowledge line in words), Singles, Closed and transferred.
+- [x] Coverage check against the frozen set passes.
 
 ## Phase 3: Scan
 - [ ] Draft the 13 umbrella bodies to `umbrella_<n>.md` in the git dir; `public_leak_scan` clean on them and the file (rewrite and re-show any body it flags).

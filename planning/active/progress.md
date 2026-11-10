@@ -6,3 +6,6 @@
 - Created branch `468-backlog-pass-batch-the-open-issues-into` off origin/main
 - Scaffolded PWF baseline from issue #468 with approved phases
 - Next: start Phase 1
+- Phase 1: froze 118 open issues (same set as the plan's read; nothing filed since).
+- Phase 2: wrote `planning/backlog.md` (13 moves, 20 batches, 15 singles, 21 closed, 5 in tracks); coverage check places all 118; public scan clean. Umbrella cells are placeholders (`UMB-n`) until Phase 4.
+- Plan review spawned (Plan agent, 2026-11-09) on the grouping; umbrellas are filed only after it reports.
