@@ -15,6 +15,18 @@ local_export_fixture <- function(conn, env = parent.frame()) {
     DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schema)),
     envir = env)
   link:::.lnk_log_create_tables(conn, schema)
+  # the dependency map reads province FWA (about 70 s); a fixed answer here
+  testthat::local_mocked_bindings(
+    .lnk_wsg_deps_line = function(conn, fwa = NULL) {
+      data.frame(wsg = c("ADMS", "LFRA"), dep = c("LFRA", "ADMS"),
+                 stringsAsFactors = FALSE)
+    },
+    .lnk_export_fwa_identity = function(conn) {
+      list(table = "fixture", rows = 5, bytes = 1)
+    },
+    .lnk_export_fwa_groups = function(conn) c("ADMS", "BULK", "LFRA"),
+    .lnk_export_fwa_required = function() c("ADMS", "BULK", "LFRA"),
+    .package = "link", .env = env)
 
   DBI::dbExecute(conn, sprintf(
     "CREATE TABLE %s.streams (
@@ -62,6 +74,27 @@ local_export_fixture <- function(conn, env = parent.frame()) {
     "INSERT INTO %s.streams_access VALUES
        (1, 'ADMS', false, 1), (2, 'ADMS', true, 0)", schema))
 
+  # The rows other groups' downstream walks read (#465): ADMS holds a gradient
+  # barrier (no linear feature) and a dam, with an override at the gradient
+  # barrier; LFRA a falls with no geometry; BULK none of either.
+  DBI::dbExecute(conn, sprintf("CREATE TABLE %s.barriers (%s)", schema,
+    paste(names(link:::cols_barriers), link:::cols_barriers, collapse = ", ")))
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.barriers VALUES
+       ('GRADIENT-1', 'ADMS', 'GRADIENT', 'gradient_25', NULL, '{CH,CO}', NULL,
+        10, 10, 50, '100.1', '100.1',
+        ST_SetSRID(ST_MakePoint(1200000.5, 600000.25), 3005)),
+       ('CABD-x', 'ADMS', 'CABD', 'dam', 'BARRIER', '{BT,CH}', 101,
+        10, 10, 120.125, '100.1', '100.1.5',
+        ST_SetSRID(ST_MakePoint(1200100, 600100), 3005)),
+       ('FALLS-3', 'LFRA', 'FALLS', 'falls', NULL, '{CH}', 301,
+        30, 30, 5, '100', '100', NULL)", schema))
+  DBI::dbExecute(conn, sprintf("CREATE TABLE %s.barrier_overrides (%s)",
+    schema, paste(names(link:::cols_barrier_overrides),
+                  link:::cols_barrier_overrides, collapse = ", ")))
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.barrier_overrides VALUES (10, 50, 'CH', 'ADMS')", schema))
+
   DBI::dbExecute(conn, sprintf(
     "CREATE TABLE %s.discharge (linear_feature_id bigint,
                                 mad_m3s double precision)", schema))
@@ -107,6 +140,14 @@ local_export_fixture <- function(conn, env = parent.frame()) {
        ('r3', 'whse_basemapping.fwa_stream_networks_sp')", schema))
 
   schema
+}
+
+# A second schema's copy of the fixture's barrier tables, every group's rows.
+export_copy_barriers <- function(conn, from, to) {
+  for (t in c("barriers", "barrier_overrides")) {
+    DBI::dbExecute(conn, sprintf(
+      "CREATE TABLE %s.%s AS SELECT * FROM %s.%s", to, t, from, t))
+  }
 }
 
 # Swap the export's discharge table for the fixture's.

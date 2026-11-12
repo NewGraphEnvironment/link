@@ -11,7 +11,21 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
-## Status (2026-11-03, latest) — each full segment reads its minimal parent: `fresh_default.streams_parent` (#444)
+## Status (2026-11-12) — a one-group run reads its downstream groups' barriers from the export (#465)
+
+**The habitat export carries each group's persisted `barriers` and `barrier_overrides` (one part per group per config, manifest `group_parts`), the line-rule dependency map (`dependencies`), and per-build input identities; `lnk_downstream_files()` lists a target's dependencies and `lnk_downstream_load()` loads them into a persist schema (0.80.0).** Proved on m1 by a round trip: BULL modelled after loading its 11 dependencies from an export of `fresh_default` equals the SQL-copied control and the provincial build row for row (`streams`, `streams_access`, `streams_mapping_code`). Mechanics: RUNBOOK §6d, "What a one-group run reads from the export". Evidence: `data-raw/logs/downstream_export_465/` (its README).
+
+**Owed:** the first PUBLISH carrying the new datasets (the operator's word). Re-snapshot every host's primitives (`snapshot_bcfp.sh --force`) before the next provincial run, so builds carry CABD's and PSCIS's content md5 and the export can snapshot them; until then every build reads "no content identity at build". The pre-run gate runs again (`R/lnk_log.R`, `R/lnk_artifact.R` changed). Follow-ups: a database holding only some groups' FWA (the round trip ran in a full one), loading the input snapshots into the primitive tables, and #464 reading the line rule.
+
+**Facts not worth re-deriving:**
+- **"Held" for the lister means rows in `barriers` or `barrier_overrides`, not `streams`** (`barrier_holders` per config), because that is what a walk reads; on `fresh_default` no group holds those rows without streams.
+- **The walk reads `barrier_overrides` from other groups too,** and the outlet closure is too narrow: the line rule (`.lnk_wsg_deps_line()`, `R/lnk_wsg_deps.R`, now shared with `recompute_deps.R`) is complete, and on `fresh_default` every one of 7,749,648 barrier and 44,069 override rows sits on a line its own group touches.
+- **Before duckdb 1.5.6, `duckdb::duckdb_register()` read an `integer64` column's bits as a double** on a default connection (`linear_feature_id` 703016261 → 3.5e-315, silently; fixed upstream in 1.5.6, `duckdb/duckdb-r#2819`); `bigint` goes to Parquet as text, which is right on every version.
+- **Override positions sit within 1 m of their barrier, not on it,** so join them by line and a 1 m window, never by exact measure (1,681 of 44,069 match exactly).
+- **A group writes its own copies of overrides along the lines it touches** (BULL: 268), so loading only a dependency's barriers changed nothing for BULL; the export still carries the overrides, because a target need not hold them.
+- **CABD and PSCIS have no version handle and the 241 builds ran on five hosts' loads,** so a snapshot is valid only for a build whose loader-recorded content md5 the export database still holds. Observations and modelled crossings carry one version id across all 241 builds.
+
+## Status (2026-11-03, last of the day) — each full segment reads its minimal parent: `fresh_default.streams_parent` (#444)
 
 **`lnk_streams_parent()` writes `<full schema>.streams_parent`, one row per full segment naming the `cut-min` segment it overlaps most (`id_segment_minimal`, `gradient_minimal`, `length_minimal`, `overlap_m`, `straddle_m`, both builds' provenance), and `data-raw/streams_parent_build.R` builds it for every group after judging the pair as the pre-run gate judges a record (0.79.0).** Built on m4 for all 241 groups from `fresh_default` (`4dfbfa49`) on `fresh_default_minimal` (`193cb8aa`): 5,546,370 rows, 96 straddling by at most 1.000 m, and the four proof groups equal #415's prototype. `grad-parent` names the reading; no build writes it. Mechanics: RUNBOOK §6b, "Parent attributes: `streams_parent`". Evidence: `data-raw/logs/streams_parent_444/`; write-up `research/minimal_network.md`.
 

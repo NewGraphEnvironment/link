@@ -446,7 +446,10 @@ cols_log_input <- c(
   # The table's comment (obj_description) at run open (link#331). wet's
   # loader writes the manifest it loaded from, its build time and commit
   # there, the only record of which published version is in the table.
-  table_comment          = "text"
+  table_comment          = "text",
+  # provenance.source_artifact's content md5 (#465): what an `api` primitive
+  # held when this host's loader loaded it
+  artifact_content_md5   = "text"
 )
 
 
@@ -856,8 +859,16 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
       DBI::dbQuoteLiteral(conn, loc$schema),
       DBI::dbQuoteLiteral(conn, loc$table)))) > 0L
     if (has_artifacts) {
+      # a ledger written before #465 has no content_md5 until it records again
+      has_md5 <- nrow(DBI::dbGetQuery(conn, sprintf(
+        "SELECT 1 FROM information_schema.columns
+          WHERE table_schema = %s AND table_name = %s
+            AND column_name = 'content_md5'",
+        DBI::dbQuoteLiteral(conn, loc$schema),
+        DBI::dbQuoteLiteral(conn, loc$table)))) > 0L
       art_cols <- paste("a.version_id, a.etag, a.last_modified, a.loaded_at,",
-                        "a.recorded_by")
+                        "a.recorded_by,",
+                        if (has_md5) "a.content_md5" else "NULL::text")
       # c.oid: the record lives outside the table it describes and can
       # outlive it (a dropped `fresh`); never stamp a table the run cannot see.
       art_join <- sprintf(
@@ -870,7 +881,8 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
         "NULL::text AS artifact_version_id, NULL::text AS artifact_etag,",
         "NULL::timestamptz AS artifact_last_modified,",
         "NULL::timestamptz AS artifact_loaded_at,",
-        "NULL::text AS artifact_recorded_by")
+        "NULL::text AS artifact_recorded_by,",
+        "NULL::text AS artifact_content_md5")
       art_join <- ""
     }
 
@@ -887,7 +899,7 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
           row_count_estimated, size_bytes, last_analyze, source, source_at,
           artifact_url, artifact_kind, artifact_version_id, artifact_etag,
           artifact_last_modified, artifact_loaded_at, artifact_recorded_by,
-          table_comment)
+          artifact_content_md5, table_comment)
        SELECT %s, %s, p.tbl,
               nullif(c.reltuples, -1)::bigint,
               CASE WHEN nullif(c.reltuples, -1) IS NULL THEN NULL ELSE TRUE END,

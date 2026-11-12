@@ -31,11 +31,14 @@
 #      provenance/ and config/ key must be absent or carry the same md5 (its
 #      single-PUT ETag under the bucket's SSE-S3). Absent keys are then put
 #      with --if-none-match, so they are written once and never deleted.
-#   4. manifest.json goes up last, no-cache.
-#   5. Keys under segment/ that the manifest no longer names are deleted.
-#      Nothing outside segment/ is ever deleted.
-#   6. The published manifest is read back through lnk_catalog() and must
-#      list the same parts and md5s.
+#   4. Per-group parts (barriers/, barrier_overrides/, #465) go up like
+#      parts, skipping a key whose ETag already equals its md5; the
+#      dependency map (dependencies/rule=line.parquet) is replaced.
+#   5. manifest.json goes up last, no-cache.
+#   6. Keys under segment/, barriers/ and barrier_overrides/ that the manifest
+#      no longer names are deleted. Nothing outside them is ever deleted.
+#   7. The published manifest is read back and must list the same parts,
+#      per-group parts and md5s.
 #
 # The prefix is private (link#308, "Staged private first"): every call uses
 # the caller's aws credentials, and readers need theirs too.
@@ -72,7 +75,8 @@ root <- normalizePath(root, mustWork = FALSE)
 verify_tree <- function(root) {
   m <- jsonlite::fromJSON(file.path(root, "manifest.json"),
                           simplifyVector = FALSE)
-  ent <- c(m$parts, m$files)
+  ent <- c(m$parts, m$group_parts, m$files,
+           if (!is.null(m$dependencies)) list(m$dependencies))
   bad <- Filter(Negate(is.null), lapply(ent, function(e) {
     f <- file.path(root, e$key)
     if (!file.exists(f)) return(paste(e$key, "missing"))
@@ -184,20 +188,45 @@ if (identical(Sys.getenv("LNK_PUBLISH"), "1")) {
         "application/vnd.apache.parquet", p$md5)
     stamp("put ", p$key)
   }
+  # one part per group per config, most unchanged between runs: an ETag that
+  # is already the md5 (a single PUT under SSE-S3) is these bytes
+  n_same <- 0L
+  for (p in m$group_parts) {
+    k <- paste(prefix, p$key, sep = "/")
+    if (identical(etag(k), p$md5)) {
+      n_same <- n_same + 1L
+      next
+    }
+    put(file.path(root, p$key), k, "application/vnd.apache.parquet", p$md5)
+  }
+  stamp(length(m$group_parts) - n_same, " of ", length(m$group_parts),
+        " per-group parts put")
+  # the dependency map follows FWA, not a build: replaced, never write-once
+  if (!is.null(m$dependencies)) {
+    d <- m$dependencies
+    put(file.path(root, d$key), paste(prefix, d$key, sep = "/"),
+        "application/vnd.apache.parquet", d$md5)
+    stamp("put ", d$key)
+  }
 
   f_man <- file.path(root, "manifest.json")
   put(f_man, paste(prefix, "manifest.json", sep = "/"), "application/json",
       unname(tools::md5sum(f_man)), "--cache-control", "no-cache")
   stamp("put manifest.json")
 
-  seg <- paste0(prefix, "/segment/")
-  keys <- aws_ok("s3api", "list-objects-v2", "--bucket", bucket,
-                 "--prefix", seg, "--query", "Contents[].Key",
-                 "--output", "text")
-  keys <- setdiff(unlist(strsplit(keys, "\t")), c("None", ""))
-  stale <- setdiff(keys, paste(prefix, vapply(m$parts, function(p) p$key,
-                                              character(1)), sep = "/"))
-  stopifnot(all(startsWith(stale, seg)))
+  named <- paste(prefix, vapply(c(m$parts, m$group_parts), function(p) p$key,
+                                character(1)), sep = "/")
+  stale <- character(0)
+  for (d in c("segment", "barriers", "barrier_overrides")) {
+    seg <- paste0(prefix, "/", d, "/")
+    keys <- aws_ok("s3api", "list-objects-v2", "--bucket", bucket,
+                   "--prefix", seg, "--query", "Contents[].Key",
+                   "--output", "text")
+    keys <- setdiff(unlist(strsplit(keys, "\t")), c("None", ""))
+    st <- setdiff(keys, named)
+    stopifnot(all(startsWith(st, seg)))
+    stale <- c(stale, st)
+  }
   for (k in stale) {
     aws_ok("s3api", "delete-object", "--bucket", bucket, "--key", k)
     stamp("deleted stale ", k)
@@ -209,8 +238,18 @@ if (identical(Sys.getenv("LNK_PUBLISH"), "1")) {
     stop("the published manifest does not list the local parts",
          call. = FALSE)
   }
-  stamp("published ", nrow(pub), " parts; ", length(stale),
-        " stale segment keys deleted")
+  gp_keys <- function(mf) {
+    vapply(mf$group_parts, function(p) paste(p$key, p$md5), character(1))
+  }
+  pub_m <- jsonlite::fromJSON(.lnk_fetch_text(paste0(target, "/manifest.json")),
+                              simplifyVector = FALSE)
+  if (!identical(gp_keys(pub_m), gp_keys(m)) ||
+      !identical(pub_m$dependencies$md5, m$dependencies$md5)) {
+    stop("the published manifest does not list the local per-group parts",
+         call. = FALSE)
+  }
+  stamp("published ", nrow(pub), " parts and ", length(m$group_parts),
+        " per-group parts; ", length(stale), " stale keys deleted")
   quit(save = "no")
 }
 
