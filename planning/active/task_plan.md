@@ -148,6 +148,8 @@ Two corrections to the issue body, found in exploration (the body gets edited to
 
 How each change is proved:
 - Phase 1: `recompute_deps.R` province `line` output identical before and after.
+- [x] End to end run 2026-11-12: a = b = `fresh_default` exactly; c differs; d does not
+  differ for BULL (it holds its own override copies), see `data-raw/logs/downstream_export_465/README.md`.
 - End to end on m1 (round trip, decision 5): export from `fresh_default` (built at
   `4dfbfa49`) a target built on m1 whose line set is larger than its closure and whose path
   holds a dependency's override, plus its dependencies, into a local root. Arms, each in a
