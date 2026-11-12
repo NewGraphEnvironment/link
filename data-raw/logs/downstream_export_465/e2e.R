@@ -71,7 +71,9 @@ model <- function(arm) {
            "LNK_RUN_LABEL=e2e_465")
   if (arm == "c") {
     env <- c(env, "LNK_GUARD_DOWNSTREAM=ignore",
-             "LNK_GUARD_DOWNSTREAM_NOTE=e2e 465 arm c: nothing downstream loaded")
+             # system2() pastes env into a shell line unquoted
+             paste0("LNK_GUARD_DOWNSTREAM_NOTE=",
+                    shQuote("e2e 465 arm c: nothing downstream loaded")))
   }
   log <- file.path(out, sprintf("model_%s.log", arm))
   t0 <- Sys.time()
@@ -86,7 +88,9 @@ runs <- do.call(rbind, lapply(names(arms), model))
 print(runs)
 
 digest_of <- function(schema, table) {
-  if (!link:::.lnk_table_exists(conn, paste0(schema, ".", table))) return(NA)
+  if (!link:::.lnk_table_exists(conn, paste0(schema, ".", table))) {
+    return(data.frame(n = NA_integer_, d = NA_character_))
+  }
   DBI::dbGetQuery(conn, sprintf(
     "SELECT count(*)::int AS n,
             md5(string_agg(t::text, '|' ORDER BY t.id_segment)) AS d
