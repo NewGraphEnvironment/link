@@ -33,3 +33,4 @@ Relates to #464
 
 | Error | Resolution |
 |-------|------------|
+| `ORDER BY 1 COLLATE "C"` failed: collations not supported by type integer | Sort in R with `method = "radix"` |

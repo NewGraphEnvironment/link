@@ -80,6 +80,7 @@ link,^R/lnk_scenario_export\.R$,none,not reached from wsg_run_one.R's entry poin
 link,^R/lnk_score\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^R/lnk_source\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^R/lnk_streams_parent\.R$,none,"post-hoc parent join, run by data-raw/streams_parent_build.R; nothing on the modelling path reads streams_parent (test-pretest.R checks it is not reached)"
+link,^R/lnk_wsg_deps\.R$,none,"the line rule of the recompute scheduler and the habitat export (#374, #465): not reached from wsg_run_one.R's entry points (test-pretest.R checks)"
 link,^R/lnk_thresholds\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^inst/extdata/configs/{config}/(rules\.yaml|dimensions\.csv|parameters_habitat_thresholds\.csv|parameters_habitat_method\.csv)$,segments,"habitat rules and thresholds, including the near-river pair"
 link,^inst/extdata/configs/{config}/(rules\.yaml|dimensions\.csv|parameters_habitat_thresholds\.csv|parameters_habitat_method\.csv)$,near_river_conn,"habitat rules and thresholds, including the near-river pair"

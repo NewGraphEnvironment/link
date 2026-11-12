@@ -37,13 +37,13 @@ Two corrections to the issue body, found in exploration (the body gets edited to
    the operator.
 
 ## Phase 1: Line-rule dependencies in R/
-- [ ] Extract the line rule from `data-raw/recompute_deps.R` (`deps_fwa()`, the `rd_seg` /
+- [x] Extract the line rule from `data-raw/recompute_deps.R` (`deps_fwa()`, the `rd_seg` /
       `rd_anc_all` / `rd_pathblk` SQL) into an internal `R/` function returning `wsg, dep`;
       keep owner and closure in the script
-- [ ] `recompute_deps.R` calls it (via `load_all()`); prove its province `line` output
+- [x] `recompute_deps.R` calls it (via `load_all()`); prove its province `line` output
       byte-identical before and after (tsv diff, both runs logged)
-- [ ] Test: refuses an empty FWA answer; pairs on a small live fixture (skip without DB)
-- [ ] Map the new file in `data-raw/pretest_inputs.csv` (`none`, call-graph checked)
+- [x] Test: refuses an empty FWA answer; pairs on a small live fixture (skip without DB)
+- [x] Map the new file in `data-raw/pretest_inputs.csv` (`none`, call-graph checked)
 
 ## Phase 2: Barrier and override parts in the export
 - [ ] Per config, per exported group: `barriers/config=<c>/part-<WSG>.parquet` and
