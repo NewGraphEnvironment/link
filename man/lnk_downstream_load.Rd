@@ -53,9 +53,12 @@ a build of the group here (a finished \verb{<schema>.log} row), or rows of
 unknown origin (unless \code{replace}).
 
 It reports, without refusing, each dependency build whose \code{config_hash}
-differs from \code{cfg}'s bundle: the rows were built under other rules than the
-target will be. The target's own inputs on this machine (observations above
-all) still decide its own barriers and lifts.
+differs from \code{cfg}'s bundle (the rows were built under other rules than the
+target will be), and each input whose identity here differs from what the
+dependencies were built from: CABD's and PSCIS's content md5, the
+observations' and modelled crossings' loader version id (attribute
+\code{inputs_differ} of the result). The target's own inputs on this machine
+still decide its own barriers and lifts.
 }
 \examples{
 \dontrun{

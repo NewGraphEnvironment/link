@@ -91,19 +91,19 @@ Two corrections to the issue body, found in exploration (the body gets edited to
 - [x] Test: present, md5 matches, refuses an empty map
 
 ## Phase 4: Input snapshots (last; revised at the gate, see decision 2)
-- [ ] Content identity at load: `snapshot_bcfp.sh` (through `data-raw/artifact_record.R` /
+- [x] Content identity at load: `snapshot_bcfp.sh` (through `data-raw/artifact_record.R` /
       `lnk_artifact_record()`) writes an md5 of CABD's and PSCIS's rows, in a fixed order,
       into `provenance.source_artifact`; `.lnk_log_inputs()` copies it into `log_input`
       (new column, aligned for older rows)
-- [ ] The export writes `inputs/cabd_dams/<md5>.parquet` and
+- [x] The export writes `inputs/cabd_dams/<md5>.parquet` and
       `inputs/pscis_assessment/<md5>.parquet` (province-wide, content-addressed, kind
       `input` in `files`) for builds whose logged md5 equals the export host's current md5;
       each run entry records its snapshot key or the reason absent (`no content identity at
       build`, `changed since build`, `not read`: `arg_dams` FALSE); an existing key is
       referenced without re-judging
-- [ ] Observations and modelled crossings: each run entry cites the loader version id and
+- [x] Observations and modelled crossings: each run entry cites the loader version id and
       ETag from its `log_input` (no copy)
-- [ ] Tests: md5 deterministic under row order; snapshot written on match, reason recorded
+- [x] Tests: md5 deterministic under row order; snapshot written on match, reason recorded
       on mismatch or missing identity
 
 ## Phase 5: The one-group side

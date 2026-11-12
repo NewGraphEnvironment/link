@@ -162,6 +162,34 @@ lnk_downstream_files <- function(manifest, wsg, config,
   rownames(out) <- NULL
   attr(out, "manifest") <- manifest
   attr(out, "built") <- m$built
+  attr(out, "inputs") <- .lnk_downstream_inputs(
+    unique(out$wsg[out$class == "exported"]), run_of)
+  out
+}
+
+#' What each exported dependency's build read, from its manifest run entry:
+#' one row per group and input, the content md5 for a snapshotted input and
+#' the version id for a cited one (NA where the build recorded none).
+#' @noRd
+.lnk_downstream_inputs <- function(groups, run_of) {
+  rows <- lapply(groups, function(w) {
+    inp <- run_of(w)$inputs
+    if (is.null(inp) || length(inp) == 0L) return(NULL)
+    do.call(rbind, lapply(names(inp), function(nm) {
+      x <- inp[[nm]]
+      data.frame(wsg = w, input = nm,
+                 table = as.character(x$table %||% NA_character_),
+                 content_md5 = as.character(x$content_md5 %||% NA_character_),
+                 version_id = as.character(x$version_id %||% NA_character_),
+                 stringsAsFactors = FALSE)
+    }))
+  })
+  out <- do.call(rbind, rows)
+  if (is.null(out)) {
+    out <- data.frame(wsg = character(0), input = character(0),
+                      table = character(0), content_md5 = character(0),
+                      version_id = character(0))
+  }
   out
 }
 
@@ -203,9 +231,12 @@ cols_log_downstream_load <- c(
 #' unknown origin (unless `replace`).
 #'
 #' It reports, without refusing, each dependency build whose `config_hash`
-#' differs from `cfg`'s bundle: the rows were built under other rules than the
-#' target will be. The target's own inputs on this machine (observations above
-#' all) still decide its own barriers and lifts.
+#' differs from `cfg`'s bundle (the rows were built under other rules than the
+#' target will be), and each input whose identity here differs from what the
+#' dependencies were built from: CABD's and PSCIS's content md5, the
+#' observations' and modelled crossings' loader version id (attribute
+#' `inputs_differ` of the result). The target's own inputs on this machine
+#' still decide its own barriers and lifts.
 #'
 #' @param conn DBI connection to the target database.
 #' @param files The data frame [lnk_downstream_files()] returns, for one
@@ -407,6 +438,65 @@ lnk_downstream_load <- function(conn, files, cfg, replace = FALSE,
             paste(sprintf("%s (%s)", other, rep$config_hash[!rep$config_same]),
                   collapse = ", "))
   }
+  inp <- .lnk_downstream_inputs_compare(conn, attr(files, "inputs"), groups)
+  if (nrow(inp) > 0L) {
+    message("this database's inputs differ from what the dependencies were ",
+            "built from (the target's own barriers and lifts read these): ",
+            paste(sprintf("%s in %s (here %s, built %s)", inp$table, inp$wsgs,
+                          inp$here, inp$built), collapse = "; "))
+  }
+  attr(rep, "inputs_differ") <- inp
   invisible(rep)
+}
+
+#' The inputs whose identity here differs from the dependency builds': for a
+#' snapshotted (`api`) input, the table's content md5 now; for a cited
+#' object, this host's loader-recorded version id. A build that recorded no
+#' identity is not compared. Reported, never refused (provenance rule 8).
+#' @noRd
+.lnk_downstream_inputs_compare <- function(conn, inputs, groups) {
+  empty <- data.frame(table = character(0), wsgs = character(0),
+                      here = character(0), built = character(0))
+  if (is.null(inputs) || nrow(inputs) == 0L) return(empty)
+  inputs <- inputs[inputs$wsg %in% groups & !is.na(inputs$table), ,
+                   drop = FALSE]
+  ledger <- if (.lnk_table_exists(conn, .lnk_artifact_table())) {
+    DBI::dbGetQuery(conn, sprintf(
+      "SELECT table_name, version_id FROM %s
+        WHERE host = $1 AND recorded_by = 'loader'", .lnk_artifact_table()),
+      params = list(.lnk_host()))
+  } else {
+    data.frame(table_name = character(0), version_id = character(0))
+  }
+  out <- list()
+  for (t in unique(inputs$table)) {
+    x <- inputs[inputs$table == t, , drop = FALSE]
+    snap <- !is.na(x$content_md5)
+    if (any(snap)) {
+      here <- .lnk_table_content_md5(conn, t)
+      for (b in unique(x$content_md5[snap])) {
+        if (!identical(here, b)) {
+          out[[length(out) + 1L]] <- data.frame(
+            table = t, wsgs = paste(sort(x$wsg[snap & x$content_md5 == b]),
+                                    collapse = ","),
+            here = here %||% NA_character_, built = b)
+        }
+      }
+    }
+    cited <- !is.na(x$version_id)
+    if (any(cited)) {
+      here <- ledger$version_id[ledger$table_name == t]
+      here <- if (length(here) == 0L) NA_character_ else here[1]
+      for (b in unique(x$version_id[cited])) {
+        if (!identical(here, b)) {
+          out[[length(out) + 1L]] <- data.frame(
+            table = t, wsgs = paste(sort(x$wsg[cited & x$version_id == b]),
+                                    collapse = ","),
+            here = here, built = b)
+        }
+      }
+    }
+  }
+  if (length(out) == 0L) empty else do.call(rbind, out)
 }
 # nolint end: indentation_linter

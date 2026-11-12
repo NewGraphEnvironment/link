@@ -689,6 +689,7 @@
 #' <root>/barriers/config=<config>/part-<group>.parquet
 #' <root>/barrier_overrides/config=<config>/part-<group>.parquet
 #' <root>/dependencies/rule=line.parquet
+#' <root>/inputs/<cabd_dams|pscis_assessment>/<content md5>.parquet
 #' <root>/provenance/run_uid=<uid>/run_id=<id>/{log,log_input}.parquet
 #' <root>/provenance/config_hash=<hex>/log_parameters_*.parquet
 #' <root>/config/sha256-<hex>/<bundle files>
@@ -939,7 +940,10 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     sa_file <- .lnk_export_source_artifact(conn, r_cf$host, root)
     hashes <- unique(r_cf$config_hash)
     bnd <- .lnk_export_bundle(cf, hashes, root)
-    files[[length(files) + 1L]] <- rbind(prov, rc_files, sa_file, bnd$files)
+    # CABD and PSCIS by content where the build's are held now (#465)
+    inp <- .lnk_export_inputs(conn, r_cf, root)
+    files[[length(files) + 1L]] <- rbind(prov, rc_files, sa_file, bnd$files,
+                                         inp$files)
 
     thr_logged <- vapply(hashes, function(h) {
       any(vapply(unique(r_cf$schema_export), function(s) {
@@ -975,6 +979,7 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     run_rows$parameters_key <- paste0("provenance/",
                                       vapply(r_cf$config_hash, .lnk_hash_key,
                                              character(1), USE.NAMES = FALSE))
+    run_rows$inputs <- unname(inp$runs[r_cf$run_id])
     run_rows$recompute_keys <- lapply(r_cf$watershed_group_code, function(w) {
       ids <- if (is.null(rc_cf)) character(0) else
         rc_cf$recompute_id[rc_cf$watershed_group_code == w]

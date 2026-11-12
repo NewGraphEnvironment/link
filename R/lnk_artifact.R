@@ -32,7 +32,10 @@ cols_source_artifact <- c(
   loaded_at              = "timestamptz",
   recorded_at            = "timestamptz NOT NULL",
   recorded_by            = "text NOT NULL CHECK (recorded_by IN ('loader', 'probe'))",
-  notes                  = "text"
+  notes                  = "text",
+  # md5 of the loaded table's rows (.lnk_table_content_md5()), for the `api`
+  # primitives, which have no version handle (#465). Recorded by the loader.
+  content_md5            = "text"
 )
 
 # Where the table lives. One function rather than an argument: the gate, the
@@ -254,6 +257,16 @@ lnk_artifact_record <- function(conn, artifacts,
   a$n_rows <- .lnk_artifact_count(conn, a)
   tbls <- unique(a$table_name)
   missing_tbl <- tbls[!.lnk_artifact_exists(conn, tbls)]
+  # An `api` primitive has no version handle, so the loader records what it
+  # loaded by content (#465); an object has its version id, and a probe says
+  # nothing about what is loaded.
+  a$content_md5 <- vapply(seq_len(nrow(a)), function(i) {
+    if (recorded_by != "loader" || a$kind[i] != "api" ||
+        a$table_name[i] %in% missing_tbl) {
+      return(NA_character_)
+    }
+    .lnk_table_content_md5(conn, a$table_name[i])
+  }, character(1))
   absent <- a$table_name %in% missing_tbl
   a$notes[absent] <- vapply(a$notes[absent], function(n) {
     paste(stats::na.omit(c(n, "table absent at record time")), collapse = "; ")
@@ -274,19 +287,21 @@ lnk_artifact_record <- function(conn, artifacts,
     }, character(1), USE.NAMES = FALSE)
   }
   values <- paste(sprintf(
-    "(%s, %s, %s, %s, %s, %s, %s::timestamptz, %s::bigint, %s::timestamptz, now(), %s, %s)",
+    "(%s, %s, %s, %s, %s, %s, %s::timestamptz, %s::bigint, %s::timestamptz, now(), %s, %s, %s)",
     lit(rep(host, nrow(a))), lit(a$table_name), lit(a$url), lit(a$kind),
     lit(a$version_id), lit(a$etag), lit(a$last_modified), lit(a$n_rows),
-    lit(a$loaded_at), lit(rep(recorded_by, nrow(a))), lit(a$notes)),
+    lit(a$loaded_at), lit(rep(recorded_by, nrow(a))), lit(a$notes),
+    lit(a$content_md5)),
     collapse = ",\n  ")
 
   tbl <- .lnk_artifact_table()
   set_cols <- c("kind", "version_id", "etag", "last_modified", "n_rows",
-                "loaded_at", "recorded_at", "recorded_by", "notes")
+                "loaded_at", "recorded_at", "recorded_by", "notes",
+                "content_md5")
   .lnk_db_execute(conn, sprintf(
     "INSERT INTO %s AS t
        (host, table_name, url, kind, version_id, etag, last_modified, n_rows,
-        loaded_at, recorded_at, recorded_by, notes)
+        loaded_at, recorded_at, recorded_by, notes, content_md5)
      VALUES
        %s
      ON CONFLICT (host, table_name, url) DO UPDATE SET %s
@@ -527,4 +542,28 @@ lnk_artifact_read <- function(conn, host = .lnk_host()) {
     }
   }
   n
+}
+
+#' md5 of a table's rows, independent of their physical order
+#'
+#' Each row's text form, sorted in byte order and joined, hashed in the
+#' database. The same rows in the same column order give the same md5 on any
+#' host; a reloaded table whose columns come back in another order reads as
+#' changed, which is the safe direction. For the `api` primitives (CABD,
+#' PSCIS), which have no version handle (#465).
+#' @param conn DBI connection.
+#' @param table Schema-qualified table name.
+#' @return A 32-character md5, or NA when the table is absent.
+#' @noRd
+.lnk_table_content_md5 <- function(conn, table) {
+  .lnk_validate_identifier(table, "table")
+  # to_regclass, so a temporary table (pg_temp) is found too
+  there <- DBI::dbGetQuery(conn, "SELECT to_regclass($1) IS NOT NULL AS x",
+                           params = list(table))$x
+  if (!isTRUE(there)) return(NA_character_)
+  x <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT md5(coalesce(string_agg(t::text, E'\\n' ORDER BY t::text COLLATE \"C\"),
+                         '')) AS md5
+       FROM %s t", table))$md5
+  as.character(x)
 }

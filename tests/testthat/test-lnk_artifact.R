@@ -435,7 +435,10 @@ test_that("a round row count and a quoted ETag record as one canonical form", {
       sql <<- c(sql, s)
       invisible(conn)
     },
-    .lnk_artifact_exists = function(conn, tables) rep(TRUE, length(tables)))
+    .lnk_artifact_exists = function(conn, tables) rep(TRUE, length(tables)),
+    .lnk_table_content_md5 = function(conn, table) {
+      "0123456789abcdef0123456789abcdef"
+    })
   with_mocked_bindings(
     dbQuoteLiteral = function(conn, x, ...) paste0("'", x, "'"),
     .package = "DBI",
@@ -447,6 +450,8 @@ test_that("a round row count and a quoted ETag record as one canonical form", {
   expect_match(ins, "'100000'::bigint", fixed = TRUE)
   expect_match(ins, "'abc-18'", fixed = TRUE)
   expect_no_match(ins, "\"abc-18\"", fixed = TRUE)
+  # an api primitive's loader row carries its content md5 (#465)
+  expect_match(ins, "'0123456789abcdef0123456789abcdef'", fixed = TRUE)
 })
 
 test_that("the probe stops asking after consecutive failures", {

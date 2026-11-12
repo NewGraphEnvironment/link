@@ -196,3 +196,27 @@ test_that("the loader refuses a part holding another group's rows", {
   expect_identical(DBI::dbGetQuery(conn, sprintf(
     "SELECT count(*)::int AS n FROM %s.barriers", cfg$pipeline$schema))$n, 0L)
 })
+
+test_that("the loader reports inputs that differ from the dependency builds'", {
+  conn <- skip_if_no_db()
+  inputs <- data.frame(
+    wsg = c("LFRA", "LFRA", "KOTL"),
+    input = c("cabd_dams", "observations", "cabd_dams"),
+    table = c("pg_temp.lnk_inp_cabd", "bcfishobs.observations",
+              "pg_temp.lnk_inp_cabd"),
+    content_md5 = c("ffffffffffffffffffffffffffffffff", NA, NA),
+    version_id = c(NA, "v-built", NA), stringsAsFactors = FALSE)
+  DBI::dbExecute(conn, "DROP TABLE IF EXISTS pg_temp.lnk_inp_cabd")
+  DBI::dbExecute(conn, "CREATE TEMP TABLE lnk_inp_cabd AS SELECT 1 AS id")
+  local_mocked_bindings(.lnk_host = function() "lnk-test-no-ledger")
+  got <- link:::.lnk_downstream_inputs_compare(conn, inputs, c("LFRA", "KOTL"))
+  expect_identical(got$table, c("pg_temp.lnk_inp_cabd", "bcfishobs.observations"))
+  expect_identical(got$wsgs, c("LFRA", "LFRA"))
+  expect_identical(got$built, c("ffffffffffffffffffffffffffffffff", "v-built"))
+  expect_true(is.na(got$here[2]))
+  # the same content here is no difference; a build with no identity is skipped
+  here <- link:::.lnk_table_content_md5(conn, "pg_temp.lnk_inp_cabd")
+  inputs$content_md5[1] <- here
+  got <- link:::.lnk_downstream_inputs_compare(conn, inputs[-2, ], c("LFRA", "KOTL"))
+  expect_identical(nrow(got), 0L)
+})

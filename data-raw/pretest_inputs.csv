@@ -77,6 +77,7 @@ link,^R/lnk_csv_sync\.R$,none,"the weekly bcfishpass CSV sync's helpers (#429): 
 link,^R/lnk_rollup_wsg\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^R/lnk_rules_build\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^R/lnk_downstream\.R$,none,"lists and loads the export's per-group parts for a one-group run (#465): not reached from wsg_run_one.R's entry points (test-pretest.R checks)"
+link,^R/lnk_export_inputs\.R$,none,"the export's CABD and PSCIS snapshots and version citations (#465): not reached from wsg_run_one.R's entry points (test-pretest.R checks)"
 link,^R/lnk_export_groups\.R$,none,"the export's per-group barrier and override parts (#465): not reached from wsg_run_one.R's entry points (test-pretest.R checks)"
 link,^R/lnk_scenario_export\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^R/lnk_score\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml

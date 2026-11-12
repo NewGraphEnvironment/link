@@ -57,6 +57,7 @@ into PostgreSQL.
 <root>/barriers/config=<config>/part-<group>.parquet
 <root>/barrier_overrides/config=<config>/part-<group>.parquet
 <root>/dependencies/rule=line.parquet
+<root>/inputs/<cabd_dams|pscis_assessment>/<content md5>.parquet
 <root>/provenance/run_uid=<uid>/run_id=<id>/\{log,log_input\}.parquet
 <root>/provenance/config_hash=<hex>/log_parameters_*.parquet
 <root>/config/sha256-<hex>/<bundle files>
