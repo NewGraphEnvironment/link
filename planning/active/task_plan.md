@@ -124,11 +124,11 @@ Two corrections to the issue body, found in exploration (the body gets edited to
 - [x] Map both new files in `pretest_inputs.csv` (the follow-up issue is listed under Owed)
 
 ## Phase 6: Driver, docs, release
-- [ ] `study_area_run.sh` summary prints the export BUILD and PUBLISH commands for the
+- [x] `study_area_run.sh` summary (in `study_area_finish.sh`) prints the export BUILD and PUBLISH commands for the
       run's config and schema (`data-raw/habitat_publish.R`), structural test
 - [ ] RUNBOOK §6d (layout, barrier parts, dependencies, inputs, the guard), §8c (one-group
       runs read downstream from the export), §8d (post-run list); NEWS; CLAUDE.md status
-- [ ] Edit #465's body to the corrections above; note the interplay on #464
+- [x] Edit #465's body to the corrections above; note the interplay on #464 (in #465's body; a comment on #464 is owed)
 - [ ] Version bump (minor) as the branch's last commit
 
 ## Owed at the end (reported, done after merge)
@@ -141,8 +141,8 @@ Two corrections to the issue body, found in exploration (the body gets edited to
       CABD / PSCIS content md5
 
 ## Validation
-- [ ] Tests pass
-- [ ] `/code-check` clean (once over the branch with `/code-check branch`)
+- [x] Tests pass (5,455 pass, 0 failed; 2 errors that fail the same on main: m1's dead `PG_*_SHARE` port)
+- [x] `/code-check` clean (once over the branch with `/code-check branch`)
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
