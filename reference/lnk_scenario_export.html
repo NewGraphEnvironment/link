@@ -19,7 +19,7 @@ into PostgreSQL."><meta property="og:image" content="https://newgraphenvironment
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.79.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.80.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -121,9 +121,13 @@ the config, or put an older build of a group in place of a newer one;
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p></p><div class="sourceCode"><pre><code><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="sc">&lt;</span>root<span class="sc">&gt;</span><span class="er">/</span>manifest.json</span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="sc">&lt;</span>root<span class="sc">&gt;</span><span class="er">/</span>segment<span class="sc">/</span>config<span class="ot">=</span><span class="er">&lt;</span>config<span class="sc">&gt;</span><span class="er">/</span>species<span class="ot">=</span><span class="er">&lt;</span>sp<span class="sc">&gt;</span><span class="er">/</span>part<span class="sc">-</span><span class="er">&lt;</span>code<span class="sc">&gt;</span>.parquet</span>
-<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="sc">&lt;</span>root<span class="sc">&gt;</span><span class="er">/</span>provenance<span class="sc">/</span>run_uid<span class="ot">=</span><span class="er">&lt;</span>uid<span class="sc">&gt;</span><span class="er">/</span>run_id<span class="ot">=</span><span class="er">&lt;</span>id<span class="sc">&gt;</span><span class="er">/</span>{log,log_input}.parquet</span>
-<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="sc">&lt;</span>root<span class="sc">&gt;</span><span class="er">/</span>provenance<span class="sc">/</span>config_hash<span class="ot">=</span><span class="er">&lt;</span>hex<span class="sc">&gt;</span><span class="er">/</span>log_parameters_<span class="sc">*</span>.parquet</span>
-<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="sc">&lt;</span>root<span class="sc">&gt;</span><span class="er">/</span>config<span class="sc">/</span>sha256<span class="sc">-</span><span class="er">&lt;</span>hex<span class="sc">&gt;</span><span class="er">/&lt;</span>bundle files<span class="sc">&gt;</span></span></code></pre><p></p></div>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="sc">&lt;</span>root<span class="sc">&gt;</span><span class="er">/</span>barriers<span class="sc">/</span>config<span class="ot">=</span><span class="er">&lt;</span>config<span class="sc">&gt;</span><span class="er">/</span>part<span class="sc">-</span><span class="er">&lt;</span>group<span class="sc">&gt;</span>.parquet</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="sc">&lt;</span>root<span class="sc">&gt;</span><span class="er">/</span>barrier_overrides<span class="sc">/</span>config<span class="ot">=</span><span class="er">&lt;</span>config<span class="sc">&gt;</span><span class="er">/</span>part<span class="sc">-</span><span class="er">&lt;</span>group<span class="sc">&gt;</span>.parquet</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="sc">&lt;</span>root<span class="sc">&gt;</span><span class="er">/</span>dependencies<span class="sc">/</span>rule<span class="ot">=</span>line.parquet</span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="sc">&lt;</span>root<span class="sc">&gt;</span><span class="er">/</span>inputs<span class="sc">/</span><span class="er">&lt;</span>cabd_dams<span class="sc">|</span>pscis_assessment<span class="sc">&gt;</span><span class="er">/&lt;</span>content md5<span class="sc">&gt;</span>.parquet</span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="sc">&lt;</span>root<span class="sc">&gt;</span><span class="er">/</span>provenance<span class="sc">/</span>run_uid<span class="ot">=</span><span class="er">&lt;</span>uid<span class="sc">&gt;</span><span class="er">/</span>run_id<span class="ot">=</span><span class="er">&lt;</span>id<span class="sc">&gt;</span><span class="er">/</span>{log,log_input}.parquet</span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="sc">&lt;</span>root<span class="sc">&gt;</span><span class="er">/</span>provenance<span class="sc">/</span>config_hash<span class="ot">=</span><span class="er">&lt;</span>hex<span class="sc">&gt;</span><span class="er">/</span>log_parameters_<span class="sc">*</span>.parquet</span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a><span class="sc">&lt;</span>root<span class="sc">&gt;</span><span class="er">/</span>config<span class="sc">/</span>sha256<span class="sc">-</span><span class="er">&lt;</span>hex<span class="sc">&gt;</span><span class="er">/&lt;</span>bundle files<span class="sc">&gt;</span></span></code></pre><p></p></div>
 <p>Rules the export holds to:</p><ul><li><p><strong>Key.</strong> <code>(blue_line_key, downstream_route_measure, upstream_route_measure)</code>. Break points differ by config, so neither
 <code>linear_feature_id</code> nor link's per-group <code>id_segment</code> is a key; cut a
 segment's line from the FWA blue line at its measures.</p></li>
@@ -147,7 +151,9 @@ different bytes stops the export.</p></li>
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p>Other export:
 <code><a href="lnk_catalog.html">lnk_catalog()</a></code>,
-<code><a href="lnk_db_load.html">lnk_db_load()</a></code></p></div>
+<code><a href="lnk_db_load.html">lnk_db_load()</a></code>,
+<code><a href="lnk_downstream_files.html">lnk_downstream_files()</a></code>,
+<code><a href="lnk_downstream_load.html">lnk_downstream_load()</a></code></p></div>
     </div>
 
     <div class="section level2">

@@ -73,6 +73,10 @@ The manifest path, invisibly.
 
     <root>/manifest.json
     <root>/segment/config=<config>/species=<sp>/part-<code>.parquet
+    <root>/barriers/config=<config>/part-<group>.parquet
+    <root>/barrier_overrides/config=<config>/part-<group>.parquet
+    <root>/dependencies/rule=line.parquet
+    <root>/inputs/<cabd_dams|pscis_assessment>/<content md5>.parquet
     <root>/provenance/run_uid=<uid>/run_id=<id>/{log,log_input}.parquet
     <root>/provenance/config_hash=<hex>/log_parameters_*.parquet
     <root>/config/sha256-<hex>/<bundle files>
@@ -112,7 +116,9 @@ Rules the export holds to:
 
 Other export:
 [`lnk_catalog()`](https://newgraphenvironment.github.io/link/reference/lnk_catalog.md),
-[`lnk_db_load()`](https://newgraphenvironment.github.io/link/reference/lnk_db_load.md)
+[`lnk_db_load()`](https://newgraphenvironment.github.io/link/reference/lnk_db_load.md),
+[`lnk_downstream_files()`](https://newgraphenvironment.github.io/link/reference/lnk_downstream_files.md),
+[`lnk_downstream_load()`](https://newgraphenvironment.github.io/link/reference/lnk_downstream_load.md)
 
 ## Examples
 

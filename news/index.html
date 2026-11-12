@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.79.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.80.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,22 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.80.0" id="link-0800">link 0.80.0<a class="anchor" aria-label="anchor" href="#link-0800"></a></h2>
+<p><strong>A one-group run on a machine that holds only some groups can read its downstream groups’ barriers from the habitat export</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/465" class="external-link">#465</a>). A group’s access is walked downstream through every group’s persisted <code>barriers</code> and <code>barrier_overrides</code>, so the export now carries both, one part per group per config, with a map of which groups each group’s walk reads; <code><a href="../reference/lnk_downstream_files.html">lnk_downstream_files()</a></code> lists what a target needs and <code><a href="../reference/lnk_downstream_load.html">lnk_downstream_load()</a></code> loads it. Modelled after loading its 11 dependencies from the export, BULL equals the provincial build row for row in <code>streams</code>, <code>streams_access</code> and <code>streams_mapping_code</code>; without them 341 segments lose their downstream-dam flags.</p>
+<ul><li>
+<strong>The dependency map is the line rule,</strong> now <code>.lnk_wsg_deps_line()</code> (<code>R/lnk_wsg_deps.R</code>), shared with the recompute scheduler (<code>recompute_deps.R</code>’s output is byte-identical). The outlet closure misses readers. Every one of <code>fresh_default</code>’s 7.7 M barrier and 44 k override rows sits on a line its own group touches, so the rule covers what a walk reads. The export refuses to compute it from a database whose FWA lacks a group it holds.</li>
+<li>
+<strong>CABD and PSCIS are recorded by content at load</strong> (<code>provenance.source_artifact.content_md5</code>, copied into <code>log_input.artifact_content_md5</code>): they have no version handle. The export snapshots them province-wide, keyed by that md5, for each build whose md5 the exporting database still holds, and says why not otherwise. The loader names inputs it could not compare. Observations and modelled crossings are cited by loader version id. Every build so far reads “no content identity at build” until hosts re-snapshot their primitives.</li>
+<li>
+<strong><code><a href="../reference/lnk_downstream_files.html">lnk_downstream_files()</a></code> classes each dependency</strong> as exported, skipped, not held (no barrier or override rows in the exported schemas) or not exported, and refuses a target the map does not cover rather than read it as one with no dependencies.</li>
+<li>
+<strong><code><a href="../reference/lnk_downstream_load.html">lnk_downstream_load()</a></code> refuses</strong> a dependency missing from the export, and rows the schema built itself or holds from no recorded load, and records each load in <code>&lt;schema&gt;.log_downstream_load</code>. It reports, without refusing, a dependency built under another bundle and inputs that differ from what the dependencies were built from.</li>
+<li>
+<strong><code>bigint</code> goes to Parquet as text:</strong> before duckdb 1.5.6, <code><a href="https://r.duckdb.org/reference/duckdb_register.html" class="external-link">duckdb::duckdb_register()</a></code> read an <code>integer64</code> column’s bits as a double, so <code>linear_feature_id</code> came back as 3.5e-315 with no error. duckdb 1.5.6 fixed it; text is right on every version.</li>
+<li>
+<strong>The run summary prints the commands that republish the export</strong> after a modelled run; <code>habitat_publish.R</code> PUBLISH puts the new parts, skips unchanged ones and deletes their stale keys. Nothing is published without the operator. Manifests gain <code>group_parts</code>, <code>dependencies</code> and a per-config <code>scope</code>; older readers see only the segment parts.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.79.0" id="link-0790">link 0.79.0<a class="anchor" aria-label="anchor" href="#link-0790"></a></h2>
 <p><strong>Each segment of the full network can read the gradient of the minimal segment it lies in</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/444" class="external-link">#444</a>). A habitat rule tuned on the minimal network (<code>cut-min</code>) reads each minimal segment’s gradient; the new <code><a href="../reference/lnk_streams_parent.html">lnk_streams_parent()</a></code> writes <code>&lt;full schema&gt;.streams_parent</code>, one row per full segment naming its minimal parent, the parent’s gradient and length, and how far the full segment straddles it, so the same rule can be applied on the network link ships.</p>

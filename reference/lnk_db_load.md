@@ -62,6 +62,8 @@ never mixes two builds of one config. Other configs' rows are untouched.
 
 Other export:
 [`lnk_catalog()`](https://newgraphenvironment.github.io/link/reference/lnk_catalog.md),
+[`lnk_downstream_files()`](https://newgraphenvironment.github.io/link/reference/lnk_downstream_files.md),
+[`lnk_downstream_load()`](https://newgraphenvironment.github.io/link/reference/lnk_downstream_load.md),
 [`lnk_scenario_export()`](https://newgraphenvironment.github.io/link/reference/lnk_scenario_export.md)
 
 ## Examples

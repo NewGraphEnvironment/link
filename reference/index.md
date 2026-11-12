@@ -76,6 +76,13 @@
 - [`lnk_db_load()`](https://newgraphenvironment.github.io/link/reference/lnk_db_load.md)
   : Load a habitat export into PostgreSQL
 
+- [`lnk_downstream_files()`](https://newgraphenvironment.github.io/link/reference/lnk_downstream_files.md)
+  : Which export files a one-group run needs from the groups downstream
+  of it
+
+- [`lnk_downstream_load()`](https://newgraphenvironment.github.io/link/reference/lnk_downstream_load.md)
+  : Load the downstream groups' barriers into a persist schema
+
 - [`lnk_fanout_judge()`](https://newgraphenvironment.github.io/link/reference/lnk_fanout_judge.md)
   : Judge the outcome of a parallel fan-out
 

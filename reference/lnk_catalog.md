@@ -38,6 +38,8 @@ needs: `habitat/` is staged private (link#308).
 
 Other export:
 [`lnk_db_load()`](https://newgraphenvironment.github.io/link/reference/lnk_db_load.md),
+[`lnk_downstream_files()`](https://newgraphenvironment.github.io/link/reference/lnk_downstream_files.md),
+[`lnk_downstream_load()`](https://newgraphenvironment.github.io/link/reference/lnk_downstream_load.md),
 [`lnk_scenario_export()`](https://newgraphenvironment.github.io/link/reference/lnk_scenario_export.md)
 
 ## Examples
