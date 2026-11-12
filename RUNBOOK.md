@@ -1148,6 +1148,9 @@ s3://fresh-bc/habitat/fwa/v1/            (private until opened; read with creden
   provenance/recompute_id=<id>/log_recompute.parquet
   provenance/source_artifact/<md5>.parquet       this database's record at export, by content
   config/sha256-<hex>/<the files config_hash was computed over>
+  barriers/config=<config>/part-<WSG>.parquet           one group's persisted barriers (#465)
+  barrier_overrides/config=<config>/part-<WSG>.parquet  one group's persisted overrides
+  dependencies/rule=line.parquet                        which groups each group's walk reads
 ```
 
 **The key is FWA position, `(blue_line_key, downstream_route_measure,
@@ -1236,6 +1239,59 @@ time; what a run actually read is its `log_input.artifact_*` (#265).
 did.** Otherwise the manifest's `bundles[]` entry says the bundle has changed,
 and the run's own `log_parameters_*` snapshots under `provenance/` are the
 record.
+
+**What a one-group run reads from the export (#465).** A group's access is
+walked downstream through every group's persisted `barriers` and
+`barrier_overrides` (§3, §8c), so a machine that holds only some groups needs
+the rows the other groups wrote. The export carries them:
+
+- **One part per group per config of each table** (`group_parts` in the
+  manifest, beside `parts`, so `lnk_catalog()` and `lnk_db_load()` read only
+  segments), from the same build as the group's segment parts, written even
+  with no rows (none is not missing). Columns are the persist definition
+  (`cols_barriers`, `cols_barrier_overrides`); `ltree`, `text[]` and `bigint`
+  go as their Postgres text forms and geometry as hex WKB (EPSG:3005), each
+  cast back by the loader. `bigint` is text because
+  `duckdb::duckdb_register()` reads an `integer64` column's bits as a double:
+  `linear_feature_id` 703016261 came back as 3.5e-315, silently. Replaced per
+  config and carried forward like `parts`; the regressions judgement refuses
+  an export that drops one. A paused-only group (#432) has barrier parts and
+  no segment parts.
+- **The dependency map** (`dependencies` in the manifest): for every group,
+  every group touching a blue line that carries one of its codes or their
+  ancestors (the line rule, `.lnk_wsg_deps_line()`, `R/lnk_wsg_deps.R`, the
+  same query the recompute scheduler uses, §8d). Province-wide whatever groups
+  an export names, because a one-group machine has no province FWA to compute
+  it from; replaced on every export (it follows FWA, so it is not a write-once
+  file). The outlet closure is narrower and misses readers (#374). Checked on
+  `fresh_default` 2026-11-12: every one of 7,749,648 barrier and 44,069 override
+  rows sits on a line its own group touches in FWA, so the rule covers every
+  row a walk can read (`data-raw/logs/downstream_export_465/superset_*.log`).
+- **`scope`** on each config entry: `held` when the export took every group
+  the schemas held, `named` when it took a list. A dependency outside the
+  export is then not held (nothing to read) or not exported (a gap).
+
+On the one-group machine: `lnk_downstream_files(manifest, wsg, config)` lists
+the target's dependencies, each `exported` (its two parts, with the build's
+`run_id`, `config_hash` and link), `skipped` (the export had no finished build
+of it), `not_held` or `not_exported`, with the FWA object each needs loaded.
+`lnk_downstream_load(conn, files, cfg)` fetches and checks every part before
+writing, refuses a gap unless `allow_missing`, refuses to replace rows the
+schema built itself or holds from no recorded load unless `replace`, loads
+every group in one transaction, and records each load in
+`<schema>.log_downstream_load`, so loaded rows are never mistaken for built
+ones. It reports a dependency built under another `config_hash` than the
+target's bundle, and refuses nothing for it.
+
+What it does not cover: the target's own inputs still decide its own barriers
+and lifts, and `observations_province` (every group's records, upstream ones
+too) is a machine primitive, not an export part, so a newer local record can
+lift a barrier the provincial run did not. The machine also needs the
+dependencies' FWA streams: the target's gradient search runs along whole
+lines, the dam and crossing snaps cross group boundaries, and the downstream
+check (§8c) matches dams to streams. The round trip is proved on one host
+(`data-raw/logs/downstream_export_465/`); a database holding only some groups
+is not yet tested.
 
 **Not yet:** public read, versioning and PUBLISH gates on `run_uid` /
 `link_dirty` (#334); discharge from wet's `discharge.fwa_v1_segment_monthly`
@@ -1815,6 +1871,16 @@ stated assumption.
 
 **Known bound:** inherits `frs_wsg_drainage()`'s one-outlet-per-group model. A
 WSG draining by two independent paths would be under-covered.
+
+**A one-group run on a machine that holds only some groups** reads the
+downstream groups' persisted rows from the habitat export (§6d, "What a
+one-group run reads from the export"): `lnk_downstream_files()` then
+`lnk_downstream_load()` before `wsg_run_one.R`. The guard checks per dam that a
+blocking dam is persisted, so the loaded `CABD` rows satisfy it, but it finds
+the dams by matching them to streams, so the dependencies' FWA streams must be
+loaded too (#464 makes a missing downstream group refuse instead of pass). The
+groups to load are the line rule's, not the outlet closure's: the walk reads
+every group's rows by position.
 
 ---
 
