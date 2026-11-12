@@ -35,7 +35,8 @@
 #' text that casts back without loss: `ltree`, `text[]` and `bigint` as their
 #' Postgres text forms, geometry as hex WKB (EPSG:3005, the persist SRID).
 #' `bigint` is text because RPostgres returns it as `integer64`, whose bits
-#' `duckdb::duckdb_register()` reads as a double (703016261 became 3.5e-315).
+#' `duckdb::duckdb_register()` read as a double before duckdb 1.5.6
+#' (703016261 became 3.5e-315); text is right on every version.
 #' @return A list: `select` (SQL for the export query), `parquet` (what the
 #'   part holds) and `load` (SQL casting a staged text-or-native column back).
 #' @noRd

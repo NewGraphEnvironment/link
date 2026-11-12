@@ -56,8 +56,8 @@ test_that("a barriers part holds the persisted rows in a form that casts back", 
   expect_identical(b$blocks_species, c("{BT,CH}", "{CH,CO}"))
   expect_identical(b$localcode_ltree, c("100.1.5", "100.1"))
   expect_identical(b$downstream_route_measure, c(120.125, 50))
-  # a bigint survives as its text form (an integer64 registered in duckdb
-  # reads its bits as a double)
+  # a bigint survives as its text form (before duckdb 1.5.6 an integer64
+  # registered in duckdb read its bits as a double)
   expect_identical(b$linear_feature_id, c("101", NA))
   # geometry and arrays come back equal to the persisted rows
   back <- DBI::dbGetQuery(conn, sprintf(

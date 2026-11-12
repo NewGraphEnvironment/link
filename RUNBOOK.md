@@ -1258,9 +1258,11 @@ the rows the other groups wrote. The export carries them:
   with no rows (none is not missing). Columns are the persist definition
   (`cols_barriers`, `cols_barrier_overrides`); `ltree`, `text[]` and `bigint`
   go as their Postgres text forms and geometry as hex WKB (EPSG:3005), each
-  cast back by the loader. `bigint` is text because
-  `duckdb::duckdb_register()` reads an `integer64` column's bits as a double:
-  `linear_feature_id` 703016261 came back as 3.5e-315, silently. Replaced per
+  cast back by the loader. `bigint` is text because before duckdb 1.5.6
+  `duckdb::duckdb_register()` read an `integer64` column's bits as a double
+  on a default connection: `linear_feature_id` 703016261 came back as
+  3.5e-315, silently. duckdb 1.5.6 fixed it (`duckdb/duckdb-r#2819`); text
+  stays, because it is right on every version. Replaced per
   config and carried forward like `parts`; the regressions judgement refuses
   an export that drops one. A paused-only group (#432) has barrier parts and
   no segment parts.
