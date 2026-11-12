@@ -177,6 +177,7 @@ lnk_downstream_files <- function(manifest, wsg, config,
     if (is.null(inp) || length(inp) == 0L) return(NULL)
     do.call(rbind, lapply(names(inp), function(nm) {
       x <- inp[[nm]]
+      if (identical(x$reason, "not read")) x$table <- NULL
       data.frame(wsg = w, input = nm,
                  table = as.character(x$table %||% NA_character_),
                  content_md5 = as.character(x$content_md5 %||% NA_character_),
@@ -458,6 +459,7 @@ lnk_downstream_load <- function(conn, files, cfg, replace = FALSE,
   empty <- data.frame(table = character(0), wsgs = character(0),
                       here = character(0), built = character(0))
   if (is.null(inputs) || nrow(inputs) == 0L) return(empty)
+  # an input the build did not read (CABD under dams = FALSE) is not compared
   inputs <- inputs[inputs$wsg %in% groups & !is.na(inputs$table), ,
                    drop = FALSE]
   ledger <- if (.lnk_table_exists(conn, .lnk_artifact_table())) {

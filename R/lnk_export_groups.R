@@ -180,14 +180,43 @@
   list(table = fwa, rows = id$rows, bytes = id$bytes)
 }
 
+#' The watershed groups the FWA stream table holds segments of.
+#' @noRd
+.lnk_export_fwa_groups <- function(conn) {
+  DBI::dbGetQuery(conn,
+    "SELECT DISTINCT watershed_group_code::text AS w
+       FROM whse_basemapping.fwa_stream_networks_sp
+      WHERE watershed_group_code IS NOT NULL")$w
+}
+
 #' Write the dependency map into `stage`: for each group, every group whose
 #' persisted rows its downstream walk can read (the line rule,
 #' `.lnk_wsg_deps_line()`), province-wide whatever groups the export names. A
 #' one-group machine has no province FWA to compute it from, so the export
 #' carries it. Replaced on every export: it follows FWA, not a build.
+#'
+#' Refused when the exporting database's FWA lacks a group the export holds or
+#' a group holding barrier rows in an exported schema: the rule would drop
+#' every pair through that group's lines, and a one-group machine, which
+#' cannot recompute the map, could not tell.
+#' @param groups Groups the export holds, any config.
+#' @param schemas The exported persist schemas.
 #' @return The manifest's `dependencies` entry.
 #' @noRd
-.lnk_export_dependencies <- function(conn, stage) {
+.lnk_export_dependencies <- function(conn, stage, groups, schemas) {
+  held <- unique(c(groups, unlist(lapply(schemas, function(s) {
+    .lnk_validate_identifier(s, "schema")
+    DBI::dbGetQuery(conn, sprintf(
+      "SELECT DISTINCT watershed_group_code::text AS w FROM %s.barriers", s))$w
+  }))))
+  missing <- setdiff(held, .lnk_export_fwa_groups(conn))
+  if (length(missing) > 0L) {
+    stop("this database's FWA holds no segments of ",
+         paste(sort(missing), collapse = ", "), ", which the export holds or ",
+         "whose barriers it holds; the dependency map would leave out every ",
+         "pair through them. Export from a database with the whole FWA.",
+         call. = FALSE)
+  }
   d <- .lnk_wsg_deps_line(conn)
   key <- "dependencies/rule=line.parquet"
   .lnk_parquet_write(d, file.path(stage, key), order_by = c("wsg", "dep"))

@@ -104,16 +104,18 @@
       m <- if (is.null(r)) NA_character_ else r$content_md5[1]
       if (identical(nm, "cabd_dams") && "arg_dams" %in% names(runs) &&
           isFALSE(as.logical(runs$arg_dams[i]))) {
-        return(list(key = NULL, content_md5 = m, reason = "not read"))
+        return(list(key = NULL, content_md5 = m, table = t,
+                    reason = "not read"))
       }
       if (is.na(m) || !nzchar(m)) {
-        return(list(key = NULL, content_md5 = NULL,
+        return(list(key = NULL, content_md5 = NULL, table = t,
                     reason = "no content identity at build"))
       }
       key <- sprintf("inputs/%s/%s.parquet", nm, m)
       if (!file.exists(file.path(root, key))) {
         if (!identical(m, now[[nm]])) {
-          return(list(key = NULL, content_md5 = m,
+          # the table rides along so the loader still compares this build
+          return(list(key = NULL, content_md5 = m, table = t,
                       reason = "changed since build"))
         }
         x <- .lnk_export_table_text(conn, t)

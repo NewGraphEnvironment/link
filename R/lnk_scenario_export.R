@@ -1022,7 +1022,10 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
   }
 
   # which groups' per-group parts a one-group run fetches (#465)
-  dependencies <- .lnk_export_dependencies(conn, stage)
+  dependencies <- .lnk_export_dependencies(
+    conn, stage,
+    groups = unique(unlist(lapply(runs, function(r) r$watershed_group_code))),
+    schemas = unique(unname(configs)))
 
   # An export replaces each config it names wholesale: refuse one that would
   # drop a group or species the root holds for it, or put an older build of a

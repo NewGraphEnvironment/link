@@ -73,6 +73,8 @@ test_that("a build whose logged content is held now gets a snapshot; others say 
   expect_identical(inp$r1$observations$version_id, "v1")
   expect_identical(inp$r2$cabd_dams$reason, "not read")
   expect_identical(inp$r2$pscis_assessment$reason, "changed since build")
+  # a changed input keeps its table, so the loader can still compare it
+  expect_identical(inp$r2$pscis_assessment$table, pscis)
   expect_identical(inp$r3$cabd_dams$reason, "no content identity at build")
   # the snapshot holds the table's rows as text, its file in `files`
   snap <- read_parquet_duck(file.path(root, key))

@@ -220,3 +220,21 @@ test_that("the loader reports inputs that differ from the dependency builds'", {
   got <- link:::.lnk_downstream_inputs_compare(conn, inputs[-2, ], c("LFRA", "KOTL"))
   expect_identical(nrow(got), 0L)
 })
+
+test_that("a build whose input changed since it is still compared, one not read is not", {
+  conn <- skip_if_no_db()
+  runs <- list(
+    LFRA = list(inputs = list(
+      cabd_dams = list(key = NULL, content_md5 = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                       table = "pg_temp.lnk_inp2", reason = "changed since build"))),
+    KOTL = list(inputs = list(
+      cabd_dams = list(key = NULL, content_md5 = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                       table = "pg_temp.lnk_inp2", reason = "not read"))))
+  inputs <- link:::.lnk_downstream_inputs(c("LFRA", "KOTL"),
+                                          function(w) runs[[w]])
+  DBI::dbExecute(conn, "DROP TABLE IF EXISTS pg_temp.lnk_inp2")
+  DBI::dbExecute(conn, "CREATE TEMP TABLE lnk_inp2 AS SELECT 1 AS id")
+  got <- link:::.lnk_downstream_inputs_compare(conn, inputs, c("LFRA", "KOTL"))
+  expect_identical(got$wsgs, "LFRA")
+  expect_identical(got$built, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+})

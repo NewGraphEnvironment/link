@@ -199,3 +199,24 @@ test_that("an export whose dependency map fails leaves the root as it was", {
   expect_identical(tools::md5sum(p), before)
   expect_true(file.exists(file.path(root, "dependencies/rule=line.parquet")))
 })
+
+test_that("an export from a database whose FWA lacks a held group is refused", {
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  schema <- local_export_fixture(conn)
+  local_export_discharge(schema)
+  local_mocked_bindings(.lnk_export_fwa_groups = function(conn) c("ADMS", "BULK"))
+  expect_error(lnk_scenario_export(conn, c(testcfg = schema),
+                                   withr::local_tempdir()),
+               "FWA holds no segments of LFRA")
+  # a group holding barriers only (no build exported) counts too
+  local_mocked_bindings(.lnk_export_fwa_groups = function(conn) {
+    c("ADMS", "BULK", "LFRA")
+  })
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.barriers (id_barrier, watershed_group_code, barrier_source)
+     VALUES ('X-1', 'KOTL', 'FALLS')", schema))
+  expect_error(lnk_scenario_export(conn, c(testcfg = schema),
+                                   withr::local_tempdir()),
+               "FWA holds no segments of KOTL")
+})
