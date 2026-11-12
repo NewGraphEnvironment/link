@@ -634,7 +634,8 @@
 #' Write `manifest.json` under `root`, atomically.
 #' @noRd
 .lnk_manifest_write <- function(root, parts, files, configs,
-                                built = Sys.time(), group_parts = NULL) {
+                                built = Sys.time(), group_parts = NULL,
+                                dependencies = NULL) {
   m <- list(
     manifest_version = 1L,
     id = sub("/segment$", "", .lnk_export_dataset()),
@@ -658,6 +659,7 @@
     configs = configs,
     parts = parts,
     group_parts = if (is.null(group_parts)) list() else group_parts,
+    dependencies = dependencies,
     files = files
   )
   path <- file.path(root, "manifest.json")
@@ -684,6 +686,9 @@
 #' ```
 #' <root>/manifest.json
 #' <root>/segment/config=<config>/species=<sp>/part-<code>.parquet
+#' <root>/barriers/config=<config>/part-<group>.parquet
+#' <root>/barrier_overrides/config=<config>/part-<group>.parquet
+#' <root>/dependencies/rule=line.parquet
 #' <root>/provenance/run_uid=<uid>/run_id=<id>/{log,log_input}.parquet
 #' <root>/provenance/config_hash=<hex>/log_parameters_*.parquet
 #' <root>/config/sha256-<hex>/<bundle files>
@@ -1008,6 +1013,9 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     )
   }
 
+  # which groups' per-group parts a one-group run fetches (#465)
+  dependencies <- .lnk_export_dependencies(conn, stage)
+
   # An export replaces each config it names wholesale: refuse one that would
   # drop a group or species the root holds for it, or put an older build of a
   # group in place of a newer one.
@@ -1035,6 +1043,7 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     }
     .lnk_export_group_swap(root, stage, cf)
   }
+  .lnk_export_dependencies_swap(root, stage)
   parts <- do.call(rbind, parts)
   parts <- parts[order(parts$key, method = "radix"), , drop = FALSE]
   files <- do.call(rbind, files)
@@ -1045,7 +1054,8 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
                              drop = FALSE]
   cfg_entries <- unname(cfg_entries[order(names(cfg_entries), method = "radix")])
   invisible(.lnk_manifest_write(root, parts, files, cfg_entries, built,
-                                group_parts = group_parts))
+                                group_parts = group_parts,
+                                dependencies = dependencies))
 }
 
 #' Groups the export asked for and no schema of the config exported, one

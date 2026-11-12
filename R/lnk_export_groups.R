@@ -163,3 +163,49 @@
   }))
 }
 # nolint end: indentation_linter
+
+# nolint start: indentation_linter
+#' Identity of the FWA stream table the dependency map is computed from: its
+#' whole-table row count and size on the exporting database. Context for a
+#' reader, not a guard.
+#' @noRd
+.lnk_export_fwa_identity <- function(conn) {
+  fwa <- "whse_basemapping.fwa_stream_networks_sp"
+  id <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT count(*)::double precision AS rows,
+            pg_total_relation_size('%s')::double precision AS bytes
+       FROM %s", fwa, fwa))
+  list(table = fwa, rows = id$rows, bytes = id$bytes)
+}
+
+#' Write the dependency map into `stage`: for each group, every group whose
+#' persisted rows its downstream walk can read (the line rule,
+#' `.lnk_wsg_deps_line()`), province-wide whatever groups the export names. A
+#' one-group machine has no province FWA to compute it from, so the export
+#' carries it. Replaced on every export: it follows FWA, not a build.
+#' @return The manifest's `dependencies` entry.
+#' @noRd
+.lnk_export_dependencies <- function(conn, stage) {
+  d <- .lnk_wsg_deps_line(conn)
+  key <- "dependencies/rule=line.parquet"
+  .lnk_parquet_write(d, file.path(stage, key), order_by = c("wsg", "dep"))
+  e <- .lnk_file_entry(stage, key)
+  list(key = key, rule = "line", rows = nrow(d), bytes = e$bytes, md5 = e$md5,
+       readers = length(unique(d$wsg)),
+       fwa = .lnk_export_fwa_identity(conn),
+       computed_by = list(
+         link_version = as.character(utils::packageVersion("link")),
+         link_sha = .lnk_pkg_git_sha("link")))
+}
+
+#' Move the staged dependency map into place, replacing the old one.
+#' @noRd
+.lnk_export_dependencies_swap <- function(root, stage) {
+  dest <- file.path(root, "dependencies")
+  unlink(dest, recursive = TRUE)
+  if (!file.rename(file.path(stage, "dependencies"), dest)) {
+    stop("could not move the staged dependency map into place", call. = FALSE)
+  }
+  invisible(root)
+}
+# nolint end: indentation_linter

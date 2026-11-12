@@ -15,6 +15,16 @@ local_export_fixture <- function(conn, env = parent.frame()) {
     DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schema)),
     envir = env)
   link:::.lnk_log_create_tables(conn, schema)
+  # the dependency map reads province FWA (about 70 s); a fixed answer here
+  testthat::local_mocked_bindings(
+    .lnk_wsg_deps_line = function(conn, fwa = NULL) {
+      data.frame(wsg = c("ADMS", "LFRA"), dep = c("LFRA", "ADMS"),
+                 stringsAsFactors = FALSE)
+    },
+    .lnk_export_fwa_identity = function(conn) {
+      list(table = "fixture", rows = 5, bytes = 1)
+    },
+    .package = "link", .env = env)
 
   DBI::dbExecute(conn, sprintf(
     "CREATE TABLE %s.streams (

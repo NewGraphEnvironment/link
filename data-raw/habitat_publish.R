@@ -32,7 +32,8 @@
 #      single-PUT ETag under the bucket's SSE-S3). Absent keys are then put
 #      with --if-none-match, so they are written once and never deleted.
 #   4. Per-group parts (barriers/, barrier_overrides/, #465) go up like
-#      parts, skipping a key whose ETag already equals its md5.
+#      parts, skipping a key whose ETag already equals its md5; the
+#      dependency map (dependencies/rule=line.parquet) is replaced.
 #   5. manifest.json goes up last, no-cache.
 #   6. Keys under segment/, barriers/ and barrier_overrides/ that the manifest
 #      no longer names are deleted. Nothing outside them is ever deleted.
@@ -74,7 +75,8 @@ root <- normalizePath(root, mustWork = FALSE)
 verify_tree <- function(root) {
   m <- jsonlite::fromJSON(file.path(root, "manifest.json"),
                           simplifyVector = FALSE)
-  ent <- c(m$parts, m$group_parts, m$files)
+  ent <- c(m$parts, m$group_parts, m$files,
+           if (!is.null(m$dependencies)) list(m$dependencies))
   bad <- Filter(Negate(is.null), lapply(ent, function(e) {
     f <- file.path(root, e$key)
     if (!file.exists(f)) return(paste(e$key, "missing"))
@@ -199,6 +201,13 @@ if (identical(Sys.getenv("LNK_PUBLISH"), "1")) {
   }
   stamp(length(m$group_parts) - n_same, " of ", length(m$group_parts),
         " per-group parts put")
+  # the dependency map follows FWA, not a build: replaced, never write-once
+  if (!is.null(m$dependencies)) {
+    d <- m$dependencies
+    put(file.path(root, d$key), paste(prefix, d$key, sep = "/"),
+        "application/vnd.apache.parquet", d$md5)
+    stamp("put ", d$key)
+  }
 
   f_man <- file.path(root, "manifest.json")
   put(f_man, paste(prefix, "manifest.json", sep = "/"), "application/json",
@@ -234,7 +243,8 @@ if (identical(Sys.getenv("LNK_PUBLISH"), "1")) {
   }
   pub_m <- jsonlite::fromJSON(.lnk_fetch_text(paste0(target, "/manifest.json")),
                               simplifyVector = FALSE)
-  if (!identical(gp_keys(pub_m), gp_keys(m))) {
+  if (!identical(gp_keys(pub_m), gp_keys(m)) ||
+      !identical(pub_m$dependencies$md5, m$dependencies$md5)) {
     stop("the published manifest does not list the local per-group parts",
          call. = FALSE)
   }

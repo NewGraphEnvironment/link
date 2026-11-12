@@ -82,13 +82,13 @@ Two corrections to the issue body, found in exploration (the body gets edited to
       regression refusal; red first
 
 ## Phase 3: Dependency map in the export
-- [ ] `dependencies/rule=line.parquet` (`wsg, dep`) from Phase 1, replaced each export,
+- [x] `dependencies/rule=line.parquet` (`wsg, dep`) from Phase 1, replaced each export,
       as its own manifest entry (not `files`, which are write-once), with the export
       database's FWA identity (whole-table row count and size, link sha), and refused when
       FWA gives no pairs; PUBLISH puts it and refuses nothing on a changed md5
-- [ ] Superset check, logged: `barriers` and `barrier_overrides` rows of `fresh_default`
+- [x] Superset check, logged: `barriers` and `barrier_overrides` rows of `fresh_default`
       whose `blue_line_key` FWA does not touch under the row's own group (expect 0)
-- [ ] Test: present, md5 matches, refuses an empty map
+- [x] Test: present, md5 matches, refuses an empty map
 
 ## Phase 4: Input snapshots (last; revised at the gate, see decision 2)
 - [ ] Content identity at load: `snapshot_bcfp.sh` (through `data-raw/artifact_record.R` /

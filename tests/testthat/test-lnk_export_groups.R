@@ -145,3 +145,54 @@ test_that("the regressions judgement names a dropped per-group part", {
   pre$group_parts <- NULL
   expect_length(link:::.lnk_manifest_regressions(pre, new, "a"), 0L)
 })
+
+test_that("the export ships the dependency map, replaced on every export", {
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  schema <- local_export_fixture(conn)
+  local_export_discharge(schema)
+  root <- withr::local_tempdir()
+
+  p <- lnk_scenario_export(conn, c(testcfg = schema), root, wsgs = "ADMS")
+  m <- jsonlite::fromJSON(p, simplifyVector = FALSE)
+  d <- m$dependencies
+  expect_identical(d$key, "dependencies/rule=line.parquet")
+  expect_identical(d$rule, "line")
+  expect_identical(as.integer(d$rows), 2L)
+  f <- file.path(root, d$key)
+  expect_identical(unname(tools::md5sum(f)), d$md5)
+  got <- read_parquet_duck(f)
+  # province-wide, whatever groups the export named
+  expect_identical(got, data.frame(wsg = c("ADMS", "LFRA"),
+                                   dep = c("LFRA", "ADMS")))
+  expect_identical(d$fwa$table, "fixture")
+  # not a write-once file: it follows FWA
+  expect_false(d$key %in% vapply(m$files, function(x) x$key, character(1)))
+
+  # FWA moved: the next export replaces it
+  local_mocked_bindings(.lnk_wsg_deps_line = function(conn, fwa = NULL) {
+    data.frame(wsg = "ADMS", dep = "BULK")
+  })
+  p <- lnk_scenario_export(conn, c(testcfg = schema), root, wsgs = "ADMS")
+  m2 <- jsonlite::fromJSON(p, simplifyVector = FALSE)
+  expect_identical(as.integer(m2$dependencies$rows), 1L)
+  expect_identical(read_parquet_duck(f), data.frame(wsg = "ADMS", dep = "BULK"))
+})
+
+test_that("an export whose dependency map fails leaves the root as it was", {
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  schema <- local_export_fixture(conn)
+  local_export_discharge(schema)
+  root <- withr::local_tempdir()
+  p <- lnk_scenario_export(conn, c(testcfg = schema), root)
+  before <- tools::md5sum(p)
+  local_mocked_bindings(.lnk_wsg_deps_line = function(conn, fwa = NULL) {
+    stop("FWA gave no line-rule dependency pairs; refusing an empty map",
+         call. = FALSE)
+  })
+  expect_error(lnk_scenario_export(conn, c(testcfg = schema), root),
+               "no line-rule dependency pairs")
+  expect_identical(tools::md5sum(p), before)
+  expect_true(file.exists(file.path(root, "dependencies/rule=line.parquet")))
+})
