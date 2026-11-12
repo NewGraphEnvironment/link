@@ -67,6 +67,11 @@ lnk_downstream_files <- function(manifest, wsg, config,
     stop(manifest, " carries no dependency map: it was exported by a link ",
          "from before #465. Re-export it.", call. = FALSE)
   }
+  if (is.null(d$groups) || !wsg %in% unlist(d$groups)) {
+    stop(wsg, " is not a group ", manifest, "'s dependency map covers: no ",
+         "row would read as no dependencies. Check the code, or re-export.",
+         call. = FALSE)
+  }
   entry <- Filter(function(x) identical(x$config, config), m$configs)
   if (length(entry) == 0L) {
     stop(manifest, " exports no config '", config, "'", call. = FALSE)

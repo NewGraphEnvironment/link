@@ -238,3 +238,12 @@ test_that("a build whose input changed since it is still compared, one not read 
   expect_identical(got$wsgs, "LFRA")
   expect_identical(got$built, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 })
+
+test_that("a target the map does not cover is refused, not read as no dependencies", {
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  x <- local_downstream_export(conn)
+  expect_error(lnk_downstream_files(x$manifest, "ZZZZ", "testcfg",
+                                    cache_dir = withr::local_tempdir()),
+               "ZZZZ is not a group")
+})

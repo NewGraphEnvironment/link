@@ -180,6 +180,17 @@
   list(table = fwa, rows = id$rows, bytes = id$bytes)
 }
 
+#' The groups the dependency map must cover: every BC watershed group
+#' (`inst/extdata/wsg_regions.csv`, 246). The map is read for any target, so
+#' it is computed only from an FWA holding all of them.
+#' @noRd
+.lnk_export_fwa_required <- function() {
+  p <- system.file("extdata", "wsg_regions.csv", package = "link")
+  if (!nzchar(p)) stop("link's inst/extdata/wsg_regions.csv is missing",
+                       call. = FALSE)
+  sort(unique(utils::read.csv(p, stringsAsFactors = FALSE)$watershed_group_code))
+}
+
 #' The watershed groups the FWA stream table holds segments of.
 #' @noRd
 .lnk_export_fwa_groups <- function(conn) {
@@ -195,26 +206,32 @@
 #' one-group machine has no province FWA to compute it from, so the export
 #' carries it. Replaced on every export: it follows FWA, not a build.
 #'
-#' Refused when the exporting database's FWA lacks a group the export holds or
-#' a group holding barrier rows in an exported schema: the rule would drop
-#' every pair through that group's lines, and a one-group machine, which
-#' cannot recompute the map, could not tell.
+#' Refused when the exporting database's FWA lacks any BC group, a group the
+#' export holds or a group holding barrier rows in an exported schema: the
+#' rule would drop every pair through that group's lines, the map is read for
+#' every target (configs carried forward included), and a one-group machine,
+#' which cannot recompute it, could not tell. The groups it covers are
+#' recorded (`groups`), so a reader can refuse a target outside them rather
+#' than read it as one with no dependencies.
 #' @param groups Groups the export holds, any config.
 #' @param schemas The exported persist schemas.
 #' @return The manifest's `dependencies` entry.
 #' @noRd
 .lnk_export_dependencies <- function(conn, stage, groups, schemas) {
-  held <- unique(c(groups, unlist(lapply(schemas, function(s) {
+  held <- unique(c(.lnk_export_fwa_required(), groups,
+                   unlist(lapply(schemas, function(s) {
     .lnk_validate_identifier(s, "schema")
     DBI::dbGetQuery(conn, sprintf(
       "SELECT DISTINCT watershed_group_code::text AS w FROM %s.barriers", s))$w
   }))))
-  missing <- setdiff(held, .lnk_export_fwa_groups(conn))
+  have <- .lnk_export_fwa_groups(conn)
+  missing <- setdiff(held, have)
   if (length(missing) > 0L) {
     stop("this database's FWA holds no segments of ",
-         paste(sort(missing), collapse = ", "), ", which the export holds or ",
-         "whose barriers it holds; the dependency map would leave out every ",
-         "pair through them. Export from a database with the whole FWA.",
+         paste(sort(missing), collapse = ", "), " (every BC group, every group ",
+         "the export holds and every group holding barriers must be there); ",
+         "the dependency map would leave out every pair through them. Export ",
+         "from a database with the whole FWA.",
          call. = FALSE)
   }
   d <- .lnk_wsg_deps_line(conn)
@@ -223,6 +240,8 @@
   e <- .lnk_file_entry(stage, key)
   list(key = key, rule = "line", rows = nrow(d), bytes = e$bytes, md5 = e$md5,
        readers = length(unique(d$wsg)),
+       # every group the map answers for, a group with no dependency included
+       groups = I(sort(held)),
        fwa = .lnk_export_fwa_identity(conn),
        computed_by = list(
          link_version = as.character(utils::packageVersion("link")),

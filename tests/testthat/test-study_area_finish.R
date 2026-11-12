@@ -978,14 +978,14 @@ test_that("the summary prints the export commands after a modelled run (#465)", 
   d <- withr::local_tempdir()
   ph <- file.path(d, "T0_phases.tsv")
   hdr <- "run_uid\tphase\thost\tstart_utc\tend_utc\tminutes\tgroups\tstatus"
-  run <- function(lines) {
+  run <- function(lines, state = "RECOMPUTE_RAN=1") {
     writeLines(lines, ph)
     script <- file.path(d, "hint.sh")
     writeLines(c("set -euo pipefail",
                  sprintf("source %s", shQuote(finish_hosts_lib())),
                  sprintf("source %s", shQuote(finish_lib())),
                  sprintf("PHASES_TSV=%s", shQuote(ph)),
-                 "CONFIG=default SCHEMA=fresh_default",
+                 "CONFIG=default SCHEMA=fresh_default", state,
                  "run_export_hint", "echo END"), script)
     out <- suppressWarnings(system2(hosts_bash(), script, stdout = TRUE, stderr = TRUE))
     list(out = paste(out, collapse = "\n"), status = attr(out, "status") %||% 0L)
@@ -997,6 +997,17 @@ test_that("the summary prints the export commands after a modelled run (#465)", 
   expect_match(r$out, "habitat_publish.R --root=<root> --configs=default:fresh_default",
                fixed = TRUE)
   expect_match(r$out, "LNK_PUBLISH=1 Rscript data-raw/habitat_publish.R", fixed = TRUE)
+  # an incomplete run, or one whose recompute did not run, prints no publish
+  model_row <- sprintf("%s\tmodel\tdispatcher\t2026-11-01T01:00:00Z\t2026-11-01T02:00:00Z\t60.0\t3\tok",
+                       finish_uid)
+  for (st in c("RECOMPUTE_RAN=1 RUN_INCOMPLETE=1", "RECOMPUTE_RAN=1 RECOMPUTE_FAIL=1",
+               "RECOMPUTE_RAN=1 KEPT_CAUSE_N=2", "RECOMPUTE_RAN=1 COMPARE_FAIL=1",
+               "RECOMPUTE_RAN=0")) {
+    r <- run(c(hdr, model_row), state = st)
+    expect_equal(r$status, 0L, info = st)
+    expect_false(grepl("LNK_PUBLISH=1", r$out), info = st)
+    expect_match(r$out, "not republished from an incomplete run", info = st)
+  }
   r <- run(c(hdr, sprintf("%s\trecompute\t\t2026-11-01T01:00:00Z\t2026-11-01T02:00:00Z\t60.0\t3\tok",
                           finish_uid)))
   expect_equal(r$status, 0L)

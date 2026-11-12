@@ -776,11 +776,20 @@ run_calibrate_hint() {
 # persisted. Printed, never run: PUBLISH writes to the bucket, which is the
 # operator's call. The root is seeded from the bucket first, because an export
 # replaces only the configs it names and PUBLISH refuses a root that would lose
-# what is live. Only after a modelled run, as the calibration hint. RUNBOOK
+# what is live. Only after a modelled run, as the calibration hint, and only
+# after a complete one: models run with LNK_HABITAT_GATE=0, so until the
+# recompute settles them the habitat flags are not what to publish. RUNBOOK
 # section 6d.
 run_export_hint() {
   [ -n "${PHASES_TSV:-}" ] && [ -s "$PHASES_TSV" ] || return 0
   awk -F'\t' '$2 == "model" { found = 1 } END { exit !found }' "$PHASES_TSV" || return 0
+  if [ "${RUN_INCOMPLETE:-0}" != "0" ] || [ "${RECOMPUTE_FAIL:-0}" != "0" ] \
+     || [ "${KEPT_CAUSE_N:-0}" -gt 0 ] || [ "${COMPARE_FAIL:-0}" != "0" ] \
+     || [ "${RECOMPUTE_RAN:-0}" != "1" ]; then
+    echo "  habitat export: not republished from an incomplete run; republish once a"
+    echo "    --recompute-only finishes it (RUNBOOK section 8d, After the run)"
+    return 0
+  fi
   echo "  republish the habitat export from this run (barriers a one-group run reads):"
   echo "    aws s3 sync s3://fresh-bc/habitat/fwa/v1 <root>"
   echo "    Rscript data-raw/habitat_publish.R --root=<root> --configs=$CONFIG:$SCHEMA"

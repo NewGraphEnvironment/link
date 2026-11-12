@@ -220,3 +220,25 @@ test_that("an export from a database whose FWA lacks a held group is refused", {
                                    withr::local_tempdir()),
                "FWA holds no segments of KOTL")
 })
+
+test_that("the map must cover every BC group, and records the groups it covers", {
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  # link's own list of groups and fresh's outlets agree
+  req <- link:::.lnk_export_fwa_required()
+  expect_length(req, 246L)
+  expect_setequal(req, fresh::frs_wsg_outlets()$watershed_group_code)
+
+  schema <- local_export_fixture(conn)
+  local_export_discharge(schema)
+  p <- lnk_scenario_export(conn, c(testcfg = schema), withr::local_tempdir())
+  m <- jsonlite::fromJSON(p, simplifyVector = FALSE)
+  expect_identical(unlist(m$dependencies$groups), c("ADMS", "BULK", "LFRA"))
+  # a BC group outside what this export holds, missing from FWA, refuses
+  local_mocked_bindings(.lnk_export_fwa_required = function() {
+    c("ADMS", "BULK", "LFRA", "KOTL")
+  })
+  expect_error(lnk_scenario_export(conn, c(testcfg = schema),
+                                   withr::local_tempdir()),
+               "FWA holds no segments of KOTL")
+})

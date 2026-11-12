@@ -25,6 +25,7 @@ local_export_fixture <- function(conn, env = parent.frame()) {
       list(table = "fixture", rows = 5, bytes = 1)
     },
     .lnk_export_fwa_groups = function(conn) c("ADMS", "BULK", "LFRA"),
+    .lnk_export_fwa_required = function() c("ADMS", "BULK", "LFRA"),
     .package = "link", .env = env)
 
   DBI::dbExecute(conn, sprintf(

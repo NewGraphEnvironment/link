@@ -1274,6 +1274,12 @@ the rows the other groups wrote. The export carries them:
   `fresh_default` 2026-11-12: every one of 7,749,648 barrier and 44,069 override
   rows sits on a line its own group touches in FWA, so the rule covers every
   row a walk can read (`data-raw/logs/downstream_export_465/superset_*.log`).
+  The export refuses to compute it unless the database's FWA holds every BC
+  group (`inst/extdata/wsg_regions.csv`, 246), every group it holds and every
+  group holding barriers, because the map is read for any target, configs
+  carried forward included. It records those groups (`groups`), and
+  `lnk_downstream_files()` refuses a target outside them rather than read a
+  missing row as "no dependencies" (38 groups truly have none).
 - **`scope`** on each config entry: `held` when the export took every group
   the schemas held, `named` when it took a list. A dependency outside the
   export is then not held (nothing to read) or not exported (a gap).
@@ -2834,9 +2840,11 @@ coded to another basin or with barriers below it in a group outside the subset (
 
 A one-group run elsewhere reads the downstream groups' barriers from the
 habitat export (§6d), so the export follows each provincial run, not a clock.
-The run summary prints the three commands after a modelled run (seed the root
-from the bucket, BUILD for the run's config and schema, PUBLISH); nothing is
-published without the operator. Before the next provincial run, re-snapshot
+The run summary prints the three commands after a complete modelled run (seed
+the root from the bucket, BUILD for the run's config and schema, PUBLISH);
+nothing is published without the operator. After an incomplete run it says
+not to republish: models run with `LNK_HABITAT_GATE=0`, so habitat is
+settled only by the recompute, and the export would publish unsettled flags. Before the next provincial run, re-snapshot
 every host's primitives (`snapshot_bcfp.sh --force`) so its builds carry
 CABD's and PSCIS's content md5 and the export can snapshot them.
 
