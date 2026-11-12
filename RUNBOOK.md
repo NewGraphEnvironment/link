@@ -827,6 +827,13 @@ EXCEPT SELECT watershed_group_code FROM <persist>.log;
     #270 writes loader rows.
   - `kind` is `object` (versioned; a NULL identity is a gap), `api` (PSCIS,
     CABD: no version handle, NULL is permanent) or `derived` (`order_parent`).
+  - **`content_md5`** (#465): for an `api` primitive, the loader records an md5
+    of the loaded rows' text forms in byte order (`.lnk_table_content_md5()`),
+    so two loads of CABD or PSCIS can be told apart where no version can. It
+    is what `log_input.artifact_content_md5` carries home, and what the habitat
+    export keys its CABD and PSCIS snapshots by. A ledger written before it
+    records NULL until the next `snapshot_bcfp.sh`; a reload whose columns come
+    back in another order reads as changed (the safe direction).
 
   The bucket is versioned but cannot be listed (`?versions` is AccessDenied),
   so an id not recorded at load time is gone for good. At run open
@@ -1282,6 +1289,20 @@ every group in one transaction, and records each load in
 `<schema>.log_downstream_load`, so loaded rows are never mistaken for built
 ones. It reports a dependency built under another `config_hash` than the
 target's bundle, and refuses nothing for it.
+
+- **Input snapshots** (each run entry's `inputs`): CABD and PSCIS, the two
+  inputs with no version handle, province-wide at
+  `inputs/<cabd_dams|pscis_assessment>/<content md5>.parquet` (every column as
+  text, geometry as hex EWKB; kind `input` in `files`, written once), only for
+  a build whose logged `artifact_content_md5` is what the exporting database
+  holds now, because the builds ran on several hosts with loads of their own.
+  Otherwise the entry says why: `not read` (CABD under `dams = FALSE`), `no
+  content identity at build` (every build before #465), or `changed since
+  build`. A key already in the root is referenced without asking again.
+  Observations and modelled crossings are versioned objects: the entry cites
+  each build's loader version id and ETag. The loader compares these with this
+  database (content md5 now, the loader's version id) and reports, never
+  refuses, a difference.
 
 What it does not cover: the target's own inputs still decide its own barriers
 and lifts, and `observations_province` (every group's records, upstream ones
@@ -2808,6 +2829,16 @@ byte-identical on one host and differs by up to 3.7e-9 m across architectures, s
 "identical across hosts" is a digest after rounding; and a recompute over a
 subset of groups differs from the full one wherever a group holds lines
 coded to another basin or with barriers below it in a group outside the subset (NATR's two Fraser-coded segments; TOOD's two with barriers below them in FROG, LKEC, UKEC and ULRD).
+
+### After the run: republish the export (link#465)
+
+A one-group run elsewhere reads the downstream groups' barriers from the
+habitat export (§6d), so the export follows each provincial run, not a clock.
+The run summary prints the three commands after a modelled run (seed the root
+from the bucket, BUILD for the run's config and schema, PUBLISH); nothing is
+published without the operator. Before the next provincial run, re-snapshot
+every host's primitives (`snapshot_bcfp.sh --force`) so its builds carry
+CABD's and PSCIS's content md5 and the export can snapshot them.
 
 ### Learned host speeds (link#259, folding in #163)
 
