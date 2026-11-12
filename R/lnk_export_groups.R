@@ -1,0 +1,165 @@
+# Per-group datasets of the habitat export (#465): the persisted rows another
+# group's downstream walk reads.
+#
+# A group's access is walked downstream through the persist schema's
+# province-wide `barriers` (through lnk_barriers_views()) and
+# `barrier_overrides` (anti-joined in barriers_<sp>_access), so a one-group
+# run on a machine that holds only some groups reads the right access only
+# when the rows other groups wrote are there. The export carries them one part
+# per group, per config, from the same build its segment parts come from, and
+# lnk_downstream_load() puts them back.
+
+# nolint start: indentation_linter
+#' The per-group tables the export carries, with their column shape (the one
+#' persist definition, `cols_barriers` / `cols_barrier_overrides`) and the
+#' order a part's rows are written in (a key, so parts are byte-reproducible).
+#' @noRd
+.lnk_export_group_tables <- function() {
+  list(
+    barriers = list(cols = cols_barriers,
+                    order = "id_barrier"),
+    barrier_overrides = list(cols = cols_barrier_overrides,
+                             order = c("blue_line_key",
+                                       "downstream_route_measure",
+                                       "species_code"))
+  )
+}
+
+#' Dataset ID of a per-group table.
+#' @noRd
+.lnk_export_group_dataset <- function(table) paste0("habitat/fwa/v1/", table)
+
+#' How one persist column is written to Parquet and read back.
+#'
+#' Types Parquet holds as they are pass through; the three it does not are
+#' written as text that casts back without loss: `ltree` and `text[]` as their
+#' Postgres text forms, geometry as hex WKB (EPSG:3005, the persist SRID).
+#' @return A list: `select` (SQL for the export query), `parquet` (what the
+#'   part holds) and `load` (SQL casting a staged text-or-native column back).
+#' @noRd
+.lnk_export_group_col <- function(name, type) {
+  t <- sub("\\s+NOT NULL$", "", type)
+  if (startsWith(t, "geometry")) {
+    srid <- sub("^geometry\\([^,]+,\\s*([0-9]+)\\)$", "\\1", t)
+    if (!grepl("^[0-9]+$", srid)) {
+      stop("geometry column ", name, " has no SRID in its type: ", type,
+           call. = FALSE)
+    }
+    return(list(
+      select = sprintf("encode(ST_AsBinary(%s), 'hex') AS %s", name, name),
+      parquet = sprintf("string (hex WKB, EPSG:%s)", srid),
+      load = sprintf("ST_SetSRID(ST_GeomFromWKB(decode(%s, 'hex')), %s)",
+                     name, srid)))
+  }
+  if (t %in% c("ltree", "text[]")) {
+    return(list(select = sprintf("%s::text AS %s", name, name),
+                parquet = sprintf("string (%s text form)", t),
+                load = sprintf("%s::%s", name, t)))
+  }
+  if (t %in% c("integer", "bigint", "double precision", "text") ||
+      grepl("^varchar\\([0-9]+\\)$", t)) {
+    return(list(select = name, parquet = t,
+                load = sprintf("%s::%s", name, t)))
+  }
+  stop("no Parquet mapping for column ", name, " of type ", type,
+       call. = FALSE)
+}
+
+#' The column contract of a per-group table, for the manifest's `datasets`.
+#' @noRd
+.lnk_export_group_spec <- function(table) {
+  cols <- .lnk_export_group_tables()[[table]]$cols
+  lapply(names(cols), function(n) {
+    list(name = n, type = cols[[n]],
+         parquet = .lnk_export_group_col(n, cols[[n]])$parquet)
+  })
+}
+
+#' One group's rows of a per-group table, in the part's column order.
+#' @noRd
+.lnk_export_group_rows <- function(conn, schema, table, wsg) {
+  .lnk_validate_identifier(schema, "schema")
+  spec <- .lnk_export_group_tables()[[table]]
+  if (is.null(spec)) stop("not a per-group export table: ", table, call. = FALSE)
+  if (!.lnk_table_exists(conn, paste0(schema, ".", table))) {
+    stop(schema, ".", table, " does not exist: every persist schema holds it ",
+         "(lnk_persist_init()), and the export cannot say what a downstream ",
+         "walk reads without it", call. = FALSE)
+  }
+  sel <- vapply(names(spec$cols), function(n) {
+    .lnk_export_group_col(n, spec$cols[[n]])$select
+  }, character(1))
+  .lnk_df_plain(DBI::dbGetQuery(conn, sprintf(
+    "SELECT %s FROM %s.%s WHERE watershed_group_code = $1",
+    paste(sel, collapse = ", "), schema, table), params = list(wsg)))
+}
+
+#' Write a group's per-group parts into `stage`.
+#'
+#' One part per table, written even when the group holds no rows (a reader
+#' must tell "none" from "missing").
+#' @param run_id The build the parts come from (the group's exported log row).
+#' @return A data frame of `group_parts` entries: key, dataset, config, wsg,
+#'   run_id, rows, bytes, md5.
+#' @noRd
+.lnk_export_group_parts <- function(conn, schema, config, wsg, run_id, stage) {
+  tabs <- .lnk_export_group_tables()
+  do.call(rbind, lapply(names(tabs), function(t) {
+    rows <- .lnk_export_group_rows(conn, schema, t, wsg)
+    key <- sprintf("%s/config=%s/part-%s.parquet", t, config, wsg)
+    .lnk_parquet_write(rows, file.path(stage, key), order_by = tabs[[t]]$order)
+    e <- .lnk_file_entry(stage, key)
+    data.frame(key = key, dataset = .lnk_export_group_dataset(t),
+               config = config, wsg = wsg, run_id = run_id,
+               rows = nrow(rows), bytes = e$bytes, md5 = e$md5,
+               stringsAsFactors = FALSE)
+  }))
+}
+
+#' Move a config's staged per-group parts into place, replacing the old ones.
+#' @noRd
+.lnk_export_group_swap <- function(root, stage, config) {
+  for (t in names(.lnk_export_group_tables())) {
+    dest <- file.path(root, t, paste0("config=", config))
+    unlink(dest, recursive = TRUE)
+    src <- file.path(stage, t, paste0("config=", config))
+    if (!dir.exists(src)) next
+    dir.create(dirname(dest), recursive = TRUE, showWarnings = FALSE)
+    if (!file.rename(src, dest)) {
+      stop("could not move the staged ", t, " parts of config '", config,
+           "' into place", call. = FALSE)
+    }
+  }
+  invisible(root)
+}
+
+#' (table, group) pairs a manifest's per-group parts hold for a config.
+#' @noRd
+.lnk_manifest_group_pairs <- function(group_parts, config) {
+  p <- Filter(function(x) identical(x$config[1], config), group_parts)
+  # an entry is one part once read, a column list of a config's parts while
+  # exporting
+  unique(unlist(lapply(p, function(x) {
+    paste(x$dataset, x$wsg, sep = ":")
+  })))
+}
+
+#' The previous manifest's per-group parts for configs not re-exported, each
+#' checked on disk against the md5 the manifest records.
+#' @noRd
+.lnk_manifest_previous_groups <- function(root, m, configs) {
+  keep <- Filter(function(p) !p$config %in% configs, m$group_parts)
+  if (length(keep) == 0L) return(NULL)
+  do.call(rbind, lapply(keep, function(p) {
+    f <- file.path(root, p$key)
+    if (!file.exists(f) || !identical(unname(tools::md5sum(f)), p$md5)) {
+      stop("the manifest in ", root, " lists ", p$key, ", which is ",
+           "missing or changed; re-export config '", p$config,
+           "' or start from an empty root", call. = FALSE)
+    }
+    data.frame(key = p$key, dataset = p$dataset, config = p$config,
+               wsg = p$wsg, run_id = p$run_id, rows = p$rows,
+               bytes = p$bytes, md5 = p$md5, stringsAsFactors = FALSE)
+  }))
+}
+# nolint end: indentation_linter

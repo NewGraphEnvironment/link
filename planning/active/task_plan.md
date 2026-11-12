@@ -58,25 +58,26 @@ Two corrections to the issue body, found in exploration (the body gets edited to
       byte-identical before and after (tsv diff, both runs logged)
 - [x] Test: refuses an empty FWA answer; pairs on a small live fixture (skip without DB)
 - [x] Map the new file in `data-raw/pretest_inputs.csv` (`none`, call-graph checked)
-- [ ] Prove `recompute_deps.R ... all` identical before and after too (review: the owner
+- [x] Prove `recompute_deps.R ... all` identical before and after too (review: the owner
       rule's refusal path)
 
 ## Phase 2: Barrier and override parts in the export
-- [ ] Per config, per exported group: `barriers/config=<c>/part-<WSG>.parquet` and
+- [x] Per config, per exported group: `barriers/config=<c>/part-<WSG>.parquet` and
       `barrier_overrides/config=<c>/part-<WSG>.parquet`, columns from `cols_barriers` /
       `cols_barrier_overrides` (one source of truth; ltree as text, `blocks_species` a list,
       geom as WKB), ordered on their PKs so parts are byte-reproducible
-- [ ] Manifest: a new top-level `barrier_parts` array (key, dataset, config, wsg, run_id,
+- [x] Manifest: a new top-level `group_parts` array (named for both tables) (key, dataset, config, wsg, run_id,
       rows, bytes, md5) so `parts` stays the segment dataset and `lnk_catalog()` /
       `lnk_db_load()` / older readers are untouched; carried forward for configs not named;
       staged and swapped with the segment parts
-- [ ] `.lnk_manifest_regressions()` judges barrier parts as it does segment groups (a
+- [x] `.lnk_manifest_regressions()` judges barrier parts as it does segment groups (a
       dropped group or an older build refuses without `replace`)
-- [ ] `habitat_publish.R` PUBLISH uploads them and deletes stale keys under `barriers/`
-      and `barrier_overrides/` only, as it does `segment/`
-- [ ] Barrier parts iterate the exported groups, not the species loop (paused-only groups
+- [x] `habitat_publish.R` PUBLISH uploads them and deletes stale keys under `barriers/`
+      and `barrier_overrides/` only, as it does `segment/` (written and parses; not run:
+      PUBLISH writes to S3, and no test drives the script)
+- [x] Barrier parts iterate the exported groups, not the species loop (paused-only groups
       get them); a schema without `barriers` / `barrier_overrides` is refused
-- [ ] Tests in `test-lnk_scenario_export.R` (helper-export.R fixture, extended with barrier
+- [x] Tests (`test-lnk_export_groups.R`; helper-export.R fixture, extended with barrier
       tables): parts present, rows equal the schema's per group, md5s, carry-forward,
       regression refusal; red first
 

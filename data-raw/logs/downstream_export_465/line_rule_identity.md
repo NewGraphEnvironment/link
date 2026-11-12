@@ -10,3 +10,8 @@ rule moved into `R/lnk_wsg_deps.R` (`.lnk_wsg_deps_line()`), 2026-11-12 UTC.
 
 `cmp` of the two files: identical. The tsv itself is not committed; it is rebuilt from
 FWA by the command above.
+
+The same with `all` (line, owner and closure rules), the old script run from a copy of
+`e464c7be:data-raw/recompute_deps.R` and the new one from the working tree: both
+`d4a9fdda5b5e790e1b602cc1a424b5be` (line 2,211, owner 1,243, closure 965 pairs), so the
+owner rule's refusal path is unchanged too.
