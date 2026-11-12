@@ -990,6 +990,9 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
       # top-level provenance names only the last export into the root
       exported_by = exported_by,
       schema_persist = I(unique(r_cf$schema_export)),
+      # "held": every group the schemas held (a group outside wsgs and skipped
+      # was not held, so no walk read rows of it); "named": the groups asked for
+      scope = if (is.null(wsgs)) "held" else "named",
       wsgs = I(r_cf$watershed_group_code),
       species = I(sp_cf),
       skipped = skipped,

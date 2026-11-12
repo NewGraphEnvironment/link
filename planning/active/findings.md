@@ -34,3 +34,4 @@ Relates to #464
 | Error | Resolution |
 |-------|------------|
 | `ORDER BY 1 COLLATE "C"` failed: collations not supported by type integer | Sort in R with `method = "radix"` |
+| `linear_feature_id` came back as 3.47e-315: `duckdb_register()` reads `integer64` bits as a double | Write `bigint` as its text form; loader casts back |

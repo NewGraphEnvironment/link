@@ -60,6 +60,8 @@ DBI::dbGetQuery(conn, "
 \seealso{
 Other export: 
 \code{\link{lnk_catalog}()},
+\code{\link{lnk_downstream_files}()},
+\code{\link{lnk_downstream_load}()},
 \code{\link{lnk_scenario_export}()}
 }
 \concept{export}

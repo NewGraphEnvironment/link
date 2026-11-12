@@ -54,6 +54,9 @@ into PostgreSQL.
 \details{
 \if{html}{\out{<div class="sourceCode">}}\preformatted{<root>/manifest.json
 <root>/segment/config=<config>/species=<sp>/part-<code>.parquet
+<root>/barriers/config=<config>/part-<group>.parquet
+<root>/barrier_overrides/config=<config>/part-<group>.parquet
+<root>/dependencies/rule=line.parquet
 <root>/provenance/run_uid=<uid>/run_id=<id>/\{log,log_input\}.parquet
 <root>/provenance/config_hash=<hex>/log_parameters_*.parquet
 <root>/config/sha256-<hex>/<bundle files>
@@ -95,6 +98,8 @@ cat[, c("config", "species", "code", "rows", "md5")]
 \seealso{
 Other export: 
 \code{\link{lnk_catalog}()},
-\code{\link{lnk_db_load}()}
+\code{\link{lnk_db_load}()},
+\code{\link{lnk_downstream_files}()},
+\code{\link{lnk_downstream_load}()}
 }
 \concept{export}

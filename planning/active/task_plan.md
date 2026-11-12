@@ -107,22 +107,21 @@ Two corrections to the issue body, found in exploration (the body gets edited to
       on mismatch or missing identity
 
 ## Phase 5: The one-group side
-- [ ] `lnk_downstream_files(manifest, wsg, config)`: the target's dependency groups from the
+- [x] `lnk_downstream_files(manifest, wsg, config)`: the target's dependency groups from the
       shipped map, each classed exported (barrier / override hrefs and md5s, build run_id,
       config_hash, link sha), skipped (refused unless overridden) or not held by the
       provincial schema (nothing to read), plus the FWA object URL (`.lnk_input_primitives()`'s
       `{wsg}` template), which parity and #464's check need
-- [ ] `lnk_downstream_load(conn, files, cfg)`: fetch through `.lnk_part_fetch()` (size, md5,
+- [x] `lnk_downstream_load(conn, files, cfg)`: fetch through `.lnk_part_fetch()` (size, md5,
       cache), `lnk_persist_init()` on `cfg$pipeline$schema`, replace each dependency group's
       rows in `barriers` and `barrier_overrides` in one transaction (refuse a group the
       schema holds from a build of its own unless `replace`), check row counts, record each
       load in `<schema>.log_downstream_load`, and report differences: each build's
       `config_hash` against `.lnk_config_hash(cfg)`, link version, and inputs (report, not
       refuse: provenance rule 8)
-- [ ] Runnable examples on a local export written in `tempdir()`; tests: md5 mismatch
-      refuses, counts, report
-- [ ] Map both new files in `pretest_inputs.csv`; file the follow-up issue (load input
-      snapshots into primitives) on the operator's word
+- [x] Examples (`\dontrun`, as `lnk_scenario_export()` and `lnk_db_load()`: building a
+      dependency map needs a database); tests: md5 mismatch refuses, counts, report
+- [x] Map both new files in `pretest_inputs.csv` (the follow-up issue is listed under Owed)
 
 ## Phase 6: Driver, docs, release
 - [ ] `study_area_run.sh` summary prints the export BUILD and PUBLISH commands for the

@@ -41,6 +41,8 @@ vapply(runs, function(r) r$run_id, character(1))
 \seealso{
 Other export: 
 \code{\link{lnk_db_load}()},
+\code{\link{lnk_downstream_files}()},
+\code{\link{lnk_downstream_load}()},
 \code{\link{lnk_scenario_export}()}
 }
 \concept{export}

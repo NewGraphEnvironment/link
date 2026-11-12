@@ -31,9 +31,11 @@
 
 #' How one persist column is written to Parquet and read back.
 #'
-#' Types Parquet holds as they are pass through; the three it does not are
-#' written as text that casts back without loss: `ltree` and `text[]` as their
+#' Types Parquet holds as they are pass through; the others are written as
+#' text that casts back without loss: `ltree`, `text[]` and `bigint` as their
 #' Postgres text forms, geometry as hex WKB (EPSG:3005, the persist SRID).
+#' `bigint` is text because RPostgres returns it as `integer64`, whose bits
+#' `duckdb::duckdb_register()` reads as a double (703016261 became 3.5e-315).
 #' @return A list: `select` (SQL for the export query), `parquet` (what the
 #'   part holds) and `load` (SQL casting a staged text-or-native column back).
 #' @noRd
@@ -51,12 +53,12 @@
       load = sprintf("ST_SetSRID(ST_GeomFromWKB(decode(%s, 'hex')), %s)",
                      name, srid)))
   }
-  if (t %in% c("ltree", "text[]")) {
+  if (t %in% c("ltree", "text[]", "bigint")) {
     return(list(select = sprintf("%s::text AS %s", name, name),
                 parquet = sprintf("string (%s text form)", t),
                 load = sprintf("%s::%s", name, t)))
   }
-  if (t %in% c("integer", "bigint", "double precision", "text") ||
+  if (t %in% c("integer", "double precision", "text") ||
       grepl("^varchar\\([0-9]+\\)$", t)) {
     return(list(select = name, parquet = t,
                 load = sprintf("%s::%s", name, t)))
