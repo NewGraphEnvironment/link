@@ -99,6 +99,8 @@ lnk_downstream_files <- function(manifest, wsg, config,
   tables <- names(.lnk_export_group_tables())
   skipped <- entry$skipped %||% list()
   scope <- entry$scope %||% "named"
+  # NULL in a manifest from before it: then no group counts as not held
+  holders <- entry$barrier_holders
 
   rows <- lapply(deps, function(w) {
     base_row <- data.frame(
@@ -141,10 +143,16 @@ lnk_downstream_files <- function(manifest, wsg, config,
       base_row$class <- "skipped"
       base_row$reason <- paste("no finished build of the config:",
                                skipped[[w]])
-    } else if (identical(scope, "held")) {
+    } else if (identical(scope, "held") && !is.null(holders) &&
+               !w %in% unlist(holders)) {
       base_row$class <- "not_held"
-      base_row$reason <- paste("the exported schemas held no build of it,",
-                               "so no walk read rows of it")
+      base_row$reason <- paste("the exported schemas hold no barrier or",
+                               "override rows of it, so no walk read any")
+    } else if (identical(scope, "held") && !is.null(holders)) {
+      base_row$class <- "not_exported"
+      base_row$reason <- paste("it holds barrier rows in the exported schemas",
+                               "but no finished build of the config was",
+                               "exported")
     } else {
       base_row$class <- "not_exported"
       base_row$reason <- paste("the export named its groups and left this",
@@ -178,7 +186,7 @@ lnk_downstream_files <- function(manifest, wsg, config,
 #' @noRd
 .lnk_downstream_inputs <- function(groups, run_of) {
   rows <- lapply(groups, function(w) {
-    inp <- run_of(w)$inputs
+    inp <- if (is.null(run_of)) NULL else run_of(w)$inputs
     if (is.null(inp) || length(inp) == 0L) return(NULL)
     do.call(rbind, lapply(names(inp), function(nm) {
       x <- inp[[nm]]
@@ -241,8 +249,10 @@ cols_log_downstream_load <- c(
 #' target will be), and each input whose identity here differs from what the
 #' dependencies were built from: CABD's and PSCIS's content md5, the
 #' observations' and modelled crossings' loader version id (attribute
-#' `inputs_differ` of the result). The target's own inputs on this machine
-#' still decide its own barriers and lifts.
+#' `inputs_differ` of the result, whose `state` is `differs` or `not
+#' compared`: an input the build recorded no identity for is named, not
+#' passed over). The target's own inputs on this machine still decide its own
+#' barriers and lifts.
 #'
 #' @param conn DBI connection to the target database.
 #' @param files The data frame [lnk_downstream_files()] returns, for one
@@ -445,25 +455,45 @@ lnk_downstream_load <- function(conn, files, cfg, replace = FALSE,
                   collapse = ", "))
   }
   inp <- .lnk_downstream_inputs_compare(conn, attr(files, "inputs"), groups)
-  if (nrow(inp) > 0L) {
+  dif <- inp[inp$state == "differs", , drop = FALSE]
+  if (nrow(dif) > 0L) {
     message("this database's inputs differ from what the dependencies were ",
             "built from (the target's own barriers and lifts read these): ",
-            paste(sprintf("%s in %s (here %s, built %s)", inp$table, inp$wsgs,
-                          inp$here, inp$built), collapse = "; "))
+            paste(sprintf("%s in %s (here %s, built %s)", dif$table, dif$wsgs,
+                          dif$here, dif$built), collapse = "; "))
+  }
+  unc <- inp[inp$state == "not compared", , drop = FALSE]
+  if (nrow(unc) > 0L) {
+    message("inputs not compared with the dependency builds': ",
+            paste(sprintf("%s in %s (%s)", unc$table, unc$wsgs, unc$built),
+                  collapse = "; "))
   }
   attr(rep, "inputs_differ") <- inp
   invisible(rep)
 }
 
-#' The inputs whose identity here differs from the dependency builds': for a
-#' snapshotted (`api`) input, the table's content md5 now; for a cited
-#' object, this host's loader-recorded version id. A build that recorded no
-#' identity is not compared. Reported, never refused (provenance rule 8).
+#' The inputs whose identity here differs from the dependency builds', and
+#' those that could not be compared: for a snapshotted (`api`) input, the
+#' table's content md5 now; for a cited object, this host's loader-recorded
+#' version id. `state` is `differs` or `not compared` (the build recorded no
+#' identity for the input, or its manifest entry carries no inputs at all), so
+#' an empty report means the inputs agree, never that nothing was compared.
+#' An input the build did not read is left out. Reported, never refused
+#' (provenance rule 8).
 #' @noRd
 .lnk_downstream_inputs_compare <- function(conn, inputs, groups) {
-  empty <- data.frame(table = character(0), wsgs = character(0),
-                      here = character(0), built = character(0))
-  if (is.null(inputs) || nrow(inputs) == 0L) return(empty)
+  empty <- data.frame(state = character(0), table = character(0),
+                      wsgs = character(0), here = character(0),
+                      built = character(0))
+  if (is.null(inputs)) inputs <- .lnk_downstream_inputs(character(0), NULL)
+  out <- list()
+  bare <- setdiff(groups, inputs$wsg)
+  if (length(bare) > 0L) {
+    out[[1]] <- data.frame(state = "not compared", table = "(every input)",
+                           wsgs = paste(sort(bare), collapse = ","),
+                           here = NA_character_,
+                           built = "no input record in the manifest")
+  }
   # an input the build did not read (CABD under dams = FALSE) is not compared
   inputs <- inputs[inputs$wsg %in% groups & !is.na(inputs$table), ,
                    drop = FALSE]
@@ -475,30 +505,38 @@ lnk_downstream_load <- function(conn, files, cfg, replace = FALSE,
   } else {
     data.frame(table_name = character(0), version_id = character(0))
   }
-  out <- list()
   for (t in unique(inputs$table)) {
     x <- inputs[inputs$table == t, , drop = FALSE]
     snap <- !is.na(x$content_md5)
+    cited <- !is.na(x$version_id)
+    none <- !snap & !cited
+    if (any(none)) {
+      out[[length(out) + 1L]] <- data.frame(
+        state = "not compared", table = t,
+        wsgs = paste(sort(x$wsg[none]), collapse = ","), here = NA_character_,
+        built = "no identity recorded at build")
+    }
     if (any(snap)) {
       here <- .lnk_table_content_md5(conn, t)
       for (b in unique(x$content_md5[snap])) {
         if (!identical(here, b)) {
           out[[length(out) + 1L]] <- data.frame(
-            table = t, wsgs = paste(sort(x$wsg[snap & x$content_md5 == b]),
-                                    collapse = ","),
+            state = "differs", table = t,
+            wsgs = paste(sort(x$wsg[snap & x$content_md5 == b]),
+                         collapse = ","),
             here = here %||% NA_character_, built = b)
         }
       }
     }
-    cited <- !is.na(x$version_id)
     if (any(cited)) {
       here <- ledger$version_id[ledger$table_name == t]
       here <- if (length(here) == 0L) NA_character_ else here[1]
       for (b in unique(x$version_id[cited])) {
         if (!identical(here, b)) {
           out[[length(out) + 1L]] <- data.frame(
-            table = t, wsgs = paste(sort(x$wsg[cited & x$version_id == b]),
-                                    collapse = ","),
+            state = "differs", table = t,
+            wsgs = paste(sort(x$wsg[cited & x$version_id == b]),
+                         collapse = ","),
             here = here, built = b)
         }
       }

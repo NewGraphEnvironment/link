@@ -1281,8 +1281,12 @@ the rows the other groups wrote. The export carries them:
   `lnk_downstream_files()` refuses a target outside them rather than read a
   missing row as "no dependencies" (38 groups truly have none).
 - **`scope`** on each config entry: `held` when the export took every group
-  the schemas held, `named` when it took a list. A dependency outside the
-  export is then not held (nothing to read) or not exported (a gap).
+  the schemas held, `named` when it took a list; **`barrier_holders`**, the
+  groups with rows in the config's `barriers` or `barrier_overrides`. A
+  dependency outside the export is `not_held` only under `held` and only when
+  it holds no such rows, since those rows, not `streams`, are what a walk
+  reads: a build that died between unifying and persisting its barriers
+  leaves rows and no streams. Otherwise it is `not_exported` (a gap).
 
 On the one-group machine: `lnk_downstream_files(manifest, wsg, config)` lists
 the target's dependencies, each `exported` (its two parts, with the build's
@@ -1294,7 +1298,9 @@ schema built itself or holds from no recorded load unless `replace`, loads
 every group in one transaction, and records each load in
 `<schema>.log_downstream_load`, so loaded rows are never mistaken for built
 ones. It reports a dependency built under another `config_hash` than the
-target's bundle, and refuses nothing for it.
+target's bundle, and refuses nothing for it; its input report names each input
+it could not compare (no identity recorded at build, or no input record),
+so silence means agreement, never "not compared".
 
 - **Input snapshots** (each run entry's `inputs`): CABD and PSCIS, the two
   inputs with no version handle, province-wide at

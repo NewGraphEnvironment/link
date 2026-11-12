@@ -118,6 +118,22 @@
   }))
 }
 
+#' Groups holding rows in a set of persist schemas' `barriers` or
+#' `barrier_overrides`: what a downstream walk reads. A group can hold them
+#' without a build in `streams` (a build that died between unifying and
+#' persisting its barriers), so "held" for the lister means this.
+#' @noRd
+.lnk_export_barrier_holders <- function(conn, schemas) {
+  sort(unique(unlist(lapply(schemas, function(s) {
+    .lnk_validate_identifier(s, "schema")
+    unlist(lapply(names(.lnk_export_group_tables()), function(t) {
+      if (!.lnk_table_exists(conn, paste0(s, ".", t))) return(NULL)
+      DBI::dbGetQuery(conn, sprintf(
+        "SELECT DISTINCT watershed_group_code::text AS w FROM %s.%s", s, t))$w
+    }))
+  }))))
+}
+
 #' Move a config's staged per-group parts into place, replacing the old ones.
 #' @noRd
 .lnk_export_group_swap <- function(root, stage, config) {

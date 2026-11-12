@@ -780,12 +780,20 @@ run_calibrate_hint() {
 # after a complete one: models run with LNK_HABITAT_GATE=0, so until the
 # recompute settles them the habitat flags are not what to publish. RUNBOOK
 # section 6d.
+# run_complete: exit 0 when the run finished every group, its recompute,
+# consolidate and compare. The one copy of the predicate run_finish_report's
+# INCOMPLETE branch and run_export_hint read (link#465), so a new cause cannot
+# reach one and not the other. RECOMPUTE_RAN is the hint's own extra: a run
+# whose recompute never ran has no settled habitat to publish.
+run_complete() {
+  [ "${RUN_INCOMPLETE:-0}" = "0" ] && [ "${RECOMPUTE_FAIL:-0}" = "0" ] \
+    && [ "${KEPT_CAUSE_N:-0}" -le 0 ] && [ "${COMPARE_FAIL:-0}" = "0" ]
+}
+
 run_export_hint() {
   [ -n "${PHASES_TSV:-}" ] && [ -s "$PHASES_TSV" ] || return 0
   awk -F'\t' '$2 == "model" { found = 1 } END { exit !found }' "$PHASES_TSV" || return 0
-  if [ "${RUN_INCOMPLETE:-0}" != "0" ] || [ "${RECOMPUTE_FAIL:-0}" != "0" ] \
-     || [ "${KEPT_CAUSE_N:-0}" -gt 0 ] || [ "${COMPARE_FAIL:-0}" != "0" ] \
-     || [ "${RECOMPUTE_RAN:-0}" != "1" ]; then
+  if ! run_complete || [ "${RECOMPUTE_RAN:-0}" != "1" ]; then
     echo "  habitat export: not republished from an incomplete run; republish once a"
     echo "    --recompute-only finishes it (RUNBOOK section 8d, After the run)"
     return 0
@@ -867,8 +875,7 @@ run_finish_report() {
   run_readers_report
   local hosts_kept=0
   [ "${KEPT_CAUSE_N:-0}" -gt 0 ] && hosts_kept=1
-  if [ "${RUN_INCOMPLETE:-0}" != "0" ] || [ "${RECOMPUTE_FAIL:-0}" != "0" ] \
-     || [ "$hosts_kept" != "0" ] || [ "${COMPARE_FAIL:-0}" != "0" ]; then
+  if ! run_complete; then
     echo "=== study_area_run INCOMPLETE ==="
     if [ "$hosts_kept" != "0" ]; then
       echo "  $KEPT_CAUSE_N cypher(s) were NOT burned for cause: each may hold groups"

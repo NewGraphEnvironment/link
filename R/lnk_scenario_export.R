@@ -929,6 +929,7 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     }
 
     # the rows other groups' downstream walks read, from the same builds (#465)
+    holders <- .lnk_export_barrier_holders(conn, unique(r_cf$schema_export))
     for (i in seq_len(nrow(r_cf))) {
       group_parts[[length(group_parts) + 1L]] <- .lnk_export_group_parts(
         conn, r_cf$schema_export[[i]], cf, r_cf$watershed_group_code[[i]],
@@ -998,6 +999,9 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
       # "held": every group the schemas held (a group outside wsgs and skipped
       # was not held, so no walk read rows of it); "named": the groups asked for
       scope = if (is.null(wsgs)) "held" else "named",
+      # groups with rows in the config's barriers or barrier_overrides, which
+      # is what a downstream walk reads (held in streams or not)
+      barrier_holders = I(holders),
       wsgs = I(r_cf$watershed_group_code),
       species = I(sp_cf),
       skipped = skipped,

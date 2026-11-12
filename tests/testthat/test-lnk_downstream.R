@@ -210,15 +210,23 @@ test_that("the loader reports inputs that differ from the dependency builds'", {
   DBI::dbExecute(conn, "CREATE TEMP TABLE lnk_inp_cabd AS SELECT 1 AS id")
   local_mocked_bindings(.lnk_host = function() "lnk-test-no-ledger")
   got <- link:::.lnk_downstream_inputs_compare(conn, inputs, c("LFRA", "KOTL"))
-  expect_identical(got$table, c("pg_temp.lnk_inp_cabd", "bcfishobs.observations"))
-  expect_identical(got$wsgs, c("LFRA", "LFRA"))
-  expect_identical(got$built, c("ffffffffffffffffffffffffffffffff", "v-built"))
-  expect_true(is.na(got$here[2]))
-  # the same content here is no difference; a build with no identity is skipped
+  dif <- got[got$state == "differs", ]
+  expect_identical(dif$table, c("pg_temp.lnk_inp_cabd", "bcfishobs.observations"))
+  expect_identical(dif$wsgs, c("LFRA", "LFRA"))
+  expect_identical(dif$built, c("ffffffffffffffffffffffffffffffff", "v-built"))
+  expect_true(is.na(dif$here[2]))
+  # a build with no identity is named as not compared, never passed over
+  unc <- got[got$state == "not compared", ]
+  expect_identical(unc$wsgs, "KOTL")
+  expect_identical(unc$table, "pg_temp.lnk_inp_cabd")
+  # the same content here is no difference
   here <- link:::.lnk_table_content_md5(conn, "pg_temp.lnk_inp_cabd")
   inputs$content_md5[1] <- here
   got <- link:::.lnk_downstream_inputs_compare(conn, inputs[-2, ], c("LFRA", "KOTL"))
-  expect_identical(nrow(got), 0L)
+  expect_identical(sum(got$state == "differs"), 0L)
+  # a dependency whose manifest entry carries no inputs at all is named too
+  got <- link:::.lnk_downstream_inputs_compare(conn, inputs, c("LFRA", "UARL"))
+  expect_identical(got$wsgs[got$table == "(every input)"], "UARL")
 })
 
 test_that("a build whose input changed since it is still compared, one not read is not", {
@@ -235,6 +243,7 @@ test_that("a build whose input changed since it is still compared, one not read 
   DBI::dbExecute(conn, "DROP TABLE IF EXISTS pg_temp.lnk_inp2")
   DBI::dbExecute(conn, "CREATE TEMP TABLE lnk_inp2 AS SELECT 1 AS id")
   got <- link:::.lnk_downstream_inputs_compare(conn, inputs, c("LFRA", "KOTL"))
+  expect_identical(got$state, "differs")
   expect_identical(got$wsgs, "LFRA")
   expect_identical(got$built, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 })
@@ -246,4 +255,30 @@ test_that("a target the map does not cover is refused, not read as no dependenci
   expect_error(lnk_downstream_files(x$manifest, "ZZZZ", "testcfg",
                                     cache_dir = withr::local_tempdir()),
                "ZZZZ is not a group")
+})
+
+test_that("a dependency holding barrier rows with no exported build is a gap, not not_held", {
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  schema <- local_export_fixture(conn)
+  local_export_discharge(schema)
+  local_mocked_bindings(
+    .lnk_wsg_deps_line = function(conn, fwa = NULL) {
+      data.frame(wsg = c("ADMS", "ADMS"), dep = c("KOTL", "SMAR"))
+    },
+    .lnk_export_fwa_groups = function(conn) c("ADMS", "BULK", "LFRA", "KOTL", "SMAR"),
+    .lnk_export_fwa_required = function() c("ADMS", "BULK", "LFRA", "KOTL", "SMAR"))
+  # KOTL holds a barrier row but no streams (a build that died after unifying
+  # its barriers); SMAR holds nothing
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.barriers (id_barrier, watershed_group_code, barrier_source)
+     VALUES ('FALLS-9', 'KOTL', 'FALLS')", schema))
+  p <- lnk_scenario_export(conn, c(testcfg = schema), withr::local_tempdir())
+  f <- lnk_downstream_files(p, "ADMS", "testcfg",
+                            cache_dir = withr::local_tempdir())
+  expect_identical(f$class[f$wsg == "KOTL"], "not_exported")
+  expect_match(f$reason[f$wsg == "KOTL"], "holds barrier rows")
+  expect_identical(f$class[f$wsg == "SMAR"], "not_held")
+  cfg <- local_downstream_cfg(conn)
+  expect_error(lnk_downstream_load(conn, f, cfg), "lacks the rows of 1 group")
 })
