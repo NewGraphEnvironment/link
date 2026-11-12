@@ -771,6 +771,22 @@ run_calibrate_hint() {
   echo "      --phases=$PHASES_TSV [--skip=<name>:<reason>] [--dry-run]"
 }
 
+# run_export_hint: the commands that republish the habitat export from this
+# run (link#465), so a one-group run elsewhere reads the barriers this run
+# persisted. Printed, never run: PUBLISH writes to the bucket, which is the
+# operator's call. The root is seeded from the bucket first, because an export
+# replaces only the configs it names and PUBLISH refuses a root that would lose
+# what is live. Only after a modelled run, as the calibration hint. RUNBOOK
+# section 6d.
+run_export_hint() {
+  [ -n "${PHASES_TSV:-}" ] && [ -s "$PHASES_TSV" ] || return 0
+  awk -F'\t' '$2 == "model" { found = 1 } END { exit !found }' "$PHASES_TSV" || return 0
+  echo "  republish the habitat export from this run (barriers a one-group run reads):"
+  echo "    aws s3 sync s3://fresh-bc/habitat/fwa/v1 <root>"
+  echo "    Rscript data-raw/habitat_publish.R --root=<root> --configs=$CONFIG:$SCHEMA"
+  echo "    LNK_PUBLISH=1 Rscript data-raw/habitat_publish.R --root=<root>"
+}
+
 # run_readers_report: the groups outside the run that read a group it rebuilt
 # and still hold access from before it (link#274), by why: built at another
 # version (refused), reading a run group that did not finish (waiting), not
@@ -816,6 +832,7 @@ run_finish_report() {
   # Before the INCOMPLETE branch below, which exits (link#375).
   phases_report
   run_calibrate_hint
+  run_export_hint
   echo "  run WSGs:        ${RUN_WSGS:-<none>}"
   echo "  recomputed WSGs: ${ALL_WSGS:-<none>}"
   [ -z "${READERS_RECOMPUTE:-}" ] || echo "    of them outside the run (readers of it): $READERS_RECOMPUTE"

@@ -218,7 +218,8 @@ cols_log_downstream_load <- c(
 #'   rows are not in it.
 #' @param cache_dir Where downloaded parts are kept.
 #' @return Invisibly, a data frame per dependency loaded: `wsg`, `run_id`,
-#'   `barriers`, `barrier_overrides` (rows), `config_hash`, `config_same`.
+#'   `barriers`, `barrier_overrides` (rows; NA for a table `files` did not
+#'   list), `config_hash`, `config_same`.
 #' @family export
 #' @export
 #' @examples
@@ -386,12 +387,16 @@ lnk_downstream_load <- function(conn, files, cfg, replace = FALSE,
   }
 
   hash_here <- .lnk_config_hash(cfg)
+  # rows loaded per table, NA for a table the files did not list
+  n_of <- function(x, t) {
+    k <- x$key[x$table == t]
+    if (length(k) == 0L) NA_real_ else n_loaded[[k]]
+  }
   rep <- do.call(rbind, lapply(groups, function(w) {
     x <- ex[ex$wsg == w, , drop = FALSE]
     data.frame(wsg = w, run_id = x$run_id[1],
-               barriers = n_loaded[[x$key[x$table == "barriers"]]],
-               barrier_overrides =
-                 n_loaded[[x$key[x$table == "barrier_overrides"]]],
+               barriers = n_of(x, "barriers"),
+               barrier_overrides = n_of(x, "barrier_overrides"),
                config_hash = x$config_hash[1],
                config_same = identical(x$config_hash[1], hash_here),
                stringsAsFactors = FALSE)

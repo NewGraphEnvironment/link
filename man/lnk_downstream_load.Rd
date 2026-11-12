@@ -32,7 +32,8 @@ rows are not in it.}
 }
 \value{
 Invisibly, a data frame per dependency loaded: \code{wsg}, \code{run_id},
-\code{barriers}, \code{barrier_overrides} (rows), \code{config_hash}, \code{config_same}.
+\code{barriers}, \code{barrier_overrides} (rows; NA for a table \code{files} did not
+list), \code{config_hash}, \code{config_same}.
 }
 \description{
 Puts the \code{barriers} and \code{barrier_overrides} rows that

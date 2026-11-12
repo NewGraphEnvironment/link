@@ -109,6 +109,13 @@ test_that("the loader puts the dependencies' rows into the schema and records th
   expect_identical(log$table_name, c("barrier_overrides", "barriers"))
   expect_identical(log$run_id, c("r3", "r3"))
 
+  # files filtered to one table load that table and report NA for the other
+  rep1 <- suppressMessages(lnk_downstream_load(
+    conn, f[is.na(f$table) | f$table == "barriers", ], cfg,
+    allow_missing = TRUE))
+  expect_identical(rep1$barriers, 1)
+  expect_identical(rep1$barrier_overrides, NA_real_)
+
   # a reload replaces what an earlier load wrote
   lnk_downstream_load(conn, f, cfg, allow_missing = TRUE)
   expect_identical(DBI::dbGetQuery(conn, sprintf(

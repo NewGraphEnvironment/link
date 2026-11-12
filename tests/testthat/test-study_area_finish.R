@@ -973,6 +973,37 @@ test_that("the summary prints the host-speed calibration command after a modelle
   expect_match(r$out, "END")
 })
 
+test_that("the summary prints the export commands after a modelled run (#465)", {
+  skip_if_no_finish_lib()
+  d <- withr::local_tempdir()
+  ph <- file.path(d, "T0_phases.tsv")
+  hdr <- "run_uid\tphase\thost\tstart_utc\tend_utc\tminutes\tgroups\tstatus"
+  run <- function(lines) {
+    writeLines(lines, ph)
+    script <- file.path(d, "hint.sh")
+    writeLines(c("set -euo pipefail",
+                 sprintf("source %s", shQuote(finish_hosts_lib())),
+                 sprintf("source %s", shQuote(finish_lib())),
+                 sprintf("PHASES_TSV=%s", shQuote(ph)),
+                 "CONFIG=default SCHEMA=fresh_default",
+                 "run_export_hint", "echo END"), script)
+    out <- suppressWarnings(system2(hosts_bash(), script, stdout = TRUE, stderr = TRUE))
+    list(out = paste(out, collapse = "\n"), status = attr(out, "status") %||% 0L)
+  }
+  r <- run(c(hdr, sprintf("%s\tmodel\tdispatcher\t2026-11-01T01:00:00Z\t2026-11-01T02:00:00Z\t60.0\t3\tok",
+                          finish_uid)))
+  expect_equal(r$status, 0L)
+  expect_match(r$out, "aws s3 sync s3://fresh-bc/habitat/fwa/v1 <root>", fixed = TRUE)
+  expect_match(r$out, "habitat_publish.R --root=<root> --configs=default:fresh_default",
+               fixed = TRUE)
+  expect_match(r$out, "LNK_PUBLISH=1 Rscript data-raw/habitat_publish.R", fixed = TRUE)
+  r <- run(c(hdr, sprintf("%s\trecompute\t\t2026-11-01T01:00:00Z\t2026-11-01T02:00:00Z\t60.0\t3\tok",
+                          finish_uid)))
+  expect_equal(r$status, 0L)
+  expect_false(grepl("habitat_publish", r$out))
+  expect_match(r$out, "END")
+})
+
 test_that("run_finish_report prints the calibration hint before the INCOMPLETE branch", {
   skip_if_no_finish_lib()
   body <- readLines(finish_lib())
@@ -981,6 +1012,9 @@ test_that("run_finish_report prints the calibration hint before the INCOMPLETE b
   incomplete <- grep("study_area_run INCOMPLETE", body)
   expect_length(hint, 1)
   expect_true(hint > start && hint < min(incomplete[incomplete > start]))
+  export <- grep("^  run_export_hint$", body)
+  expect_length(export, 1)
+  expect_true(export > start && export < min(incomplete[incomplete > start]))
 })
 
 # --- groups outside the run that read it (link#274) --------------------------
