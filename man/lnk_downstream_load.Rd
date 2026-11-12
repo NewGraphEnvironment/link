@@ -57,8 +57,9 @@ differs from \code{cfg}'s bundle (the rows were built under other rules than the
 target will be), and each input whose identity here differs from what the
 dependencies were built from: CABD's and PSCIS's content md5, the
 observations' and modelled crossings' loader version id (attribute
-\code{inputs_differ} of the result). The target's own inputs on this machine
-still decide its own barriers and lifts.
+\code{inputs_differ} of the result, whose \code{state} is \code{differs} or \verb{not compared}: an input the build recorded no identity for is named, not
+passed over). The target's own inputs on this machine still decide its own
+barriers and lifts.
 }
 \examples{
 \dontrun{
