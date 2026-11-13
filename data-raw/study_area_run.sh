@@ -1189,21 +1189,30 @@ cat(if (is.na(st$sha)) "" else st$sha, "|",
   # --- gate: bcfp reference pinned, and exported to all hosts (link#262) --
   # The compare reference is the LOCAL snapshot fresh.streams_vw_bcfp, and the
   # build it was loaded from is recorded by snapshot_bcfp.sh in
-  # data-raw/logs/bcfp_baselines.csv. That ledger is PER HOST, and a cypher has
-  # no row of its own — it git-resets the repo (so the CSV is present) but never
-  # snapshots under its own hostname. Without this export every cypher row lands
-  # bcfp_model_version NULL: 13 of 34 rows last field run, the majority at 217.
+  # data-raw/logs/bcfp_baselines.csv. That ledger is PER HOST: a cloud host
+  # writes its own row at prep, but from a snapshot without the views, so the
+  # ledger tier never reads it (link#446) and only the dispatcher's views are
+  # the compare reference. Resolve once here from the dispatcher's ledger and
+  # hand the same value to every host, as FWAPG_GIT_SHA is.
   #
-  # Exactly the FWAPG_GIT_SHA shape above, for exactly the same reason. Resolve
-  # once here from the dispatcher's ledger; hand the same value to every host.
-  local bcfp_ver
-  if bcfp_ver=$(cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript -e '
+  # The ledger tier reads only rows that loaded the views (link#446), and
+  # carries the build's completion time beside its version, because two weekly
+  # builds of one commit share a version (link#266).
+  local bcfp_pin bcfp_ver bcfp_date
+  if bcfp_pin=$(cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript -e '
 suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
 v <- link:::.lnk_bcfp_log_ledger()
-cat(if (is.null(v)) "" else v$model_version)
-' 2>/dev/null) && [ -n "$bcfp_ver" ]; then
+if (!is.null(v)) {
+  d <- if (is.na(v$date_completed)) "" else
+    format(v$date_completed, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  cat(v$model_version, d, sep = "\t")
+}
+' 2>/dev/null) && [ -n "$bcfp_pin" ]; then
+    bcfp_ver="${bcfp_pin%%$'\t'*}"
+    bcfp_date="${bcfp_pin#*$'\t'}"
     export LNK_BCFP_MODEL_VERSION="$bcfp_ver"
-    echo "  ✓ bcfp reference pinned at $bcfp_ver (exported to all hosts)"
+    export LNK_BCFP_DATE_COMPLETED="$bcfp_date"
+    echo "  ✓ bcfp reference pinned at $bcfp_ver, built ${bcfp_date:-(no date)} (exported to all hosts)"
   else
     # A warning, not a failure. An unpinned run is worse provenance but still
     # correct modelling, and refusing to run over it would make the pin a
@@ -1216,6 +1225,10 @@ cat(if (is.null(v)) "" else v$model_version)
   # operator's own environment: a whole-value check, as for --run-label.
   if [ -n "${LNK_BCFP_MODEL_VERSION:-}" ] && ! [[ "$LNK_BCFP_MODEL_VERSION" =~ ^[A-Za-z0-9._+-]+$ ]]; then
     echo "  ✗ the bcfp model version is not a plain version string; it cannot be sent to remote hosts"
+    fail=1
+  fi
+  if [ -n "${LNK_BCFP_DATE_COMPLETED:-}" ] && ! [[ "$LNK_BCFP_DATE_COMPLETED" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]]; then
+    echo "  ✗ the bcfp build date is not an ISO 8601 UTC instant; it cannot be sent to remote hosts"
     fail=1
   fi
 

@@ -51,3 +51,5 @@ The rest of what exploration found is in `task_plan.md`, "Found in exploration".
 
 | Error | Resolution |
 |-------|------------|
+| `test-lnk_log.R` ".lnk_run_id is unique across many draws" failed once in a run, passed on rerun | Pre-existing and unrelated: ms timestamp + 24 random bits; a collision in 500 draws should be ~1e-4. Not chased here; noted for a follow-up if it recurs. |
+| Tunnel to the bcfp reference DB refused (port 63333) | Read `bcfishpass.log`'s DDL and writer from `smnorris/bcfishpass@3bd2824` instead (`db/migrations/archive/v0.5.0/sql/tables/log.sql`, `model/02_habitat_linear/habitat_linear.sh:47`). |

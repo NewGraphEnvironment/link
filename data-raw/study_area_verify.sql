@@ -300,8 +300,11 @@ SELECT o.host, o.watershed_group_code, o.date_start, left(o.notes, 60) AS notes,
 -- More than one row here is the finding. link_sha legitimately differs by host
 -- (a real SHA on the load_all dispatcher, NULL on a pak-installed cypher), so
 -- read the columns individually rather than the row count.
-SELECT DISTINCT link_sha, fresh_sha, fwapg_sha, bcfp_model_version
-  FROM :schema.log
+-- bcfp_date_completed (link#266) is read through to_jsonb(): a log built
+-- before 0.81.0 has no such column.
+SELECT DISTINCT link_sha, fresh_sha, fwapg_sha, bcfp_model_version,
+       to_jsonb(l) ->> 'bcfp_date_completed' AS bcfp_date_completed
+  FROM :schema.log l
  WHERE run_uid = :'run_uid';
 
 \echo ''

@@ -32,6 +32,36 @@
 - **`.lnk_artifact_head()`** (`R/lnk_artifact.R:116`) already HEADs an object and never errors. #273 and #270 reuse it.
 - **No test exists for `snapshot_bcfp.sh`.** The stub-on-PATH pattern is `tests/testthat/test-worker_prep.R` and `helper-study_area_hosts.R`.
 
+## Plan review folded in (2026-11-12, `review-plan.md`)
+
+Corrections taken, each reflected in the phases below:
+- **#266:** `bcfp_date_completed` goes on `log` only. `log_recompute` carries no bcfp pin at all (G2), so the gate's "log and log_recompute" was written on a wrong assumption. Reported in the PR.
+- **#450:**
+  - With no history there is no diff: the inputs are every query in `data-raw/pretest/`, `since_sha = until_sha`, and a new `range_source` column (`own | ancestor | every_input`) on `log_pretest` (B2).
+  - The launch check accepts an `every_input` record explicitly (B3).
+  - `pretest_run.sh` reads the resolved source from the pick (B4).
+  - Minutes are divided by the gate host's factor, and eligibility stays `modelable`. The fixed bound is 60 min of minutes (so 180 min after ×3), and `--minutes-exclude` stays (G9).
+  - A short ancestor history still refuses, as the issue says; RUNBOOK says why (A5).
+- **#459/#484:**
+  - The WFS fallback matches bc2pg's table shape (`geom`, MultiPoint, `EPSG:3005`, paging sorted on the primary key), and `source_artifact.notes` names the path taken (B5).
+  - The row check refuses zero and re-queries `numberMatched` once on a mismatch.
+  - The fallback triggers when bc2pg's attempts are spent (A4).
+- **#276:**
+  - The compare fetches each host's rows over `remote_run` as plain SQL, covers the four snapshot tables only, and cannot be downgraded by a note (G5).
+  - `preflight_local()` refuses before the spin when cloud hosts are in the run and the dispatcher has not loaded in this dispatch (G6).
+  - The guard requires a views row under `--with-bcfp-views` (G4).
+  - `snapshot_bcfp.sh` loads link from the source tree, like `artifact_record.R` (O2).
+  - verify (SQL over `log_input`) and the pre-flight (R over `source_artifact`) stay two implementations of one rule, with tests of both against the same states (O1).
+- **#273:** the etag rule covers the object tables in the vintage set (observations and crossings), from loader rows only. FWA joins once #270's loader rows exist; that is said in the message and in RUNBOOK (G3).
+- **#270:** the wrapper maps each traced URL to its dictionary table, drops the rest (kept in the log), records through `lnk_artifact_record(recorded_by = "loader")`, and flags a URL whose `Last-Modified` is later than the load's start (B1, A3). #270 stays open until a real run.
+- **#269:** fresh is installed at its pin. link keeps its current source (main's head), since nothing pins it. On the pak path the env pins are removed from `~/.Renviron`. wet's pin is read for the record only (G7, S1). `--dry-run` prints the resolved tag, sha and per-host command (AC5).
+- **Proof:**
+  - Phase 10 forces each fallback on m1 and compares `n_rows`, columns and geometry with the primary path (AC1).
+  - The Phase 7 comparator runs on real m1 and m4 rows (AC3).
+  - `pretest_run.sh --pick-only` runs for `default_minimal` with no flags, and for a parentless bundle on an empty schema (AC4).
+  - The live etag test also skips when offline (AC6).
+- **Already true:** `parity_0.78.0/README.md` names `-50-g620dbe4` (G11). A1, A2 and A7 confirm the plan.
+
 ## Phase 1 (#451): retire the bcfishobs checkout stamp
 - [x] Remove the dirty-checkout gate and the `BCFISHOBS_GIT_SHA` export.
   - Driver pre-flight: `data-raw/study_area_run.sh:1102-1130`, plus the stamp ssh at `:1427`.
@@ -49,18 +79,16 @@
 - [x] Tests: `test-lnk_log.R`, `test-lnk_stamp.R`, `test-study_area_remote.R`, `test-worker_prep.R`.
 
 ## Phase 2 (#446, #266): one rule for the bcfp reference build, with a run identity
-- [ ] Ledger tier: `.lnk_bcfp_log_ledger()` (`R/lnk_log.R:1281`) reads only rows that loaded the views. That means the run label matches `^snapshot-` and the notes contain `--with-bcfp-views`. It returns `bcfp_date_completed` too.
-- [ ] db tier: `WHERE model_type = 'LINEAR' ORDER BY date_completed DESC, model_run_id DESC LIMIT 1`, returning `date_completed`. Probe bcfishpass.log's columns on the tunnel before committing the SQL; if `model_type` is absent there, record that and keep the sort only.
-- [ ] Env tier: an optional `LNK_BCFP_DATE_COMPLETED`.
-- [ ] New column `bcfp_date_completed` (timestamptz):
-  - In `cols_log` and `cols_log_recompute`, added through the existing `ADD COLUMN IF NOT EXISTS` path.
-  - Written in `.lnk_log_run_start()` and `.lnk_log_recompute_start()`.
-- [ ] The driver's pin read (`study_area_run.sh:1209-1242`) uses the same function and exports both values. Also fix the contradictory "a cypher has no row of its own" comments.
-- [ ] Tests:
+- [x] Ledger tier: `.lnk_bcfp_log_ledger()` (`R/lnk_log.R:1281`) reads only rows that loaded the views. That means the run label matches `^snapshot-` and the notes contain `--with-bcfp-views`. It returns `bcfp_date_completed` too.
+- [x] db tier: `WHERE model_type = 'LINEAR' ORDER BY date_completed DESC, model_run_id DESC LIMIT 1`, returning `date_completed`. Probe bcfishpass.log's columns on the tunnel before committing the SQL; if `model_type` is absent there, record that and keep the sort only.
+- [x] Env tier: an optional `LNK_BCFP_DATE_COMPLETED`.
+- [x] New column `bcfp_date_completed` (timestamptz) on `log` only (G2), added through the existing `ADD COLUMN IF NOT EXISTS` path and written in `.lnk_log_run_start()`.
+- [x] The driver's pin read (`study_area_run.sh:1209-1242`) uses the same function and exports both values. `LNK_BCFP_DATE_COMPLETED` crosses ssh (`REMOTE_LEG_VARS`, the leg export, a whole-value regex) (G1). Also fix the contradictory "a cypher has no row of its own" comments.
+- [x] Tests:
   - a csv-sync row newer than a snapshot row;
   - a snapshot row without views newer than one with views;
   - the date is carried into `log`.
-- [ ] RUNBOOK §6c, "The bcfp reference pin": state the rule, and say `model_version` is a code identity. `data-raw/logs/parity_0.78.0/README.md` names the right version for #440's run (`v0.7.15-50-g620dbe4`); the 17 rows stay as written.
+- [x] RUNBOOK §6c, "The bcfp reference pin": state the rule, say `model_version` is a code identity, and say `log.json` carries no `model_type` (G10). `data-raw/logs/parity_0.78.0/README.md` names the right version for #440's run (`v0.7.15-50-g620dbe4`); the 17 rows stay as written.
 
 ## Phase 3 (#458): say how `log` keeps history
 - [ ] RUNBOOK §6b's `log` row and the §6c reader guidance:

@@ -1111,19 +1111,41 @@ snapshot, and `snapshot_bcfp.sh` already records the build it loaded in
 time would name the build the tunnel is at *now* — it rebuilds weekly — not the
 one the numbers were computed against. **A wrong pin, not a missing one.**
 
-Three tiers, and `bcfp_pin_source` records which answered:
+Three tiers, and `bcfp_pin_source` records which answered. Each names the
+newest bcfishpass **linear** build whose reference views were loaded, and
+carries that build's completion time into `log.bcfp_date_completed` beside
+`bcfp_model_version` (link#266, link#446):
 
-| tier | source | when |
+| tier | source | rule |
 |---|---|---|
-| `env` | `LNK_BCFP_MODEL_VERSION` | every host of a driver run |
-| `db` | `bcfishpass.log` | a real bcfp connection (the tunnel) |
-| `ledger` | `bcfp_baselines.csv`, this host's latest row | local, hand-invoked |
+| `env` | `LNK_BCFP_MODEL_VERSION`, `LNK_BCFP_DATE_COMPLETED` | every host of a driver run |
+| `db` | `bcfishpass.log` | `model_type = 'LINEAR'`, newest `date_completed` (read in the server's zone), then `model_run_id`; a real bcfp connection (the tunnel) |
+| `ledger` | `bcfp_baselines.csv`, this host's newest row that loaded the views | `run_label` starts `snapshot-` and `notes` holds `--with-bcfp-views` |
 
-Tier 0 exists because the ledger is **per host** and a cypher has no row of its
-own — it git-resets the repo, so the file is present, but it never snapshots
-under its own hostname. Without the export every cypher row lands unpinned: 13
-of 34 last field run, the majority at 217. Same shape, same fix, as
-`FWAPG_GIT_SHA`.
+**`model_version` is a code identity, not a build.** It is
+`<tag>-<commits>-g<sha>`, and bcfishpass rebuilds weekly from whatever commit is
+current, so two builds two weeks apart can share it (`v0.7.15-47-ga702229`,
+2026-08-18 and 2026-09-01). `bcfp_date_completed` is what tells them apart.
+NULL on rows before 0.81.0.
+
+The ledger's rows come from `log.json` ([`lnk_bucket_log()`]), which carries
+`model_version`, `date_completed` and `head_sha` but no `model_type`, so the
+ledger tier cannot filter to linear builds itself. It takes what bcfishpass's
+weekly job published, which today is its linear model.
+
+**Why the ledger reads only rows that loaded the views.** The ledger also holds
+`csv-sync-` rows (`sync_bcfishpass_csvs.R`, which loads nothing) and snapshot
+rows without `--with-bcfp-views` (every cloud host's prep). Taking the newest row
+of any kind pinned #440's parity run at `-51-g3bd2824` while m1's views were
+`-50-g620dbe4` (link#446).
+
+Tier 0 exists because the ledger is **per host**, and only the dispatcher's
+views are the compare reference: a cloud host writes its own row at prep, from
+a snapshot without the views. The driver resolves the dispatcher's pin once and
+exports both values to every leg, as it does `FWAPG_GIT_SHA`.
+
+flooded no longer reads `bcfishpass.log` (flooded#87 records link's own log
+fields), so this is the one rule; there is no second reader to keep in step.
 
 **`bcfp_model_run_id` stays NULL on the tunnel-free path and that is correct.**
 `log.json` carries no such key. Honest absence beats a fabricated id — do not
