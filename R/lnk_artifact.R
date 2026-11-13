@@ -586,16 +586,23 @@ lnk_artifact_read <- function(conn, host = .lnk_host()) {
 #'   recorded none (a load before link#465), one `n_rows` instead, which is
 #'   weaker and said so.
 #'
-#' A host with no row for a table holds an unrecorded load, which is refused.
+#' A host with no row for a table holds an unrecorded load, which is refused,
+#' and so is a host in `hosts` that printed no row at all (no provenance table,
+#' or loads from before link#265): judged against the hosts the run has, not
+#' the hosts that answered.
 #'
 #' @param rows A data frame with `host`, `table_name`, `version_id`,
 #'   `content_md5`, `n_rows` (empty strings for absent values).
+#' @param hosts Every host of the run, whether it printed rows or not.
 #' @param tables The snapshot primitives to judge.
 #' @return A list: `ok`, and `why`, one line per disagreement.
 #' @noRd
-.lnk_inputs_agree <- function(rows, tables = .lnk_vintage_primitives()) {
+.lnk_inputs_agree <- function(rows, hosts, tables = .lnk_vintage_primitives()) {
   blank <- function(x) is.na(x) | !nzchar(x)
-  hosts <- sort(unique(rows$host))
+  stopifnot(is.character(hosts), length(hosts) >= 1L, !anyNA(hosts))
+  hosts <- sort(unique(hosts))
+  stray <- setdiff(rows$host, hosts)
+  if (length(stray)) stop("rows from hosts not in the run: ", paste(stray, collapse = ", "), call. = FALSE)
   why <- character()
   kinds <- .lnk_input_primitives()
   for (tbl in tables) {

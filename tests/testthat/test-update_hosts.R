@@ -84,8 +84,10 @@ test_that("a pak install names the tag and checks RemoteSha before unpinning", {
   w <- uh_world("    NewGraphEnvironment/fresh@v9.9.9")
   r <- uh_run(w, c("fresh", "m4"), alias = "m1")
   # The remote command spans lines; read the log whole from the one ssh call.
-  expect_identical(sum(startsWith(r$calls, "ssh ")), 1L)
-  ssh <- paste(r$calls[seq(which(startsWith(r$calls, "ssh ")), length(r$calls))], collapse = "\n")
+  # Two ssh calls: the install, then fresh's re-check after every install on the host.
+  starts <- which(startsWith(r$calls, "ssh "))
+  expect_identical(length(starts), 2L)
+  ssh <- paste(r$calls[seq(starts[1], starts[2] - 1L)], collapse = "\n")
   expect_match(ssh, "pak::pkg_install(\"NewGraphEnvironment/fresh@v9.9.9\"", fixed = TRUE)
   expect_match(ssh, "1111111111111111111111111111111111111111", fixed = TRUE)
   expect_match(ssh, "FRESH_GIT_SHA|FRESH_GIT_DIRTY", fixed = TRUE)
@@ -95,4 +97,16 @@ test_that("update_hosts.sh parses under macOS /bin/bash 3.2", {
   skip_if_not(file.exists("/bin/bash"))
   out <- suppressWarnings(system2("/bin/bash", c("-n", uh_script()), stdout = TRUE, stderr = TRUE))
   expect_null(attr(out, "status"))
+})
+
+test_that("link installs without its dependencies, and fresh is re-checked after it", {
+  # pak resolves link@main's own Remotes: and would put fresh back at main's pin.
+  w <- uh_world("    NewGraphEnvironment/fresh@v9.9.9")
+  r <- uh_run(w, "m4", alias = "m1")
+  log <- paste(r$calls, collapse = "\n")
+  expect_match(log, 'NewGraphEnvironment/link@main", upgrade = FALSE, ask = FALSE, dependencies = FALSE',
+               fixed = TRUE)
+  expect_match(log, 'NewGraphEnvironment/fresh@v9.9.9", upgrade = FALSE, ask = FALSE, dependencies = TRUE',
+               fixed = TRUE)
+  expect_match(log, "after the installs, not 1111111111111111111111111111111111111111", fixed = TRUE)
 })

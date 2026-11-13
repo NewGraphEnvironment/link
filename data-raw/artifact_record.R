@@ -115,12 +115,16 @@ if (fwa_mode) {
               nrow(rows), length(unique(rows$table_name)), sum(is.na(rows$version_id)), changed,
               length(um)))
   # Read back: every recorded artifact is there as a loader row.
+  # An IN list of quoted literals: RPostgres binds a character vector one value per
+  # execution, never as an array, so `url = ANY($1)` fails on any vector.
   back <- DBI::dbGetQuery(conn, sprintf(
-    "SELECT count(*) AS n FROM %s WHERE host = %s AND recorded_by = 'loader' AND url = ANY($1)",
-    link:::.lnk_artifact_table(), DBI::dbQuoteLiteral(conn, link:::.lnk_host())),
-    params = list(rows$url))$n
+    "SELECT count(*) AS n FROM %s WHERE host = %s AND recorded_by = 'loader' AND url IN (%s)",
+    link:::.lnk_artifact_table(), DBI::dbQuoteLiteral(conn, link:::.lnk_host()),
+    paste(DBI::dbQuoteLiteral(conn, unique(rows$url)), collapse = ", ")))$n
   DBI::dbDisconnect(conn)
-  if (back != nrow(rows)) stop("read back ", back, " of ", nrow(rows), " loader rows", call. = FALSE)
+  if (back != length(unique(rows$url))) {
+    stop("read back ", back, " of ", length(unique(rows$url)), " loader rows", call. = FALSE)
+  }
   quit(status = 0L)
 }
 

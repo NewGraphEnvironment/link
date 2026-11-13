@@ -135,8 +135,13 @@ install_pak() {
       mv \"\$RENV.tmp\" \"\$RENV\"; chmod 600 \"\$RENV\"; umask \"\$RENV_UMASK\"
     fi"
   fi
+  # link without its dependencies: pak resolves link@main's own Remotes: and would
+  # reinstall fresh at main's pin over the one just installed (0.52.0 back to 0.48.0
+  # on m4, 2026-11-02). fresh's RemoteSha is checked again after link (below).
+  local deps="TRUE"
+  [ "$pkg" != "link" ] || deps="FALSE"
   cmd="set -e
-    Rscript -e 'pak::pkg_install(\"NewGraphEnvironment/${pkg}@${ref}\", upgrade = FALSE, ask = FALSE)'
+    Rscript -e 'pak::pkg_install(\"NewGraphEnvironment/${pkg}@${ref}\", upgrade = FALSE, ask = FALSE, dependencies = ${deps})'
     got=\$(Rscript -e 'cat(utils::packageDescription(\"${pkg}\")\$RemoteSha)')
     if [ \"\$got\" != '${sha}' ]; then
       echo \"FATAL: ${pkg} installed with RemoteSha \$got, not ${sha} (${ref}); nothing unpinned\" >&2
@@ -223,6 +228,7 @@ install_remote() {
 # fresh_sha-as-a-parity-key and study_area_verify.sql's cross-host assertion
 # now refuse a run over. One resolve, one commit, every host.
 declare -a SHAS=() REFS=()
+FRESH_SHA=""
 for pkg in "${PKGS[@]}"; do
   ref=$(pkg_ref "$pkg") || exit 1
   if ! sha=$(resolve_sha "$pkg" "$ref"); then
@@ -233,6 +239,7 @@ for pkg in "${PKGS[@]}"; do
   fi
   REFS+=("$ref")
   SHAS+=("$sha")
+  [ "$pkg" != fresh ] || FRESH_SHA="$sha"
   echo "resolved $pkg@$ref -> ${sha:0:12}"
 done
 # wet is pinned too; recorded here, installed by cypher_prep.sh and by hand.
@@ -255,4 +262,8 @@ for h in "${HOSTS[@]}"; do
     fi
     i=$((i + 1))
   done
+  # Whatever installed after it, fresh must still be the pinned build on this host.
+  if [ "$DRY_RUN" = 0 ] && [ -n "$FRESH_SHA" ] && [ "$h" != "cypher" ] && [ "$TARBALL" = 0 ]; then
+    on_host "$h" "got=\$(Rscript -e 'cat(utils::packageDescription(\"fresh\")\$RemoteSha)'); [ \"\$got\" = '$FRESH_SHA' ] || { echo \"FATAL: fresh on $h is \$got after the installs, not $FRESH_SHA\" >&2; exit 1; }"
+  fi
 done

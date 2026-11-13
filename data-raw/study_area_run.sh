@@ -1515,9 +1515,10 @@ compare_inputs() {
 suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
 rows <- utils::read.delim(commandArgs(TRUE)[1], colClasses = "character",
                           na.strings = character(), quote = "", comment.char = "")
-res <- link:::.lnk_inputs_agree(rows)
+# Judged against every host of the run, so a host that printed no rows is refused.
+res <- link:::.lnk_inputs_agree(rows, hosts = commandArgs(TRUE)[-1])
 if (!res$ok) cat(paste0("    ", res$why), sep = "\n")
-q(status = if (res$ok) 0L else 1L)' "$tsv")
+q(status = if (res$ok) 0L else 1L)' "$tsv" dispatcher ${HOST_ARR[@]+"${HOST_ARR[@]}"})
 }
 
 preflight_hosts() {

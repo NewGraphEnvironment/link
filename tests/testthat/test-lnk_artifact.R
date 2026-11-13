@@ -500,14 +500,14 @@ inputs_rows <- function(host, obs = "v1", msc = "m1", cabd_md5 = "aa", pscis_md5
 
 test_that("hosts holding the same loads agree", {
   r <- rbind(inputs_rows("dispatcher"), inputs_rows("job1"), inputs_rows("worker1"))
-  res <- .lnk_inputs_agree(r)
+  res <- .lnk_inputs_agree(r, hosts = unique(r$host))
   expect_true(res$ok)
   expect_length(res$why, 0L)
 })
 
 test_that("a host on another observations version is refused, naming each host's", {
   r <- rbind(inputs_rows("dispatcher"), inputs_rows("job1", obs = "v2"))
-  res <- .lnk_inputs_agree(r)
+  res <- .lnk_inputs_agree(r, hosts = unique(r$host))
   expect_false(res$ok)
   expect_match(res$why, "bcfishobs.observations: versions differ", fixed = TRUE)
   expect_match(res$why, "dispatcher v1, job1 v2", fixed = TRUE)
@@ -515,14 +515,14 @@ test_that("a host on another observations version is refused, naming each host's
 
 test_that("an unrecorded object version is refused even when every host lacks one", {
   r <- rbind(inputs_rows("dispatcher", msc = ""), inputs_rows("job1", msc = ""))
-  expect_match(.lnk_inputs_agree(r)$why, "modelled_stream_crossings: versions differ or are unrecorded",
+  expect_match(.lnk_inputs_agree(r, hosts = unique(r$host))$why, "modelled_stream_crossings: versions differ or are unrecorded",
                fixed = TRUE)
 })
 
 test_that("API tables compare by content md5, and same-size different content is refused", {
   # The same row count is not the same content: a PSCIS edit keeps 19,905 rows.
   r <- rbind(inputs_rows("dispatcher"), inputs_rows("job1", pscis_md5 = "cc"))
-  res <- .lnk_inputs_agree(r)
+  res <- .lnk_inputs_agree(r, hosts = unique(r$host))
   expect_false(res$ok)
   expect_match(res$why, "pscis_assessment_svw: content differs", fixed = TRUE)
 })
@@ -530,16 +530,27 @@ test_that("API tables compare by content md5, and same-size different content is
 test_that("with no md5 on a host, API tables fall back to row counts", {
   # Loads before link#465 recorded no content md5.
   same <- rbind(inputs_rows("dispatcher", cabd_md5 = ""), inputs_rows("job1"))
-  expect_true(.lnk_inputs_agree(same)$ok)
+  expect_true(.lnk_inputs_agree(same, hosts = unique(same$host))$ok)
   diff <- rbind(inputs_rows("dispatcher", cabd_md5 = ""), inputs_rows("job1", cabd_n = "2592"))
-  expect_match(.lnk_inputs_agree(diff)$why, "cabd.dams: row counts differ", fixed = TRUE)
+  expect_match(.lnk_inputs_agree(diff, hosts = unique(diff$host))$why, "cabd.dams: row counts differ", fixed = TRUE)
 })
 
 test_that("a host with no loader row for a table is refused", {
   r <- rbind(inputs_rows("dispatcher"), inputs_rows("job1")[-3, ])
-  expect_match(.lnk_inputs_agree(r)$why, "cabd.dams: no loader row on job1", fixed = TRUE)
+  expect_match(.lnk_inputs_agree(r, hosts = unique(r$host))$why, "cabd.dams: no loader row on job1", fixed = TRUE)
 })
 
+test_that("a host of the run that printed no rows is refused, and so is a run with none", {
+  # host_inputs.R prints only its header on a host with no loader rows (no
+  # provenance table, or loads from before link#265): judged against the run's
+  # hosts, not the hosts that answered.
+  r <- inputs_rows("dispatcher")
+  res <- .lnk_inputs_agree(r, hosts = c("dispatcher", "worker1"))
+  expect_false(res$ok)
+  expect_match(res$why, "no loader row on worker1", fixed = TRUE)
+  expect_false(.lnk_inputs_agree(r[0, ], hosts = c("dispatcher", "job1"))$ok)
+  expect_error(.lnk_inputs_agree(inputs_rows("job9"), hosts = "dispatcher"), "not in the run")
+})
 
 # --- fwapg load.sh's trace as loader rows (link#270) ---------------------------
 
