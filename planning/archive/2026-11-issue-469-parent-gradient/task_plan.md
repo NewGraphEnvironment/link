@@ -151,7 +151,7 @@ Approved with the plan (operator, 2026-11-10):
       rounds 1-3 over the code (round 3 an enumeration of 49 checks), round 4 over the docs'
       claims (7 fixed).
 - [x] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] `/planning-archive` on completion
 
 How each change is proved: the resolver and config by unit tests; each refusal by a test that
 restores the defect and goes red; the build by Phase 3's per-segment comparison against a control
