@@ -298,6 +298,16 @@ test_that("a build whose segments are not the full build's is refused before the
   untouched()
   sql("UPDATE %s.streams SET downstream_route_measure = 40, upstream_route_measure = 100.6
         WHERE id_segment = 12", s$work)
+  # Rows left by a run other than the judged one read as no parent: a re-model
+  # between the judgement and the swap leaves the old rows in place.
+  sql("UPDATE %s.streams_parent SET run_id_full = 'f-later' WHERE id_segment = 2", s$full)
+  expect_error(apply(), "1 .* segments have no parent row")
+  untouched()
+  sql("UPDATE %s.streams_parent SET run_id_full = 'f-run' WHERE id_segment = 2", s$full)
+  sql("UPDATE %s.streams_parent SET run_id_minimal = 'm-later' WHERE id_segment = 2", s$full)
+  expect_error(apply(), "1 .* segments have no parent row")
+  untouched()
+  sql("UPDATE %s.streams_parent SET run_id_minimal = 'm-run' WHERE id_segment = 2", s$full)
   # A full segment with no parent row.
   sql("DELETE FROM %s.streams_parent WHERE id_segment = 3", s$full)
   expect_error(apply(), "1 .* segments have no parent row")

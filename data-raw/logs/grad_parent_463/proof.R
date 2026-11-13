@@ -80,7 +80,14 @@ write <- function(d, f) {
   utils::write.csv(d, file.path(out, f), row.names = FALSE, na = "")
   message("[proof] wrote ", f, " (", nrow(d), " rows)")
 }
-git <- function(...) system2("git", c("-C", repo, ...), stdout = TRUE)
+# system2() only warns on a non-zero exit, so a failed git call would read as
+# empty output; refuse it instead.
+git <- function(...) {
+  out <- suppressWarnings(system2("git", c("-C", repo, ...), stdout = TRUE))
+  st <- attr(out, "status")
+  if (!is.null(st) && st != 0L) stop("git ", paste(c(...), collapse = " "), " failed (", st, ")", call. = FALSE)
+  out
+}
 
 # --- builds ------------------------------------------------------------------
 newest <- function(s) {
@@ -103,8 +110,9 @@ stop_on(length(unique(b$link_sha)) != 1L || anyNA(b$link_sha), "builds: not one 
 stop_on(length(unique(b$fresh_sha)) != 1L || anyNA(b$fresh_sha), "builds: not one fresh_sha")
 want_tok <- function(s, grad) {
   d <- b[b$schema == s, ]
-  all(d$token_cut == "cut-full-top" & d$token_acc == "acc-v5" & d$token_grad == grad &
-        d$token_flow == "q-fwapg")
+  # %in% so a NULL token fails rather than reading as NA (isTRUE(!NA) is FALSE).
+  nrow(d) > 0 && all(d$token_cut %in% "cut-full-top" & d$token_acc %in% "acc-v5" &
+                       d$token_grad %in% grad & d$token_flow %in% "q-fwapg")
 }
 stop_on(!want_tok(S_CONTROL, "grad-seg"), "builds: control tokens are not cut-full-top acc-v5 grad-seg q-fwapg")
 stop_on(!want_tok(S_PARENT, "grad-parent"), "builds: parent tokens are not cut-full-top acc-v5 grad-parent q-fwapg")

@@ -350,7 +350,8 @@
 #' same `blue_line_key`, and `downstream_route_measure` and
 #' `upstream_route_measure` each within 1 mm. Refuses unless the mapping is one
 #' to one over the whole group (equal counts, each segment on either side
-#' matched exactly once) and every full segment has a parent row: that proves
+#' matched exactly once) and every full segment has a parent row from the runs
+#' the judgement named (a row left by a re-model since reads as none): that proves
 #' this build cut the network the parent table was joined on. Then drops
 #' working `gradient`'s generation expression (fresh makes it a generated
 #' column) and sets it to the parent's `gradient_minimal`, in one transaction.
@@ -373,9 +374,12 @@
             f.upstream_route_measure AS um, p.gradient_minimal,
             p.id_segment IS NOT NULL AS has_parent
        FROM %1$s.streams f
-       LEFT JOIN %1$s.streams_parent p USING (id_segment, watershed_group_code)
+       LEFT JOIN %1$s.streams_parent p
+         ON p.id_segment = f.id_segment AND p.watershed_group_code = f.watershed_group_code
+        AND p.run_id_full = %3$s AND p.run_id_minimal = %4$s AND p.schema_minimal = %5$s
       WHERE f.watershed_group_code = %2$s",
-    sf, lit(aoi)
+    sf, lit(aoi), lit(judged$run_id_full), lit(judged$run_id_minimal),
+    lit(judged$schema_minimal)
   )
   sql_w <- sprintf(
     "CREATE TEMP TABLE lnk_gp_w AS
