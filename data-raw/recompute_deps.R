@@ -30,6 +30,8 @@
 #            barrier source is filtered to the group's own segments. An early
 #            recompute that reads too little cannot be undone (the habitat
 #            gate is one-way), so the rule errs wide.
+#            Its query is link's .lnk_wsg_deps_line() (R/lnk_wsg_deps.R),
+#            which the habitat export ships too (#465).
 #
 # FWA's unassigned codes (`999…`, construction lines) are left out on both
 # sides: no persisted segment carries one, and `999` is never an ancestor of a
@@ -65,6 +67,8 @@ wsgs <- if (length(args) >= 3L && nzchar(args[3])) {
 suppressPackageStartupMessages({
   library(DBI)
   library(RPostgres)
+  # the line rule lives in link (R/lnk_wsg_deps.R), shared with the export
+  pkgload::load_all(quiet = TRUE)
 })
 conn <- DBI::dbConnect(RPostgres::Postgres(),
   dbname = "fwapg", host = "localhost",
@@ -82,9 +86,8 @@ deps_fwa <- function(conn) {
     WHERE watershed_group_code IS NOT NULL AND wscode_ltree IS NOT NULL
       AND NOT wscode_ltree ~ '999.*'::lquery")
   # One representative per (group, code): the group's most downstream segment.
-  # The owner rule needs a local code to place it; the line rule does not, so
-  # the 158,188 segments FWA leaves without one stay in rd_seg for the line
-  # rule (leaving them out there dropped 52 of its pairs).
+  # The owner rule needs a local code to place it (the line rule, which keeps
+  # the segments FWA leaves without one, is in R/lnk_wsg_deps.R).
   DBI::dbExecute(conn, "DROP TABLE IF EXISTS pg_temp.rd_rep")
   DBI::dbExecute(conn, "
     CREATE TEMP TABLE rd_rep AS
@@ -102,23 +105,8 @@ deps_fwa <- function(conn) {
     SELECT DISTINCT a.w AS wsg, r2.w AS dep
     FROM rd_anc a JOIN rd_rep r2 ON r2.ws = a.a AND r2.w <> a.w
     WHERE whse_basemapping.fwa_downstream(a.ws, a.loc, r2.ws, r2.loc)")
-  # Lines on the path, by blue_line_key, then every group touching them. The
-  # codes come from every segment, not only the representatives.
-  DBI::dbExecute(conn, "DROP TABLE IF EXISTS pg_temp.rd_anc_all")
-  DBI::dbExecute(conn, "
-    CREATE TEMP TABLE rd_anc_all AS
-    SELECT DISTINCT g.w, subpath(g.ws, 0, i) a
-    FROM (SELECT DISTINCT w, ws FROM rd_seg) g, generate_series(1, nlevel(g.ws)) i")
-  DBI::dbExecute(conn, "DROP TABLE IF EXISTS pg_temp.rd_pathblk")
-  DBI::dbExecute(conn, "
-    CREATE TEMP TABLE rd_pathblk AS
-    SELECT DISTINCT a.w, s.blk
-    FROM rd_anc_all a JOIN rd_seg s ON s.ws = a.a")
-  DBI::dbExecute(conn, "CREATE INDEX ON rd_pathblk (blk)")
-  line <- DBI::dbGetQuery(conn, "
-    SELECT DISTINCT p.w AS wsg, t.w AS dep
-    FROM rd_pathblk p JOIN (SELECT DISTINCT w, blk FROM rd_seg) t USING (blk)
-    WHERE t.w <> p.w")
+  # The line rule, from link's one copy of it.
+  line <- .lnk_wsg_deps_line(conn)
   # Nothing from FWA is a broken source (an empty or unpopulated table), not
   # a province with no dependencies: refused, because the scheduler would then
   # start every landed group at once.

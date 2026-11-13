@@ -1,0 +1,18 @@
+Timing is on.
+ tbl | barrier_source | rows_off_own_lines 
+-----+----------------+--------------------
+(0 rows)
+
+Time: 7153.900 ms (00:07.154)
+        tbl        | rows_off_own_lines 
+-------------------+--------------------
+ barrier_overrides |                  0
+(1 row)
+
+Time: 146.622 ms
+  tbl   | barriers | barrier_overrides 
+--------+----------+-------------------
+ totals |  7749648 |             44069
+(1 row)
+
+Time: 147.934 ms
