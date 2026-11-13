@@ -938,7 +938,10 @@ test_that(".lnk_bcfp_log_current's db tier reads LINEAR builds by completion (li
   q <- seen[grepl("FROM bcfishpass.log", seen)]
   expect_length(q, 1L)
   expect_match(q, "model_type = 'LINEAR'", fixed = TRUE)
-  expect_match(q, "ORDER BY date_completed DESC, model_run_id DESC", fixed = TRUE)
+  expect_match(q, "ORDER BY date_completed DESC NULLS LAST, model_run_id DESC", fixed = TRUE)
+  # Read in the server's zone, not this session's (RPostgres sets the session to UTC).
+  expect_match(q, "AT TIME ZONE", fixed = TRUE)
+  expect_match(q, "reset_val", fixed = TRUE)
 })
 
 test_that(".lnk_bcfp_log_ledger skips rows that loaded no views (link#446)", {
