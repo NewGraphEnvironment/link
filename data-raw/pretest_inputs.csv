@@ -14,6 +14,7 @@ link,^R/utils\.R$,any,"runs once per group whatever the group holds (config, log
 link,^R/lnk_pipeline_run\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
 link,^R/lnk_pipeline_setup\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
 link,^R/lnk_vocabulary\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
+link,^R/lnk_gradient_parent\.R$,any,"the parent gradient (#463): judged once per group and swapped in after break under pipeline: gradient: source: parent; resolves the grad token for every config"
 link,^R/lnk_pipeline_species\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
 link,^R/lnk_presence\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
 link,^R/lnk_species_pooling\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
@@ -82,7 +83,7 @@ link,^R/lnk_export_groups\.R$,none,"the export's per-group barrier and override 
 link,^R/lnk_scenario_export\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^R/lnk_score\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^R/lnk_source\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
-link,^R/lnk_streams_parent\.R$,none,"post-hoc parent join, run by data-raw/streams_parent_build.R; nothing on the modelling path reads streams_parent (test-pretest.R checks it is not reached)"
+link,^R/lnk_streams_parent\.R$,none,"the post-hoc parent join, run by data-raw/streams_parent_build.R; a parent build reads the table through R/lnk_gradient_parent.R, never this file (test-pretest.R checks it is not reached)"
 link,^R/lnk_wsg_deps\.R$,none,"the line rule of the recompute scheduler and the habitat export (#374, #465): not reached from wsg_run_one.R's entry points (test-pretest.R checks)"
 link,^R/lnk_thresholds\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^inst/extdata/configs/{config}/(rules\.yaml|dimensions\.csv|parameters_habitat_thresholds\.csv|parameters_habitat_method\.csv)$,segments,"habitat rules and thresholds, including the near-river pair"
