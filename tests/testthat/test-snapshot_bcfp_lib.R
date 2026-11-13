@@ -146,6 +146,21 @@ test_that("a table short of the WFS's count is a failed attempt", {
   expect_match(r$out, "attempt 1 of 3 failed (10000 rows, the WFS reports 19905)", fixed = TRUE)
 })
 
+test_that("a short table stays short when the WFS re-count is unreadable", {
+  # First count 19905 against a 10,000-row table; the re-count then fails. The
+  # same flakiness that truncates a load can blank the second answer.
+  d <- sb_world(c("ok 10000", "ok 10000", "ok 10000"), ogr = "ok 10000")
+  # curl answers 19905 once, then nothing.
+  writeLines(c("#!/bin/sh", sprintf("D=%s", shQuote(d)),
+               'echo "curl $*" >> "$D/calls"',
+               'n=$(cat "$D/curl.n" 2>/dev/null || echo 0); n=$((n + 1)); echo $n > "$D/curl.n"',
+               '[ "$(( n % 2 ))" = 1 ] && printf \'<x numberMatched="19905"/>\'',
+               'exit 0'), file.path(d, "bin", "curl"))
+  r <- sb_run(d, load_cmd)
+  expect_false(r$status == 0L)
+  expect_match(r$out, "10000 rows, the WFS reports 19905 (re-count unreadable)", fixed = TRUE)
+})
+
 test_that("with no readable WFS count, any rows are whole", {
   d <- sb_world("ok 5")
   r <- sb_run(d, load_cmd)

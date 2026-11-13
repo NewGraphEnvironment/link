@@ -56,9 +56,12 @@ snap_check() {   # $1 = schema.table, $2 = layer
   expect=$(snap_wfs_count "$2")
   [ -n "$expect" ] || return 0
   [ "$SNAP_N" = "$expect" ] && return 0
+  # The first count disagreed, so an unreadable re-count is a failure too: the
+  # same flaky service that left a short table can blank the second answer.
+  local first="$expect"
   expect=$(snap_wfs_count "$2")
-  [ -z "$expect" ] || [ "$SNAP_N" = "$expect" ] && return 0
-  SNAP_WHY="$SNAP_N rows, the WFS reports $expect"
+  if [ -n "$expect" ] && [ "$SNAP_N" = "$expect" ]; then return 0; fi
+  SNAP_WHY="$SNAP_N rows, the WFS reports ${expect:-$first (re-count unreadable)}"
   return 1
 }
 
