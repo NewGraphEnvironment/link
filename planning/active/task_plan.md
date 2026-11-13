@@ -144,9 +144,13 @@ Approved with the plan (operator, 2026-11-10):
 
 ## Validation
 
-- [ ] Tests pass
-- [ ] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
+- [x] Tests pass: 5,604 pass, 0 fail; 2 errors (3 under `R CMD check`) are the bcfishpass
+      reference tunnel on port 63333, down since m4's restart, in tests this branch does not touch.
+      `R CMD check`: its warnings and notes all predate the branch.
+- [x] `/code-check` clean (each commit, or once over the branch with `/code-check branch`):
+      rounds 1-3 over the code (round 3 an enumeration of 49 checks), round 4 over the docs'
+      claims (7 fixed).
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
 How each change is proved: the resolver and config by unit tests; each refusal by a test that

@@ -66,4 +66,5 @@ mandate; the merge stays with me.
 - `proof.R` passed at 06:41 UTC. Rearing rises (CH +3.9 %, ST +3.3 %, CO +1.5 %, BT +1.1 %),
   spawning within ±0.33 %, access and accessible km unchanged. #462 transfer cost 0 km.
 - A1 recorded after the builds (`artifact_ids.csv`); a first join on table name alone read FWA
-  as changed, because FWA is one object per group.
+  as changed, because `fwa_stream_networks_sp` is one object per group. Round 4 (docs claims):
+  7 findings fixed; `after.sh` now produces `artifact_ids.csv` and `near_river_462_distances.csv`.

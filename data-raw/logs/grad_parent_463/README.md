@@ -27,7 +27,8 @@ all four groups.
   holds now (`artifact_ids.csv`). The 36 of 48 rows that carry a version identity all match.
   The other 12 rows (`cabd.dams`, `whse_fish.pscis_assessment_svw` and
   `fwa_stream_networks_order_parent` in each group) carry none on either side, so they are not
-  compared. The comparison was recorded after the builds, from tables the builds do not write.
+  compared. The comparison was recorded after the builds, from tables the builds do not write
+  (`after.sh`, joined on table and object URL: `fwa_stream_networks_sp` is one object per group).
 
 ## Results
 
@@ -69,11 +70,14 @@ moved in (#415, BULK CH 2,101 to 2,205 km). Here, on the full network's segments
 from 2,101 to 2,208 km. Accessible km, lake rearing and SK rearing do not move.
 
 **#462, the near-river transfer cost.** CH's near-river pair applies only to 1050/1150
-lines under `default`. On those lines, accessible CH segments failing the rear width whose parent
-is within 1,000 m of a 15 m river while the segment itself is not: 0 in each group
-(`near_river_462.csv`). The segment's own distance and its parent's differ on 94 segments, by up
-to 541.6 m, but none crosses the 1,000 m line (`near_river_462_distances.csv`). The number is not
-comparable to knowledge#120's 1,042 km, which applied the pair to every line.
+lines under `default`. On those lines, accessible CH segments failing the rear width and not
+rearing in `default_parent`, whose parent is within 1,000 m of a 15 m river while the segment
+itself is not: 0 in each group (`near_river_462.csv`, from `proof.R`). Over all 1050/1150
+segments, whatever their CH access, the segment's own distance and its parent's differ on 94, by
+up to 541.6 m, and none crosses the 1,000 m line or has a row on one side only
+(`near_river_462_distances.csv`, from `after.sh`). So the cost is 0 under any narrower filter
+too. The number is not comparable to knowledge#120's 1,042 km, which applied the pair to every
+line.
 
 ## Review
 
@@ -83,17 +87,27 @@ comparable to knowledge#120's 1,042 km, which applied the pair to every line.
 |---|---|---|---|
 | 1 | 3 | 3 | — |
 | 2 | 2 | 2 | yes |
-| 3 | 2 | 2 | yes |
+| 3 | 2 | 2 | no |
 
 Round 2 found a defect inside round 1's fix. So round 3 enumerated all 49 checks in the
 branch's R code and in `proof.R` against the mechanism named: a missing, NA or stale input
 read as agreement. The two `proof.R` checks it found are fixed (`6f0eea81`), and the R code was
-clean in that enumeration (`review-round1.md` to `review-round3.md`).
+clean in that enumeration (`review-round1.md` to `review-round3.md`; round 4 is `review-round4.md`).
+
+A round 4 reviewer checked the claims in this README, RUNBOOK, NEWS, the research files and the
+CLAUDE.md status against the code and the CSVs (every number recomputed matched). It found two
+wrong statements, three unsupported, two overstated: fixed, and `after.sh` added as the
+producer of the two CSVs written after the builds.
+
+`proof.R` checks that nothing on the modelling path changed since the builds' commit, so it
+passes only there: the commits after it change `inst/extdata/vocabulary.csv` (the `grad-parent`
+definition text) and would make a re-run at HEAD refuse.
 
 ## Errors on the way
 
 - Two launches before this one were stopped and relaunched at a new commit. They leave open
-  rows in `zz469_control.log`; `proof.R` reads the newest closed row.
+  rows in `zz469_control.log`. Those are older than the builds; `proof.R` reads each group's
+  newest row and fails if it is open.
 - The first proof run was killed part way through by a machine restart (Docker Desktop did not
   come back, and Postgres replayed about 7.9 GB of WAL on restart). The builds' rows were intact
   afterwards, and the proof was re-run in full.

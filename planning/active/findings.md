@@ -46,4 +46,4 @@ so on BULK the rise does not need the minimal network's longer segments: the par
 on the full network's segments gives nearly the same km. (#415 attributed the minimal network's
 rise to connectivity on longer segments; here both classes carry it, `habitat_classes.csv`.)
 The near-river distance costs nothing in the four groups: own and parent distances differ on 94
-CH 1050/1150 segments, by up to 542 m, none across 1,000 m.
+of all 1050/1150 segments (whatever their access), by up to 542 m, none across 1,000 m.

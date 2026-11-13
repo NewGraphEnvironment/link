@@ -1051,8 +1051,8 @@ What follows from it:
   The log row's `notes` name the full and minimal run ids it read.
 - **The near-river distance stays the segment's own.** CH's near-river pair (1050/1150
   lines under `default`) reads `streams_near_river` on the working network, not the
-  parent's. On the four proof groups that costs nothing: the two distances differ on 94
-  segments, none across 1,000 m (link#462, `data-raw/logs/grad_parent_463/`).
+  parent's. On the four proof groups that costs nothing: over all 1050/1150 segments the
+  two distances differ on 94, none across 1,000 m (link#462, `data-raw/logs/grad_parent_463/`).
 
 On BULK, SETN, MORK and COTR a `default_parent` build holds `default`'s segments and access
 exactly, and every habitat difference sits on a segment whose gradient changed or in a

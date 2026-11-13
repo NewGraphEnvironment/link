@@ -21,10 +21,10 @@ Experimental package — breaking all the time and loving the learning curve. St
 - **Two judgements guard the build:** one before the log row opens (the newest full and minimal builds, the tokens, and `streams_parent`'s run ids, rows and lengths), and one before gradient is set (the newest builds re-read, then a one-to-one map of working segments onto the full schema's by line and measures within 1 mm, never `id_segment`). The git half of the pair's guard stays with `streams_parent_build.R`.
 - **A grad-parent schema's persisted `gradient` is the parent's** (what classify read). The segment's own sits at the same position in `schema_full`.
 - **`config_hash` does not cover `default_minimal`'s files.** The log row's `notes` name the full and minimal run ids that were read.
-- **Rearing on the parent's gradient rises the way it does on the minimal network,** with the full network's segments: BULK CH 2,101 to 2,208 km here, 2,205 on `fresh_default_minimal`.
-- **The near-river distance stays the segment's own.** On the four groups it differs from the parent's on 94 CH 1050/1150 segments, by up to 542 m, and none crosses 1,000 m. Carrying the parent's would be a fresh change (classify taking a prepared near-river table).
-- **`fresh-db` did not come back after m4 restarted on 2026-11-13.** Docker Desktop had to be opened by hand, and Postgres replayed about 7.9 GB of WAL (7 min) before it accepted connections. The builds' rows were intact.
-- **`log_input` artifacts join `provenance.source_artifact` on table and object URL.** FWA is one object per group, so a join on the table name alone reads every group's FWA as changed. `cabd.dams`, PSCIS and `fwa_stream_networks_order_parent` carry no version identity on either side.
+- **Rearing on the parent's gradient rises the way it does on the minimal network,** with the full network's segments: BULK CH 2,101 to 2,208 km here, 2,205 in #415's minimal-network proof build.
+- **The near-river distance stays the segment's own.** On the four groups it differs from the parent's on 94 of the 1050/1150 segments (all of them, whatever their access), by up to 542 m, and none crosses 1,000 m. Carrying the parent's would be a fresh change (classify taking a prepared near-river table).
+- **`fresh-db` did not come back after m4 restarted on 2026-11-13.** Docker Desktop had to be opened by hand, and Postgres replayed about 7.9 GB of WAL (about 6 min, from the container log) before it accepted connections. The builds' rows were intact.
+- **`log_input` artifacts join `provenance.source_artifact` on table and object URL.** `fwa_stream_networks_sp` is one object per group, so a join on the table name alone reads every group's stream network as changed (`data-raw/logs/grad_parent_463/after.sh`). `cabd.dams`, PSCIS and `fwa_stream_networks_order_parent` carry no version identity on either side.
 
 ## Status (2026-11-12) — a one-group run reads its downstream groups' barriers from the export (#465)
 
