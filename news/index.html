@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.81.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.82.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,9 +32,31 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.81.0/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.82.0" id="link-0820">link 0.82.0<a class="anchor" aria-label="anchor" href="#link-0820"></a></h2>
+<p><strong>What a run stamps names what it read, the pre-run gate finds its own history, and primitive loads survive a flaky service and record what they loaded</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/474" class="external-link">#474</a>, backlog move 6). No modelling output changes and no vocabulary token moves; the pre-run gate runs again before the next provincial run.</p>
+<ul><li>
+<strong><code>log.bcfishobs_sha</code> is retired</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/451" class="external-link">#451</a>). It was the commit of a local bcfishobs checkout, which no run reads, and a dirty checkout refused the launch. The driver no longer reads one; new rows write NULL and the column stays. <code>study_area_verify.sql</code> names the observations each group read by their loaded version in <code>log_input</code>, and fails a run whose hosts read different versions of the object-store primitives or different content of the API ones.</li>
+<li>
+<strong>One rule picks the bcfishpass reference build, and <code>log.bcfp_date_completed</code> carries its build time</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/446" class="external-link">#446</a>, <a href="https://github.com/NewGraphEnvironment/link/issues/266" class="external-link">#266</a>). The ledger tier reads only snapshot rows that loaded the reference views, so a CSV-sync row no longer relabels a host’s builds; the database tier takes <code>LINEAR</code> builds by completion time. <code>model_version</code> is a code identity that weekly rebuilds of one commit share, so the time is what tells two builds apart.</li>
+<li>
+<strong>The pre-run gate needs no flags or copied logs</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/450" class="external-link">#450</a>). A bundle with no full history of its own is held to the nearest config it extends with builds on the database; with none, the gate picks on every input. Each group is bounded on its newest minutes from the log or the committed record <code>data-raw/logs/build_minutes.csv</code> (seeded with the two provincial runs), scaled to the gate host. On m1, <code>default</code> with no history picks the same 11 groups as the hand-seeded <a href="https://github.com/NewGraphEnvironment/link/issues/454" class="external-link">#454</a> gate.</li>
+<li>
+<strong>RUNBOOK says a build is the <code>log</code> rows of one <code>run_uid</code></strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/458" class="external-link">#458</a>); nothing clears <code>log</code> or <code>log_recompute</code>.</li>
+<li>
+<strong><code>scripts/update_hosts.sh</code> installs the fresh DESCRIPTION pins</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/269" class="external-link">#269</a>), never fresh’s main. It installs by pak and checks <code>RemoteSha</code> (link without its dependencies, so pak cannot put fresh back at main’s pin), judges each remote step by a printed marker, keeps the tarball path for cypher, installs the host it runs on locally, and has <code>--dry-run</code>.</li>
+<li>
+<strong><code>snapshot_bcfp.sh</code> retries, row-checks and falls back</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/484" class="external-link">#484</a>, <a href="https://github.com/NewGraphEnvironment/link/issues/459" class="external-link">#459</a>). Each PSCIS load is held to its rows and the WFS’s own count, retried with backoff, then read from the WFS directly (paged on a sort, in bc2pg’s column shape). The observations go through pyarrow where GDAL lacks Parquet, and every <code>--config</code> takes two arguments for GDAL 3.8. Both fallbacks were measured on m1 against the primary path: the pyarrow load equals GDAL’s, and the WFS load equals bc2pg’s by value but not by content md5, so the pre-flight refuses a host that fell back.</li>
+<li>
+<strong>Hosts reach one freshness decision before any spend</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/276" class="external-link">#276</a>). The snapshot skip guard needs the upstream build’s completion time as well as its version (on 2026-11-12 upstream had rebuilt <code>v0.7.15-51</code> beneath m1’s snapshot); the pre-flight compares every host’s loads before any write (persistent workers before the spin) and refuses a mixed run; a run with cloud hosts must refresh the dispatcher.</li>
+<li>
+<strong>The vintage gate asks whether an object’s source changed</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/273" class="external-link">#273</a>): a changed ETag is stale whatever the age, the same one current whatever the age, and a failed HEAD falls back to age.</li>
+<li>
+<strong><code>data-raw/fwapg_load_capture.sh</code> records what fwapg’s <code>load.sh</code> fetched</strong> as loader rows, from its <code>set -x</code> trace (<a href="https://github.com/NewGraphEnvironment/link/issues/270" class="external-link">#270</a>). Not yet run against a real load.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.81.0" id="link-0810">link 0.81.0<a class="anchor" aria-label="anchor" href="#link-0810"></a></h2>
 <p><strong>A build can classify each full-network segment on its minimal parent’s gradient</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/463" class="external-link">#463</a>). <code>pipeline: gradient: source: parent</code> sets each working segment’s gradient from <code>&lt;schema_full&gt;.streams_parent</code> between break and classify, so a habitat rule tuned on the minimal network reads, on the network link ships, the gradient it was tuned on. The new bundle <code>default_parent</code> (<code>extends: default</code>, schema <code>fresh_default_parent</code>) is <code>cut-full-top acc-v5 grad-parent q-fwapg</code>. Built on BULK, SETN, MORK and COTR beside a <code>default</code> control, it holds the control’s segments and access exactly. Every habitat difference sits on a segment whose gradient changed or in a connected cluster holding one. Rearing rises (CH +3.9 %, ST +3.3 %, CO +1.5 %, BT +1.1 %), and spawning moves within 0.33 % (<code>data-raw/logs/grad_parent_463/</code>).</p>

@@ -70,10 +70,13 @@ An `lnk_stamp` S3 list with these slots:
   (it moves on unrelated fwapg commits); the loaded artifacts are
   recorded in `provenance.source_artifact` (link#265)
 
-- `bcfishobs_sha` — git SHA of the `bcfishobs` checkout that matched
-  observations onto the network. A model input, not a reference dataset:
-  it decides which barriers are skipped, and so which segments are
-  accessible (link#264)
+- `bcfishobs_sha` — retired, always `NA` (link#451). It was the HEAD of
+  a local `bcfishobs` checkout, which no run reads: runs read
+  `bcfishobs.observations` as `data-raw/snapshot_bcfp.sh` loaded it from
+  the bchamp parquet, and that object's version is the observations'
+  identity, copied into each run's `log_input.artifact_*`. The slot is
+  kept so the `log` and `log_recompute` columns keep their shape; rows
+  before link 0.82.0 hold checkout SHAs
 
 - `software` — list of versions, git SHAs and `sha_source` (which
   resolver tier answered) for `link` and `fresh`, plus
@@ -114,12 +117,12 @@ stamp <- lnk_stamp(cfg, aoi = "ADMS")
 stamp
 #> <lnk_stamp> bcfishpass
 #>   aoi:        ADMS
-#>   started:    2026-11-13 07:24:59 UTC
-#>   link:       0.81.0
+#>   started:    2026-11-13 07:46:29 UTC
+#>   link:       0.82.0
 #>   fresh:      0.52.0
 #>   provenance: 21 files (0 byte, 0 shape drifted)
 format(stamp, "markdown")
-#> [1] "## Run stamp — bcfishpass\n\n- AOI: `ADMS`\n- Started: 2026-11-13 07:24:59 UTC\n\n### Software\n- link: 0.81.0 (sha NA)\n- fresh: 0.52.0 (sha 245c8d8db60b446f1fedb72340f55faa25f32f24)\n- R: R version 4.6.2 (2026-10-29)\n\n### Config provenance (21 files, 0 byte / 0 shape drifted)\n\n| file | byte drift | shape drift |\n|---|---|---|\n| `rules.yaml` | no | no |\n| `dimensions.csv` | no | no |\n| `parameters_fresh.csv` | no | no |\n| `parameters_habitat_thresholds.csv` | no | no |\n| `parameters_habitat_method.csv` | no | no |\n| `overrides/user_habitat_classification.csv` | no | no |\n| `overrides/observation_exclusions.csv` | no | no |\n| `overrides/wsg_species_presence.csv` | no | no |\n| `overrides/wsg_species_presence_overlay.csv` | no | no |\n| `overrides/user_modelled_crossing_fixes.csv` | no | no |\n| `overrides/user_pscis_barrier_status.csv` | no | no |\n| `overrides/pscis_modelledcrossings_streams_xref.csv` | no | no |\n| `overrides/user_barriers_definite.csv` | no | no |\n| `overrides/user_barriers_definite_control.csv` | no | no |\n| `overrides/user_crossings_misc.csv` | no | no |\n| `overrides/cabd_additions.csv` | no | no |\n| `overrides/cabd_blkey_xref.csv` | no | no |\n| `overrides/cabd_exclusions.csv` | no | no |\n| `overrides/cabd_passability_status_updates.csv` | no | no |\n| `overrides/dfo_known_sockeye_lakes.csv` | no | no |\n| `overrides/wcrp_watersheds.csv` | no | no |"
+#> [1] "## Run stamp — bcfishpass\n\n- AOI: `ADMS`\n- Started: 2026-11-13 07:46:29 UTC\n\n### Software\n- link: 0.82.0 (sha NA)\n- fresh: 0.52.0 (sha 245c8d8db60b446f1fedb72340f55faa25f32f24)\n- R: R version 4.6.2 (2026-10-29)\n\n### Config provenance (21 files, 0 byte / 0 shape drifted)\n\n| file | byte drift | shape drift |\n|---|---|---|\n| `rules.yaml` | no | no |\n| `dimensions.csv` | no | no |\n| `parameters_fresh.csv` | no | no |\n| `parameters_habitat_thresholds.csv` | no | no |\n| `parameters_habitat_method.csv` | no | no |\n| `overrides/user_habitat_classification.csv` | no | no |\n| `overrides/observation_exclusions.csv` | no | no |\n| `overrides/wsg_species_presence.csv` | no | no |\n| `overrides/wsg_species_presence_overlay.csv` | no | no |\n| `overrides/user_modelled_crossing_fixes.csv` | no | no |\n| `overrides/user_pscis_barrier_status.csv` | no | no |\n| `overrides/pscis_modelledcrossings_streams_xref.csv` | no | no |\n| `overrides/user_barriers_definite.csv` | no | no |\n| `overrides/user_barriers_definite_control.csv` | no | no |\n| `overrides/user_crossings_misc.csv` | no | no |\n| `overrides/cabd_additions.csv` | no | no |\n| `overrides/cabd_blkey_xref.csv` | no | no |\n| `overrides/cabd_exclusions.csv` | no | no |\n| `overrides/cabd_passability_status_updates.csv` | no | no |\n| `overrides/dfo_known_sockeye_lakes.csv` | no | no |\n| `overrides/wcrp_watersheds.csv` | no | no |"
 
 if (FALSE) { # \dontrun{
 # Full workflow with DB and a result

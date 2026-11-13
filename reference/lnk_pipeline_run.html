@@ -13,7 +13,7 @@ streams_habitat_&amp;lt;sp&amp;gt; per species, barriers)."><meta property="og:i
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.81.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.82.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -38,7 +38,7 @@ streams_habitat_&amp;lt;sp&amp;gt; per species, barriers)."><meta property="og:i
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Run the link pipeline end-to-end for one watershed group</h1>
-      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.81.0/R/lnk_pipeline_run.R" class="external-link"><code>R/lnk_pipeline_run.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/R/lnk_pipeline_run.R" class="external-link"><code>R/lnk_pipeline_run.R</code></a></small>
       <div class="d-none name"><code>lnk_pipeline_run.Rd</code></div>
     </div>
 
@@ -188,7 +188,15 @@ per-model minimal reduction, base segments. Passes <code>conn</code> as
 <code>conn_tunnel</code> when <code>dams = TRUE</code> so CABD dams flow through.</p></li>
 <li><p><code><a href="lnk_pipeline_crossings.html">lnk_pipeline_crossings()</a></code> — match PSCIS to modelled crossings.</p></li>
 <li><p><code><a href="lnk_pipeline_break.html">lnk_pipeline_break()</a></code> — observations, gradient minimal, definite,
-habitat endpoints, crossings — in config-defined order.</p></li>
+habitat endpoints, crossings — in config-defined order.
+5a. <strong>Parent gradient</strong> (<code>pipeline: gradient: source: parent</code>, link#463).
+The working segments are mapped one to one onto <code>schema_full</code>'s by
+position and their <code>gradient</code> set to the parent's from
+<code>&lt;schema_full&gt;.streams_parent</code>, so classify, connect and the persisted
+<code>gradient</code> read it. Judged right after the vocabulary, before the log
+opens: the parent rows must come from the group's newest builds in
+<code>schema_full</code> and the minimal schema, and the persist schema must be
+neither. The log row's <code>notes</code> name the two runs.</p></li>
 <li><p><code><a href="lnk_pipeline_species.html">lnk_pipeline_species()</a></code> — resolve the active species set for this
 AOI (cfg$species ∩ wsg_species_presence). Empty is a group where only
 species the bundle pauses are present: steps 7 and 8 and the habitat

@@ -49,7 +49,13 @@ A named character vector `c(cut = , acc = , grad = , flow = )`.
   species groups). The digest is over the parsed values, so a change in
   quoting or column order is not a new rule set.
 
-- **grad:** `gradient=segment`, the only measure link builds today.
+- **grad:** how a segment's gradient is read (`pipeline: gradient:`):
+  `gradient=segment`, the segment's own (the value when absent), or for
+  `source: parent` `gradient=parent;parent_cut=<cut token>`, the
+  gradient of the segment of `minimal_config`'s network it lies in,
+  where `<cut token>` is the token `minimal_config` resolves to. A
+  `minimal_config` whose acc or flow spec differs from `cfg`'s is
+  refused.
 
 - **flow:** `pipeline: discharge_source` and `pipeline: discharge_fill`.
 

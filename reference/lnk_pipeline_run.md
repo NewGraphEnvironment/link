@@ -162,7 +162,16 @@ is written, and the tokens go in the run's `<persist_schema>.log` row.
 
 5.  [`lnk_pipeline_break()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_break.md)
     — observations, gradient minimal, definite, habitat endpoints,
-    crossings — in config-defined order.
+    crossings — in config-defined order. 5a. **Parent gradient**
+    (`pipeline: gradient: source: parent`, link#463). The working
+    segments are mapped one to one onto `schema_full`'s by position and
+    their `gradient` set to the parent's from
+    `<schema_full>.streams_parent`, so classify, connect and the
+    persisted `gradient` read it. Judged right after the vocabulary,
+    before the log opens: the parent rows must come from the group's
+    newest builds in `schema_full` and the minimal schema, and the
+    persist schema must be neither. The log row's `notes` name the two
+    runs.
 
 6.  [`lnk_pipeline_species()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_species.md)
     — resolve the active species set for this AOI (cfg\$species ∩
