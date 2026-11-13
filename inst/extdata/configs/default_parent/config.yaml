@@ -1,0 +1,26 @@
+name: default_parent
+description: |
+  The `default` bundle classified on each full segment's minimal parent's
+  gradient (link#463, token grad-parent). The network is cut as `default`
+  cuts it; before classify each segment's gradient is set to the gradient of
+  the `default_minimal` segment it lies in, read from
+  `fresh_default.streams_parent` (lnk_streams_parent(), built by
+  data-raw/streams_parent_build.R). So a habitat rule tuned on the minimal
+  network reads, at each full segment, the gradient it was tuned on. A build
+  refuses unless the group's newest `fresh_default` and
+  `fresh_default_minimal` builds are the ones that table was joined from, and
+  unless it cut exactly the segments `fresh_default` holds. It runs only
+  where both schemas and the table exist (the dispatcher). The persisted
+  `gradient` is the parent's, the value classify read; the segment's own sits
+  at the same position in `fresh_default.streams`. `config_hash` covers this
+  file and `default`'s, not `default_minimal`'s: the minimal build's run id
+  in the log row's notes says which parents were read.
+
+extends: default
+
+pipeline:
+  schema: fresh_default_parent
+  gradient:
+    source: parent
+    minimal_config: default_minimal
+    schema_full: fresh_default

@@ -57,44 +57,46 @@ Approved with the plan (operator, 2026-11-10):
 
 ## Phase 2: a build setting that reads the parent's gradient (#463)
 
-- [ ] Config key `pipeline: gradient:` with `source: segment | parent` (absent = `segment`) and,
+- [x] Config key `pipeline: gradient:` with `source: segment | parent` (absent = `segment`) and,
       for `parent`, `minimal_config` and `schema_full`; `schema_minimal` derived from
       `minimal_config`'s `pipeline.schema` (or a given one refused when it differs). Validated
       when the manifest loads: unknown source or sub-key, non-identifier schema, a
       `minimal_config` whose own source is `parent` (G6).
-- [ ] `R/lnk_vocabulary.R`: grad spec `gradient=segment`, or for `parent`
+- [x] `R/lnk_vocabulary.R`: grad spec `gradient=segment`, or for `parent`
       `gradient=parent;parent_cut=<cut token minimal_config resolves>`, refusing unless
       `minimal_config`'s acc and flow tokens equal this config's (G6). `grad-parent`'s definition
       loses "No link build writes it", meaning unchanged (S1). Roxygen of
       `lnk_vocabulary_resolve()` updated (G8).
-- [ ] New R/ file (mapped `any` in `pretest_inputs.csv`; `R/lnk_streams_parent.R` stays `none`
+- [x] New R/ file (mapped `any` in `pretest_inputs.csv`; `R/lnk_streams_parent.R` stays `none`
       with the join only, A4) holding:
-  - [ ] the per-group stale check as SQL taking a schema and groups and returning the
+  - [x] the per-group stale check as SQL taking a schema and groups and returning the
         `verify.tsv` columns, called by `streams_parent_build.R`'s `verify_groups()` and by the
         build (G3);
-  - [ ] the DB half of the pair guard per group: both builds closed, `link_dirty`/`fresh_dirty`
+  - [x] the DB half of the pair guard per group: both builds closed, `link_dirty`/`fresh_dirty`
         FALSE, `fresh_sha` known and equal, same species, full side `grad-seg` with this build's
         cut/acc/flow, minimal `token_cut` the resolved parent cut with the same acc/flow, the
         rows' `schema_minimal` the config's (G2). The git half stays `streams_parent_build.R`'s.
-- [ ] `lnk_pipeline_run()` for `source: parent`:
-  - [ ] refuse a persist schema equal to `schema_full` or `schema_minimal` (it sees
+- [x] `lnk_pipeline_run()` for `source: parent`:
+  - [x] refuse a persist schema equal to `schema_full` or `schema_minimal` (it sees
         `LNK_SCHEMA`'s override), and `schema_full == schema_minimal` (G1);
-  - [ ] the judgement right after `lnk_vocabulary_resolve()`, before the log opens (O1);
-  - [ ] after break, whatever the active species (G7): a bijection within the group between
+  - [x] the judgement right after `lnk_vocabulary_resolve()`, before the log opens (O1);
+  - [x] after break, whatever the active species (G7): a bijection within the group between
         working and `schema_full.streams` segments on `downstream_route_measure` and
         `upstream_route_measure` within 1 mm, each matched exactly once, equal counts (G4);
         `ALTER COLUMN gradient DROP EXPRESSION`, then set it to `gradient_minimal` (B1);
-  - [ ] log the parent rows read (`run_id_full`, `run_id_minimal`, `schema_full`) as a
+  - [x] log the parent rows read (`run_id_full`, `run_id_minimal`, `schema_full`) as a
         `log_input` row or in `log.notes` (G5); the phase list in roxygen (G8).
-- [ ] `inst/extdata/configs/default_parent/config.yaml` (thin, `extends: default`, schema
+- [x] `inst/extdata/configs/default_parent/config.yaml` (thin, `extends: default`, schema
       `fresh_default_parent`). Say in RUNBOOK that `config_hash` covers the extends chain, not
       `minimal_config` (or hash its config.yaml too) (A3).
-- [ ] Tests: resolver (only `default_parent` resolves `grad-parent`; it differs from `default`
+- [x] Tests: resolver (only `default_parent` resolves `grad-parent`; it differs from `default`
       only in grad; a non-`cut-min` or different acc/flow minimal config refuses), config
       validation, the rewrite of `test-lnk_vocabulary.R:117-133` (G8), and each refusal (stale
       run id, length mismatch, a segment with no row, an unmatched or doubly matched segment, a
       persist schema equal to `schema_full`) in the live DB tests, with the swap tested on a
-      GENERATED column (B1). `test-streams_parent_build.R` follows `verify_groups()` (G3).
+      GENERATED column (B1). `test-streams_parent_build.R` follows `verify_groups()` (G3):
+      the driver runs `main()` when sourced, so `.lnk_streams_parent_state()` (the SQL it now
+      calls) is tested in `test-lnk_gradient_parent.R` and `--verify` is run live in Phase 3.
 
 ## Phase 3: proof build on m4, and #462's transfer cost
 

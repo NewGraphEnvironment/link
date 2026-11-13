@@ -35,3 +35,8 @@ mandate; the merge stays with me.
 - Resumed in worktree `link-al_461`; merged `origin/main` (0.80.0, #465) cleanly, so the release is 0.81.0.
 - Phase 1: `grad-fwa` row, #420's doc line, test. Verified no link segment crosses an FWA
   segment boundary (BULK, `fresh_default`: 0 of 42,458).
+- Phase 2: `pipeline: gradient:` (`R/lnk_gradient_parent.R`, mapped `any`), `default_parent`,
+  the grad spec, the judgement before the log opens and the swap after break, `verify_groups()`
+  on the shared state SQL; `.lnk_streams_parent_builds()` moved out of the `none` file.
+  Tests: vocabulary 75, gradient parent 79, config 220, pretest 126, dictionaries 154 (line
+  refs in `dictionary_species_modelled.csv` moved +6 with `lnk_config.R`).
