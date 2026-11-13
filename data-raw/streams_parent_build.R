@@ -187,38 +187,16 @@ main <- function() {
 
 # Groups whose streams_parent rows no longer describe the builds they sit on.
 verify_groups <- function(conn, pair, schema, out) {
-  sql_has <- sprintf(
-    "SELECT to_regclass('%s.streams_parent') IS NOT NULL AS ok",
-    schema
-  )
-  has <- DBI::dbGetQuery(conn, sql_has)$ok
-  if (!isTRUE(has)) {
+  # The per-group counts are link's own (R/lnk_gradient_parent.R), so this
+  # check and a parent build's (#463) read the table alike.
+  state <- link:::.lnk_streams_parent_state(conn, schema)
+  if (is.null(state)) {
     message("[streams_parent] ", schema, ".streams_parent does not exist")
     return(1L)
   }
-  sql_rows <- sprintf(
-    "SELECT p.watershed_group_code AS wsg, count(*) AS n_rows,
-            string_agg(DISTINCT p.run_id_full, ',') AS run_id_full,
-            string_agg(DISTINCT p.run_id_minimal, ',') AS run_id_minimal,
-            string_agg(DISTINCT p.schema_minimal, ',') AS schema_minimal,
-            count(*) FILTER (WHERE s.id_segment IS NULL) AS n_no_segment,
-            count(*) FILTER (WHERE abs(p.overlap_m + p.straddle_m - s.length_metre) > 1e-3)
-              AS n_length_off
-       FROM %1$s.streams_parent p
-       LEFT JOIN %1$s.streams s USING (id_segment, watershed_group_code)
-      GROUP BY 1",
-    schema
-  )
-  rows <- DBI::dbGetQuery(conn, sql_rows)
-  sql_segs <- sprintf(
-    "SELECT s.watershed_group_code AS wsg, count(*) AS n_segments,
-            count(*) FILTER (WHERE p.id_segment IS NULL) AS n_no_row
-       FROM %1$s.streams s
-       LEFT JOIN %1$s.streams_parent p USING (id_segment, watershed_group_code)
-      GROUP BY 1",
-    schema
-  )
-  segs <- DBI::dbGetQuery(conn, sql_segs)
+  segs <- state[, c("wsg", "n_segments", "n_no_row")]
+  rows <- state[state$n_rows > 0, c("wsg", "n_rows", "run_id_full", "run_id_minimal",
+                                    "schema_minimal", "n_no_segment", "n_length_off")]
   f <- pair[pair$side == "full", c("wsg", "run_id", "date_end")]
   m <- pair[pair$side == "minimal", c("wsg", "run_id", "date_end", "schema")]
   names(f)[2:3] <- c("newest_run_id_full", "newest_full_end")

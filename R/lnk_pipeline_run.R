@@ -29,6 +29,14 @@
 #' 4. [lnk_pipeline_crossings()] — match PSCIS to modelled crossings.
 #' 5. [lnk_pipeline_break()] — observations, gradient minimal, definite,
 #'    habitat endpoints, crossings — in config-defined order.
+#' 5a. **Parent gradient** (`pipeline: gradient: source: parent`, link#463).
+#'    The working segments are mapped one to one onto `schema_full`'s by
+#'    position and their `gradient` set to the parent's from
+#'    `<schema_full>.streams_parent`, so classify, connect and the persisted
+#'    `gradient` read it. Judged right after the vocabulary, before the log
+#'    opens: the parent rows must come from the group's newest builds in
+#'    `schema_full` and the minimal schema, and the persist schema must be
+#'    neither. The log row's `notes` name the two runs.
 #' 6. [lnk_pipeline_species()] — resolve the active species set for this
 #'    AOI (cfg$species ∩ wsg_species_presence). Empty is a group where only
 #'    species the bundle pauses are present: steps 7 and 8 and the habitat
@@ -169,6 +177,20 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
   # refused here, logged or not.
   tokens <- lnk_vocabulary_resolve(cfg, loaded)
 
+  # A build that classifies on its segments' minimal parents' gradient (#463,
+  # `pipeline: gradient: source: parent`) is judged before its log opens: the
+  # parent rows must describe the newest builds of both networks. The mapping
+  # onto this build's segments waits for break.
+  parent <- NULL
+  if (identical(.lnk_gradient_source(cfg), "parent")) {
+    parent <- .lnk_gradient_parent_judge(conn, cfg, aoi, tokens)
+    notes <- if (is.na(notes) || !nzchar(notes)) {
+      parent$note
+    } else {
+      paste0(notes, "; ", parent$note)
+    }
+  }
+
   # Run provenance (link#127). Opened here, before anything writes, so
   # `wsg_upstream` reflects the cross-WSG state this run actually started
   # from — the pre-persist below mutates it. `on.exit` rather than
@@ -218,6 +240,11 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
                          loaded = loaded, schema = schema)
   lnk_pipeline_break(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
                      loaded = loaded, schema = schema)
+  # Whatever the active species, so a group with only paused species persists
+  # the parent's gradient too.
+  if (!is.null(parent)) {
+    .lnk_gradient_parent_apply(conn, aoi, schema, parent)
+  }
 
   # The species classified here: the bundle's modelled species present in
   # the group. Empty is a group where only species the bundle pauses are

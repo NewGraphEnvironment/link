@@ -1106,7 +1106,7 @@ cat(paste(tok, collapse = " "), "\n")
   # bcfishobs checkout, so a checkout's commit described nothing a run read.
   # The observations' identity is the loaded object's version, copied into
   # each run's log_input.artifact_* and checked across hosts by
-  # study_area_verify.sql. log.bcfishobs_sha is retired (NULL from 0.81.0).
+  # study_area_verify.sql. log.bcfishobs_sha is retired (NULL from 0.82.0).
 
   # --- gate: fresh's own code identity, BEFORE any spend (link#264) -------
   # fresh_sha and fresh_dirty are asserted on every host by

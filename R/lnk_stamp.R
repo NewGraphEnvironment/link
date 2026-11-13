@@ -50,7 +50,7 @@
 #'     the bchamp parquet, and that object's version is the observations'
 #'     identity, copied into each run's `log_input.artifact_*`. The slot is
 #'     kept so the `log` and `log_recompute` columns keep their shape; rows
-#'     before link 0.81.0 hold checkout SHAs
+#'     before link 0.82.0 hold checkout SHAs
 #'   - `software` — list of versions, git SHAs and `sha_source` (which
 #'     resolver tier answered) for `link` and `fresh`, plus
 #'     `R.version.string`

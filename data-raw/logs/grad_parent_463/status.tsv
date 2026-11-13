@@ -1,0 +1,9 @@
+step	wsg	schema	start_utc	end_utc	minutes	exit	n_segments	load_start	load_end
+control	BULK	zz469_control	2026-11-13T05:12:23Z	2026-11-13T05:17:22Z	4.98	0	42458	4.85	8.41
+parent	BULK	fresh_default_parent	2026-11-13T05:17:22Z	2026-11-13T05:22:02Z	4.67	0	42458	8.41	5.86
+control	SETN	zz469_control	2026-11-13T05:22:02Z	2026-11-13T05:29:17Z	7.25	0	80538	5.86	12.73
+parent	SETN	fresh_default_parent	2026-11-13T05:29:17Z	2026-11-13T05:36:54Z	7.62	0	80538	12.73	9.83
+control	MORK	zz469_control	2026-11-13T05:36:54Z	2026-11-13T05:49:49Z	12.92	0	51930	9.83	7.36
+parent	MORK	fresh_default_parent	2026-11-13T05:49:49Z	2026-11-13T05:55:40Z	5.85	0	51930	7.36	10.02
+control	COTR	zz469_control	2026-11-13T05:55:40Z	2026-11-13T05:58:55Z	3.25	0	28473	10.02	7.28
+parent	COTR	fresh_default_parent	2026-11-13T05:58:55Z	2026-11-13T06:01:55Z	3.00	0	28473	7.28	5.90

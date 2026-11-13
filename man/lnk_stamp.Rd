@@ -48,7 +48,7 @@ a local \code{bcfishobs} checkout, which no run reads: runs read
 the bchamp parquet, and that object's version is the observations'
 identity, copied into each run's \verb{log_input.artifact_*}. The slot is
 kept so the \code{log} and \code{log_recompute} columns keep their shape; rows
-before link 0.81.0 hold checkout SHAs
+before link 0.82.0 hold checkout SHAs
 \item \code{software} — list of versions, git SHAs and \code{sha_source} (which
 resolver tier answered) for \code{link} and \code{fresh}, plus
 \code{R.version.string}

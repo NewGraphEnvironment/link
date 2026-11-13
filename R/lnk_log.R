@@ -353,7 +353,7 @@ cols_log <- c(
   bcfp_pin_source        = "text",
   # When the pinned bcfishpass build completed (link#266): model_version is a
   # code identity, so two weekly builds of one commit share it; this tells them
-  # apart. NULL on rows before 0.81.0 and when no tier carries a date.
+  # apart. NULL on rows before 0.82.0 and when no tier carries a date.
   bcfp_date_completed    = "timestamptz",
   # What lnk_habitat_gate() settled for this group (#349): segments and km
   # whose `accessible` it set FALSE (all species), the species it changed, and

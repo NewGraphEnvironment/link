@@ -11,7 +11,7 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
-## Status (2026-11-13) — a run stamps what it read, the gate finds its own history, primitive loads retry and record (#474, 0.81.0)
+## Status (2026-11-13) — a run stamps what it read, the gate finds its own history, primitive loads retry and record (#474, 0.82.0)
 
 **Backlog move 6 (#474) lands as one release: `bcfishobs_sha` retired for the observations' loaded version (#451); one bcfp pin rule with `log.bcfp_date_completed` (#446, #266); the pre-run gate held to an ancestor found through `extends:`, or to every input, bounded on `data-raw/logs/build_minutes.csv` (#450); `update_hosts.sh` on the DESCRIPTION pin (#269); `snapshot_bcfp.sh` retries, row checks and WFS/pyarrow fallbacks (#484, #459); a skip guard on the build date and a pre-spend cross-host compare (#276); vintage by live ETag (#273); fwapg trace capture (#270).** Proved on m1 by one primitives reload (2026-11-13) and a `--preflight-only` launch. Mechanics: RUNBOOK §6b, §6c, §8d ("The pre-run gate", "Every host holds the same primitives", "The vintage gate"). Evidence: `data-raw/logs/gate_history_450/`, `data-raw/logs/snapshot_fallbacks_459/`.
 
@@ -24,6 +24,21 @@ Experimental package — breaking all the time and loving the learning curve. St
 - **RPostgres sets the session `TimeZone` to UTC;** a timestamp written in the server's zone is read with `pg_settings.reset_val`. A bigint `count()` arrives as `integer64` and orders on raw bits without bit64 (the gate's ancestor pick chose a 2-group schema over 241 until cast).
 - **Nothing clears `log` or `log_recompute`;** `fresh_default`'s extra `log` rows were seeded as #454's gate history (#458).
 - **On 2026-11-12 upstream held `v0.7.15-51-g3bd2824` rebuilt 2026-11-11 under m1's snapshot of the same version (built 2026-10-28)**, which the old version-only guard would have skipped.
+
+## Status (2026-11-13) — a build can classify on each full segment's minimal parent's gradient (#463)
+
+**`pipeline: gradient: source: parent` sets each working segment's gradient from `<schema_full>.streams_parent` between break and classify, and the new bundle `default_parent` (`extends: default`, schema `fresh_default_parent`) does it under `cut-full-top acc-v5 grad-parent q-fwapg` (0.81.0).** Proved on m4 on BULK, SETN, MORK and COTR beside a `default` control built at the same commit (`6f0eea81`). Segments and access were identical, and every habitat difference sat on a changed-gradient segment or in a cluster holding one. Rearing rose (CH +3.9 %), and spawning stayed within 0.33 %. #462's near-river transfer cost is 0 km. `grad-fwa` names the Freshwater Atlas segment's gradient (#460), and #420 closes with a doc line. Mechanics: RUNBOOK §6b, "Its token, and the build that reads it". Evidence: `data-raw/logs/grad_parent_463/` (its README). Write-up: `research/minimal_network.md`, "Classifying on the parent's gradient".
+
+**Owed:** a province-wide `default_parent` build waits for the operator's word. It runs only on the dispatcher, where `fresh_default`, `fresh_default_minimal` and `streams_parent` live. knowledge#120 can archive `grad-fwa` runs and read a `grad-parent` build, but its pick needs a bundle extending `default_parent` with its own thresholds. The next provincial run's pre-run gate runs again (`R/` changed).
+
+**Facts not worth re-deriving:**
+- **Two judgements guard the build:** one before the log row opens (the newest full and minimal builds, the tokens, and `streams_parent`'s run ids, rows and lengths), and one before gradient is set (the newest builds re-read, then a one-to-one map of working segments onto the full schema's by line and measures within 1 mm, never `id_segment`). The git half of the pair's guard stays with `streams_parent_build.R`.
+- **A grad-parent schema's persisted `gradient` is the parent's** (what classify read). The segment's own sits at the same position in `schema_full`.
+- **`config_hash` does not cover `default_minimal`'s files.** The log row's `notes` name the full and minimal run ids that were read.
+- **Rearing on the parent's gradient rises the way it does on the minimal network,** with the full network's segments: BULK CH 2,101 to 2,208 km here, 2,205 in #415's minimal-network proof build.
+- **The near-river distance stays the segment's own.** On the four groups it differs from the parent's on 94 of the 1050/1150 segments (all of them, whatever their access), by up to 542 m, and none crosses 1,000 m. Carrying the parent's would be a fresh change (classify taking a prepared near-river table).
+- **`fresh-db` did not come back after m4 restarted on 2026-11-13.** Docker Desktop had to be opened by hand, and Postgres replayed about 7.9 GB of WAL (about 6 min, from the container log) before it accepted connections. The builds' rows were intact.
+- **`log_input` artifacts join `provenance.source_artifact` on table and object URL.** `fwa_stream_networks_sp` is one object per group, so a join on the table name alone reads every group's stream network as changed (`data-raw/logs/grad_parent_463/after.sh`). `cabd.dams`, PSCIS and `fwa_stream_networks_order_parent` carry no version identity on either side.
 
 ## Status (2026-11-12) — a one-group run reads its downstream groups' barriers from the export (#465)
 
