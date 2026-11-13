@@ -39,3 +39,36 @@ primary path's table on m1. No primitive table was touched.
   352,766 differed in `distance_to_stream`'s last digits: GDAL writes a double at 15
   significant digits, pyarrow's CSV at 17. Writing doubles at 15 significant digits,
   the fallback's table equals GDAL's: 0 rows differ either way. Load 4 to 6 s.
+
+## Phase 10's proof reload on m1 (2026-11-13 05:14 to 05:21 UTC)
+
+`snapshot_bcfp.sh --with-bcfp-views --force` through the new code
+(`reload_m1_20261113.log`, NOTICE lines dropped, the connection string
+redacted):
+
+- Each PSCIS view loaded by bc2pg on attempt 1 of 3, equal to the WFS's count
+  (19,905 / 147 / 410 / 177); no fallback taken. The observations
+  (`1790057230537`, unchanged) and modelled crossings (`1794344402364`, new since
+  m1's 2026-11-02 load) recorded by version; CABD (2,593) and PSCIS with content
+  md5s (`6f7f44c00794...`, `098617672acf...`).
+- The ledger row `snapshot-20261113` stamps `v0.7.15-51-g3bd2824` built
+  **2026-11-11T03:45:18Z**: the same version as m1's 2026-11-02 row (built
+  2026-10-28), which the old version-only guard would have taken as current.
+  After the reload `lnk_baseline_current()` reads TRUE (both forms), the pin reads
+  this row with its date, and `host_vintage.R` passes, judging the two object
+  tables by source ETag and the API tables by load age.
+- **The WFS fallback against a same-day bc2pg load:** loaded minutes after, the
+  assessment view equals bc2pg's by value in every row, `objectid` included
+  (`EXCEPT` both ways empty). Its content md5 differs (`098617672acf` against
+  `ea35d299...`): bc2pg keeps each decimal as GeoServer's JSON spells it (ids
+  `55483833`, measurements `488073.0`), every field is `xsd:decimal` in
+  DescribeFeatureType, and GDAL reads doubles, so the spelling cannot be
+  recovered. Casting through Python's float spelling fixed the measurements and
+  left the ids (`55483833.0`); reverted. So a host that fell back reads as holding
+  different content and the pre-flight compare refuses it: the safe direction.
+- **The pre-flight compare on real rows** (`inputs_m1_m4_before.tsv`,
+  `inputs_m1_m4_after.tsv`; m4's rows read over ssh with `host_inputs.R`):
+  before the reload m1 and m4 agree; after it, `.lnk_inputs_agree()` refuses,
+  naming `fresh.modelled_stream_crossings` (m1 `1794344402364`, m4
+  `1793134826715`). CABD and PSCIS pass on equal row counts, since m4's loads
+  predate content md5s: the weaker check, and the message says so.

@@ -71,9 +71,14 @@ snap_check() {   # $1 = schema.table, $2 = layer
 #     geometry untyped.
 # After the load the extra columns go, doubles become numeric, the key becomes an
 # integer primary key, and the geometry is typed. The four PSCIS views then match
-# bc2pg's columns in name, type and order, with the same rows; the one column
-# whose values differed from a ten-day-old bc2pg load was objectid, which DataBC
-# renumbers when it republishes (two WFS loads minutes apart agreed on all 19,905).
+# bc2pg's columns in name, type and order, and on 2026-11-13 the assessment view
+# loaded minutes after bc2pg held the same 19,905 rows by value (EXCEPT both
+# ways empty, objectid included; objectid is renumbered when DataBC republishes).
+# Its content md5 still differs: bc2pg keeps each decimal as GeoServer's JSON
+# spells it (an id 55483833, a measurement 488073.0), and every field is
+# xsd:decimal, so GDAL's doubles cannot recover which. A host that fell back
+# therefore reads as holding different content, and the pre-flight's
+# compare_inputs refuses the run until it reloads: the safe direction.
 wfs_load() {   # $1 = layer, $2 = schema.table, $3 = key column (stream_crossing_id), $4 = geometry type (MULTIPOINT)
   local layer="$1" tbl="$2" key="${3:-stream_crossing_id}" gtype="${4:-MULTIPOINT}" ukey
   ukey=$(printf '%s' "$key" | tr '[:lower:]' '[:upper:]')

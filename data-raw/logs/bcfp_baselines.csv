@@ -31,3 +31,4 @@ run_started_pdt,host,run_label,link_schema,bcfp_model_run_id,bcfp_model_version,
 2026-10-31 12:21,m1,csv-sync-20261031,n/a,,v0.7.15-51-g3bd2824,2026-10-28T04:44:44Z,auto-append by csv-sync; head_sha=3bd2824; REVIEW
 2026-11-02 03:01,m4,snapshot-20261102,n/a,,v0.7.15-51-g3bd2824,2026-10-28T04:44:44Z,manual snapshot via data-raw/snapshot_bcfp.sh; --with-bcfp-views; head_sha=3bd2824
 2026-11-02 02:52,m1,snapshot-20261102,n/a,,v0.7.15-51-g3bd2824,2026-10-28T04:44:44Z,manual snapshot via data-raw/snapshot_bcfp.sh; --with-bcfp-views; head_sha=3bd2824
+2026-11-12 22:21,m1,snapshot-20261113,n/a,,v0.7.15-51-g3bd2824,2026-11-11T03:45:18Z,manual snapshot via data-raw/snapshot_bcfp.sh; --with-bcfp-views; head_sha=3bd2824
