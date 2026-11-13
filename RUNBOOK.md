@@ -2793,6 +2793,20 @@ one `--focal=` list per worker after the dispatcher's and before the cyphers'
   comes from the clone's git. `--auto-install` on a worker installs fresh at
   DESCRIPTION's `Remotes:` pin and re-checks once; it refuses while a
   `FRESH_GIT_SHA` pin is set, which would outlive the install.
+- **`scripts/update_hosts.sh` installs the fresh DESCRIPTION pins (link#269).**
+  It reads `NewGraphEnvironment/fresh@<tag>` from `Remotes:`, resolves the tag
+  to its commit once, and refuses when fresh is unpinned rather than fall back
+  to fresh's main, which could put one host on a fresh no other installs (the
+  pre-flight then refuses the run). link, which nothing pins, goes on at main's
+  head. It installs with pak, which writes `RemoteSha`; it checks that
+  `RemoteSha` is the resolved commit and then removes any `FRESH_GIT_SHA` /
+  `FRESH_GIT_DIRTY` pin from `~/.Renviron`, which would outrank it. On `cypher`
+  (pak's libpath bug, r-lib/pak#658), and anywhere under `--tarball`, it keeps
+  the tarball install and pins the commit in `~/.Renviron`. The host it runs on
+  (`LNK_HOST_ALIAS`, else `hostname -s`) is installed locally, never over ssh to
+  itself. `--dry-run` prints the refs and each host's plan. A host whose GitHub
+  token is refused (the worker, #439) cannot pak-install: rotate the token, or
+  use `--tarball`.
 - **Primitives and fresh are the operator's to bring current, once,** because
   both are shared with the machine's other sessions. Measured on the first
   worker (2026-10-25): fresh by `--auto-install` (or `worker_prep.sh`'s

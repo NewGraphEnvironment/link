@@ -120,15 +120,15 @@ Corrections taken, each reflected in the phases below:
 - [x] RUNBOOK §8d, "The pre-run gate": update.
 
 ## Phase 5 (#269): `update_hosts.sh` installs what `DESCRIPTION` pins
-- [ ] Read fresh's ref from `DESCRIPTION`'s `Remotes:` (and wet's, which is pinned too). Resolve the tag to a commit for the record, and refuse a package with no pin rather than fall back to main.
-- [ ] Install with pak (`NewGraphEnvironment/fresh@<tag>`), which sets `RemoteSha` so the pin check has something to compare with. Keep the tarball path only for hosts where pak fails (pak#658), behind a flag, and then write the env pin with the tag's sha.
-- [ ] Detect the local host (`hostname -s` or `LNK_HOST_ALIAS`) instead of assuming m4. Do not ssh to yourself.
-- [ ] Test with stubs (`curl`, `ssh`, `Rscript` on PATH), in the style of `test-worker_prep.R`:
+- [x] Read fresh's ref from `DESCRIPTION`'s `Remotes:` (and wet's, which is pinned too). Resolve the tag to a commit for the record, and refuse a package with no pin rather than fall back to main.
+- [x] Install with pak (`NewGraphEnvironment/fresh@<tag>`), which sets `RemoteSha` so the pin check has something to compare with. Keep the tarball path only for hosts where pak fails (pak#658), behind a flag, and then write the env pin with the tag's sha.
+- [x] Detect the local host (`hostname -s` or `LNK_HOST_ALIAS`) instead of assuming m4. Do not ssh to yourself.
+- [x] Test with stubs (`curl`, `ssh`, `Rscript` on PATH), in the style of `test-worker_prep.R`:
   - reads the tag;
   - refuses with no pin;
   - local host detected;
   - parses under `/bin/bash` 3.2.
-- [ ] RUNBOOK §8d's host-prep lines.
+- [x] RUNBOOK §8d's host-prep lines.
 
 ## Phase 6 (#484, #459): `snapshot_bcfp.sh` loads that survive a flicker and an old GDAL
 - [ ] `data-raw/snapshot_bcfp_lib.sh`, sourced by the script:
