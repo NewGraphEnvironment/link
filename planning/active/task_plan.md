@@ -102,23 +102,26 @@ Approved with the plan (operator, 2026-11-10):
 
 - [x] Bump DESCRIPTION to 0.81.0 and commit before building; build from a clean committed tree
       with `LNK_LOAD=loadall` (O2). `eaaedf29`; builds at `6f0eea81`, both dirty flags FALSE.
-- [ ] Before building, compare each group's `fresh_default` `log_input` artifact ids with m4's
-      `provenance.source_artifact` (A1). No record of it in the evidence dir: run it when the
-      database is back (the builds already ran; the pair's stale check passed, `verify_before/`).
+- [x] Before building, compare each group's `fresh_default` `log_input` artifact ids with m4's
+      `provenance.source_artifact` (A1). Recorded after the builds (`artifact_ids.csv`, joined on
+      table and object URL): 36 of 48 carry an identity and all match; 12 (cabd, pscis,
+      order_parent) carry none on either side.
 - [x] `data-raw/logs/grad_parent_463/`: BULK, SETN, MORK, COTR under `default_parent` into
       `fresh_default_parent`, and under `default` into a scratch control schema, same commit,
       order and env (`LNK_HABITAT_GATE`, `LNK_GUARD_DOWNSTREAM=warn`), on a quiet database. A
       group refused on mapping is reported as the refusal working and replaced by another (A1).
       Done 2026-11-13 05:12-06:02 UTC, 8 of 8 exit 0, none refused (`status.tsv`).
-- [ ] Check from persisted tables (working tables are overwritten): segment keys and access
+- [x] Check from persisted tables (working tables are overwritten): segment keys and access
       identical between control and parent; segmentation identical to `fresh_default`; persisted
       gradient equals `gradient_minimal`; `log.token_grad` is `grad-parent`; each habitat
       difference classed own-gradient / connectivity (species clusters, the flag connect writes,
       within cluster distance of a changed segment) / unexplained, failing on unexplained (AC1).
-- [ ] #462 from persisted tables: CH 1050/1150 segments failing width, accessible in both, whose
+      `proof.R` passed 2026-11-13 06:41 UTC (`verdict.csv`); 0 unexplained.
+- [x] #462 from persisted tables: CH 1050/1150 segments failing width, accessible in both, whose
       parent's `fresh_default_minimal.streams_near_river.dist_m` ≤ 1000 and own > 1000 with
       rearing false in `default_parent`; km per group into the README and
       `research/minimal_network.md`, said to be not comparable to knowledge's 1,042 km (AC2).
+      0 km in all four groups; distances differ on 94 segments, none across 1,000 m.
 
 ## Phase 4: docs and release
 

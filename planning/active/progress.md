@@ -58,3 +58,12 @@ mandate; the merge stays with me.
   groups' rows survived recovery (`segments.csv` counts), run the A1 artifact comparison, then
   `Rscript data-raw/logs/grad_parent_463/proof.R --wsgs=BULK,SETN,MORK,COTR` from this worktree;
   then Phase 4.
+
+## Session 2026-11-13
+- Builds 8 of 8 exit 0 at `6f0eea81` (05:12-06:02 UTC). The machine restarted at about 06:16 UTC
+  mid-proof; Docker Desktop started by hand (operator's word), Postgres crash recovery replayed
+  about 7.9 GB of WAL and came up at 06:37; builds' rows intact.
+- `proof.R` passed at 06:41 UTC. Rearing rises (CH +3.9 %, ST +3.3 %, CO +1.5 %, BT +1.1 %),
+  spawning within ±0.33 %, access and accessible km unchanged. #462 transfer cost 0 km.
+- A1 recorded after the builds (`artifact_ids.csv`); a first join on table name alone read FWA
+  as changed, because FWA is one object per group.

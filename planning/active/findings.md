@@ -38,3 +38,12 @@ older-build tokens are still wanted; both decided (task_plan.md).
 | Error | Resolution |
 |-------|------------|
 | `proof.R`: connection to localhost:5432 refused, mid-run | Docker Desktop had been closed and m4 rebooted; `fresh-db` has no restart policy, so `open -a Docker` then `docker start fresh-db` and wait out WAL recovery |
+
+## The proof build (2026-11-13)
+Evidence and numbers: `data-raw/logs/grad_parent_463/README.md`. Rearing on the parent's gradient
+rises the way it did on the minimal network itself (BULK CH 2,101 to 2,208 km here, 2,205 there),
+so on BULK the rise does not need the minimal network's longer segments: the parent's gradient
+on the full network's segments gives nearly the same km. (#415 attributed the minimal network's
+rise to connectivity on longer segments; here both classes carry it, `habitat_classes.csv`.)
+The near-river distance costs nothing in the four groups: own and parent distances differ on 94
+CH 1050/1150 segments, by up to 542 m, none across 1,000 m.
