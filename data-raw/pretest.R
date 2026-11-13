@@ -387,11 +387,21 @@ pretest_history_source <- function(schema, config, history_schema, history_confi
 # The history a record is held to, by the rule above: the schema's own builds when they
 # stand, otherwise what the newest pass or fail record for the config borrowed, or NULL
 # when it borrowed nothing. A record older than the borrow columns reads as none.
-pretest_record_history <- function(records, schema, config, own_complete, chain) {
-  if (own_complete || length(chain) == 1L) return(list(schema = schema, config = config))
+#
+# A record taken with no history at all (range_source every_input, link#450) is held
+# to none while the bundle still has no build of its own here (`own_n` finished
+# groups): list(schema, config, every_input = TRUE). Once it has builds, those are
+# what a gate must cover, and an every-input record cannot.
+pretest_record_history <- function(records, schema, config, own_complete, chain, own_n = 1L) {
   r <- records[records$config_name == config & records$verdict %in% c("pass", "fail"), , drop = FALSE]
+  newest <- if (nrow(r)) r[order(r$run_at, decreasing = TRUE), , drop = FALSE][1, ] else NULL
+  if (own_n == 0L && !is.null(newest) && !is.null(newest$range_source) &&
+      identical(newest$range_source, "every_input")) {
+    return(list(schema = schema, config = config, every_input = TRUE))
+  }
+  if (own_complete || length(chain) == 1L) return(list(schema = schema, config = config))
   if (!nrow(r) || is.null(r$history_schema) || is.null(r$history_config)) return(NULL)
-  rec <- r[order(r$run_at, decreasing = TRUE), , drop = FALSE][1, ]
+  rec <- newest
   if (is.na(rec$history_schema) || is.na(rec$history_config)) return(NULL)
   if (!rec$history_config %in% chain) return(NULL)
   list(schema = rec$history_schema, config = rec$history_config)
@@ -567,7 +577,8 @@ pretest_since_covers <- function(repo, since, end, history_shas, history_dirty) 
 #     change, which only a new gate can pick for).
 # Returns list(ok, why, record).
 pretest_record_check <- function(records, config, head_sha, fresh_sha, history_shas,
-                                 history_dirty, repo, map, chain, reached = NULL) {
+                                 history_dirty, repo, map, chain, reached = NULL,
+                                 every_input = FALSE) {
   no <- function(...) list(ok = FALSE, why = paste0(...), record = rec)
   rec <- NULL
   r <- records[records$config_name == config & records$verdict %in% c("pass", "fail"), , drop = FALSE]
@@ -580,9 +591,17 @@ pretest_record_check <- function(records, config, head_sha, fresh_sha, history_s
     return(no("the gate modelled fresh ", substr(rec$fresh_sha, 1, 12), ", installed is ",
               substr(fresh_sha, 1, 12)))
   }
-  if (!length(history_shas)) return(no("no history under config ", config, " to hold the gate's range to"))
-  cover <- pretest_since_covers(repo, rec$since_sha, rec$link_sha, history_shas, history_dirty)
-  if (nzchar(cover)) return(no("the gate's ", cover))
+  if (every_input) {
+    # No history to hold a range to (link#450): the record must have picked on every
+    # input rather than on a diff.
+    if (!identical(rec$range_source, "every_input")) {
+      return(no("no history under config ", config, ", and the newest gate record diffed a range"))
+    }
+  } else {
+    if (!length(history_shas)) return(no("no history under config ", config, " to hold the gate's range to"))
+    cover <- pretest_since_covers(repo, rec$since_sha, rec$link_sha, history_shas, history_dirty)
+    if (nzchar(cover)) return(no("the gate's ", cover))
+  }
   if (!pretest_is_ancestor(repo, rec$link_sha, head_sha)) {
     return(no("the gate modelled ", substr(rec$link_sha, 1, 12), ", not an ancestor of HEAD"))
   }
@@ -604,4 +623,128 @@ pretest_record_check <- function(records, config, head_sha, fresh_sha, history_s
     return(no("changed since the gate, on the modelling path: ", paste(moved, collapse = ", ")))
   }
   list(ok = TRUE, why = "", record = rec)
+}
+
+
+# -- History found without flags, and minutes from a committed record (link#450) --
+
+# Every query input the gate knows: one per data-raw/pretest/<input>.sql. With no
+# history to diff against, every input counts as changed.
+pretest_all_inputs <- function(script_dir) {
+  f <- list.files(file.path(script_dir, "pretest"), pattern = "\\.sql$")
+  sort(sub("\\.sql$", "", f))
+}
+
+# The schemas holding a link run log, which an ancestor's history is found among
+# (pretest_history_count_sql() then counts each config's groups there). Scratch
+# schemas (the gate's own, zz_ test schemas) are left out.
+pretest_history_candidates_sql <- function() {
+  # A link run log has config_name; other schemas' `log` tables (bcdata's) do not.
+  "SELECT table_schema AS schema FROM information_schema.columns
+    WHERE table_name = 'log' AND column_name = 'config_name'
+      AND table_schema NOT LIKE 'fresh\\_pretest\\_%' AND table_schema NOT LIKE 'zz\\_%'
+    ORDER BY 1"
+}
+
+pretest_history_count_sql <- function(schema, configs) {
+  stopifnot(grepl("^[a-z_][a-z0-9_]*$", schema), all(grepl("^[a-z][a-z0-9_]*$", configs)))
+  sprintf(
+    "SELECT '%s'::text AS schema, config_name AS config,
+            count(DISTINCT watershed_group_code)::integer AS n_groups, max(date_start) AS newest
+       FROM %s.log
+      WHERE date_end IS NOT NULL AND date_start IS NOT NULL AND config_name IN (%s)
+      GROUP BY config_name", schema, schema, paste0("'", configs, "'", collapse = ", "))
+}
+
+# The ancestor history to hold a bundle to when no flag names one: the nearest config
+# on its chain (after itself) with finished builds on this database, in the schema
+# holding the most of its groups, then the newest. `candidates` is (schema, config,
+# n_groups, newest). Returns list(schema, config, borrowed = TRUE), or NULL.
+pretest_ancestor_pick <- function(candidates, chain) {
+  if (length(chain) < 2L || !NROW(candidates)) return(NULL)
+  # As plain numbers: a bigint count arrives as integer64, whose arithmetic without
+  # bit64 attached orders on the raw bits (a 2-group test schema outranked 241 groups).
+  candidates$n_groups <- as.numeric(as.character(candidates$n_groups))
+  for (anc in chain[-1]) {
+    c <- candidates[candidates$config == anc & candidates$n_groups > 0, , drop = FALSE]
+    if (!nrow(c)) next
+    c <- c[order(-c$n_groups, -as.numeric(c$newest), c$schema), , drop = FALSE]
+    return(list(schema = c$schema[1], config = anc, borrowed = TRUE))
+  }
+  NULL
+}
+
+PRETEST_BUILD_MINUTES_COLS <- c("wsg", "config", "run_uid", "host", "host_class",
+                                "link_sha", "fresh_sha", "date_start", "minutes")
+PRETEST_FIXED_MIN <- 60
+
+# The committed record of build minutes (data-raw/logs/build_minutes.csv), one row per
+# group per config per run, appended after each provincial run by
+# data-raw/build_minutes_append.R. An empty frame when absent.
+pretest_build_minutes_read <- function(path) {
+  if (!file.exists(path)) {
+    return(stats::setNames(data.frame(matrix(character(), 0, length(PRETEST_BUILD_MINUTES_COLS))),
+                           PRETEST_BUILD_MINUTES_COLS))
+  }
+  b <- utils::read.csv(path, stringsAsFactors = FALSE, colClasses = "character",
+                       na.strings = "")
+  if (!identical(names(b), PRETEST_BUILD_MINUTES_COLS)) {
+    stop(path, ": columns must be ", paste(PRETEST_BUILD_MINUTES_COLS, collapse = ","), call. = FALSE)
+  }
+  b$minutes <- suppressWarnings(as.numeric(b$minutes))
+  b$date_start <- as.POSIXct(b$date_start, format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  if (anyNA(b$minutes) || any(b$minutes < 0) || anyNA(b$date_start) ||
+      !all(grepl("^[A-Z]{4}$", b$wsg))) {
+    stop(path, ": every row needs a group code, a date_start (YYYY-MM-DDTHH:MM:SSZ) and minutes >= 0",
+         call. = FALSE)
+  }
+  b
+}
+
+# Each eligible group's last minutes, scaled to the gate host, and where they came from.
+#   local   newest finished row in the history schema's log (wsg, host, date_start, minutes)
+#   record  build_minutes rows; a group takes its newest row under the nearest config on
+#           the chain that has one
+# A local row wins unless the record holds a newer one; a group in neither takes
+# PRETEST_FIXED_MIN, unscaled. `speed_of(host)` gives a host's speed (study_area_packing.R's
+# learned factors; larger is faster) and `gate_speed` the speed of the host the gate runs
+# on, so minutes measured on a host at speed s become minutes * s / gate_speed here.
+# Groups in `exclude` take the median of the rest (a known stall). Returns
+# (wsg, minutes, host, source), one row per group in `groups`.
+pretest_minutes <- function(groups, local, record, chain, speed_of, gate_speed,
+                            exclude = character(), fixed = PRETEST_FIXED_MIN) {
+  out <- data.frame(wsg = groups, minutes = NA_real_, host = NA_character_,
+                    source = NA_character_, stringsAsFactors = FALSE)
+  rec <- record[record$config %in% chain & record$wsg %in% groups, , drop = FALSE]
+  if (nrow(rec)) {
+    rec$rank <- match(rec$config, chain)
+    rec <- rec[order(rec$wsg, rec$rank, -as.numeric(rec$date_start)), , drop = FALSE]
+    rec <- rec[!duplicated(rec$wsg), , drop = FALSE]
+  }
+  loc <- if (NROW(local)) local[local$wsg %in% groups & !is.na(local$minutes), , drop = FALSE] else NULL
+  for (i in seq_along(groups)) {
+    g <- groups[i]
+    l <- if (!is.null(loc)) loc[loc$wsg == g, , drop = FALSE] else loc
+    r <- if (nrow(rec)) rec[rec$wsg == g, , drop = FALSE] else rec
+    use_r <- nrow(r) == 1L && (is.null(l) || !nrow(l) ||
+                               as.numeric(r$date_start) > as.numeric(l$date_start[1]))
+    if (use_r) {
+      out[i, c("minutes", "host", "source")] <- list(r$minutes * speed_of(r$host) / gate_speed,
+                                                     r$host, "record")
+    } else if (!is.null(l) && nrow(l)) {
+      out[i, c("minutes", "host", "source")] <- list(l$minutes[1] * speed_of(l$host[1]) / gate_speed,
+                                                     l$host[1], "log")
+    } else {
+      out[i, c("minutes", "host", "source")] <- list(fixed, "fixed", "fixed")
+    }
+  }
+  ex <- out$wsg %in% exclude
+  if (any(ex)) {
+    med <- stats::median(out$minutes[!ex & out$source != "fixed"])
+    if (is.na(med)) med <- fixed
+    out$minutes[ex] <- med
+    out$host[ex] <- "median"
+    out$source[ex] <- "median"
+  }
+  out
 }

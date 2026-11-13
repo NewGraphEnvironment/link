@@ -351,6 +351,10 @@ cols_log <- c(
   bcfp_model_run_id      = "integer",
   bcfp_model_version     = "text",
   bcfp_pin_source        = "text",
+  # When the pinned bcfishpass build completed (link#266): model_version is a
+  # code identity, so two weekly builds of one commit share it; this tells them
+  # apart. NULL on rows before 0.82.0 and when no tier carries a date.
+  bcfp_date_completed    = "timestamptz",
   # What lnk_habitat_gate() settled for this group (#349): segments and km
   # whose `accessible` it set FALSE (all species), the species it changed, and
   # how many segments a recompute lifted while their habitat stayed FALSE (a
@@ -745,6 +749,54 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
   as.character(DBI::dbQuoteLiteral(conn, x[[1]]))
 }
 
+#' A timestamptz literal for a log row, from an instant in any form the bcfp
+#' tiers give (a `POSIXct`, or an ISO 8601 string with a zone, as `log.json`
+#' and the ledger carry). Written as UTC with an explicit cast: a quoted string
+#' arrives as varchar, which Postgres will not assign to a timestamptz column.
+#' NULL when it cannot be read as an instant.
+#'
+#' @noRd
+.lnk_log_timestamptz <- function(conn, x) {
+  t <- .lnk_instant_utc(x)
+  if (is.na(t)) {
+    return("NULL")
+  }
+  paste0(as.character(DBI::dbQuoteString(
+    conn, format(t, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"))), "::timestamptz")
+}
+
+#' Read one instant as UTC: a `POSIXct` as is, or an ISO 8601 string carrying
+#' its zone (`Z` or `+hh:mm`/`+hhmm`/`+hh`). A string with no zone is refused,
+#' as NA, rather than read in the machine's zone.
+#'
+#' @noRd
+.lnk_instant_utc <- function(x) {
+  na <- as.POSIXct(NA, tz = "UTC")
+  if (length(x) != 1L || is.na(x)) {
+    return(na)
+  }
+  if (inherits(x, "POSIXct")) {
+    return(as.POSIXct(format(x, tz = "UTC"), tz = "UTC"))
+  }
+  x <- trimws(as.character(x))
+  m <- regmatches(x, regexec(paste0(
+    "^(\\d{4}-\\d{2}-\\d{2})[T ](\\d{2}:\\d{2}:\\d{2})(\\.\\d+)?",
+    "(Z|[+-]\\d{2}(:?\\d{2})?)$"), x))[[1]]
+  if (!length(m)) {
+    return(na)
+  }
+  t <- as.POSIXct(paste(m[2], m[3]), format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
+  zone <- m[5]
+  if (zone != "Z") {
+    sgn <- if (substr(zone, 1, 1) == "-") -1 else 1
+    digits <- gsub("[^0-9]", "", zone)
+    hh <- as.integer(substr(digits, 1, 2))
+    mm <- if (nchar(digits) >= 4L) as.integer(substr(digits, 3, 4)) else 0L
+    t <- t - sgn * (hh * 3600 + mm * 60)
+  }
+  t
+}
+
 #' Normalise an env-sourced identifier: blank is absent, not a value.
 #'
 #' `Sys.getenv("X", NA_character_)` returns `NA` only when X is **unset**. A
@@ -1059,7 +1111,7 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
             "token_cut", "token_acc", "token_grad", "token_flow",
             "schema_persist", "wsg_upstream",
             "bcfp_model_run_id", "bcfp_model_version", "bcfp_pin_source",
-            "notes")
+            "bcfp_date_completed", "notes")
 
   vals <- c(
     DBI::dbQuoteLiteral(conn, run_id),
@@ -1096,6 +1148,7 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
     .lnk_log_lit(conn, if (is.null(bcfp)) NA else bcfp$model_run_id),
     .lnk_log_lit(conn, if (is.null(bcfp)) NA else bcfp$model_version),
     .lnk_log_lit(conn, if (is.null(bcfp)) NA else bcfp$source),
+    .lnk_log_timestamptz(conn, if (is.null(bcfp)) NA else bcfp$date_completed),
     .lnk_log_lit(conn, notes)
   )
 
@@ -1237,15 +1290,30 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
 #' distinguishable from "pinned, from the ledger" without inferring it from a
 #' NULL id.
 #'
-#' @return A list with `model_run_id`, `model_version` and `source`, or NULL.
+#' **One selection rule (link#266, link#446).** Each tier names the newest
+#' bcfishpass *linear* build whose reference views were loaded, and carries its
+#' completion time beside its version, because `model_version`
+#' (`<tag>-<n>-g<sha>`) is a code identity that weekly rebuilds of one commit
+#' share. The db tier takes `model_type = 'LINEAR'` by `date_completed`
+#' (`smnorris/bcfishpass@3bd2824`: `model_type` is LINEAR or LATERAL, and
+#' `date_completed` a timestamp without zone, written by the job's session in
+#' the server's zone, so read in the server's zone: `pg_settings.reset_val`,
+#' because RPostgres sets this session's own zone to UTC); the
+#' ledger tier takes only rows that loaded the views ([.lnk_bcfp_log_ledger()]);
+#' the env tier reads `LNK_BCFP_DATE_COMPLETED` beside the version.
+#'
+#' @return A list with `model_run_id`, `model_version`, `date_completed` (a
+#'   `POSIXct` in UTC, NA when the tier has none) and `source`, or NULL.
 #' @noRd
 .lnk_bcfp_log_current <- function(conn) {
   env_version <- .lnk_blank_to_na(Sys.getenv("LNK_BCFP_MODEL_VERSION", ""))
   if (!is.na(env_version)) {
     env_id <- suppressWarnings(
       as.integer(.lnk_blank_to_na(Sys.getenv("LNK_BCFP_MODEL_RUN_ID", ""))))
+    env_date <- .lnk_instant_utc(
+      .lnk_blank_to_na(Sys.getenv("LNK_BCFP_DATE_COMPLETED", "")))
     return(list(model_run_id = env_id, model_version = env_version,
-                source = "env"))
+                date_completed = env_date, source = "env"))
   }
 
   from_db <- tryCatch({
@@ -1256,9 +1324,21 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
       NULL
     } else {
       res <- DBI::dbGetQuery(conn,
-        "SELECT model_run_id, model_version FROM bcfishpass.log
-          ORDER BY model_run_id DESC LIMIT 1")
-      if (nrow(res) == 0L) NULL else c(as.list(res[1L, ]), list(source = "db"))
+        "SELECT model_run_id, model_version,
+                date_completed AT TIME ZONE
+                  (SELECT reset_val FROM pg_settings WHERE name = 'TimeZone')
+                  AS date_completed
+           FROM bcfishpass.log
+          WHERE model_type = 'LINEAR'
+          ORDER BY date_completed DESC NULLS LAST, model_run_id DESC LIMIT 1")
+      if (nrow(res) == 0L) {
+        NULL
+      } else {
+        list(model_run_id = res$model_run_id[[1]],
+             model_version = res$model_version[[1]],
+             date_completed = .lnk_instant_utc(res$date_completed[[1]]),
+             source = "db")
+      }
     }
   }, error = function(e) NULL)
 
@@ -1270,6 +1350,13 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
 
 
 #' Tier 2 of [.lnk_bcfp_log_current()] — the local snapshot ledger.
+#'
+#' **Only rows that loaded the reference views count** (link#446): a
+#' `snapshot-` row whose notes say `--with-bcfp-views`. The ledger also holds
+#' rows that load no view: `csv-sync-` rows from `sync_bcfishpass_csvs.R`, and
+#' snapshots run without `--with-bcfp-views` (every cloud host's prep). Taking
+#' the newest row of any kind relabelled m1's builds with a version whose views
+#' were never loaded there (`csv-sync-20261031`, #440's parity run).
 #'
 #' Scoped to THIS host's rows for the same reason [lnk_baseline_current()] is:
 #' each host snapshots into its own local Postgres, so another host's stamp says
@@ -1287,7 +1374,8 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
     }
 
     ledger <- lnk_baseline_read(path = path)
-    rows <- ledger[ledger$host == .lnk_host(), , drop = FALSE]
+    rows <- ledger[ledger$host == .lnk_host() &
+                     .lnk_baseline_loaded_views(ledger), , drop = FALSE]
     if (nrow(rows) == 0L) {
       return(NULL)
     }
@@ -1309,8 +1397,27 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
       suppressWarnings(as.integer(id))
     }
 
-    list(model_run_id = id, model_version = version, source = "ledger")
+    list(model_run_id = id, model_version = version,
+         date_completed = .lnk_instant_utc(latest$bcfp_date_completed),
+         source = "ledger")
   }, error = function(e) NULL)
+}
+
+
+#' Which ledger rows loaded bcfishpass's reference views (link#446).
+#'
+#' `snapshot_bcfp.sh` writes a `snapshot-YYYYMMDD` row and adds
+#' `--with-bcfp-views` to its notes only when it loaded the views;
+#' `sync_bcfishpass_csvs.R` writes `csv-sync-YYYYMMDD` rows and loads nothing.
+#'
+#' @param ledger A data frame from [lnk_baseline_read()].
+#' @return A logical vector, one per row; NA fields count as FALSE.
+#' @noRd
+.lnk_baseline_loaded_views <- function(ledger) {
+  label <- ledger$run_label
+  notes <- ledger$notes
+  !is.na(label) & startsWith(label, "snapshot-") &
+    !is.na(notes) & grepl("--with-bcfp-views", notes, fixed = TRUE)
 }
 
 
@@ -1493,41 +1600,11 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
 }
 
 
-#' git SHA of the bcfishobs checkout that matched observations onto the network.
+#' The body of [.lnk_fwapg_sha()]: an env override, then a checkout's HEAD.
 #'
-#' `bcfishobs` is a **model input, not a reference dataset**. It is the pipeline
-#' that snaps fish observations to the stream network, and
-#' [lnk_barrier_overrides()] counts those observations upstream of each barrier
-#' to decide which barriers are skipped during access gating. Different
-#' `bcfishobs` code gives different matching, so different barriers, so
-#' different access, so a different `mapping_code`. `fwapg` gets a `fwapg_sha`
-#' and `bcfishpass` got `bcfp_model_version` (link#262); until link#264 this
-#' carried a row count and a hardcoded source string and nothing else.
-#'
-#' Same three tiers as [.lnk_fwapg_sha()], and exported to every host by
-#' `data-raw/study_area_run.sh`'s `preflight_local()` for the same reason:
-#' a cypher has no `bcfishobs` checkout at all, so without the export every
-#' cypher row would land NA.
-#'
-#' **Fork note, so it is not re-derived.** Both `NewGraphEnvironment/fwapg` and
-#' `NewGraphEnvironment/bcfishobs` are forks of `smnorris/*`, and both currently
-#' carry zero local commits. That is why these SHAs resolve against upstream at
-#' all — an accident of being 0-ahead, not a property. A recorded fork SHA is
-#' fine; recording it without knowing it came from a fork is what would rot.
-#'
-#' @return A single string or `NA_character_`.
-#' @noRd
-.lnk_bcfishobs_sha <- function() {
-  .lnk_checkout_sha(Sys.getenv("BCFISHOBS_GIT_SHA", ""),
-                    Sys.getenv("BCFISHOBS_DIR", ""),
-                    file.path(path.expand("~"), "Projects", "repo", "bcfishobs"))
-}
-
-
-#' The shared body of [.lnk_fwapg_sha()] and [.lnk_bcfishobs_sha()].
-#'
-#' One implementation rather than two copies, so a fix to the tier order or the
-#' `.git` handling cannot land on one input and miss the other.
+#' It also served `bcfishobs_sha` until link#451 retired that field: no run
+#' reads a local bcfishobs checkout, so its commit described nothing a run
+#' used.
 #'
 #' @param env_sha Value of the `<REPO>_GIT_SHA` override (`""` when unset).
 #' @param dir Value of the `<REPO>_DIR` override (`""` when unset).

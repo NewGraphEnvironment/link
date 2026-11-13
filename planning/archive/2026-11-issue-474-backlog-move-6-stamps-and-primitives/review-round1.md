@@ -1,0 +1,32 @@
+# Code-check round 1, branch 474 (against 50a5d58e)
+
+## Checklist read
+
+- **code-check.md:** I read the prose of every H3 under `## Mechanisms`, table rows skipped. "A guard that fails toward pass", "A fixture that cannot reach the failure mode", "A proxy is not the property", "Verification that reads its own output", "A guard's scope, escape hatches, and remedies", "A fix lands in one of two callers that share a harness", "Restore the bug and prove the guard fires", "A shared working tree, and what generators leave in it" and "A wrapper's exit is not the work" were read in full. "Zero-length, empty, and unset are three different things", "The probe is broken before the world is", "Written data outlives the fix", "Serialization loses meaning silently" and "One fact derived twice" were skimmed. Of the stand-alone, Security and Spreadsheet sections I read only the index lines: 23 headings not read in full.
+- **code-check-r.md:** read "pak Behavior", "A database driver's value is not a base R type — and it fails twice", "Two repos pinning the same remote at different tags is an unsolvable install" (opening), "`sprintf("%g", x)` writes `Inf` and `NA` into SQL as bare words" (grep hit). I checked the diff against the index lines of "as.POSIXct on a Date pins UTC midnight…", "Postgres row order is never fixed…", "`on.exit()` at a script's top level never fires", "`read.delim()` quotes by default…", "`system2(stdout = TRUE)` warns on a non-zero exit…", "`paste()` with a zero-length argument…" and "`$` on a list partial-matches…". About 150 headings not read.
+- **code-check-shell.md:** I checked the diff against the index lines of "`if ! cmd; then rc=$?` captures the negation, not the command", "`a && b || c` runs `c` when any step before the `||` fails", "A `local` statement cannot read a variable it is assigning in the same statement", "Empty arrays under `set -u` on bash 3.2", "macOS `/bin/bash` 3.2 quote-matches a heredoc inside `$( )`…", "On this Mac `stat` and `date` are GNU…" (I tested BSD `/bin/date -r <file>`, which works) and "Over Tailscale SSH to a Mac, `ssh` exits 0…". None was read in full text; about 95 headings not read.
+- **code-check-spatial.md:** none read. The spatial changes are ogr2ogr `--config` spelling and the WFS read, which no index line covers beyond the index's own "The BC WFS caps an un-paged `GetFeature`…" (the plan already pages and checks `numberMatched`). About 115 headings not read.
+
+## Findings
+
+- **[severity: bug]** data-raw/artifact_record.R:118-121 (`--fwa-trace` read-back): `"... AND url = ANY($1)", params = list(rows$url)`.
+  - **What fails:** RPostgres binds a character vector to `$1` as one text value per execution, never as an array. Postgres types `$1` as `text[]`, so the first URL is parsed as an array literal and the query errors.
+  - **Measured** (read-only, on local fwapg): `dbGetQuery(conn, "SELECT count(*) ... WHERE u = ANY($1)", params = list(c("a","b")))` returns `ERROR: malformed array literal: "a"`. A single-URL vector fails the same way.
+  - **Why it matters:** the error comes after `.lnk_fwa_load_record()` has already written the loader rows. So every `--fwa-trace` run exits non-zero, and `fwapg_load_capture.sh` reports "recording fails" on a load that recorded correctly. The script never reaches its `dbDisconnect()`, and the read-back it promises never runs.
+  - **Fix:** pass one array literal (`params = list(paste0("{", paste(dQuote(rows$url, FALSE), collapse = ","), "}"))` with `$1::text[]`), or count with `url IN (<dbQuoteLiteral list>)`.
+  - **Not caught so far:** no test drives `artifact_record.R --fwa-trace` against a database, and the path has not run on a real load (owed).
+  - **Rule:** none
+
+- **[severity: bug]** R/lnk_artifact.R:47-79 (`.lnk_inputs_agree()`), called from data-raw/study_area_run.sh `compare_inputs()` (~line 1498).
+  - **What fails:** the set of hosts is `unique(rows$host)`, the hosts that printed at least one row. `host_inputs.R` prints only a header when `provenance.source_artifact` does not exist, or when it holds no `loader` rows for these tables. That covers a persistent worker whose primitives were loaded before link#265, or any host never re-snapshotted. Such a host contributes no rows, is never in `hosts`, and the compare passes. With no rows from any host, `hosts` is empty and the result is `ok = TRUE`.
+  - **Measured** (scratch worktree, `load_all`): rows for `dispatcher` only, with a second host absent, give `ok = TRUE`; `rows[0, ]` also gives `ok = TRUE`.
+  - **Why it matters:** the roxygen says "A host with no row for a table holds an unrecorded load, which is refused", and the pre-flight message says "every host holds the same snapshot primitives". Both are false for the most likely odd host, and #276's check is not downgradable, so its pass is trusted.
+  - **Fix:** give `.lnk_inputs_agree()` the expected host set: `c("dispatcher", HOST_ARR)` from `compare_inputs`, on the command line or as a column. Judge `missing` against that set, not against the hosts present. Add the zero-row host case to the tests; the current test only drops one table from a host that has others.
+  - **Rule:** code-check.md "A guard that fails toward pass"
+
+- **[severity: fragile]** scripts/update_hosts.sh `install_pak()` and the host loop (~lines 117-150, 245-255).
+  - **What fails:** fresh is installed and checked (`RemoteSha`) at the tag the checkout's `DESCRIPTION` pins. Then link is installed with `pak::pkg_install("NewGraphEnvironment/link@main", upgrade = FALSE)`. pak resolves link@main's own `Remotes:` and reinstalls fresh at main's pin whenever the installed fresh came from another ref, `upgrade = FALSE` notwithstanding. CLAUDE.md records it on m4: 0.52.0 went back to 0.48.0 (2026-11-02).
+  - **When it bites:** the header says "bumping fresh is a DESCRIPTION edit", and that edit is made on a branch before it reaches main. Run from such a branch, the script installs the new fresh, then silently reverts it when link installs. fresh's `RemoteSha` is never re-read after the link install, so the run reports success with hosts on the old fresh.
+  - **Not hit today:** the tarball path (cypher, `--tarball`) does not touch dependencies, and the problem does not occur when the branch and main pin the same tag.
+  - **Fix:** re-read fresh's `RemoteSha` after each link install and fail if it moved; or install link with `dependencies = FALSE`; or refuse when the checkout's fresh pin differs from main's.
+  - **Rule:** code-check-r.md "pak Behavior"

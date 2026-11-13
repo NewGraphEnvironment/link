@@ -122,7 +122,7 @@ leg_vars <- strsplit(Sys.getenv("WORKER_PREP_LEG_VARS"), " ", fixed = TRUE)[[1]]
 all_env <- names(Sys.getenv())
 refused <- unique(c(leg_vars, grep("^LNK_", all_env, value = TRUE),
                     "LINK_GIT_SHA", "LINK_GIT_DIRTY", "FWAPG_GIT_SHA",
-                    "BCFISHOBS_GIT_SHA", "PGOPTIONS"))
+                    "PGOPTIONS"))
 refused <- setdiff(refused, "LNK_HOST_ALIAS")
 set_here <- refused[nzchar(Sys.getenv(refused))]
 if (length(set_here)) {

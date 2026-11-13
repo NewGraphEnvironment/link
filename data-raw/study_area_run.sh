@@ -1101,34 +1101,12 @@ cat(paste(tok, collapse = " "), "\n")
     fail=1
   fi
 
-  # --- gate: bcfishobs SHA resolvable and exported (link#264) -------------
-  # bcfishobs is a MODEL INPUT, not a reference dataset: it snaps observations
-  # onto the network, lnk_barrier_overrides() counts those observations
-  # upstream of each barrier to decide which barriers are skipped, and so it
-  # moves access and mapping_code. Everything the 39 logged runs recorded
-  # about it was a row count and a hardcoded source string.
-  #
-  # Exactly the fwapg block above, including the dirty refusal: a cypher has
-  # no bcfishobs checkout, so without the export every cypher row lands
-  # bcfishobs_sha = NA. There is deliberately NO bcfishobs_dirty column —
-  # this gate is what makes a recorded SHA clean by construction, and a
-  # column FALSE on every row carries no information (link#257).
-  local bcfo_dir bcfo_dirty
-  bcfo_dir="${BCFISHOBS_DIR:-$HOME/Projects/repo/bcfishobs}"
-  if BCFISHOBS_SHA=$(git -C "$bcfo_dir" rev-parse HEAD 2>/dev/null) && [ -n "$BCFISHOBS_SHA" ]; then
-    if bcfo_dirty=$(git -C "$bcfo_dir" status --porcelain 2>/dev/null); then
-      [ -z "$bcfo_dirty" ] \
-        || { echo "  ✗ bcfishobs checkout dirty ($bcfo_dir) — the SHA stamped into log.bcfishobs_sha would be a lie"; fail=1; }
-    else
-      echo "  ✗ could not read git status in $bcfo_dir — cannot certify bcfishobs_sha clean"
-      fail=1
-    fi
-    export BCFISHOBS_GIT_SHA="$BCFISHOBS_SHA"
-    echo "  ✓ bcfishobs_sha ${BCFISHOBS_SHA:0:12} (exported to all hosts)"
-  else
-    echo "  ✗ no bcfishobs checkout at $bcfo_dir — set BCFISHOBS_DIR, or every row lands bcfishobs_sha=NA"
-    fail=1
-  fi
+  # No bcfishobs gate (link#451): runs read bcfishobs.observations as
+  # snapshot_bcfp.sh loaded it from the bchamp parquet, never a local
+  # bcfishobs checkout, so a checkout's commit described nothing a run read.
+  # The observations' identity is the loaded object's version, copied into
+  # each run's log_input.artifact_* and checked across hosts by
+  # study_area_verify.sql. log.bcfishobs_sha is retired (NULL from 0.82.0).
 
   # --- gate: fresh's own code identity, BEFORE any spend (link#264) -------
   # fresh_sha and fresh_dirty are asserted on every host by
@@ -1202,8 +1180,8 @@ cat(if (is.na(st$sha)) "" else st$sha, "|",
     echo "  ✗ pre-run gate not cleared: $pt_out"
     [ "$pt_rc" = 1 ] || echo "    (the check itself could not run)"
     echo "    Run: bash data-raw/pretest_run.sh --config=$CONFIG --schema=$SCHEMA"
-    echo "      (a bundle that extends another, with no full history of its own, adds"
-    echo "       --history-schema= and --history-config=: RUNBOOK §8d, \"The pre-run gate\")"
+    echo "      (with no history of its own it finds an ancestor's or picks on every"
+    echo "       input: RUNBOOK §8d, \"The pre-run gate\")"
     echo "    or pass --pretest-note=\"<why>\" (recorded; $SCHEMA must exist first)"
     fail=1
   fi
@@ -1211,21 +1189,30 @@ cat(if (is.na(st$sha)) "" else st$sha, "|",
   # --- gate: bcfp reference pinned, and exported to all hosts (link#262) --
   # The compare reference is the LOCAL snapshot fresh.streams_vw_bcfp, and the
   # build it was loaded from is recorded by snapshot_bcfp.sh in
-  # data-raw/logs/bcfp_baselines.csv. That ledger is PER HOST, and a cypher has
-  # no row of its own — it git-resets the repo (so the CSV is present) but never
-  # snapshots under its own hostname. Without this export every cypher row lands
-  # bcfp_model_version NULL: 13 of 34 rows last field run, the majority at 217.
+  # data-raw/logs/bcfp_baselines.csv. That ledger is PER HOST: a cloud host
+  # writes its own row at prep, but from a snapshot without the views, so the
+  # ledger tier never reads it (link#446) and only the dispatcher's views are
+  # the compare reference. Resolve once here from the dispatcher's ledger and
+  # hand the same value to every host, as FWAPG_GIT_SHA is.
   #
-  # Exactly the FWAPG_GIT_SHA shape above, for exactly the same reason. Resolve
-  # once here from the dispatcher's ledger; hand the same value to every host.
-  local bcfp_ver
-  if bcfp_ver=$(cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript -e '
+  # The ledger tier reads only rows that loaded the views (link#446), and
+  # carries the build's completion time beside its version, because two weekly
+  # builds of one commit share a version (link#266).
+  local bcfp_pin bcfp_ver bcfp_date
+  if bcfp_pin=$(cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript -e '
 suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
 v <- link:::.lnk_bcfp_log_ledger()
-cat(if (is.null(v)) "" else v$model_version)
-' 2>/dev/null) && [ -n "$bcfp_ver" ]; then
+if (!is.null(v)) {
+  d <- if (is.na(v$date_completed)) "" else
+    format(v$date_completed, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  cat(v$model_version, d, sep = "\t")
+}
+' 2>/dev/null) && [ -n "$bcfp_pin" ]; then
+    bcfp_ver="${bcfp_pin%%$'\t'*}"
+    bcfp_date="${bcfp_pin#*$'\t'}"
     export LNK_BCFP_MODEL_VERSION="$bcfp_ver"
-    echo "  ✓ bcfp reference pinned at $bcfp_ver (exported to all hosts)"
+    export LNK_BCFP_DATE_COMPLETED="$bcfp_date"
+    echo "  ✓ bcfp reference pinned at $bcfp_ver, built ${bcfp_date:-(no date)} (exported to all hosts)"
   else
     # A warning, not a failure. An unpinned run is worse provenance but still
     # correct modelling, and refusing to run over it would make the pin a
@@ -1238,6 +1225,10 @@ cat(if (is.null(v)) "" else v$model_version)
   # operator's own environment: a whole-value check, as for --run-label.
   if [ -n "${LNK_BCFP_MODEL_VERSION:-}" ] && ! [[ "$LNK_BCFP_MODEL_VERSION" =~ ^[A-Za-z0-9._+-]+$ ]]; then
     echo "  ✗ the bcfp model version is not a plain version string; it cannot be sent to remote hosts"
+    fail=1
+  fi
+  if [ -n "${LNK_BCFP_DATE_COMPLETED:-}" ] && ! [[ "$LNK_BCFP_DATE_COMPLETED" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]]; then
+    echo "  ✗ the bcfp build date is not an ISO 8601 UTC instant; it cannot be sent to remote hosts"
     fail=1
   fi
 
@@ -1272,6 +1263,41 @@ q(status = if (res$ok) 0L else 1L)' "$CONFIG" 2>&1 | sed 's/^/    /'; exit "${PI
     else
       echo "  ✗ dispatcher primitives stale/absent — re-run with --refresh-primitives,"
       echo "    or: bash data-raw/snapshot_bcfp.sh --with-bcfp-views --force"
+      fail=1
+    fi
+  fi
+
+  # --- gate: cloud hosts load primitives at prep, so the dispatcher must too (link#276)
+  # A cloud host snapshots when it is prepped; the dispatcher's load can be days
+  # old. PSCIS and CABD (API loads, no version handle) change between those
+  # times often enough that compare_inputs would refuse the run after the spin,
+  # when the droplets are already paid for. So refuse here, before any spend,
+  # unless the dispatcher reloads in this dispatch. Persistent workers load only
+  # when the operator does; compare_inputs judges them after prep.
+  if [ "$N_CY" -gt 0 ] && [ "$REFRESH_PRIMITIVES" != "1" ]; then
+    if [ "$PREFLIGHT_ONLY" = "1" ]; then
+      echo "  WARN: $N_CY cloud host(s) load primitives at prep; the real launch needs"
+      echo "        --refresh-primitives so the dispatcher loads minutes before them"
+    else
+      echo "  ✗ $N_CY cloud host(s) will load primitives at prep, and the dispatcher would model"
+      echo "    on its own older load: pass --refresh-primitives so all hosts load minutes apart"
+      fail=1
+    fi
+  fi
+
+  # --- gate: persistent workers hold the dispatcher's primitives (link#276) --
+  # A worker loads only when the operator does, and is reachable before any
+  # spend, so it is compared here rather than after the droplets are paid for.
+  local wk_keys=() wk
+  for wk in ${HOST_ARR[@]+"${HOST_ARR[@]}"}; do
+    if .hosts_is_worker "$wk"; then wk_keys+=("$wk"); fi
+  done
+  if [ "${#wk_keys[@]}" -gt 0 ]; then
+    if compare_inputs "${wk_keys[@]}"; then
+      echo "  ✓ every worker holds the dispatcher's snapshot primitives"
+    else
+      echo "  ✗ a worker holds other snapshot primitives than the dispatcher: reload it"
+      echo "    (bash data-raw/snapshot_bcfp.sh --force on the worker) before launch"
       fail=1
     fi
   fi
@@ -1424,7 +1450,7 @@ collect_stamps() {   # $1 = destination tsv
   for ws in ${HOST_ARR[@]+"${HOST_ARR[@]}"}; do
     # Judged by the status the remote shell prints (remote_run, link#376).
     if ! remote_run "${HOST_SSH[$ws]}" \
-        "$(.remote_cd "$ws") && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && Rscript data-raw/host_stamp.R '$CONFIG'" \
+        "$(.remote_cd "$ws") && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && Rscript data-raw/host_stamp.R '$CONFIG'" \
         "$tsv.$ws.out" /dev/null; then
       echo "  ✗ cy[$ws] stamp failed (ssh or Rscript) — treated as a FAILURE, not a skip"
       return 1
@@ -1481,6 +1507,48 @@ res <- lnk_preflight_parity(s, n_expected = as.integer(a[2]),
                             forbid_dirty = FALSE)
 quit(status = if (isTRUE(res$ok)) 0L else 1L)
 ' "$1" "$((N_HOSTS + 1))")
+}
+
+# compare_inputs: do the dispatcher and every remote host hold the same snapshot
+# primitives? (link#276) Each prints its newest loader row per table
+# (data-raw/host_inputs.R, plain SQL); .lnk_inputs_agree() judges the set:
+# object-store primitives by version id, API primitives by content md5 (row
+# count where a host recorded none). Read after prep and before any write, so a
+# run whose hosts would model on different data stops before it is paid for.
+# Not downgradable by --preflight-note: link#276 accepts a mixed-input run only
+# as impossible or recorded, and this makes it impossible.
+#
+# With host keys as arguments it compares the dispatcher with those only (the
+# persistent workers, before any spend); with none, with every remote host. The
+# script is piped over ssh rather than read from the host's clone, which a worker
+# has not yet reset to this branch before the spin.
+compare_inputs() {
+  local tsv="$LOG_DIR/${TS}_inputs${1:+_pre}.tsv" ws out
+  local hosts=("$@")
+  [ "$#" -gt 0 ] || hosts=(${HOST_ARR[@]+"${HOST_ARR[@]}"})
+  printf 'host\ttable_name\tversion_id\tcontent_md5\tn_rows\tloaded_at\tnotes\n' > "$tsv"
+  if ! out=$(cd "$REPO_ROOT" && Rscript data-raw/host_inputs.R 2>/dev/null); then
+    echo "  ✗ dispatcher inputs could not be read"; return 1
+  fi
+  # awk, not sed: macOS sed writes \t in a replacement as a literal t.
+  printf '%s\n' "$out" | tail -n +2 | awk -v h=dispatcher 'BEGIN { OFS = "\t" } { print h, $0 }' >> "$tsv"
+  for ws in ${hosts[@]+"${hosts[@]}"}; do
+    if ! remote_run "${HOST_SSH[$ws]}" \
+         "f=\$(mktemp) && cat > \"\$f\" && Rscript \"\$f\"; rc=\$?; rm -f \"\$f\"; exit \$rc" \
+         "$tsv.$ws.out" /dev/null < "$REPO_ROOT/data-raw/host_inputs.R"; then
+      echo "  ✗ $ws inputs could not be read"; rm -f "$tsv.$ws.out"; return 1
+    fi
+    remote_out "$tsv.$ws.out" | tail -n +2 | awk -v h="$ws" 'BEGIN { OFS = "\t" } { print h, $0 }' >> "$tsv"
+    rm -f "$tsv.$ws.out"
+  done
+  (cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript -e '
+suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
+rows <- utils::read.delim(commandArgs(TRUE)[1], colClasses = "character",
+                          na.strings = character(), quote = "", comment.char = "")
+# Judged against every host of the run, so a host that printed no rows is refused.
+res <- link:::.lnk_inputs_agree(rows, hosts = commandArgs(TRUE)[-1])
+if (!res$ok) cat(paste0("    ", res$why), sep = "\n")
+q(status = if (res$ok) 0L else 1L)' "$tsv" dispatcher ${hosts[@]+"${hosts[@]}"})
 }
 
 preflight_hosts() {
@@ -1551,6 +1619,16 @@ preflight_hosts() {
       fi
     fi
   done
+
+  # The same data on every host (link#276), whatever --preflight-note says.
+  if compare_inputs; then
+    echo "  ✓ every host holds the same snapshot primitives ($LOG_DIR/${TS}_inputs.tsv)"
+  else
+    echo "  ✗ hosts hold different snapshot primitives ($LOG_DIR/${TS}_inputs.tsv): they would model on"
+    echo "    different data. Reload the odd host(s) (bash data-raw/snapshot_bcfp.sh --force), or relaunch"
+    echo "    with --refresh-primitives so the dispatcher loads minutes before the cloud hosts."
+    fail=1
+  fi
 
   return "$fail"
 }

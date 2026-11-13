@@ -158,7 +158,7 @@ test_that("the leg command exports the run's identity and bound", {
   w <- remote_world()
   r <- run_remote(w, c(
     "SCHEMA=fresh_x; CONFIG=default; RUN_UID=T0-1; RUN_LABEL=lab; STATEMENT_TIMEOUT_MIN=45",
-    "FWAPG_GIT_SHA=f1; BCFISHOBS_GIT_SHA=b1; LNK_BCFP_MODEL_VERSION=v1",
+    "FWAPG_GIT_SHA=f1; BCFISHOBS_GIT_SHA=b1; LNK_BCFP_MODEL_VERSION=v1; LNK_BCFP_DATE_COMPLETED=2026-10-21T04:33:41Z",
     "declare -A HOST_SSH HOST_KIND; HOST_SSH[a]=cypher@ip-a",
     'remote_leg_cmd a "AAAA"'
   ))
@@ -167,12 +167,15 @@ test_that("the leg command exports the run's identity and bound", {
     "export LNK_HABITAT_GATE=0",
     "export PGOPTIONS='-c statement_timeout=45min'",
     "export LNK_STATEMENT_TIMEOUT_MIN='45'", "export FWAPG_GIT_SHA='f1'",
-    "export BCFISHOBS_GIT_SHA='b1'", "export LNK_RUN_UID='T0-1'",
+    "export LNK_RUN_UID='T0-1'",
     "export LNK_RUN_LABEL='lab'", "export LNK_BCFP_MODEL_VERSION='v1'",
+    "export LNK_BCFP_DATE_COMPLETED='2026-10-21T04:33:41Z'",
     "Rscript data-raw/wsg_run_one.R $w 'default'"
   )) {
     expect_match(r$out, s, fixed = TRUE)
   }
+  # Retired by link#451: a set BCFISHOBS_GIT_SHA no longer reaches a leg.
+  expect_no_match(r$out, "BCFISHOBS", fixed = TRUE)
 })
 
 # -- A persistent worker (link#376) ------------------------------------------
@@ -261,8 +264,8 @@ test_that("worker prep's environment carries the run, and refuses an origin it c
     "WORKER_PREP_CONFIG='default' WORKER_PREP_SCHEMA='fresh_x' WORKER_PREP_WET_LOAD=''",
     paste0(
       "WORKER_PREP_LEG_VARS='LNK_LOAD LNK_TEST_STALL_WSG LNK_SCHEMA LNK_GUARD_DOWNSTREAM ",
-      "LNK_HABITAT_GATE PGOPTIONS LNK_STATEMENT_TIMEOUT_MIN FWAPG_GIT_SHA BCFISHOBS_GIT_SHA ",
-      "LNK_RUN_UID LNK_RUN_LABEL LNK_BCFP_MODEL_VERSION'"
+      "LNK_HABITAT_GATE PGOPTIONS LNK_STATEMENT_TIMEOUT_MIN FWAPG_GIT_SHA ",
+      "LNK_RUN_UID LNK_RUN_LABEL LNK_BCFP_MODEL_VERSION LNK_BCFP_DATE_COMPLETED'"
     )
   ))
   r <- run_remote(w, c(

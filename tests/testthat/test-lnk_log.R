@@ -143,59 +143,6 @@ test_that(".lnk_fwapg_sha returns NA when nothing resolves", {
 })
 
 
-# --- .lnk_bcfishobs_sha (link#264) ------------------------------------------
-
-test_that(".lnk_bcfishobs_sha prefers the env var", {
-  # The tier every cypher takes: no bcfishobs checkout exists there, so
-  # study_area_run.sh resolves it once on the dispatcher and exports it.
-  withr::local_envvar(BCFISHOBS_GIT_SHA = "08630cf4ac14")
-  expect_identical(.lnk_bcfishobs_sha(), "08630cf4ac14")
-})
-
-test_that(".lnk_bcfishobs_sha reads a real checkout via BCFISHOBS_DIR", {
-  # Both known answers for the directory tier, against a real git repo rather
-  # than a mock: the value must come from HEAD, not from the env.
-  skip_if(!nzchar(Sys.which("git")), "git not installed")
-  d <- withr::local_tempdir()
-  run <- function(...) {
-    out <- suppressWarnings(system2("git", c("-C", shQuote(d), ...),
-                                    stdout = TRUE, stderr = FALSE))
-    st <- attr(out, "status")
-    if (!is.null(st) && !identical(as.integer(st), 0L)) stop("git setup failed")
-    invisible(out)
-  }
-  writeLines("x", file.path(d, "README.md"))
-  run("init", "-q", ".")
-  run("add", "-A")
-  run("-c", "user.email=t@example.com", "-c", "user.name=t",
-      "commit", "-qm", "init")
-  head <- suppressWarnings(system2("git", c("-C", shQuote(d), "rev-parse", "HEAD"),
-                                   stdout = TRUE, stderr = FALSE))[1]
-
-  withr::local_envvar(BCFISHOBS_GIT_SHA = "", BCFISHOBS_DIR = d)
-  expect_identical(.lnk_bcfishobs_sha(), head)
-})
-
-test_that(".lnk_bcfishobs_sha returns NA when nothing resolves", {
-  # HOME-based fallback may find a real checkout on a dev machine, so assert
-  # the type contract, exactly as the fwapg test above does.
-  withr::local_envvar(BCFISHOBS_GIT_SHA = "",
-                      BCFISHOBS_DIR = withr::local_tempdir())
-  out <- .lnk_bcfishobs_sha()
-  expect_true(is.character(out) && length(out) == 1L)
-})
-
-test_that("fwapg and bcfishobs resolvers do not read each other's env", {
-  # They share .lnk_checkout_sha(), so a copy-paste of the wrong variable name
-  # is the failure this closes -- and it would be invisible on a machine where
-  # both checkouts sit at the conventional path.
-  withr::local_envvar(FWAPG_GIT_SHA = "fwapg000000",
-                      BCFISHOBS_GIT_SHA = "bcfishobs00")
-  expect_identical(.lnk_fwapg_sha(), "fwapg000000")
-  expect_identical(.lnk_bcfishobs_sha(), "bcfishobs00")
-})
-
-
 # --- .lnk_pkg_git_dirty -----------------------------------------------------
 
 test_that(".lnk_pkg_git_dirty honours the env override", {
@@ -904,6 +851,9 @@ test_that(".lnk_log_recompute_fail appends notes and never sets date_end", {
 # --- .lnk_bcfp_log_current: the tunnel-free pin -----------------------------
 
 # A ledger in the shape lnk_baseline_append() writes.
+# Notes a snapshot that loaded the reference views writes (link#446).
+views_notes <- "manual snapshot via data-raw/snapshot_bcfp.sh; --with-bcfp-views; head_sha=x"
+
 local_ledger <- function(rows, env = parent.frame()) {
   path <- withr::local_tempfile(fileext = ".csv", .local_envir = env)
   writeLines(c(paste(names(cols_baseline), collapse = ","), rows), path)
@@ -914,8 +864,8 @@ local_ledger <- function(rows, env = parent.frame()) {
 test_that(".lnk_bcfp_log_ledger reads this host's latest model_version", {
   withr::local_envvar(LNK_HOST_ALIAS = "m1")
   local_ledger(c(
-    "2026-08-01 10:00,m1,snapshot-old,n/a,,v0.7.15-40-gaaaaaaa,2026-08-01T00:00:00Z,x",
-    "2026-08-31 14:50,m1,snapshot-new,n/a,,v0.7.15-47-ga702229,2026-08-19T04:31:37Z,y"))
+    paste0("2026-08-01 10:00,m1,snapshot-20260801,n/a,,v0.7.15-40-gaaaaaaa,2026-08-01T00:00:00Z,", views_notes),
+    paste0("2026-08-31 14:50,m1,snapshot-20260831,n/a,,v0.7.15-47-ga702229,2026-08-19T04:31:37Z,", views_notes)))
   out <- .lnk_bcfp_log_ledger()
   expect_identical(out$model_version, "v0.7.15-47-ga702229")
 })
@@ -926,7 +876,7 @@ test_that(".lnk_bcfp_log_ledger leaves model_run_id NA rather than inventing one
   # "". Honest absence beats a fabricated id.
   withr::local_envvar(LNK_HOST_ALIAS = "m1")
   local_ledger(
-    "2026-08-31 14:50,m1,snapshot,n/a,,v0.7.15-47-ga702229,2026-08-19T04:31:37Z,y")
+    paste0("2026-08-31 14:50,m1,snapshot-20260831,n/a,,v0.7.15-47-ga702229,2026-08-19T04:31:37Z,", views_notes))
   out <- .lnk_bcfp_log_ledger()
   expect_true(is.na(out$model_run_id))
 })
@@ -934,7 +884,7 @@ test_that(".lnk_bcfp_log_ledger leaves model_run_id NA rather than inventing one
 test_that(".lnk_bcfp_log_ledger carries a model_run_id when the ledger has one", {
   withr::local_envvar(LNK_HOST_ALIAS = "m4")
   local_ledger(
-    "2026-05-03 14:23,m4,provincial,fresh_default,120,v0.7.14-113-ga7373af,2026-04-28 23:17,z")
+    paste0("2026-05-03 14:23,m4,snapshot-20260503,fresh_default,120,v0.7.14-113-ga7373af,2026-04-28T23:17:00Z,", views_notes))
   out <- .lnk_bcfp_log_ledger()
   expect_identical(out$model_run_id, 120L)
 })
@@ -944,7 +894,7 @@ test_that(".lnk_bcfp_log_ledger is scoped to THIS host", {
   # says nothing about what this one loaded.
   withr::local_envvar(LNK_HOST_ALIAS = "m1")
   local_ledger(
-    "2026-08-31 14:50,cypher-job1,snapshot,n/a,,v0.7.15-47-ga702229,2026-08-19T04:31:37Z,y")
+    paste0("2026-08-31 14:50,cypher-job1,snapshot-20260831,n/a,,v0.7.15-47-ga702229,2026-08-19T04:31:37Z,", views_notes))
   expect_null(.lnk_bcfp_log_ledger())
 })
 
@@ -957,16 +907,107 @@ test_that(".lnk_bcfp_log_current prefers the DB when bcfishpass.log is reachable
   # Tier 1 carries model_run_id, which the ledger cannot. It must win.
   withr::local_envvar(LNK_HOST_ALIAS = "m1")
   local_ledger(
-    "2026-08-31 14:50,m1,snapshot,n/a,,LEDGER-VERSION,2026-08-19T04:31:37Z,y")
+    paste0("2026-08-31 14:50,m1,snapshot-20260831,n/a,,LEDGER-VERSION,2026-08-19T04:31:37Z,", views_notes))
   out <- testthat::with_mocked_bindings(
     dbGetQuery = function(conn, statement, ...) {
       if (grepl("information_schema", statement)) return(data.frame(x = 1L))
-      data.frame(model_run_id = 999L, model_version = "DB-VERSION")
+      data.frame(model_run_id = 999L, model_version = "DB-VERSION",
+                 date_completed = as.POSIXct("2026-10-28 04:44:44", tz = "UTC"))
     },
     .package = "DBI",
     .lnk_bcfp_log_current(fake_conn()))
   expect_identical(out$model_version, "DB-VERSION")
   expect_identical(out$model_run_id, 999L)
+  expect_identical(format(out$date_completed, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+                   "2026-10-28T04:44:44Z")
+})
+
+test_that(".lnk_bcfp_log_current's db tier reads LINEAR builds by completion (link#266)", {
+  # bcfishpass.log holds LINEAR and LATERAL rows (smnorris/bcfishpass@3bd2824);
+  # the newest model_run_id need not be the newest linear build.
+  seen <- character(0)
+  testthat::with_mocked_bindings(
+    dbGetQuery = function(conn, statement, ...) {
+      seen <<- c(seen, statement)
+      if (grepl("information_schema", statement)) return(data.frame(x = 1L))
+      data.frame(model_run_id = 1L, model_version = "v",
+                 date_completed = as.POSIXct("2026-10-28", tz = "UTC"))
+    },
+    .package = "DBI",
+    .lnk_bcfp_log_current(fake_conn()))
+  q <- seen[grepl("FROM bcfishpass.log", seen)]
+  expect_length(q, 1L)
+  expect_match(q, "model_type = 'LINEAR'", fixed = TRUE)
+  expect_match(q, "ORDER BY date_completed DESC NULLS LAST, model_run_id DESC", fixed = TRUE)
+  # Read in the server's zone, not this session's (RPostgres sets the session to UTC).
+  expect_match(q, "AT TIME ZONE", fixed = TRUE)
+  expect_match(q, "reset_val", fixed = TRUE)
+})
+
+test_that(".lnk_bcfp_log_ledger skips rows that loaded no views (link#446)", {
+  # m1's ledger on 2026-11-02: the newest row was csv-sync-20261031, which
+  # loads no view, so the pin named v0.7.15-51 while the views were -50.
+  withr::local_envvar(LNK_HOST_ALIAS = "m1")
+  local_ledger(c(
+    paste0("2026-10-23 00:52,m1,snapshot-20261023,n/a,,v0.7.15-50-g620dbe4,",
+           "2026-10-21T04:33:41Z,manual snapshot via data-raw/snapshot_bcfp.sh; ",
+           "--with-bcfp-views; head_sha=620dbe4"),
+    paste0("2026-10-31 12:21,m1,csv-sync-20261031,n/a,,v0.7.15-51-g3bd2824,",
+           "2026-10-28T04:44:44Z,auto-append by csv-sync; head_sha=3bd2824; REVIEW")))
+  out <- .lnk_bcfp_log_ledger()
+  expect_identical(out$model_version, "v0.7.15-50-g620dbe4")
+  expect_identical(format(out$date_completed, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+                   "2026-10-21T04:33:41Z")
+})
+
+test_that(".lnk_bcfp_log_ledger skips a snapshot that loaded no views (link#446)", {
+  # Every cloud host's prep runs snapshot_bcfp.sh without --with-bcfp-views:
+  # it writes a snapshot- row, and loads no reference view.
+  withr::local_envvar(LNK_HOST_ALIAS = "m1")
+  local_ledger(c(
+    paste0("2026-10-23 00:52,m1,snapshot-20261023,n/a,,v0.7.15-50-g620dbe4,",
+           "2026-10-21T04:33:41Z,manual snapshot via data-raw/snapshot_bcfp.sh; ",
+           "--with-bcfp-views; head_sha=620dbe4"),
+    paste0("2026-11-02 02:52,m1,snapshot-20261102,n/a,,v0.7.15-51-g3bd2824,",
+           "2026-10-28T04:44:44Z,manual snapshot via data-raw/snapshot_bcfp.sh; ",
+           "head_sha=3bd2824")))
+  expect_identical(.lnk_bcfp_log_ledger()$model_version, "v0.7.15-50-g620dbe4")
+  # With only rows that loaded nothing, the ledger names nothing.
+  local_ledger(paste0(
+    "2026-10-31 12:21,m1,csv-sync-20261031,n/a,,v0.7.15-51-g3bd2824,",
+    "2026-10-28T04:44:44Z,auto-append by csv-sync; head_sha=3bd2824"))
+  expect_null(.lnk_bcfp_log_ledger())
+})
+
+test_that("the bcfp build date reaches log as a timestamptz (link#266)", {
+  withr::local_envvar(LNK_BCFP_MODEL_VERSION = "v0.7.15-50-g620dbe4",
+                      LNK_BCFP_DATE_COMPLETED = "2026-10-21T04:33:41Z")
+  cfg <- lnk_config("default")
+  sql <- capture_write(
+    .lnk_log_run_start(fake_conn(), cfg, "PINE", "working_pine"))
+  ins <- grep("INSERT INTO .*\\.log \\(", sql, value = TRUE)
+  expect_match(ins, "bcfp_date_completed")
+  expect_match(ins, "'2026-10-21T04:33:41Z'::timestamptz", fixed = TRUE)
+  # And NULL, not a guess, when the tier carries no date.
+  withr::local_envvar(LNK_BCFP_DATE_COMPLETED = "")
+  sql <- capture_write(
+    .lnk_log_run_start(fake_conn(), cfg, "PINE", "working_pine"))
+  ins <- grep("INSERT INTO .*\\.log \\(", sql, value = TRUE)
+  expect_no_match(ins, "::timestamptz", fixed = TRUE)
+})
+
+test_that(".lnk_instant_utc reads zoned ISO instants and refuses unzoned ones", {
+  f <- function(x) format(.lnk_instant_utc(x), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  expect_identical(f("2026-10-21T04:33:41Z"), "2026-10-21T04:33:41Z")
+  expect_identical(f("2026-10-20 21:33:41-07:00"), "2026-10-21T04:33:41Z")
+  expect_identical(f("2026-10-21T04:33:41.5+0000"), "2026-10-21T04:33:41Z")
+  expect_identical(f("2026-10-21 06:33:41+02"), "2026-10-21T04:33:41Z")
+  expect_true(is.na(.lnk_instant_utc("2026-10-21 04:33:41")))
+  expect_true(is.na(.lnk_instant_utc("2026-10-21")))
+  expect_true(is.na(.lnk_instant_utc("")))
+  expect_true(is.na(.lnk_instant_utc(NA)))
+  expect_identical(f(as.POSIXct("2026-10-20 21:33:41", tz = "America/Vancouver")),
+                   "2026-10-21T04:33:41Z")
 })
 
 test_that(".lnk_bcfp_log_current falls back to the ledger with no bcfishpass schema", {
@@ -975,7 +1016,7 @@ test_that(".lnk_bcfp_log_current falls back to the ledger with no bcfishpass sch
   # that left bcfp_model_version NULL on all 37 rows of the field run.
   withr::local_envvar(LNK_HOST_ALIAS = "m1")
   local_ledger(
-    "2026-08-31 14:50,m1,snapshot,n/a,,v0.7.15-47-ga702229,2026-08-19T04:31:37Z,y")
+    paste0("2026-08-31 14:50,m1,snapshot-20260831,n/a,,v0.7.15-47-ga702229,2026-08-19T04:31:37Z,", views_notes))
   out <- testthat::with_mocked_bindings(
     dbGetQuery = function(conn, statement, ...) data.frame(),
     .package = "DBI",
@@ -1081,9 +1122,8 @@ test_that("model and recompute rows agree on run_uid from one env setting", {
 })
 
 test_that(".lnk_bcfp_log_current tier 0 reads LNK_BCFP_MODEL_VERSION", {
-  # A cypher has no ledger row of its own -- it git-resets the repo but never
-  # snapshots under its own hostname -- so without this every cypher row lands
-  # unpinned. Same shape as the FWAPG_GIT_SHA export the driver already does.
+  # A cloud host's own ledger rows load no views (link#446), so without this
+  # every cloud row lands unpinned. Same shape as the FWAPG_GIT_SHA export.
   withr::local_envvar(LNK_BCFP_MODEL_VERSION = "v0.7.15-47-ga702229",
                       LNK_HOST_ALIAS = "cypher-job1")
   out <- .lnk_bcfp_log_current(fake_conn())
@@ -1096,7 +1136,9 @@ test_that("bcfp_pin_source records which tier answered", {
   # inferring it from a NULL model_run_id.
   withr::local_envvar(LNK_HOST_ALIAS = "m1", LNK_BCFP_MODEL_VERSION = "")
   local_ledger(
-    "2026-08-31 14:50,m1,snapshot,n/a,,v0.7.15-47-ga702229,2026-08-19T04:31:37Z,y")
+    paste0("2026-08-31 14:50,m1,snapshot-20260831,n/a,,v0.7.15-47-ga702229,",
+           "2026-08-19T04:31:37Z,manual snapshot via data-raw/snapshot_bcfp.sh; ",
+           "--with-bcfp-views; head_sha=x"))
   expect_identical(.lnk_bcfp_log_ledger()$source, "ledger")
 
   cfg <- lnk_config("default")
@@ -1129,7 +1171,9 @@ test_that("both log tables carry the new code-identity columns (link#264)", {
   }
 })
 
-test_that("both INSERT paths write bcfishobs_sha and fresh_sha_source", {
+test_that("both INSERT paths write fresh_sha_source, and bcfishobs_sha as NULL", {
+  # bcfishobs_sha is retired (link#451): the column is still written, so the
+  # INSERT keeps log's shape, but as NULL whatever BCFISHOBS_GIT_SHA holds.
   withr::local_envvar(BCFISHOBS_GIT_SHA = "bcfishobs264",
                       FRESH_GIT_SHA = "freshsha264", FRESH_GIT_DIRTY = "")
   cfg <- lnk_config("default")
@@ -1138,7 +1182,7 @@ test_that("both INSERT paths write bcfishobs_sha and fresh_sha_source", {
     .lnk_log_run_start(fake_conn(), cfg, "PINE", "working_pine"))
   ins <- grep("INSERT INTO .*\\.log \\(", model, value = TRUE)
   expect_match(ins, "bcfishobs_sha")
-  expect_match(ins, "'bcfishobs264'")
+  expect_no_match(ins, "bcfishobs264", fixed = TRUE)
   expect_match(ins, "fresh_sha_source")
   # The tier that answered, recorded rather than inferred from a NULL.
   expect_match(ins, "'env'")
@@ -1147,7 +1191,7 @@ test_that("both INSERT paths write bcfishobs_sha and fresh_sha_source", {
     .lnk_log_recompute_start(fake_conn(), cfg, "PINE"), probe_rows = 1L)
   ins_rc <- grep("INSERT INTO .*\\.log_recompute \\(", recomp, value = TRUE)
   expect_match(ins_rc, "bcfishobs_sha")
-  expect_match(ins_rc, "'bcfishobs264'")
+  expect_no_match(ins_rc, "bcfishobs264", fixed = TRUE)
   expect_match(ins_rc, "fresh_sha_source")
 })
 

@@ -193,6 +193,32 @@ test_that("the probe-vs-loader rule holds in a real database", {
   expect_identical(get()$version_id, "P3")
 })
 
+test_that("an FWA loader row gives way to a probe once the table's rows changed since it", {
+  # A reload that skipped fwapg_load_capture.sh would otherwise leave a loader
+  # row naming the old load forever (a probe never replaces a loader row whose
+  # table is as it was). The row count is the tell; a reload that keeps it is
+  # invisible, as for probes.
+  conn <- skip_if_no_db()
+  host <- paste0("test270-", Sys.getpid())
+  withr::defer(DBI::dbExecute(conn, sprintf(
+    "DELETE FROM provenance.source_artifact WHERE host = %s",
+    DBI::dbQuoteLiteral(conn, host))))
+  tbl <- "whse_basemapping.fwa_obstructions_sp"
+  one <- function(v) data.frame(table_name = tbl, url = prim_url(tbl), version_id = v)
+  get <- function() DBI::dbGetQuery(conn, sprintf(
+    "SELECT version_id, recorded_by FROM provenance.source_artifact WHERE host = %s",
+    DBI::dbQuoteLiteral(conn, host)))
+  lnk_artifact_record(conn, one("L1"), "loader", host = host)
+  lnk_artifact_record(conn, one("P1"), "probe", host = host)
+  expect_identical(get()$recorded_by, "loader")
+  DBI::dbExecute(conn, sprintf(
+    "UPDATE provenance.source_artifact SET n_rows = -1 WHERE host = %s",
+    DBI::dbQuoteLiteral(conn, host)))
+  lnk_artifact_record(conn, one("P2"), "probe", host = host)
+  expect_identical(get()$version_id, "P2")
+  expect_identical(get()$recorded_by, "probe")
+})
+
 test_that("lnk_artifact_read has one shape, recorded or not", {
   local_mocked_bindings(
     .lnk_artifact_wsgs = function(conn) "BULK",
@@ -482,4 +508,140 @@ test_that("HTTP dates parse element by element, NA beside a value", {
   expect_equal(got[1], as.POSIXct("2026-09-22 06:07:10", tz = "UTC"))
   expect_true(all(is.na(got[2:3])))
   expect_identical(attr(got, "tzone"), "UTC")
+})
+
+
+# --- .lnk_inputs_agree: the same snapshot primitives on every host (link#276) --
+
+inputs_rows <- function(host, obs = "v1", msc = "m1", cabd_md5 = "aa", pscis_md5 = "bb",
+                        cabd_n = "2593", pscis_n = "19905") {
+  data.frame(host = host,
+             table_name = c("bcfishobs.observations", "fresh.modelled_stream_crossings",
+                            "cabd.dams", "whse_fish.pscis_assessment_svw"),
+             version_id = c(obs, msc, "", ""),
+             content_md5 = c("", "", cabd_md5, pscis_md5),
+             n_rows = c("375962", "524579", cabd_n, pscis_n),
+             stringsAsFactors = FALSE)
+}
+
+test_that("hosts holding the same loads agree", {
+  r <- rbind(inputs_rows("dispatcher"), inputs_rows("job1"), inputs_rows("worker1"))
+  res <- .lnk_inputs_agree(r, hosts = unique(r$host))
+  expect_true(res$ok)
+  expect_length(res$why, 0L)
+})
+
+test_that("a host on another observations version is refused, naming each host's", {
+  r <- rbind(inputs_rows("dispatcher"), inputs_rows("job1", obs = "v2"))
+  res <- .lnk_inputs_agree(r, hosts = unique(r$host))
+  expect_false(res$ok)
+  expect_match(res$why, "bcfishobs.observations: versions differ", fixed = TRUE)
+  expect_match(res$why, "dispatcher v1, job1 v2", fixed = TRUE)
+})
+
+test_that("an unrecorded object version is refused even when every host lacks one", {
+  r <- rbind(inputs_rows("dispatcher", msc = ""), inputs_rows("job1", msc = ""))
+  expect_match(.lnk_inputs_agree(r, hosts = unique(r$host))$why, "modelled_stream_crossings: versions differ or are unrecorded",
+               fixed = TRUE)
+})
+
+test_that("API tables compare by content md5, and same-size different content is refused", {
+  # The same row count is not the same content: a PSCIS edit keeps 19,905 rows.
+  r <- rbind(inputs_rows("dispatcher"), inputs_rows("job1", pscis_md5 = "cc"))
+  res <- .lnk_inputs_agree(r, hosts = unique(r$host))
+  expect_false(res$ok)
+  expect_match(res$why, "pscis_assessment_svw: content differs", fixed = TRUE)
+})
+
+test_that("with no md5 on a host, API tables fall back to row counts", {
+  # Loads before link#465 recorded no content md5.
+  same <- rbind(inputs_rows("dispatcher", cabd_md5 = ""), inputs_rows("job1"))
+  expect_true(.lnk_inputs_agree(same, hosts = unique(same$host))$ok)
+  diff <- rbind(inputs_rows("dispatcher", cabd_md5 = ""), inputs_rows("job1", cabd_n = "2592"))
+  expect_match(.lnk_inputs_agree(diff, hosts = unique(diff$host))$why, "cabd.dams: row counts differ", fixed = TRUE)
+})
+
+test_that("a host with no loader row for a table is refused", {
+  r <- rbind(inputs_rows("dispatcher"), inputs_rows("job1")[-3, ])
+  expect_match(.lnk_inputs_agree(r, hosts = unique(r$host))$why, "cabd.dams: no loader row on job1", fixed = TRUE)
+})
+
+test_that("a host of the run that printed no rows is refused, and so is a run with none", {
+  # host_inputs.R prints only its header on a host with no loader rows (no
+  # provenance table, or loads from before link#265): judged against the run's
+  # hosts, not the hosts that answered.
+  r <- inputs_rows("dispatcher")
+  res <- .lnk_inputs_agree(r, hosts = c("dispatcher", "worker1"))
+  expect_false(res$ok)
+  expect_match(res$why, "no loader row on worker1", fixed = TRUE)
+  expect_false(.lnk_inputs_agree(r[0, ], hosts = c("dispatcher", "job1"))$ok)
+  expect_error(.lnk_inputs_agree(inputs_rows("job9"), hosts = "dispatcher"), "not in the run")
+})
+
+# --- fwapg load.sh's trace as loader rows (link#270) ---------------------------
+
+fwapg_base <- "https://nrs.objectstore.gov.bc.ca/bchamp/fwapg/"
+fwa_trace <- c(
+  "+ PSQL='psql postgresql://x -v ON_ERROR_STOP=1'",
+  "+ for table in \"${tables[@]}\"",
+  paste0("+ ogr2ogr -f PostgreSQL PG:postgresql://x -append -nln whse_basemapping.fwa_lakes_poly /vsicurl/", fwapg_base,
+         "fwa_lakes_poly.parquet"),
+  paste0("++ ogr2ogr -f CSV /vsistdout/ /vsicurl/", fwapg_base,
+         "fwa_watershed_groups_poly.parquet -sql 'select x'"),
+  paste0("+ ogr2ogr -f PostgreSQL PG:x -nln fwa_stream_networks_sp_load /vsicurl/", fwapg_base,
+         "fwa_stream_networks_sp/ADMS.parquet"),
+  paste0("+ ogr2ogr -f PostgreSQL PG:x -nln fwa_stream_networks_sp_load /vsicurl/", fwapg_base,
+         "fwa_stream_networks_sp/BULK.parquet"),
+  paste0("+ psql postgresql://x -c '\\copy whse_basemapping.fwa_stream_networks_channel_width FROM PROGRAM '\\''curl -s ", fwapg_base,
+         "fwa_stream_networks_channel_width.csv.gz | gunzip'\\'' delimiter '\\'','\\'' csv header'"),
+  "fwa_stream_networks_channel_width",
+  paste0("a line load.sh echoed with ", fwapg_base,
+         "not_a_trace_line.parquet"),
+  "+ ogr2ogr ... /vsicurl/https://nrs.objectstore.gov.bc.ca/bchamp/fwapg/fwa_lakes_poly.parquet")
+
+test_that("the trace's URLs are read from its + lines only, in order, each once", {
+  u <- .lnk_fwa_trace_urls(fwa_trace)
+  base <- "https://nrs.objectstore.gov.bc.ca/bchamp/fwapg/"
+  expect_identical(u, paste0(base, c("fwa_lakes_poly.parquet", "fwa_watershed_groups_poly.parquet",
+                                     "fwa_stream_networks_sp/ADMS.parquet",
+                                     "fwa_stream_networks_sp/BULK.parquet",
+                                     "fwa_stream_networks_channel_width.csv.gz")))
+})
+
+test_that("traced URLs map to FWA primitives; the rest are kept apart", {
+  m <- .lnk_fwa_trace_match(.lnk_fwa_trace_urls(fwa_trace))
+  expect_identical(m$matched$table_name,
+                   c("whse_basemapping.fwa_lakes_poly", "whse_basemapping.fwa_stream_networks_sp",
+                     "whse_basemapping.fwa_stream_networks_sp",
+                     "whse_basemapping.fwa_stream_networks_channel_width"))
+  expect_identical(basename(m$unmatched), "fwa_watershed_groups_poly.parquet")
+})
+
+test_that("a load's objects become loader rows, flagged when changed during the load", {
+  start <- as.POSIXct("2026-11-12 10:00:00", tz = "UTC")
+  end <- as.POSIXct("2026-11-12 13:00:00", tz = "UTC")
+  head <- function(url) {
+    lm <- if (grepl("BULK", url)) "Thu, 12 Nov 2026 11:30:00 GMT" else "Thu, 16 Apr 2026 02:22:39 GMT"
+    data.frame(version_id = paste0("v-", basename(url)), etag = "e1",
+               last_modified = .lnk_http_date(lm), status = 200L, notes = NA_character_,
+               stringsAsFactors = FALSE)
+  }
+  got <- NULL
+  testthat::local_mocked_bindings(lnk_artifact_record = function(conn, artifacts, recorded_by, host) {
+    got <<- list(artifacts = artifacts, recorded_by = recorded_by)
+    invisible(artifacts)
+  })
+  rows <- .lnk_fwa_load_record(NULL, fwa_trace, start, end, fwapg_commit = "8336522abc", head = head)
+  expect_identical(got$recorded_by, "loader")
+  expect_identical(nrow(got$artifacts), 4L)
+  expect_true(all(got$artifacts$loaded_at == end))
+  expect_true(all(grepl("fwapg_commit=8336522abc", got$artifacts$notes, fixed = TRUE)))
+  changed <- grepl("changed during the load", got$artifacts$notes, fixed = TRUE)
+  expect_identical(basename(got$artifacts$url[changed]), "BULK.parquet")
+  expect_identical(basename(attr(rows, "unmatched")), "fwa_watershed_groups_poly.parquet")
+})
+
+test_that("a trace naming no FWA primitive is refused", {
+  expect_error(.lnk_fwa_load_record(NULL, c("+ echo hello"), Sys.time(), Sys.time()),
+               "names no FWA primitive")
 })

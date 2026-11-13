@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS :"schema".log_pretest (
   verdict     text NOT NULL CHECK (verdict IN ('pass', 'fail', 'override')),
   notes       text,
   history_schema text,
-  history_config text);
+  history_config text,
+  range_source   text);
 INSERT INTO :"schema".log_pretest (config_name, link_sha, since_sha, until_sha, scratch, k,
   floor_min, per_input, verdict, notes)
 VALUES (:'config', :'sha', :'sha', :'sha', '', 0, 0, 0, 'override',

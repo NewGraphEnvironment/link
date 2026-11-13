@@ -769,6 +769,10 @@ run_calibrate_hint() {
   echo "  learn host speeds from this run's legs (a plan packed on --minutes-schema):"
   echo "    Rscript data-raw/host_speeds_calibrate.R --plan=<study_area_buckets.R --plan-out> \\"
   echo "      --phases=$PHASES_TSV [--skip=<name>:<reason>] [--dry-run]"
+  # The pre-run gate bounds its picks on these minutes (link#450), so a new database
+  # or a new bundle gets a real gate without a copied log. Commit the file it writes.
+  echo "  record this run's build minutes for the pre-run gate (then commit the file):"
+  echo "    Rscript data-raw/build_minutes_append.R --schema=$SCHEMA --run-uid=$RUN_UID"
 }
 
 # run_export_hint: the commands that republish the habitat export from this

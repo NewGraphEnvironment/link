@@ -44,10 +44,13 @@
 #'     Not the commit that loaded the FWA primitives and not a data version
 #'     (it moves on unrelated fwapg commits); the loaded artifacts are
 #'     recorded in `provenance.source_artifact` (link#265)
-#'   - `bcfishobs_sha` — git SHA of the `bcfishobs` checkout that matched
-#'     observations onto the network. A model input, not a reference
-#'     dataset: it decides which barriers are skipped, and so which
-#'     segments are accessible (link#264)
+#'   - `bcfishobs_sha` — retired, always `NA` (link#451). It was the HEAD of
+#'     a local `bcfishobs` checkout, which no run reads: runs read
+#'     `bcfishobs.observations` as `data-raw/snapshot_bcfp.sh` loaded it from
+#'     the bchamp parquet, and that object's version is the observations'
+#'     identity, copied into each run's `log_input.artifact_*`. The slot is
+#'     kept so the `log` and `log_recompute` columns keep their shape; rows
+#'     before link 0.82.0 hold checkout SHAs
 #'   - `software` — list of versions, git SHAs and `sha_source` (which
 #'     resolver tier answered) for `link` and `fresh`, plus
 #'     `R.version.string`
@@ -134,7 +137,7 @@ lnk_stamp <- function(cfg,
     },
     host          = .lnk_host(),
     fwapg_sha     = .lnk_fwapg_sha(),
-    bcfishobs_sha = .lnk_bcfishobs_sha(),
+    bcfishobs_sha = NA_character_,
     provenance    = prov,
     software      = software,
     db            = db,
