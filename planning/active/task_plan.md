@@ -204,8 +204,8 @@ Corrections taken, each reflected in the phases below:
 
 ## Validation
 
-- [ ] Tests pass
-- [ ] `/code-check` clean (once over the branch with `/code-check branch`)
+- [x] Tests pass (5,639; the only failures need the bcfp tunnel, down here)
+- [x] `/code-check` clean (once over the branch with `/code-check branch`: three rounds, 10 findings fixed, ended on round 3's enumeration)
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
