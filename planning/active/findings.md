@@ -37,3 +37,4 @@ older-build tokens are still wanted; both decided (task_plan.md).
 
 | Error | Resolution |
 |-------|------------|
+| `proof.R`: connection to localhost:5432 refused, mid-run | Docker Desktop had been closed and m4 rebooted; `fresh-db` has no restart policy, so `open -a Docker` then `docker start fresh-db` and wait out WAL recovery |

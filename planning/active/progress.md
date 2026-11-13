@@ -40,3 +40,21 @@ mandate; the merge stays with me.
   on the shared state SQL; `.lnk_streams_parent_builds()` moved out of the `none` file.
   Tests: vocabulary 75, gradient parent 79, config 220, pretest 126, dictionaries 154 (line
   refs in `dictionary_species_modelled.csv` moved +6 with `lnk_config.R`).
+- `/code-check` rounds 1 to 3 on the #463 code and `proof.R` (`cb1b052a`, `06daef04`,
+  `6f0eea81`; findings in `data-raw/logs/grad_parent_463/review-round*.md`).
+- Phase 3: 0.81.0 bumped (`eaaedf29`); `streams_parent_build.R --verify` passed for the four
+  groups before building (`verify_before/`); `run.sh BULK SETN MORK COTR` built control
+  (`zz469_control`) and parent (`fresh_default_parent`) for all four at `6f0eea81`, exit 0.
+
+## Session 2026-11-13
+
+- `proof.R` wrote `builds.csv`, `segments.csv`, `gradient.csv`, `access.csv` (all checks there
+  pass: same segments in control, parent and `fresh_default`; parent gradient equals
+  `gradient_minimal` on every segment, 10,053 to 13,433 changed per group; access identical),
+  then stopped: Docker Desktop was closed and m4 restarted, so habitat, `habitat_classes.csv`,
+  `near_river_462.csv` and `verdict.csv` were never written. Restarted Docker and `fresh-db`
+  (06:35 UTC, recovering from WAL); session wrapped up on the owner's word before re-running.
+- Next: once `psql -h localhost -U postgres -d fwapg -c 'select 1'` answers, check the four
+  groups' rows survived recovery (`segments.csv` counts), run the A1 artifact comparison, then
+  `Rscript data-raw/logs/grad_parent_463/proof.R --wsgs=BULK,SETN,MORK,COTR` from this worktree;
+  then Phase 4.

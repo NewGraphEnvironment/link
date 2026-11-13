@@ -100,14 +100,16 @@ Approved with the plan (operator, 2026-11-10):
 
 ## Phase 3: proof build on m4, and #462's transfer cost
 
-- [ ] Bump DESCRIPTION to 0.81.0 and commit before building; build from a clean committed tree
-      with `LNK_LOAD=loadall` (O2).
+- [x] Bump DESCRIPTION to 0.81.0 and commit before building; build from a clean committed tree
+      with `LNK_LOAD=loadall` (O2). `eaaedf29`; builds at `6f0eea81`, both dirty flags FALSE.
 - [ ] Before building, compare each group's `fresh_default` `log_input` artifact ids with m4's
-      `provenance.source_artifact` (A1).
-- [ ] `data-raw/logs/grad_parent_463/`: BULK, SETN, MORK, COTR under `default_parent` into
+      `provenance.source_artifact` (A1). No record of it in the evidence dir: run it when the
+      database is back (the builds already ran; the pair's stale check passed, `verify_before/`).
+- [x] `data-raw/logs/grad_parent_463/`: BULK, SETN, MORK, COTR under `default_parent` into
       `fresh_default_parent`, and under `default` into a scratch control schema, same commit,
       order and env (`LNK_HABITAT_GATE`, `LNK_GUARD_DOWNSTREAM=warn`), on a quiet database. A
       group refused on mapping is reported as the refusal working and replaced by another (A1).
+      Done 2026-11-13 05:12-06:02 UTC, 8 of 8 exit 0, none refused (`status.tsv`).
 - [ ] Check from persisted tables (working tables are overwritten): segment keys and access
       identical between control and parent; segmentation identical to `fresh_default`; persisted
       gradient equals `gradient_minimal`; `log.token_grad` is `grad-parent`; each habitat
