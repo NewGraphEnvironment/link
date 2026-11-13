@@ -33,20 +33,20 @@
 - **No test exists for `snapshot_bcfp.sh`.** The stub-on-PATH pattern is `tests/testthat/test-worker_prep.R` and `helper-study_area_hosts.R`.
 
 ## Phase 1 (#451): retire the bcfishobs checkout stamp
-- [ ] Remove the dirty-checkout gate and the `BCFISHOBS_GIT_SHA` export.
+- [x] Remove the dirty-checkout gate and the `BCFISHOBS_GIT_SHA` export.
   - Driver pre-flight: `data-raw/study_area_run.sh:1102-1130`, plus the stamp ssh at `:1427`.
   - `data-raw/study_area_remote.sh`: `REMOTE_LEG_VARS` and the leg export.
   - `data-raw/worker_prep.sh`: its refused-pin list.
-- [ ] `.lnk_bcfishobs_sha()` and `lnk_stamp()`'s `bcfishobs_sha` slot return NA. DDL unchanged.
-- [ ] Doc fixes:
+- [x] `.lnk_bcfishobs_sha()` and `lnk_stamp()`'s `bcfishobs_sha` slot return NA. DDL unchanged.
+- [x] Doc fixes:
   - `lnk_stamp()`: the field is retired, and the identity is `log_input.artifact_*`.
   - `man/`.
   - RUNBOOK §6b, and the §8d pre-flight lines.
-- [ ] `data-raw/study_area_verify.sql`:
+- [x] `data-raw/study_area_verify.sql`:
   - Drop `bcfishobs_sha` from the NULL and agreement checks.
   - Add check 5's logic over `log_input` for the run: the observations and crossings version ids are non-NULL and agree across hosts, and the snapshot tables' row counts agree.
   - Update `data-raw/study_area_verify_negative.sh` to match (null or diverge an artifact version, expect FAIL).
-- [ ] Tests: `test-lnk_log.R`, `test-lnk_stamp.R`, `test-study_area_remote.R`, `test-worker_prep.R`.
+- [x] Tests: `test-lnk_log.R`, `test-lnk_stamp.R`, `test-study_area_remote.R`, `test-worker_prep.R`.
 
 ## Phase 2 (#446, #266): one rule for the bcfp reference build, with a run identity
 - [ ] Ledger tier: `.lnk_bcfp_log_ledger()` (`R/lnk_log.R:1281`) reads only rows that loaded the views. That means the run label matches `^snapshot-` and the notes contain `--with-bcfp-views`. It returns `bcfp_date_completed` too.

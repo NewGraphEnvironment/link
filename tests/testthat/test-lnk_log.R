@@ -143,59 +143,6 @@ test_that(".lnk_fwapg_sha returns NA when nothing resolves", {
 })
 
 
-# --- .lnk_bcfishobs_sha (link#264) ------------------------------------------
-
-test_that(".lnk_bcfishobs_sha prefers the env var", {
-  # The tier every cypher takes: no bcfishobs checkout exists there, so
-  # study_area_run.sh resolves it once on the dispatcher and exports it.
-  withr::local_envvar(BCFISHOBS_GIT_SHA = "08630cf4ac14")
-  expect_identical(.lnk_bcfishobs_sha(), "08630cf4ac14")
-})
-
-test_that(".lnk_bcfishobs_sha reads a real checkout via BCFISHOBS_DIR", {
-  # Both known answers for the directory tier, against a real git repo rather
-  # than a mock: the value must come from HEAD, not from the env.
-  skip_if(!nzchar(Sys.which("git")), "git not installed")
-  d <- withr::local_tempdir()
-  run <- function(...) {
-    out <- suppressWarnings(system2("git", c("-C", shQuote(d), ...),
-                                    stdout = TRUE, stderr = FALSE))
-    st <- attr(out, "status")
-    if (!is.null(st) && !identical(as.integer(st), 0L)) stop("git setup failed")
-    invisible(out)
-  }
-  writeLines("x", file.path(d, "README.md"))
-  run("init", "-q", ".")
-  run("add", "-A")
-  run("-c", "user.email=t@example.com", "-c", "user.name=t",
-      "commit", "-qm", "init")
-  head <- suppressWarnings(system2("git", c("-C", shQuote(d), "rev-parse", "HEAD"),
-                                   stdout = TRUE, stderr = FALSE))[1]
-
-  withr::local_envvar(BCFISHOBS_GIT_SHA = "", BCFISHOBS_DIR = d)
-  expect_identical(.lnk_bcfishobs_sha(), head)
-})
-
-test_that(".lnk_bcfishobs_sha returns NA when nothing resolves", {
-  # HOME-based fallback may find a real checkout on a dev machine, so assert
-  # the type contract, exactly as the fwapg test above does.
-  withr::local_envvar(BCFISHOBS_GIT_SHA = "",
-                      BCFISHOBS_DIR = withr::local_tempdir())
-  out <- .lnk_bcfishobs_sha()
-  expect_true(is.character(out) && length(out) == 1L)
-})
-
-test_that("fwapg and bcfishobs resolvers do not read each other's env", {
-  # They share .lnk_checkout_sha(), so a copy-paste of the wrong variable name
-  # is the failure this closes -- and it would be invisible on a machine where
-  # both checkouts sit at the conventional path.
-  withr::local_envvar(FWAPG_GIT_SHA = "fwapg000000",
-                      BCFISHOBS_GIT_SHA = "bcfishobs00")
-  expect_identical(.lnk_fwapg_sha(), "fwapg000000")
-  expect_identical(.lnk_bcfishobs_sha(), "bcfishobs00")
-})
-
-
 # --- .lnk_pkg_git_dirty -----------------------------------------------------
 
 test_that(".lnk_pkg_git_dirty honours the env override", {
@@ -1129,7 +1076,9 @@ test_that("both log tables carry the new code-identity columns (link#264)", {
   }
 })
 
-test_that("both INSERT paths write bcfishobs_sha and fresh_sha_source", {
+test_that("both INSERT paths write fresh_sha_source, and bcfishobs_sha as NULL", {
+  # bcfishobs_sha is retired (link#451): the column is still written, so the
+  # INSERT keeps log's shape, but as NULL whatever BCFISHOBS_GIT_SHA holds.
   withr::local_envvar(BCFISHOBS_GIT_SHA = "bcfishobs264",
                       FRESH_GIT_SHA = "freshsha264", FRESH_GIT_DIRTY = "")
   cfg <- lnk_config("default")
@@ -1138,7 +1087,7 @@ test_that("both INSERT paths write bcfishobs_sha and fresh_sha_source", {
     .lnk_log_run_start(fake_conn(), cfg, "PINE", "working_pine"))
   ins <- grep("INSERT INTO .*\\.log \\(", model, value = TRUE)
   expect_match(ins, "bcfishobs_sha")
-  expect_match(ins, "'bcfishobs264'")
+  expect_no_match(ins, "bcfishobs264", fixed = TRUE)
   expect_match(ins, "fresh_sha_source")
   # The tier that answered, recorded rather than inferred from a NULL.
   expect_match(ins, "'env'")
@@ -1147,7 +1096,7 @@ test_that("both INSERT paths write bcfishobs_sha and fresh_sha_source", {
     .lnk_log_recompute_start(fake_conn(), cfg, "PINE"), probe_rows = 1L)
   ins_rc <- grep("INSERT INTO .*\\.log_recompute \\(", recomp, value = TRUE)
   expect_match(ins_rc, "bcfishobs_sha")
-  expect_match(ins_rc, "'bcfishobs264'")
+  expect_no_match(ins_rc, "bcfishobs264", fixed = TRUE)
   expect_match(ins_rc, "fresh_sha_source")
 })
 

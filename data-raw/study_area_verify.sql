@@ -169,9 +169,10 @@ SELECT CASE WHEN :'expected_n' = ''
 -- will fail this check. That is correct: those rows genuinely cannot say which
 -- fresh build produced them, and it is not retroactively fixable.
 --
--- bcfishobs_sha is new in the same release and is expected non-NULL everywhere
--- for the same reason fwapg_sha is: study_area_run.sh resolves it once on the
--- dispatcher and exports it to every leg.
+-- bcfishobs_sha is retired (link#451): it was the HEAD of a local bcfishobs
+-- checkout no run reads, and is NULL from link 0.81.0. The observations a group
+-- read are named by the loaded object's version in its log_input row
+-- (has_obs_version), which every row must carry.
 --
 -- bcfp_model_run_id is likewise expected NULL on a tunnel-free run: the pin
 -- comes from the local snapshot ledger, and log.json carries no run id
@@ -181,15 +182,19 @@ SELECT host,
        count(*) FILTER (WHERE link_sha  IS NOT NULL)     AS has_link_sha,
        count(*) FILTER (WHERE fresh_sha IS NOT NULL)     AS has_fresh_sha,
        count(*) FILTER (WHERE fwapg_sha IS NOT NULL)     AS has_fwapg_sha,
-       count(*) FILTER (WHERE bcfishobs_sha
-                              IS NOT NULL)               AS has_bcfishobs_sha,
+       count(*) FILTER (WHERE EXISTS (
+         SELECT 1 FROM :schema.log_input i
+          WHERE i.run_id = l.run_id
+            AND i.table_name = 'bcfishobs.observations'
+            AND i.artifact_version_id IS NOT NULL))    AS has_obs_version,
+       count(*) FILTER (WHERE date_end IS NOT NULL)      AS n_finished,
        count(*) FILTER (WHERE bcfp_model_version
                               IS NOT NULL)               AS has_bcfp_version,
        count(*) FILTER (WHERE link_dirty)                AS n_dirty,
        count(*) FILTER (WHERE link_dirty IS NULL)        AS n_dirty_unknown,
        min(date_end)                                     AS first_done,
        max(date_end)                                     AS last_done
-  FROM :schema.log
+  FROM :schema.log l
  WHERE run_uid = :'run_uid'
  GROUP BY host
  ORDER BY host;
@@ -224,8 +229,14 @@ SELECT host,
               THEN 'FAIL: fwapg_sha NULL' END,
          CASE WHEN count(*) FILTER (WHERE fresh_sha IS NULL) > 0
               THEN 'FAIL: fresh_sha NULL' END,
-         CASE WHEN count(*) FILTER (WHERE bcfishobs_sha IS NULL) > 0
-              THEN 'FAIL: bcfishobs_sha NULL' END,
+         -- Finished rows only: a failed attempt can close before its inputs
+         -- are logged, and 1c already judges open rows.
+         CASE WHEN count(*) FILTER (WHERE date_end IS NOT NULL AND NOT EXISTS (
+                SELECT 1 FROM :schema.log_input i
+                 WHERE i.run_id = l.run_id
+                   AND i.table_name = 'bcfishobs.observations'
+                   AND i.artifact_version_id IS NOT NULL)) > 0
+              THEN 'FAIL: observations read at no recorded version (log_input)' END,
          CASE WHEN count(*) FILTER (WHERE link_dirty) > 0
               THEN 'FAIL: link_dirty set -- tracked code differed from origin' END,
          -- By exact symmetry with link_dirty, and it had no arm at all in the
@@ -253,7 +264,7 @@ SELECT host,
          CASE WHEN count(*) FILTER (WHERE fresh_dirty IS NULL) > 0
               THEN 'NOTE: fresh_dirty NULL -- provenance unknown, not clean' END
        ), ''), 'OK') AS verdict
-  FROM :schema.log
+  FROM :schema.log l
  WHERE run_uid = :'run_uid'
  GROUP BY host
  ORDER BY host;
@@ -278,7 +289,8 @@ SELECT o.host, o.watershed_group_code, o.date_start, left(o.notes, 60) AS notes,
 
 \echo ''
 \echo '=== 2. The distinct SHAs -- all hosts must agree ==='
--- fresh_sha and bcfishobs_sha joined this list in link#264. Every arm in 1b
+-- fresh_sha joined this list in link#264; bcfishobs_sha left it in link#451
+-- (section 2c holds what replaced it). Every arm in 1b
 -- tests IS NULL, so two hosts carrying DIFFERENT non-NULL values pass every
 -- check above -- present on both, agreeing on neither. lnk_preflight_parity()
 -- keys on fresh_sha, but only pre-write: a cypher re-prepped mid-run
@@ -288,7 +300,7 @@ SELECT o.host, o.watershed_group_code, o.date_start, left(o.notes, 60) AS notes,
 -- More than one row here is the finding. link_sha legitimately differs by host
 -- (a real SHA on the load_all dispatcher, NULL on a pak-installed cypher), so
 -- read the columns individually rather than the row count.
-SELECT DISTINCT link_sha, fresh_sha, fwapg_sha, bcfishobs_sha, bcfp_model_version
+SELECT DISTINCT link_sha, fresh_sha, fwapg_sha, bcfp_model_version
   FROM :schema.log
  WHERE run_uid = :'run_uid';
 
@@ -298,10 +310,44 @@ SELECT DISTINCT link_sha, fresh_sha, fwapg_sha, bcfishobs_sha, bcfp_model_versio
 -- "more than one row" is mechanically a defect rather than something to read.
 SELECT count(*) AS n_distinct_input_sets,
        CASE WHEN count(*) > 1
-            THEN 'FAIL: hosts disagree on fresh_sha / fwapg_sha / bcfishobs_sha'
+            THEN 'FAIL: hosts disagree on fresh_sha / fwapg_sha'
             ELSE 'OK' END AS verdict
-  FROM (SELECT DISTINCT fresh_sha, fwapg_sha, bcfishobs_sha
+  FROM (SELECT DISTINCT fresh_sha, fwapg_sha
           FROM :schema.log WHERE run_uid = :'run_uid') d;
+
+\echo ''
+\echo '=== 2c. Loaded inputs every host must agree on (link#451) ==='
+-- What each group read, from its log_input rows (copied from
+-- provenance.source_artifact at run start): the two object-store primitives by
+-- version id, the two API primitives by content md5. One row per table; a
+-- verdict other than OK is a run whose hosts modelled on different data.
+-- Before link#465 loads carried no content md5, so an API table with none is a
+-- NOTE, never a FAIL; two different md5s are a FAIL. The md5 is read through
+-- to_jsonb() because a log_input built before link#465 has no such column.
+SELECT i.table_name,
+       count(DISTINCT i.artifact_version_id)  AS n_versions,
+       count(*) FILTER (WHERE i.artifact_version_id IS NULL) AS n_no_version,
+       count(DISTINCT (to_jsonb(i) ->> 'artifact_content_md5')) AS n_md5,
+       count(*) FILTER (WHERE (to_jsonb(i) ->> 'artifact_content_md5') IS NULL) AS n_no_md5,
+       CASE
+         WHEN i.table_name IN ('bcfishobs.observations',
+                               'fresh.modelled_stream_crossings')
+              AND (count(DISTINCT i.artifact_version_id) <> 1
+                   OR count(i.artifact_version_id) <> count(*))
+           THEN 'FAIL: read at different or unrecorded versions'
+         WHEN count(DISTINCT (to_jsonb(i) ->> 'artifact_content_md5')) > 1
+           THEN 'FAIL: read with different content'
+         WHEN i.table_name IN ('cabd.dams', 'whse_fish.pscis_assessment_svw')
+              AND count((to_jsonb(i) ->> 'artifact_content_md5')) < count(*)
+           THEN 'NOTE: some rows carry no content md5 (loads before link#465)'
+         ELSE 'OK' END AS verdict
+  FROM :schema.log_input i
+  JOIN :schema.log l USING (run_id)
+ WHERE l.run_uid = :'run_uid' AND l.date_end IS NOT NULL
+   AND i.table_name IN ('bcfishobs.observations', 'fresh.modelled_stream_crossings',
+                        'cabd.dams', 'whse_fish.pscis_assessment_svw')
+ GROUP BY i.table_name
+ ORDER BY i.table_name;
 
 \echo ''
 \echo '=== 3. Coverage: every WSG of this run has streams rows ==='
@@ -485,11 +531,28 @@ BEGIN
     'SELECT count(*) FROM %I.log
       WHERE run_uid = $1
         AND (link_sha IS NULL OR fwapg_sha IS NULL
-             OR bcfishobs_sha IS NULL OR link_dirty OR fresh_dirty)',
+             OR link_dirty OR fresh_dirty)',
     v_sch) INTO n_prov USING v_run;
   IF n_prov > 0 THEN
     RAISE EXCEPTION
-      'run %: % row(s) missing link_sha, fwapg_sha or bcfishobs_sha, or flagged link_dirty or fresh_dirty',
+      'run %: % row(s) missing link_sha or fwapg_sha, or flagged link_dirty or fresh_dirty',
+      v_run, n_prov;
+  END IF;
+
+  -- The observations each finished group read, by the loaded object's version
+  -- (link#451, replacing the retired bcfishobs_sha). Its own assertion, so the
+  -- message names the cause.
+  EXECUTE format(
+    'SELECT count(*) FROM %1$I.log l
+      WHERE l.run_uid = $1 AND l.date_end IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM %1$I.log_input i
+                         WHERE i.run_id = l.run_id
+                           AND i.table_name = ''bcfishobs.observations''
+                           AND i.artifact_version_id IS NOT NULL)',
+    v_sch) INTO n_prov USING v_run;
+  IF n_prov > 0 THEN
+    RAISE EXCEPTION
+      'run %: % finished row(s) have no recorded observations version in log_input, so which observations they read cannot be named (link#451). Re-snapshot the host (snapshot_bcfp.sh records it) and re-model those groups.',
       v_run, n_prov;
   END IF;
 
@@ -527,12 +590,33 @@ BEGIN
   -- NULL on a pak-installed cypher, so requiring agreement would fail every
   -- healthy run.
   EXECUTE format(
-    'SELECT count(*) FROM (SELECT DISTINCT fresh_sha, fwapg_sha, bcfishobs_sha
+    'SELECT count(*) FROM (SELECT DISTINCT fresh_sha, fwapg_sha
                              FROM %I.log WHERE run_uid = $1) d',
     v_sch) INTO n_prov USING v_run;
   IF n_prov > 1 THEN
     RAISE EXCEPTION
-      'run %: hosts disagree on their inputs -- % distinct (fresh_sha, fwapg_sha, bcfishobs_sha) sets where there must be 1. Parity diffs from this run mix version drift with methodology drift and cannot be separated afterwards (link#183, link#264).',
+      'run %: hosts disagree on their inputs -- % distinct (fresh_sha, fwapg_sha) sets where there must be 1. Parity diffs from this run mix version drift with methodology drift and cannot be separated afterwards (link#183, link#264).',
+      v_run, n_prov;
+  END IF;
+
+  -- The data the hosts loaded must agree too (section 2c; link#451, from
+  -- provincial_246's verify_extra.sql check 5): one version per object-store
+  -- primitive with none missing, and at most one content md5 per API primitive.
+  EXECUTE format($q$
+    SELECT count(*) FROM (
+      SELECT i.table_name FROM %1$I.log_input i JOIN %1$I.log l USING (run_id)
+       WHERE l.run_uid = $1 AND l.date_end IS NOT NULL
+         AND i.table_name IN ('bcfishobs.observations', 'fresh.modelled_stream_crossings',
+                              'cabd.dams', 'whse_fish.pscis_assessment_svw')
+       GROUP BY i.table_name
+      HAVING (i.table_name IN ('bcfishobs.observations', 'fresh.modelled_stream_crossings')
+              AND (count(DISTINCT i.artifact_version_id) <> 1
+                   OR count(i.artifact_version_id) <> count(*)))
+          OR count(DISTINCT (to_jsonb(i) ->> 'artifact_content_md5')) > 1) x$q$,
+    v_sch) INTO n_prov USING v_run;
+  IF n_prov > 0 THEN
+    RAISE EXCEPTION
+      'run %: % loaded input table(s) read at different or unrecorded versions across hosts (section 2c). The hosts modelled on different data (link#276, link#451).',
       v_run, n_prov;
   END IF;
 

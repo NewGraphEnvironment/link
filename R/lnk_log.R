@@ -1493,41 +1493,11 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
 }
 
 
-#' git SHA of the bcfishobs checkout that matched observations onto the network.
+#' The body of [.lnk_fwapg_sha()]: an env override, then a checkout's HEAD.
 #'
-#' `bcfishobs` is a **model input, not a reference dataset**. It is the pipeline
-#' that snaps fish observations to the stream network, and
-#' [lnk_barrier_overrides()] counts those observations upstream of each barrier
-#' to decide which barriers are skipped during access gating. Different
-#' `bcfishobs` code gives different matching, so different barriers, so
-#' different access, so a different `mapping_code`. `fwapg` gets a `fwapg_sha`
-#' and `bcfishpass` got `bcfp_model_version` (link#262); until link#264 this
-#' carried a row count and a hardcoded source string and nothing else.
-#'
-#' Same three tiers as [.lnk_fwapg_sha()], and exported to every host by
-#' `data-raw/study_area_run.sh`'s `preflight_local()` for the same reason:
-#' a cypher has no `bcfishobs` checkout at all, so without the export every
-#' cypher row would land NA.
-#'
-#' **Fork note, so it is not re-derived.** Both `NewGraphEnvironment/fwapg` and
-#' `NewGraphEnvironment/bcfishobs` are forks of `smnorris/*`, and both currently
-#' carry zero local commits. That is why these SHAs resolve against upstream at
-#' all — an accident of being 0-ahead, not a property. A recorded fork SHA is
-#' fine; recording it without knowing it came from a fork is what would rot.
-#'
-#' @return A single string or `NA_character_`.
-#' @noRd
-.lnk_bcfishobs_sha <- function() {
-  .lnk_checkout_sha(Sys.getenv("BCFISHOBS_GIT_SHA", ""),
-                    Sys.getenv("BCFISHOBS_DIR", ""),
-                    file.path(path.expand("~"), "Projects", "repo", "bcfishobs"))
-}
-
-
-#' The shared body of [.lnk_fwapg_sha()] and [.lnk_bcfishobs_sha()].
-#'
-#' One implementation rather than two copies, so a fix to the tier order or the
-#' `.git` handling cannot land on one input and miss the other.
+#' It also served `bcfishobs_sha` until link#451 retired that field: no run
+#' reads a local bcfishobs checkout, so its commit described nothing a run
+#' used.
 #'
 #' @param env_sha Value of the `<REPO>_GIT_SHA` override (`""` when unset).
 #' @param dir Value of the `<REPO>_DIR` override (`""` when unset).

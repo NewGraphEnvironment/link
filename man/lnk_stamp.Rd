@@ -42,10 +42,13 @@ at stamp time (carries observed checksums + drift status)
 Not the commit that loaded the FWA primitives and not a data version
 (it moves on unrelated fwapg commits); the loaded artifacts are
 recorded in \code{provenance.source_artifact} (link#265)
-\item \code{bcfishobs_sha} — git SHA of the \code{bcfishobs} checkout that matched
-observations onto the network. A model input, not a reference
-dataset: it decides which barriers are skipped, and so which
-segments are accessible (link#264)
+\item \code{bcfishobs_sha} — retired, always \code{NA} (link#451). It was the HEAD of
+a local \code{bcfishobs} checkout, which no run reads: runs read
+\code{bcfishobs.observations} as \code{data-raw/snapshot_bcfp.sh} loaded it from
+the bchamp parquet, and that object's version is the observations'
+identity, copied into each run's \verb{log_input.artifact_*}. The slot is
+kept so the \code{log} and \code{log_recompute} columns keep their shape; rows
+before link 0.81.0 hold checkout SHAs
 \item \code{software} — list of versions, git SHAs and \code{sha_source} (which
 resolver tier answered) for \code{link} and \code{fresh}, plus
 \code{R.version.string}

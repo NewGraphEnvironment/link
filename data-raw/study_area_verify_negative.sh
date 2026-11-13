@@ -15,6 +15,9 @@
 #   4a. bcfp pin removed              -> expect FAIL
 #   4b.  ... plus -v unpinned_ok=<why> -> expect PASS
 #   4c.  ... plus a whitespace reason  -> expect FAIL
+#   5.  fresh_sha NULLed              -> expect FAIL
+#   6.  one group's observations version gone -> expect FAIL (link#451)
+#   6a. one host read another observations version -> expect FAIL (link#451)
 #   6d. one habitat row un-settled    -> expect FAIL (link#349)
 #   6e. newest recompute lifted a settled segment -> expect FAIL (link#349)
 #   6f. an open log row a later finished row supersedes -> expect PASS (link#348 path)
@@ -94,6 +97,13 @@ CREATE TABLE ${SCRATCH}.log            AS SELECT * FROM ${SRC_SCHEMA}.log
   WHERE run_uid = '${RUN_UID}';
 CREATE TABLE ${SCRATCH}.log_recompute  AS SELECT * FROM ${SRC_SCHEMA}.log_recompute
   WHERE run_uid = '${RUN_UID}';
+-- The loaded-input rows sections 1, 1b and 2c read (link#451), for the run's
+-- groups and the four snapshot primitives only.
+CREATE TABLE ${SCRATCH}.log_input      AS SELECT i.* FROM ${SRC_SCHEMA}.log_input i
+  JOIN ${SRC_SCHEMA}.log l USING (run_id)
+  WHERE l.run_uid = '${RUN_UID}'
+    AND i.table_name IN ('bcfishobs.observations', 'fresh.modelled_stream_crossings',
+                         'cabd.dams', 'whse_fish.pscis_assessment_svw');
 CREATE TABLE ${SCRATCH}.streams        AS
   SELECT id_segment, watershed_group_code FROM ${SRC_SCHEMA}.streams
    WHERE watershed_group_code IN
@@ -269,19 +279,19 @@ fi
     AND s.watershed_group_code = t.watershed_group_code" >/dev/null
 fi
 
-# --- 5/6. the code-identity columns: must FAIL when NULL (link#264) ----------
-# Both were tolerated-or-absent before this release: fresh_sha was excused on
-# the dispatcher for a reason that turned out to be false, and bcfishobs_sha
-# did not exist. Each now has an unconditional assertion, and an assertion
-# nobody has watched go red is decoration -- these are the cases that watch.
+# --- 5. the code-identity columns: must FAIL when NULL (link#264) ------------
+# fresh_sha was excused on the dispatcher for a reason that turned out to be
+# false; it now has an unconditional assertion, and an assertion nobody has
+# watched go red is decoration -- this is the case that watches. bcfishobs_sha
+# left the loop when link#451 retired it; cases 6 and 6a cover what replaced it.
 #
-# Driven by a loop rather than written twice, so a third column added later
+# Driven by a loop rather than written once, so a column added later
 # joins by adding one word and cannot quietly be given a case that is never
 # run. Each iteration restores CORRELATED per row, matching cases 2 and 4:
 # a `SET col = (SELECT ... LIMIT 1)` would flatten the column across hosts and
 # leave the NEXT iteration a fixture that cannot reach its own failure.
 n=5
-for col in fresh_sha bcfishobs_sha; do
+for col in fresh_sha; do
   n_present=$("${PSQL[@]}" -c "SELECT count(*) FROM ${SCRATCH}.log
                                 WHERE ${col} IS NOT NULL")
   if [ "${n_present:-0}" = "0" ]; then
@@ -308,6 +318,62 @@ for col in fresh_sha bcfishobs_sha; do
   fi
   n=$((n + 1))
 done
+
+# --- 6. one group's observations version gone: must FAIL (link#451) ---------
+# The observations a group read are named by the loaded object's version in
+# its log_input row. One row without it is a group whose observations cannot be
+# named, which bcfishobs_sha's NULL check used to stand in for.
+OBS_RUN=$("${PSQL[@]}" -c "SELECT i.run_id FROM ${SCRATCH}.log_input i
+            JOIN ${SCRATCH}.log l USING (run_id)
+           WHERE l.date_end IS NOT NULL AND i.table_name = 'bcfishobs.observations'
+             AND i.artifact_version_id IS NOT NULL ORDER BY i.run_id LIMIT 1")
+if [ -z "$OBS_RUN" ]; then
+  echo "  ⊘ 6. SKIPPED: no finished group of $RUN_UID has a recorded observations"
+  echo "       version, so removing one tests nothing. Absence reported as"
+  echo "       absence -- this is NOT a pass."
+  fails=$((fails + 1))
+else
+  "${PSQL[@]}" -c "UPDATE ${SCRATCH}.log_input SET artifact_version_id = NULL
+     WHERE run_id = '${OBS_RUN}' AND table_name = 'bcfishobs.observations'" >/dev/null
+  if run_verify -v expected_n="$N_WSG"; then
+    echo "  ✗ 6. observations version gone -> PASSED, but should have FAILED."
+    show_verify
+    fails=$((fails + 1))
+  else
+    echo "  ✓ 6. observations version gone -> FAIL (as expected)"
+  fi
+  "${PSQL[@]}" -c "UPDATE ${SCRATCH}.log_input t SET artifact_version_id = s.artifact_version_id
+     FROM ${SRC_SCHEMA}.log_input s
+    WHERE s.run_id = t.run_id AND s.table_name = t.table_name
+      AND t.run_id = '${OBS_RUN}' AND t.table_name = 'bcfishobs.observations'" >/dev/null
+fi
+
+# --- 6a. one host read another observations version: must FAIL --------------
+# Every row still carries a version, so only the cross-host agreement check
+# (section 2c and its assertion) can catch it.
+OBS_HOST=$("${PSQL[@]}" -c "SELECT host FROM ${SCRATCH}.log ORDER BY host LIMIT 1")
+N_OBS_HOSTS=$("${PSQL[@]}" -c "SELECT count(DISTINCT host) FROM ${SCRATCH}.log")
+if [ -z "$OBS_RUN" ] || [ "${N_OBS_HOSTS:-1}" -lt 2 ]; then
+  echo "  ⊘ 6a. SKIPPED: run $RUN_UID has one host or no recorded observations"
+  echo "       version, so hosts cannot disagree. NOT a pass."
+  fails=$((fails + 1))
+else
+  "${PSQL[@]}" -c "UPDATE ${SCRATCH}.log_input i SET artifact_version_id = 'zz_other_version'
+     FROM ${SCRATCH}.log l
+    WHERE l.run_id = i.run_id AND l.host = '${OBS_HOST}'
+      AND i.table_name = 'bcfishobs.observations'" >/dev/null
+  if run_verify -v expected_n="$N_WSG"; then
+    echo "  ✗ 6a. one host on another observations version -> PASSED, but should have FAILED."
+    show_verify
+    fails=$((fails + 1))
+  else
+    echo "  ✓ 6a. one host on another observations version -> FAIL (as expected)"
+  fi
+  "${PSQL[@]}" -c "UPDATE ${SCRATCH}.log_input t SET artifact_version_id = s.artifact_version_id
+     FROM ${SRC_SCHEMA}.log_input s
+    WHERE s.run_id = t.run_id AND s.table_name = t.table_name
+      AND t.table_name = 'bcfishobs.observations'" >/dev/null
+fi
 
 # --- 6b. fresh_dirty TRUE: must FAIL -----------------------------------------
 # A different mutation from the NULL cases above, and the one the first draft

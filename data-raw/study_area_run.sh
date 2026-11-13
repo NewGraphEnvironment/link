@@ -1101,34 +1101,12 @@ cat(paste(tok, collapse = " "), "\n")
     fail=1
   fi
 
-  # --- gate: bcfishobs SHA resolvable and exported (link#264) -------------
-  # bcfishobs is a MODEL INPUT, not a reference dataset: it snaps observations
-  # onto the network, lnk_barrier_overrides() counts those observations
-  # upstream of each barrier to decide which barriers are skipped, and so it
-  # moves access and mapping_code. Everything the 39 logged runs recorded
-  # about it was a row count and a hardcoded source string.
-  #
-  # Exactly the fwapg block above, including the dirty refusal: a cypher has
-  # no bcfishobs checkout, so without the export every cypher row lands
-  # bcfishobs_sha = NA. There is deliberately NO bcfishobs_dirty column —
-  # this gate is what makes a recorded SHA clean by construction, and a
-  # column FALSE on every row carries no information (link#257).
-  local bcfo_dir bcfo_dirty
-  bcfo_dir="${BCFISHOBS_DIR:-$HOME/Projects/repo/bcfishobs}"
-  if BCFISHOBS_SHA=$(git -C "$bcfo_dir" rev-parse HEAD 2>/dev/null) && [ -n "$BCFISHOBS_SHA" ]; then
-    if bcfo_dirty=$(git -C "$bcfo_dir" status --porcelain 2>/dev/null); then
-      [ -z "$bcfo_dirty" ] \
-        || { echo "  ✗ bcfishobs checkout dirty ($bcfo_dir) — the SHA stamped into log.bcfishobs_sha would be a lie"; fail=1; }
-    else
-      echo "  ✗ could not read git status in $bcfo_dir — cannot certify bcfishobs_sha clean"
-      fail=1
-    fi
-    export BCFISHOBS_GIT_SHA="$BCFISHOBS_SHA"
-    echo "  ✓ bcfishobs_sha ${BCFISHOBS_SHA:0:12} (exported to all hosts)"
-  else
-    echo "  ✗ no bcfishobs checkout at $bcfo_dir — set BCFISHOBS_DIR, or every row lands bcfishobs_sha=NA"
-    fail=1
-  fi
+  # No bcfishobs gate (link#451): runs read bcfishobs.observations as
+  # snapshot_bcfp.sh loaded it from the bchamp parquet, never a local
+  # bcfishobs checkout, so a checkout's commit described nothing a run read.
+  # The observations' identity is the loaded object's version, copied into
+  # each run's log_input.artifact_* and checked across hosts by
+  # study_area_verify.sql. log.bcfishobs_sha is retired (NULL from 0.81.0).
 
   # --- gate: fresh's own code identity, BEFORE any spend (link#264) -------
   # fresh_sha and fresh_dirty are asserted on every host by
@@ -1424,7 +1402,7 @@ collect_stamps() {   # $1 = destination tsv
   for ws in ${HOST_ARR[@]+"${HOST_ARR[@]}"}; do
     # Judged by the status the remote shell prints (remote_run, link#376).
     if ! remote_run "${HOST_SSH[$ws]}" \
-        "$(.remote_cd "$ws") && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export BCFISHOBS_GIT_SHA='${BCFISHOBS_GIT_SHA:-}' && Rscript data-raw/host_stamp.R '$CONFIG'" \
+        "$(.remote_cd "$ws") && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && Rscript data-raw/host_stamp.R '$CONFIG'" \
         "$tsv.$ws.out" /dev/null; then
       echo "  ✗ cy[$ws] stamp failed (ssh or Rscript) — treated as a FAILURE, not a skip"
       return 1

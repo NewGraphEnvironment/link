@@ -28,6 +28,17 @@ test_that("lnk_stamp returns lnk_stamp S3 with expected slots", {
   expect_null(s$db)  # no conn, db should be NULL
 })
 
+test_that("lnk_stamp's bcfishobs_sha is retired: NA whatever the env holds", {
+  # link#451: no run reads a local bcfishobs checkout, so its commit describes
+  # nothing a run used. The slot stays so log's column keeps its shape; the
+  # observations' identity is log_input.artifact_*. Set every input the old
+  # resolver read, so a regression to it would show here.
+  d <- withr::local_tempdir()
+  withr::local_envvar(BCFISHOBS_GIT_SHA = "08630cf4ac14", BCFISHOBS_DIR = d)
+  s <- lnk_stamp(lnk_config("bcfishpass"), aoi = "ADMS")
+  expect_identical(s$bcfishobs_sha, NA_character_)
+})
+
 test_that("lnk_stamp software slot has link + fresh + R", {
   cfg <- lnk_config("bcfishpass")
   s <- lnk_stamp(cfg, aoi = "ADMS")

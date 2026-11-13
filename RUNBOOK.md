@@ -809,6 +809,15 @@ EXCEPT SELECT watershed_group_code FROM <persist>.log;
   `log_input`'s row counts and sizes, and `artifact_version_id` /
   `artifact_etag` beside them (below; for FWA these are probe rows, which are
   evidence and not proof).
+- **`bcfishobs_sha` is retired (link#451), NULL from 0.81.0.** It was the HEAD
+  of a local bcfishobs checkout, which no run reads: runs read
+  `bcfishobs.observations` as `snapshot_bcfp.sh` loaded it from the bchamp
+  parquet. The observations a group read are named by `log_input`'s
+  `artifact_version_id` for that table, and `study_area_verify.sql` fails a
+  run where a finished group has none, or where hosts read different versions
+  of the object-store primitives or different content of the API ones
+  (section 2c). The driver no longer resolves, refuses on or exports a
+  bcfishobs checkout. Rows before 0.81.0 keep their checkout SHAs.
 - **Source-artifact identity (link#265).** `provenance.source_artifact` holds,
   per host and primitive artifact, the object store's version id, ETag and
   `Last-Modified`, and `recorded_by` says how strong the record is:
@@ -2728,7 +2737,7 @@ one `--focal=` list per worker after the dispatcher's and before the cyphers'
   variable the leg exports (`REMOTE_LEG_VARS`, held to `remote_leg_cmd`'s
   exports by a test), every `LNK_*` (all link reads; `LNK_HOST_ALIAS`, which
   only names the host, excepted), and the pins `LINK_GIT_SHA`,
-  `LINK_GIT_DIRTY`, `FWAPG_GIT_SHA`, `BCFISHOBS_GIT_SHA` and `PGOPTIONS`. A
+  `LINK_GIT_DIRTY`, `FWAPG_GIT_SHA` and `PGOPTIONS`. A
   `FRESH_GIT_SHA` must be the installed fresh's `RemoteSha`, and
   `FRESH_GIT_DIRTY` may only be `false` beside it. Under load_all link's sha
   comes from the clone's git. `--auto-install` on a worker installs fresh at
