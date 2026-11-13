@@ -2177,6 +2177,43 @@ log (`data-raw/logs/gate_history_450/`).
   record schema, empty when new); each pick's `lnk_persist_init()` creates the rest,
   and the record schema is created if it does not exist.
 
+### Every host holds the same primitives, judged before any write (link#276)
+
+A multi-host run once modelled on two input states: on 2026-09-01 a cloud host
+pulled PSCIS live at prep while m1 modelled on a load 33 hours old, and every row
+carried the same `fwapg_sha`. Three pieces now stop that:
+
+- **The skip guard reads the build, not the commit.** `lnk_baseline_current()`
+  takes this host's newest **snapshot** row (`csv-sync-` rows load nothing), one
+  that loaded the views when the snapshot will load them, and is current only
+  when that row's `bcfp_model_version` **and** `bcfp_date_completed` equal
+  `log.json`'s. `model_version` is a code identity: on 2026-11-12 upstream held
+  `v0.7.15-51-g3bd2824` built 2026-11-11, m1's newest snapshot the same version
+  built 2026-10-28, and the old version-only guard would have skipped. It keys on
+  `.lnk_host()`, the name rows are written under (it read the node name, so on a
+  host with `LNK_HOST_ALIAS` it never matched). `snapshot_bcfp.sh` loads link from
+  the checkout for the guard and the stamp, as `artifact_record.R` does.
+- **Cloud hosts mean the dispatcher reloads too.** Cloud hosts snapshot at prep,
+  so `preflight_local()` refuses a run with cloud hosts and no
+  `--refresh-primitives`, before any spend: PSCIS and CABD (API loads, no version
+  handle) change between a days-old dispatcher load and prep often enough that
+  the run would otherwise stop after the spin.
+- **After prep, before any write, every host's loads are compared**
+  (`compare_inputs`, `preflight_hosts()`): each host prints its newest loader row
+  per snapshot primitive (`data-raw/host_inputs.R`, plain SQL), and
+  `.lnk_inputs_agree()` requires one version id per object-store primitive
+  (observations, modelled crossings) and one content md5 per API primitive (CABD,
+  PSCIS), or one row count where a host recorded no md5 (loads before link#465).
+  `--preflight-note` does not downgrade it. The rows land in `<TS>_inputs.tsv`.
+  Persistent workers load only when the operator does, so a worker on an older
+  load fails here: reload it (`snapshot_bcfp.sh --force`) before launch. After
+  the run, `study_area_verify.sql` section 2c checks the same from `log_input`.
+
+The two checks are two implementations of one rule (one in R over
+`provenance.source_artifact` before the run, one in SQL over `log_input` after
+it), each tested against the same states: a host on another version, an
+unrecorded version, same-size different content, no md5, a missing row.
+
 ### The vintage gate reads load stamps (link#265, absorbing #247)
 
 `lnk_preflight_vintage()` (via `data-raw/host_vintage.R`) judges each snapshot

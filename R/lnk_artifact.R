@@ -567,3 +567,61 @@ lnk_artifact_read <- function(conn, host = .lnk_host()) {
        FROM %s t", table))$md5
   as.character(x)
 }
+
+
+#' Do the hosts of one run hold the same snapshot primitives? (link#276)
+#'
+#' `study_area_run.sh`'s pre-flight reads each host's newest `loader` row per
+#' snapshot primitive (`data-raw/host_inputs.R`) after prep and before any write,
+#' and refuses a run whose hosts would model on different data. Until this, the
+#' check ran only after the run (`provincial_246/verify_extra.sql`, then
+#' `study_area_verify.sql` section 2c over `log_input`), when a mixed run had
+#' already been paid for.
+#'
+#' Per table:
+#' - **object-store primitives** (observations, modelled crossings): one
+#'   `version_id` on every host, none empty;
+#' - **API primitives** (CABD, PSCIS), which have no version handle: one
+#'   `content_md5` where every host recorded one (link#465); where a host
+#'   recorded none (a load before link#465), one `n_rows` instead, which is
+#'   weaker and said so.
+#'
+#' A host with no row for a table holds an unrecorded load, which is refused.
+#'
+#' @param rows A data frame with `host`, `table_name`, `version_id`,
+#'   `content_md5`, `n_rows` (empty strings for absent values).
+#' @param tables The snapshot primitives to judge.
+#' @return A list: `ok`, and `why`, one line per disagreement.
+#' @noRd
+.lnk_inputs_agree <- function(rows, tables = .lnk_vintage_primitives()) {
+  blank <- function(x) is.na(x) | !nzchar(x)
+  hosts <- sort(unique(rows$host))
+  why <- character()
+  kinds <- .lnk_input_primitives()
+  for (tbl in tables) {
+    r <- rows[rows$table_name == tbl, , drop = FALSE]
+    missing <- setdiff(hosts, r$host)
+    if (length(missing)) {
+      why <- c(why, sprintf("%s: no loader row on %s", tbl, paste(missing, collapse = ", ")))
+      next
+    }
+    by_host <- function(col) paste(sprintf("%s %s", r$host, ifelse(blank(r[[col]]), "(none)", r[[col]])),
+                                   collapse = ", ")
+    kind <- kinds$kind[match(tbl, kinds$table_name)]
+    if (identical(kind, "object")) {
+      if (any(blank(r$version_id)) || length(unique(r$version_id)) > 1L) {
+        why <- c(why, sprintf("%s: versions differ or are unrecorded (%s)", tbl, by_host("version_id")))
+      }
+    } else if (!any(blank(r$content_md5))) {
+      if (length(unique(r$content_md5)) > 1L) {
+        why <- c(why, sprintf("%s: content differs (md5: %s)", tbl,
+                              paste(sprintf("%s %s", r$host, substr(r$content_md5, 1, 10)),
+                                    collapse = ", ")))
+      }
+    } else if (any(blank(r$n_rows)) || length(unique(r$n_rows)) > 1L) {
+      why <- c(why, sprintf("%s: row counts differ (%s; no content md5 on every host)", tbl,
+                            by_host("n_rows")))
+    }
+  }
+  list(ok = !length(why), why = why)
+}

@@ -152,15 +152,15 @@ Corrections taken, each reflected in the phases below:
 - [x] The PR notes that steps 2-5 (CABD and the object fetches) get no retry.
 
 ## Phase 7 (#276): one freshness decision, judged before spend
-- [ ] `lnk_baseline_current()`:
+- [x] `lnk_baseline_current()`:
   - reads only `snapshot-` rows;
   - keys on `.lnk_host()`;
   - compares `bcfp_date_completed` as well as `model_version`, so a same-version newer build is a miss.
-- [ ] `preflight_hosts()`, after prep and before any write:
+- [x] `preflight_hosts()`, after prep and before any write:
   - compares each remote host's `provenance.source_artifact` loader rows with the dispatcher's (version id for objects; `content_md5`, then `n_rows`, for the API kinds);
   - fails loud on a difference, naming the table and the hosts;
-  - takes check 5's logic as the source of truth, now in `R/` (`lnk_preflight_inputs()`, or beside `lnk_preflight_vintage()`) so verify and pre-flight share it.
-- [ ] Tests:
+  - judged by `.lnk_inputs_agree()` (`R/lnk_artifact.R`, internal, so no new map row) over rows from `data-raw/host_inputs.R`; verify's SQL (section 2c) is the after-the-run twin, tested on the same states (O1).
+- [x] Tests:
   - a host current by version but behind by date does not skip;
   - a csv-sync row does not skip a snapshot;
   - an aliased host matches;

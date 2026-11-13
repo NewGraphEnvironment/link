@@ -1267,6 +1267,19 @@ q(status = if (res$ok) 0L else 1L)' "$CONFIG" 2>&1 | sed 's/^/    /'; exit "${PI
     fi
   fi
 
+  # --- gate: cloud hosts load primitives at prep, so the dispatcher must too (link#276)
+  # A cloud host snapshots when it is prepped; the dispatcher's load can be days
+  # old. PSCIS and CABD (API loads, no version handle) change between those
+  # times often enough that compare_inputs would refuse the run after the spin,
+  # when the droplets are already paid for. So refuse here, before any spend,
+  # unless the dispatcher reloads in this dispatch. Persistent workers load only
+  # when the operator does; compare_inputs judges them after prep.
+  if [ "$N_CY" -gt 0 ] && [ "$REFRESH_PRIMITIVES" != "1" ]; then
+    echo "  ✗ $N_CY cloud host(s) will load primitives at prep, and the dispatcher would model"
+    echo "    on its own older load: pass --refresh-primitives so all hosts load minutes apart"
+    fail=1
+  fi
+
   # --- gate: BOTH DigitalOcean credentials, each forced to a real API call -
   if [ "$N_CY" -gt 0 ]; then
     # Leg 1 — doctl's own token. This DOES call the API; its weakness was
@@ -1474,6 +1487,39 @@ quit(status = if (isTRUE(res$ok)) 0L else 1L)
 ' "$1" "$((N_HOSTS + 1))")
 }
 
+# compare_inputs: do the dispatcher and every remote host hold the same snapshot
+# primitives? (link#276) Each prints its newest loader row per table
+# (data-raw/host_inputs.R, plain SQL); .lnk_inputs_agree() judges the set:
+# object-store primitives by version id, API primitives by content md5 (row
+# count where a host recorded none). Read after prep and before any write, so a
+# run whose hosts would model on different data stops before it is paid for.
+# Not downgradable by --preflight-note: link#276 accepts a mixed-input run only
+# as impossible or recorded, and this makes it impossible.
+compare_inputs() {
+  local tsv="$LOG_DIR/${TS}_inputs.tsv" ws out
+  printf 'host\ttable_name\tversion_id\tcontent_md5\tn_rows\tloaded_at\tnotes\n' > "$tsv"
+  if ! out=$(cd "$REPO_ROOT" && Rscript data-raw/host_inputs.R 2>/dev/null); then
+    echo "  ✗ dispatcher inputs could not be read"; return 1
+  fi
+  # awk, not sed: macOS sed writes \t in a replacement as a literal t.
+  printf '%s\n' "$out" | tail -n +2 | awk -v h=dispatcher 'BEGIN { OFS = "\t" } { print h, $0 }' >> "$tsv"
+  for ws in ${HOST_ARR[@]+"${HOST_ARR[@]}"}; do
+    if ! remote_run "${HOST_SSH[$ws]}" "$(.remote_cd "$ws") && Rscript data-raw/host_inputs.R" \
+         "$tsv.$ws.out" /dev/null; then
+      echo "  ✗ $ws inputs could not be read"; rm -f "$tsv.$ws.out"; return 1
+    fi
+    remote_out "$tsv.$ws.out" | tail -n +2 | awk -v h="$ws" 'BEGIN { OFS = "\t" } { print h, $0 }' >> "$tsv"
+    rm -f "$tsv.$ws.out"
+  done
+  (cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript -e '
+suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
+rows <- utils::read.delim(commandArgs(TRUE)[1], colClasses = "character",
+                          na.strings = character(), quote = "", comment.char = "")
+res <- link:::.lnk_inputs_agree(rows)
+if (!res$ok) cat(paste0("    ", res$why), sep = "\n")
+q(status = if (res$ok) 0L else 1L)' "$tsv")
+}
+
 preflight_hosts() {
   [ "$N_HOSTS" -gt 0 ] || { echo "  ✓ host pre-flight: no remote hosts, nothing to compare"; return 0; }
   echo "=== pre-flight (hosts; post-prep, pre-write) ==="
@@ -1542,6 +1588,16 @@ preflight_hosts() {
       fi
     fi
   done
+
+  # The same data on every host (link#276), whatever --preflight-note says.
+  if compare_inputs; then
+    echo "  ✓ every host holds the same snapshot primitives ($LOG_DIR/${TS}_inputs.tsv)"
+  else
+    echo "  ✗ hosts hold different snapshot primitives ($LOG_DIR/${TS}_inputs.tsv): they would model on"
+    echo "    different data. Reload the odd host(s) (bash data-raw/snapshot_bcfp.sh --force), or relaunch"
+    echo "    with --refresh-primitives so the dispatcher loads minutes before the cloud hosts."
+    fail=1
+  fi
 
   return "$fail"
 }

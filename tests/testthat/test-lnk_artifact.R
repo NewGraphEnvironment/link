@@ -483,3 +483,59 @@ test_that("HTTP dates parse element by element, NA beside a value", {
   expect_true(all(is.na(got[2:3])))
   expect_identical(attr(got, "tzone"), "UTC")
 })
+
+
+# --- .lnk_inputs_agree: the same snapshot primitives on every host (link#276) --
+
+inputs_rows <- function(host, obs = "v1", msc = "m1", cabd_md5 = "aa", pscis_md5 = "bb",
+                        cabd_n = "2593", pscis_n = "19905") {
+  data.frame(host = host,
+             table_name = c("bcfishobs.observations", "fresh.modelled_stream_crossings",
+                            "cabd.dams", "whse_fish.pscis_assessment_svw"),
+             version_id = c(obs, msc, "", ""),
+             content_md5 = c("", "", cabd_md5, pscis_md5),
+             n_rows = c("375962", "524579", cabd_n, pscis_n),
+             stringsAsFactors = FALSE)
+}
+
+test_that("hosts holding the same loads agree", {
+  r <- rbind(inputs_rows("dispatcher"), inputs_rows("job1"), inputs_rows("worker1"))
+  res <- .lnk_inputs_agree(r)
+  expect_true(res$ok)
+  expect_length(res$why, 0L)
+})
+
+test_that("a host on another observations version is refused, naming each host's", {
+  r <- rbind(inputs_rows("dispatcher"), inputs_rows("job1", obs = "v2"))
+  res <- .lnk_inputs_agree(r)
+  expect_false(res$ok)
+  expect_match(res$why, "bcfishobs.observations: versions differ", fixed = TRUE)
+  expect_match(res$why, "dispatcher v1, job1 v2", fixed = TRUE)
+})
+
+test_that("an unrecorded object version is refused even when every host lacks one", {
+  r <- rbind(inputs_rows("dispatcher", msc = ""), inputs_rows("job1", msc = ""))
+  expect_match(.lnk_inputs_agree(r)$why, "modelled_stream_crossings: versions differ or are unrecorded",
+               fixed = TRUE)
+})
+
+test_that("API tables compare by content md5, and same-size different content is refused", {
+  # The same row count is not the same content: a PSCIS edit keeps 19,905 rows.
+  r <- rbind(inputs_rows("dispatcher"), inputs_rows("job1", pscis_md5 = "cc"))
+  res <- .lnk_inputs_agree(r)
+  expect_false(res$ok)
+  expect_match(res$why, "pscis_assessment_svw: content differs", fixed = TRUE)
+})
+
+test_that("with no md5 on a host, API tables fall back to row counts", {
+  # Loads before link#465 recorded no content md5.
+  same <- rbind(inputs_rows("dispatcher", cabd_md5 = ""), inputs_rows("job1"))
+  expect_true(.lnk_inputs_agree(same)$ok)
+  diff <- rbind(inputs_rows("dispatcher", cabd_md5 = ""), inputs_rows("job1", cabd_n = "2592"))
+  expect_match(.lnk_inputs_agree(diff)$why, "cabd.dams: row counts differ", fixed = TRUE)
+})
+
+test_that("a host with no loader row for a table is refused", {
+  r <- rbind(inputs_rows("dispatcher"), inputs_rows("job1")[-3, ])
+  expect_match(.lnk_inputs_agree(r)$why, "cabd.dams: no loader row on job1", fixed = TRUE)
+})

@@ -127,9 +127,24 @@ fi
 # ledger already matches, instead of aborting on PG* unbound-variable.
 # Default behaviour on R failure (e.g. R not on PATH): proceed with the
 # snapshot (rely on later DB-credential resolution to fail loud).
-CURRENT=$(Rscript -e "cat(link::lnk_baseline_current(link::lnk_bucket_log()))" 2>/dev/null || echo "FALSE")
+# The guard and the stamp read link from this checkout when it is one (as
+# artifact_record.R does), so they apply the rule the branch carries rather
+# than whatever link is installed (link#276). The guard asks for a row that
+# loaded the views when this snapshot will load them, and for the upstream
+# build by its completion time as well as its version.
+LINK_LOAD_R='desc <- "DESCRIPTION"
+if (file.exists(desc) && identical(unname(read.dcf(desc, fields = "Package")[1, 1]), "link") &&
+    requireNamespace("pkgload", quietly = TRUE)) {
+  suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
+} else {
+  suppressPackageStartupMessages(library(link))
+}'
+VIEWS_R=FALSE
+[ "$WITH_BCFP_VIEWS" = "1" ] && VIEWS_R=TRUE
+CURRENT=$(Rscript -e "$LINK_LOAD_R
+cat(lnk_baseline_current(lnk_bucket_log(), views = $VIEWS_R))" 2>/dev/null || echo "FALSE")
 if [ "$CURRENT" = "TRUE" ] && [ "$FORCE" = "0" ]; then
-  echo "snapshot_bcfp: ledger row for $(hostname) already at this upstream SHA; skipping."
+  echo "snapshot_bcfp: this host's newest snapshot row already holds this upstream build (version and date); skipping."
   echo "  (--force to re-pull anyway — useful when upstream parquet drift differs from bcfp git SHA)"
   exit 0
 fi
@@ -363,8 +378,7 @@ if [ "$WITH_BCFP_VIEWS" = "1" ]; then
   NOTES="$NOTES; --with-bcfp-views"
 fi
 
-Rscript -e "
-suppressMessages(library(link))
+Rscript -e "$LINK_LOAD_R
 log <- lnk_bucket_log()
 lnk_baseline_append(log,
   run_label = '$RUN_LABEL',
