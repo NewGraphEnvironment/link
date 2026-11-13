@@ -110,7 +110,8 @@ if (fwa_mode) {
     fwapg_commit = if (length(args) == 5L && nzchar(args[5])) args[5] else NA_character_)
   um <- attr(rows, "unmatched")
   changed <- sum(grepl("changed during the load", rows$notes, fixed = TRUE))
-  cat(sprintf("artifact_record: %d FWA loader rows (%d tables; %d without a version id; %d changed during the load); %d traced URLs are not primitives\n",
+  cat(sprintf(paste0("artifact_record: %d FWA loader rows (%d tables; %d without a version id; ",
+                     "%d changed during the load); %d traced URLs are not primitives\n"),
               nrow(rows), length(unique(rows$table_name)), sum(is.na(rows$version_id)), changed,
               length(um)))
   # Read back: every recorded artifact is there as a loader row.

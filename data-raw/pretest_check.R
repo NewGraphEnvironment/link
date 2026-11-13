@@ -55,7 +55,9 @@ out <- tryCatch({
     every_input <- isTRUE(src$every_input)
     hist <- if (!is.null(src) && !every_input) {
       DBI::dbGetQuery(conn, pretest_history_sql(src$schema, src$config))
-    } else data.frame(link_sha = character(), link_dirty = logical())
+    } else {
+      data.frame(link_sha = character(), link_dirty = logical())
+    }
     borrowed <- !is.null(src) && !identical(src$config, config)
     short <- if (borrowed) pretest_history_short(hist$wsg, modelable, paste0(src$schema, ".log")) else ""
     if (is.null(src)) {

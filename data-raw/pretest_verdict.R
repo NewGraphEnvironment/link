@@ -9,7 +9,8 @@
 # Reads <out>/picks.tsv, <out>/exits.tsv (wsg, exit status),
 # <out>/range.txt and <out>/history.txt (what the pick held the gate to: its
 # range_source and, for an ancestor's history, which; link#450). history.txt
-# wins over the flags, since the pick resolves a history no flag named; each group's minutes and provenance come from its row in
+# wins over the flags, since the pick resolves a history no flag named. Each
+# group's minutes and provenance come from its row in
 # <scratch>.log, the same measure as its history. Appends the verdict table to
 # <out>/pretest.md and writes one row to <schema>.log_pretest, which
 # study_area_run.sh's pre-flight reads. Exit 0 when the gate passes, 1 when it

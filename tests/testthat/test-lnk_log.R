@@ -851,6 +851,9 @@ test_that(".lnk_log_recompute_fail appends notes and never sets date_end", {
 # --- .lnk_bcfp_log_current: the tunnel-free pin -----------------------------
 
 # A ledger in the shape lnk_baseline_append() writes.
+# Notes a snapshot that loaded the reference views writes (link#446).
+views_notes <- "manual snapshot via data-raw/snapshot_bcfp.sh; --with-bcfp-views; head_sha=x"
+
 local_ledger <- function(rows, env = parent.frame()) {
   path <- withr::local_tempfile(fileext = ".csv", .local_envir = env)
   writeLines(c(paste(names(cols_baseline), collapse = ","), rows), path)
@@ -861,8 +864,8 @@ local_ledger <- function(rows, env = parent.frame()) {
 test_that(".lnk_bcfp_log_ledger reads this host's latest model_version", {
   withr::local_envvar(LNK_HOST_ALIAS = "m1")
   local_ledger(c(
-    "2026-08-01 10:00,m1,snapshot-20260801,n/a,,v0.7.15-40-gaaaaaaa,2026-08-01T00:00:00Z,manual snapshot via data-raw/snapshot_bcfp.sh; --with-bcfp-views; head_sha=x",
-    "2026-08-31 14:50,m1,snapshot-20260831,n/a,,v0.7.15-47-ga702229,2026-08-19T04:31:37Z,manual snapshot via data-raw/snapshot_bcfp.sh; --with-bcfp-views; head_sha=x"))
+    paste0("2026-08-01 10:00,m1,snapshot-20260801,n/a,,v0.7.15-40-gaaaaaaa,2026-08-01T00:00:00Z,", views_notes),
+    paste0("2026-08-31 14:50,m1,snapshot-20260831,n/a,,v0.7.15-47-ga702229,2026-08-19T04:31:37Z,", views_notes)))
   out <- .lnk_bcfp_log_ledger()
   expect_identical(out$model_version, "v0.7.15-47-ga702229")
 })
@@ -873,7 +876,7 @@ test_that(".lnk_bcfp_log_ledger leaves model_run_id NA rather than inventing one
   # "". Honest absence beats a fabricated id.
   withr::local_envvar(LNK_HOST_ALIAS = "m1")
   local_ledger(
-    "2026-08-31 14:50,m1,snapshot-20260831,n/a,,v0.7.15-47-ga702229,2026-08-19T04:31:37Z,manual snapshot via data-raw/snapshot_bcfp.sh; --with-bcfp-views; head_sha=x")
+    paste0("2026-08-31 14:50,m1,snapshot-20260831,n/a,,v0.7.15-47-ga702229,2026-08-19T04:31:37Z,", views_notes))
   out <- .lnk_bcfp_log_ledger()
   expect_true(is.na(out$model_run_id))
 })
@@ -881,7 +884,7 @@ test_that(".lnk_bcfp_log_ledger leaves model_run_id NA rather than inventing one
 test_that(".lnk_bcfp_log_ledger carries a model_run_id when the ledger has one", {
   withr::local_envvar(LNK_HOST_ALIAS = "m4")
   local_ledger(
-    "2026-05-03 14:23,m4,snapshot-20260503,fresh_default,120,v0.7.14-113-ga7373af,2026-04-28T23:17:00Z,manual snapshot via data-raw/snapshot_bcfp.sh; --with-bcfp-views; head_sha=x")
+    paste0("2026-05-03 14:23,m4,snapshot-20260503,fresh_default,120,v0.7.14-113-ga7373af,2026-04-28T23:17:00Z,", views_notes))
   out <- .lnk_bcfp_log_ledger()
   expect_identical(out$model_run_id, 120L)
 })
@@ -891,7 +894,7 @@ test_that(".lnk_bcfp_log_ledger is scoped to THIS host", {
   # says nothing about what this one loaded.
   withr::local_envvar(LNK_HOST_ALIAS = "m1")
   local_ledger(
-    "2026-08-31 14:50,cypher-job1,snapshot-20260831,n/a,,v0.7.15-47-ga702229,2026-08-19T04:31:37Z,manual snapshot via data-raw/snapshot_bcfp.sh; --with-bcfp-views; head_sha=x")
+    paste0("2026-08-31 14:50,cypher-job1,snapshot-20260831,n/a,,v0.7.15-47-ga702229,2026-08-19T04:31:37Z,", views_notes))
   expect_null(.lnk_bcfp_log_ledger())
 })
 
@@ -904,7 +907,7 @@ test_that(".lnk_bcfp_log_current prefers the DB when bcfishpass.log is reachable
   # Tier 1 carries model_run_id, which the ledger cannot. It must win.
   withr::local_envvar(LNK_HOST_ALIAS = "m1")
   local_ledger(
-    "2026-08-31 14:50,m1,snapshot-20260831,n/a,,LEDGER-VERSION,2026-08-19T04:31:37Z,manual snapshot via data-raw/snapshot_bcfp.sh; --with-bcfp-views; head_sha=x")
+    paste0("2026-08-31 14:50,m1,snapshot-20260831,n/a,,LEDGER-VERSION,2026-08-19T04:31:37Z,", views_notes))
   out <- testthat::with_mocked_bindings(
     dbGetQuery = function(conn, statement, ...) {
       if (grepl("information_schema", statement)) return(data.frame(x = 1L))
@@ -1010,7 +1013,7 @@ test_that(".lnk_bcfp_log_current falls back to the ledger with no bcfishpass sch
   # that left bcfp_model_version NULL on all 37 rows of the field run.
   withr::local_envvar(LNK_HOST_ALIAS = "m1")
   local_ledger(
-    "2026-08-31 14:50,m1,snapshot-20260831,n/a,,v0.7.15-47-ga702229,2026-08-19T04:31:37Z,manual snapshot via data-raw/snapshot_bcfp.sh; --with-bcfp-views; head_sha=x")
+    paste0("2026-08-31 14:50,m1,snapshot-20260831,n/a,,v0.7.15-47-ga702229,2026-08-19T04:31:37Z,", views_notes))
   out <- testthat::with_mocked_bindings(
     dbGetQuery = function(conn, statement, ...) data.frame(),
     .package = "DBI",

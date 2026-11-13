@@ -16,7 +16,8 @@
 # Usage: Rscript data-raw/host_inputs.R
 
 suppressPackageStartupMessages({
-  library(DBI); library(RPostgres)
+  library(DBI)
+  library(RPostgres)
 })
 tables <- c("bcfishobs.observations", "cabd.dams", "fresh.modelled_stream_crossings",
             "whse_fish.pscis_assessment_svw")

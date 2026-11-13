@@ -543,16 +543,23 @@ test_that("a host with no loader row for a table is refused", {
 
 # --- fwapg load.sh's trace as loader rows (link#270) ---------------------------
 
+fwapg_base <- "https://nrs.objectstore.gov.bc.ca/bchamp/fwapg/"
 fwa_trace <- c(
   "+ PSQL='psql postgresql://x -v ON_ERROR_STOP=1'",
   "+ for table in \"${tables[@]}\"",
-  "+ ogr2ogr -f PostgreSQL PG:postgresql://x -append -nln whse_basemapping.fwa_lakes_poly /vsicurl/https://nrs.objectstore.gov.bc.ca/bchamp/fwapg/fwa_lakes_poly.parquet",
-  "++ ogr2ogr -f CSV /vsistdout/ /vsicurl/https://nrs.objectstore.gov.bc.ca/bchamp/fwapg/fwa_watershed_groups_poly.parquet -sql 'select x'",
-  "+ ogr2ogr -f PostgreSQL PG:x -nln fwa_stream_networks_sp_load /vsicurl/https://nrs.objectstore.gov.bc.ca/bchamp/fwapg/fwa_stream_networks_sp/ADMS.parquet",
-  "+ ogr2ogr -f PostgreSQL PG:x -nln fwa_stream_networks_sp_load /vsicurl/https://nrs.objectstore.gov.bc.ca/bchamp/fwapg/fwa_stream_networks_sp/BULK.parquet",
-  "+ psql postgresql://x -c '\\copy whse_basemapping.fwa_stream_networks_channel_width FROM PROGRAM '\\''curl -s https://nrs.objectstore.gov.bc.ca/bchamp/fwapg/fwa_stream_networks_channel_width.csv.gz | gunzip'\\'' delimiter '\\'','\\'' csv header'",
+  paste0("+ ogr2ogr -f PostgreSQL PG:postgresql://x -append -nln whse_basemapping.fwa_lakes_poly /vsicurl/", fwapg_base,
+         "fwa_lakes_poly.parquet"),
+  paste0("++ ogr2ogr -f CSV /vsistdout/ /vsicurl/", fwapg_base,
+         "fwa_watershed_groups_poly.parquet -sql 'select x'"),
+  paste0("+ ogr2ogr -f PostgreSQL PG:x -nln fwa_stream_networks_sp_load /vsicurl/", fwapg_base,
+         "fwa_stream_networks_sp/ADMS.parquet"),
+  paste0("+ ogr2ogr -f PostgreSQL PG:x -nln fwa_stream_networks_sp_load /vsicurl/", fwapg_base,
+         "fwa_stream_networks_sp/BULK.parquet"),
+  paste0("+ psql postgresql://x -c '\\copy whse_basemapping.fwa_stream_networks_channel_width FROM PROGRAM '\\''curl -s ", fwapg_base,
+         "fwa_stream_networks_channel_width.csv.gz | gunzip'\\'' delimiter '\\'','\\'' csv header'"),
   "fwa_stream_networks_channel_width",
-  "a line load.sh echoed with https://nrs.objectstore.gov.bc.ca/bchamp/fwapg/not_a_trace_line.parquet",
+  paste0("a line load.sh echoed with ", fwapg_base,
+         "not_a_trace_line.parquet"),
   "+ ogr2ogr ... /vsicurl/https://nrs.objectstore.gov.bc.ca/bchamp/fwapg/fwa_lakes_poly.parquet")
 
 test_that("the trace's URLs are read from its + lines only, in order, each once", {

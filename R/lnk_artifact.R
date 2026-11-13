@@ -605,8 +605,9 @@ lnk_artifact_read <- function(conn, host = .lnk_host()) {
       why <- c(why, sprintf("%s: no loader row on %s", tbl, paste(missing, collapse = ", ")))
       next
     }
-    by_host <- function(col) paste(sprintf("%s %s", r$host, ifelse(blank(r[[col]]), "(none)", r[[col]])),
-                                   collapse = ", ")
+    by_host <- function(col) {
+      paste(sprintf("%s %s", r$host, ifelse(blank(r[[col]]), "(none)", r[[col]])), collapse = ", ")
+    }
     kind <- kinds$kind[match(tbl, kinds$table_name)]
     if (identical(kind, "object")) {
       if (any(blank(r$version_id)) || length(unique(r$version_id)) > 1L) {

@@ -264,7 +264,8 @@ stamp_etag <- function(ages, etag = NA_character_, url = NA_character_) {
 obs <- "bcfishobs.observations"
 
 test_that("a changed source ETag is stale even when the load is 0 days old", {
-  ages <- fresh_ages(); ages[] <- 0
+  ages <- fresh_ages()
+  ages[] <- 0
   st <- stamp_etag(ages)
   st$etag[st$table_name == obs] <- "aaa"
   heads <- data.frame(table_name = obs, live_etag = "bbb")
@@ -278,7 +279,8 @@ test_that("a changed source ETag is stale even when the load is 0 days old", {
 })
 
 test_that("an unchanged source ETag is current even when the load is past the window", {
-  ages <- fresh_ages(); ages[obs] <- 40
+  ages <- fresh_ages()
+  ages[obs] <- 40
   st <- stamp_etag(ages)
   st$etag[st$table_name == obs] <- "aaa"
   heads <- data.frame(table_name = obs, live_etag = "aaa")
@@ -290,7 +292,8 @@ test_that("an unchanged source ETag is current even when the load is past the wi
 })
 
 test_that("a failed HEAD is no answer: the table falls back to its age, never to unchanged", {
-  ages <- fresh_ages(); ages[obs] <- 40
+  ages <- fresh_ages()
+  ages[obs] <- 40
   st <- stamp_etag(ages)
   st$etag[st$table_name == obs] <- "aaa"
   heads <- data.frame(table_name = obs, live_etag = NA_character_)
@@ -304,7 +307,8 @@ test_that("a failed HEAD is no answer: the table falls back to its age, never to
 })
 
 test_that("a table whose load recorded no ETag (the API primitives) stays on age", {
-  ages <- fresh_ages(); ages[["cabd.dams"]] <- 40
+  ages <- fresh_ages()
+  ages[["cabd.dams"]] <- 40
   res <- lnk_preflight_vintage(vintage = v(fresh_ages()), stamp = stamp_etag(ages),
                                heads = data.frame(table_name = character(), live_etag = character()),
                                now = now, max_age_days = 7, quiet = TRUE)
@@ -321,7 +325,8 @@ test_that("both known answers hold against the real bucket", {
   url <- "https://nrs.objectstore.gov.bc.ca/bchamp/bcfishobs/observations.parquet"
   live <- .lnk_artifact_head(url)$etag
   skip_if(is.na(live), "the bucket did not answer a HEAD")
-  ages <- fresh_ages(); ages[obs] <- 40
+  ages <- fresh_ages()
+  ages[obs] <- 40
   st <- stamp_etag(ages)
   st$url[st$table_name == obs] <- url
   st$etag[st$table_name == obs] <- live

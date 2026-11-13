@@ -228,7 +228,8 @@ cat("", file = md)
 w("# Pre-run gate (link#372)")
 w("")
 w(if (every_input) {
-  sprintf("- config `%s` (chain: %s): no build of it or of any config it extends on this database, so every input counts as changed (link#450)",
+  sprintf(paste0("- config `%s` (chain: %s): no build of it or of any config it extends on this ",
+                 "database, so every input counts as changed (link#450)"),
           config, paste(chain, collapse = " < "))
 } else {
   sprintf("- config `%s` (chain: %s), history in `%s.log` under `%s`%s", config,
@@ -236,11 +237,15 @@ w(if (every_input) {
           if (hist_src$borrowed) {
             paste0(", borrowed", if (!flags) " (found through extends)" else "",
                    ": its own builds do not cover it")
-          } else "")
+          } else {
+            ""
+          })
 })
 w(sprintf("- link `%s..%s`; fresh `%s..%s`", substr(since_sha, 1, 12), substr(until_sha, 1, 12),
           fresh_from, fresh_to))
-w(sprintf("- per input %d groups; bound %g x last minutes (`%s.log`, or `data-raw/logs/build_minutes.csv` where newer, scaled to %s at speed %.2f; %g min where neither has the group), floor %g min; statement bound <= %d min",
+w(sprintf(paste0("- per input %d groups; bound %g x last minutes (`%s.log`, or ",
+                 "`data-raw/logs/build_minutes.csv` where newer, scaled to %s at speed %.2f; ",
+                 "%g min where neither has the group), floor %g min; statement bound <= %d min"),
           per_input, k, minutes_schema, gate_host, gate_speed, PRETEST_FIXED_MIN, floor_min, stmt_cap))
 if (length(minutes_exclude)) w(sprintf("- minutes excluded (bounded on the median): %s",
                                        paste(minutes_exclude, collapse = ", ")))
@@ -274,10 +279,14 @@ if (length(unex)) {
 }
 
 # Minutes named from the bundle's own schema read its own config, not the one borrowed.
-mins <- if (identical(minutes_schema, hist_src$schema)) built else if (has_log(minutes_schema)) {
+mins <- if (identical(minutes_schema, hist_src$schema)) {
+  built
+} else if (has_log(minutes_schema)) {
   DBI::dbGetQuery(conn, pretest_history_sql(minutes_schema,
                                             if (identical(minutes_schema, schema)) config else hist_src$config))
-} else built[0, , drop = FALSE]
+} else {
+  built[0, , drop = FALSE]
+}
 # Every group the config models is eligible; each is bounded on its newest minutes,
 # from the log or the committed record, scaled to this host (link#450).
 history <- pretest_minutes(modelable, mins, build_minutes, chain, speed_of, gate_speed,
