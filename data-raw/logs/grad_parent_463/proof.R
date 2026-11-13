@@ -122,8 +122,8 @@ for (w in wsgs) {
   note <- b$notes[b$schema == S_PARENT & b$wsg == w]
   rf <- pair$run_id[pair$schema == S_FULL & pair$wsg == w]
   r_min <- pair$run_id[pair$schema == S_MINIMAL & pair$wsg == w]
-  ok <- length(note) == 1L && grepl(sprintf("run_id_full %s, run_id_minimal %s in %s", rf, r_min, S_MINIMAL),
-                                    note, fixed = TRUE)
+  ok <- length(note) == 1L && isTRUE(grepl(sprintf("run_id_full %s, run_id_minimal %s in %s", rf, r_min, S_MINIMAL),
+                                    note, fixed = TRUE))
   stop_on(!ok, sprintf("builds: %s's parent notes do not name %s and %s", w, rf, r_min))
 }
 sha <- unique(b$link_sha)[1]
@@ -157,6 +157,7 @@ seg <- q(
      FROM unnest(ARRAY[%s]) AS w(wsg) ORDER BY 1", in_wsgs)
 seg[-1] <- lapply(seg[-1], as.numeric)
 write(seg, "segments.csv")
+stop_on(any(seg$n_control == 0), "segments: a group has no segments, so nothing would be compared")
 stop_on(any(seg$n_control != seg$n_parent | seg$n_control != seg$n_full |
               seg$n_control_parent != seg$n_control | seg$n_control_full != seg$n_control),
         "segments: control, parent and fresh_default do not hold the same segments")
