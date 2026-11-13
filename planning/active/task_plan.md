@@ -91,8 +91,8 @@ Corrections taken, each reflected in the phases below:
 - [x] RUNBOOK §6c, "The bcfp reference pin": state the rule, say `model_version` is a code identity, and say `log.json` carries no `model_type` (G10). `data-raw/logs/parity_0.78.0/README.md` names the right version for #440's run (`v0.7.15-50-g620dbe4`); the 17 rows stay as written.
 
 ## Phase 3 (#458): say how `log` keeps history
-- [ ] RUNBOOK §6b's `log` row and the §6c reader guidance:
-  - `log` accumulates across runs (consolidate keeps history, #354), while `log_recompute` is cleared per run.
+- [x] RUNBOOK §6b's `log` row and the §6c reader guidance:
+  - `log` and `log_recompute` both accumulate across runs (consolidate keeps history, #354). Measured: nothing clears `log_recompute`; `fresh_default`'s asymmetry is #454's hand-seeded `log`, not a clearing rule (the issue's premise corrected).
   - Readers take a build as the `log` rows of one `run_uid` (`lnk_log_read(run_uid =)`), never every row.
   - Bring §6b's column list up to date (`run_uid`, `bcfp_pin_source`, `bcfp_date_completed`, the tokens).
 

@@ -758,11 +758,11 @@ schema, so a network in the DB is self-describing:
 
 | table | grain | holds |
 |---|---|---|
-| `<persist>.log` | one row per run | `date_start` / `date_end`, `config_hash`, `config_drift`, link/fresh version + SHA + dirty flag, `fwapg_sha`, run args, `discharge_fill`, `discharge_source`, `near_river` (the pairs, #364), `species[]`, `wsg_upstream[]`, bcfp baseline |
+| `<persist>.log` | one row per group per build (`run_id`); every dispatch's rows stay | `date_start` / `date_end`, `run_uid` / `run_label`, `config_hash`, `config_drift`, link/fresh version + SHA + dirty flag, `fwapg_sha`, `bcfishobs_sha` (retired, NULL from 0.81.0), run args, `discharge_fill`, `discharge_source`, `near_river` (the pairs, #364), output tokens (`token_cut`, `token_acc`, `token_grad`, `token_flow`, #414), `species[]`, `wsg_upstream[]`, the bcfp pin (`bcfp_model_version`, `bcfp_date_completed`, `bcfp_pin_source`) |
 | `<persist>.log_parameters_fresh` | `(config_hash, species_code)` | **full** `parameters_fresh.csv` rows |
 | `<persist>.log_parameters_habitat_thresholds` | `(config_hash, species_code)` | **full** thresholds rows the run used — the bundle's, or fresh's copy when it has none (#282) |
 | `<persist>.log_dimensions` | `(config_hash, species)` | **full** `dimensions.csv` rows |
-| `<persist>.log_input` | `(run_id, table_name)` | per-primitive row count, size, last-analyze, source |
+| `<persist>.log_input` | `(run_id, table_name)` | per-primitive row count, size, last-analyze, source, and the loaded artifact's identity (`artifact_*`, below) |
 
 Read it with `lnk_log_read(conn, cfg, aoi = "PINE")`. Mirrors `bcfishpass.log`
 + its `log_parameters_*` children.
@@ -870,7 +870,19 @@ EXCEPT SELECT watershed_group_code FROM <persist>.log;
   is still cleared once copied), so a group copied home from a cloud host
   keeps its earlier builds' rows (link#354; before it, every cloud-built group
   kept only its newest row). The set is `.lnk_log_specs()`, read by the DDL
-  and by consolidate. `log_parameters_fresh` / `log_parameters_habitat_thresholds` /
+  and by consolidate.
+- **A build is the rows of one `run_uid`, never the whole table (link#458).**
+  Nothing clears `log` or `log_recompute`: a schema modelled by several
+  dispatches holds every dispatch's rows (`fresh` holds four runs in both).
+  Read one build with `lnk_log_read(conn, cfg, run_uid = <uid>)`, or, for "the
+  build" a schema now holds, the rows of the `run_uid`s its newest
+  `log_recompute` rows name. A reader that takes every `log` row sees several
+  link versions and half-empty token columns. `fresh_default` after #454 shows
+  the trap at its sharpest: its `log` holds the 242 rows of
+  `20261023_074321-24d85e8c` beside the new run's 241, because they were
+  seeded in as the pre-run gate's history, while `log_recompute` holds only
+  the new run's (it was not seeded); #450 removes the need to seed.
+- `log_parameters_fresh` / `log_parameters_habitat_thresholds` /
   `log_dimensions` deliberately
   do not (they key on `config_hash`), so **they do not yet travel between
   hosts** — follow-up PR.
