@@ -99,13 +99,23 @@ if [ -n "$MISSING" ]; then
   echo "See data-raw/README.md for install instructions per host." >&2
   exit 1
 fi
-# grep without -q (and redirect to /dev/null) so it reads all input and
-# doesn't close the pipe early. With -q + set -euo pipefail, ogr2ogr gets
-# SIGPIPE (exit 141), pipefail propagates, `!` flips it, FATAL fires
-# even though the Parquet driver IS present (link#160).
-if ! ogr2ogr --formats 2>/dev/null | grep -i parquet > /dev/null; then
-  echo "FATAL: ogr2ogr lacks Parquet driver. Need conda-forge or Homebrew GDAL." >&2
-  exit 1
+# The loads that retry, fall back and check their rows (link#484, link#459).
+# shellcheck source=data-raw/snapshot_bcfp_lib.sh
+. data-raw/snapshot_bcfp_lib.sh
+
+# A GDAL without the Parquet driver (Ubuntu's 3.8) reads the observations through
+# pyarrow instead (obs_parquet_fallback), which needs uv. SNAPSHOT_BCFP_NO_PARQUET=1
+# takes that path on a GDAL that has the driver, to prove it.
+if snap_has_parquet && [ "${SNAPSHOT_BCFP_NO_PARQUET:-0}" != "1" ]; then
+  OBS_READER=gdal
+else
+  OBS_READER=pyarrow
+  command -v uv >/dev/null 2>&1 || {
+    echo "FATAL: ogr2ogr lacks the Parquet driver and uv is not installed to read the" >&2
+    echo "  observations with pyarrow. Install uv, or a GDAL with Parquet (conda-forge, Homebrew)." >&2
+    exit 1
+  }
+  echo "snapshot_bcfp: no Parquet driver in use; the observations go through pyarrow (uv)."
 fi
 
 # Skip-if-current guard runs FIRST -- before any DB-credential resolution.
@@ -188,20 +198,25 @@ $PSQL -c "CREATE SCHEMA IF NOT EXISTS bcfishobs;"
 # -----------------------------------------
 # 1. BCDC PSCIS
 # -----------------------------------------
-# Drop the table first so the load is fresh on every run. `bcdata bc2pg
-# --refresh` requires the target table to already exist (truncates it);
-# DROP+create-from-scratch is simpler for our snapshot use case.
+# Each view by bc2pg_load() (snapshot_bcfp_lib.sh): the table dropped and
+# loaded fresh, retried on a failed load or a short table (a transient WFS count
+# of 0 failed two hosts' prep on 2026-11-13, link#484), then read from the WFS
+# directly when bc2pg's attempts are spent (link#459). Each load is held to the
+# WFS's own feature count.
+ASSESS_PATH=""
 for tbl in pscis_assessment_svw \
           pscis_design_proposal_svw \
           pscis_habitat_confirmation_svw \
           pscis_remediation_svw; do
-  $PSQL -c "DROP TABLE IF EXISTS whse_fish.${tbl};"
-  bcdata bc2pg "whse_fish.${tbl}" --db_url "$DATABASE_URL"
+  bc2pg_load "whse_fish.${tbl}" || exit 1
+  [ "$tbl" != pscis_assessment_svw ] || ASSESS_PATH="$SNAP_PATH"
 done
-# Only the assessment view is a model primitive (.lnk_input_primitives()).
+# Only the assessment view is a model primitive (.lnk_input_primitives()). The
+# notes name the path it took, because a WFS-fallback table's content differs
+# from a bc2pg one's (snapshot_bcfp_lib.sh, wfs_load()).
 artifact_row whse_fish.pscis_assessment_svw \
   "https://openmaps.gov.bc.ca/geo/pub/wfs?typeName=WHSE_FISH.PSCIS_ASSESSMENT_SVW" \
-  "" "" "" "bcdata bc2pg; no version handle"
+  "" "" "" "${ASSESS_PATH}; no version handle"
 
 # -----------------------------------------
 # 2. CABD dams (public API; same URL as bcfp's jobs/load_weekly)
@@ -210,8 +225,8 @@ CABD_URL="https://cabd-web.azurewebsites.net/cabd-api/features/dams?filter=provi
 ogr2ogr -f PostgreSQL \
   "PG:$DATABASE_URL" \
   -overwrite \
-  --config OGR_TRUNCATE=YES \
-  --config PG_USE_COPY=YES \
+  --config OGR_TRUNCATE YES \
+  --config PG_USE_COPY YES \
   -nln cabd.dams \
   -lco GEOMETRY_NAME=geom \
   "$CABD_URL" \
@@ -237,7 +252,7 @@ unzip -qun "$TMPDIR_MSC/modelled_stream_crossings.gpkg.zip" -d "$TMPDIR_MSC"
 ogr2ogr -f PostgreSQL \
   "PG:$DATABASE_URL" \
   -overwrite \
-  --config PG_USE_COPY=YES \
+  --config PG_USE_COPY YES \
   -nln fresh.modelled_stream_crossings \
   "$TMPDIR_MSC/modelled_stream_crossings.gpkg" \
   modelled_stream_crossings
@@ -291,14 +306,21 @@ OBS_URL="$BCHAMP/bcfishobs/observations.parquet"
 artifact_head "$OBS_URL"
 OBS_FETCH="$OBS_URL"
 [ -z "$A_VERSION" ] || OBS_FETCH="$OBS_URL?versionId=$A_VERSION"
-ogr2ogr -f PostgreSQL \
-  "PG:$DATABASE_URL" \
-  -append \
-  --config OGR_TRUNCATE=YES \
-  --config PG_USE_COPY=YES \
-  -nln bcfishobs.observations \
-  "/vsicurl/$OBS_FETCH" \
-  observations
+if [ "$OBS_READER" = gdal ]; then
+  ogr2ogr -f PostgreSQL \
+    "PG:$DATABASE_URL" \
+    -append \
+    --config OGR_TRUNCATE YES \
+    --config PG_USE_COPY YES \
+    -nln bcfishobs.observations \
+    "/vsicurl/$OBS_FETCH" \
+    observations
+else
+  # The same version-pinned object, downloaded, then read by pyarrow (link#459).
+  curl -fsSL -o "$WORKDIR/observations.parquet" "$OBS_FETCH"
+  obs_parquet_fallback "$WORKDIR/observations.parquet" bcfishobs.observations || exit 1
+  A_NOTE="${A_NOTE:+$A_NOTE; }read with pyarrow (no GDAL Parquet driver)"
+fi
 artifact_row bcfishobs.observations "$OBS_URL" \
   "$A_VERSION" "$A_ETAG" "$A_LASTMOD" "$A_NOTE"
 
@@ -325,7 +347,7 @@ if [ "$WITH_BCFP_VIEWS" = "1" ]; then
     ogr2ogr -f PostgreSQL \
       "PG:$DATABASE_URL" \
       -overwrite \
-      --config PG_USE_COPY=YES \
+      --config PG_USE_COPY YES \
       -nln "$target" \
       "/vsizip//vsicurl/https://newgraph.s3.us-west-2.amazonaws.com/${view}.fgb.zip" \
       "${view}"

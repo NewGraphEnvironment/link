@@ -131,7 +131,7 @@ Corrections taken, each reflected in the phases below:
 - [x] RUNBOOK §8d's host-prep lines.
 
 ## Phase 6 (#484, #459): `snapshot_bcfp.sh` loads that survive a flicker and an old GDAL
-- [ ] `data-raw/snapshot_bcfp_lib.sh`, sourced by the script:
+- [x] `data-raw/snapshot_bcfp_lib.sh`, sourced by the script:
   - `bc2pg_retry <tbl>`: drop, `bcdata bc2pg` inside an `if`, count rows, and compare with the WFS `numberMatched` where it can be read.
     - A non-zero exit or zero rows fails the attempt.
     - `SNAPSHOT_BCFP_BC2PG_ATTEMPTS` (3) and `_BACKOFF` (30 s × attempt).
@@ -140,7 +140,7 @@ Corrections taken, each reflected in the phases below:
   - Every `--config KEY=VALUE` becomes `--config KEY VALUE` (CABD, modelled crossings, observations, bcfp views).
   - Parquet fallback when `ogr2ogr --formats` lacks Parquet: download the version-pinned object to a tempfile, then read it with pyarrow's `ParquetFile.read` (the duplicate `observation_key` column) from an isolated `uv` environment, never a shared Python, and load it into the existing explicit `CREATE TABLE`. The script refuses with a clear message where neither path is available.
   - Bash 3.2 safe: no `mapfile`, no `${,,}`, no empty arrays under `set -u`.
-- [ ] Tests (stub `bcdata`, `psql`, `curl`, `ogr2ogr` on PATH), shown red against the current loop first:
+- [x] Tests (stub `bcdata`, `psql`, `curl`, `ogr2ogr` on PATH), shown red against the current loop first:
   - fails once, then succeeds;
   - exits 0 with 0 rows, then loads;
   - every attempt fails;
@@ -149,7 +149,7 @@ Corrections taken, each reflected in the phases below:
   - WFS paging assembles more than 10,000 rows;
   - the `--config` form;
   - the Parquet fallback is chosen when the driver is absent.
-- [ ] The PR notes that steps 2-5 (CABD and the object fetches) get no retry.
+- [x] The PR notes that steps 2-5 (CABD and the object fetches) get no retry.
 
 ## Phase 7 (#276): one freshness decision, judged before spend
 - [ ] `lnk_baseline_current()`:
