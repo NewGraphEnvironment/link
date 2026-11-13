@@ -827,7 +827,10 @@ EXCEPT SELECT watershed_group_code FROM <persist>.log;
   - `probe`: a HEAD after the fact (`lnk_artifact_probe()`, run soft at the
     end of every snapshot), used for the FWA tables because `load.sh` records
     nothing (loader rows for those are link#270). It says "current at the
-    first probe", never "what was loaded". It never overwrites a loader row.
+    first probe", never "what was loaded". It never overwrites a loader row,
+    except an FWA one whose table's row count has changed since it was
+    recorded: then the table was reloaded without the capture wrapper, and
+    the loader row no longer describes it.
     It keeps the earliest probe while the row count is unchanged, and it is
     **not a baseline** for change detection (link#273 must read loader rows
     only). **So an equal FWA `artifact_version_id` on two runs is evidence,
@@ -846,8 +849,9 @@ EXCEPT SELECT watershed_group_code FROM <persist>.log;
     not clean). A HEAD after the load names what is current then, so an object
     whose `Last-Modified` is later than the load's start is noted "changed
     during the load". A failed `load.sh` records nothing. `--trace=<log>`
-    records from a trace captured earlier. **Not yet run against a real load**:
-    until the next FWA reload, FWA rows stay probes.
+    records from a trace captured earlier. A reload that skips the wrapper is
+    seen only through the row count (above). **Not yet run against a real
+    load**: until the next FWA reload, FWA rows stay probes.
   - `kind` is `object` (versioned; a NULL identity is a gap), `api` (PSCIS,
     CABD: no version handle, NULL is permanent) or `derived` (`order_parent`).
   - **`content_md5`** (#465): for an `api` primitive, the loader records an md5
@@ -2219,8 +2223,12 @@ carried the same `fwapg_sha`. Three pieces now stop that:
   (observations, modelled crossings) and one content md5 per API primitive (CABD,
   PSCIS), or one row count where a host recorded no md5 (loads before link#465).
   `--preflight-note` does not downgrade it. The rows land in `<TS>_inputs.tsv`.
-  Persistent workers load only when the operator does, so a worker on an older
-  load fails here: reload it (`snapshot_bcfp.sh --force`) before launch. After
+  Persistent workers load only when the operator does, and are reachable before
+  any spend, so `preflight_local()` already compares them with the dispatcher
+  (`<TS>_inputs_pre.tsv`): a worker on an older load refuses the launch before
+  the spin; reload it (`snapshot_bcfp.sh --force`). `host_inputs.R` is piped over
+  ssh, so a worker's clone need not be on the branch yet. Under
+  `--preflight-only` the cloud-host refresh gate only warns. After
   the run, `study_area_verify.sql` section 2c checks the same from `log_input`.
 
 The two checks are two implementations of one rule (one in R over

@@ -1275,9 +1275,31 @@ q(status = if (res$ok) 0L else 1L)' "$CONFIG" 2>&1 | sed 's/^/    /'; exit "${PI
   # unless the dispatcher reloads in this dispatch. Persistent workers load only
   # when the operator does; compare_inputs judges them after prep.
   if [ "$N_CY" -gt 0 ] && [ "$REFRESH_PRIMITIVES" != "1" ]; then
-    echo "  ✗ $N_CY cloud host(s) will load primitives at prep, and the dispatcher would model"
-    echo "    on its own older load: pass --refresh-primitives so all hosts load minutes apart"
-    fail=1
+    if [ "$PREFLIGHT_ONLY" = "1" ]; then
+      echo "  WARN: $N_CY cloud host(s) load primitives at prep; the real launch needs"
+      echo "        --refresh-primitives so the dispatcher loads minutes before them"
+    else
+      echo "  ✗ $N_CY cloud host(s) will load primitives at prep, and the dispatcher would model"
+      echo "    on its own older load: pass --refresh-primitives so all hosts load minutes apart"
+      fail=1
+    fi
+  fi
+
+  # --- gate: persistent workers hold the dispatcher's primitives (link#276) --
+  # A worker loads only when the operator does, and is reachable before any
+  # spend, so it is compared here rather than after the droplets are paid for.
+  local wk_keys=() wk
+  for wk in ${HOST_ARR[@]+"${HOST_ARR[@]}"}; do
+    if .hosts_is_worker "$wk"; then wk_keys+=("$wk"); fi
+  done
+  if [ "${#wk_keys[@]}" -gt 0 ]; then
+    if compare_inputs "${wk_keys[@]}"; then
+      echo "  ✓ every worker holds the dispatcher's snapshot primitives"
+    else
+      echo "  ✗ a worker holds other snapshot primitives than the dispatcher: reload it"
+      echo "    (bash data-raw/snapshot_bcfp.sh --force on the worker) before launch"
+      fail=1
+    fi
   fi
 
   # --- gate: BOTH DigitalOcean credentials, each forced to a real API call -
@@ -1495,17 +1517,25 @@ quit(status = if (isTRUE(res$ok)) 0L else 1L)
 # run whose hosts would model on different data stops before it is paid for.
 # Not downgradable by --preflight-note: link#276 accepts a mixed-input run only
 # as impossible or recorded, and this makes it impossible.
+#
+# With host keys as arguments it compares the dispatcher with those only (the
+# persistent workers, before any spend); with none, with every remote host. The
+# script is piped over ssh rather than read from the host's clone, which a worker
+# has not yet reset to this branch before the spin.
 compare_inputs() {
-  local tsv="$LOG_DIR/${TS}_inputs.tsv" ws out
+  local tsv="$LOG_DIR/${TS}_inputs${1:+_pre}.tsv" ws out
+  local hosts=("$@")
+  [ "$#" -gt 0 ] || hosts=(${HOST_ARR[@]+"${HOST_ARR[@]}"})
   printf 'host\ttable_name\tversion_id\tcontent_md5\tn_rows\tloaded_at\tnotes\n' > "$tsv"
   if ! out=$(cd "$REPO_ROOT" && Rscript data-raw/host_inputs.R 2>/dev/null); then
     echo "  ✗ dispatcher inputs could not be read"; return 1
   fi
   # awk, not sed: macOS sed writes \t in a replacement as a literal t.
   printf '%s\n' "$out" | tail -n +2 | awk -v h=dispatcher 'BEGIN { OFS = "\t" } { print h, $0 }' >> "$tsv"
-  for ws in ${HOST_ARR[@]+"${HOST_ARR[@]}"}; do
-    if ! remote_run "${HOST_SSH[$ws]}" "$(.remote_cd "$ws") && Rscript data-raw/host_inputs.R" \
-         "$tsv.$ws.out" /dev/null; then
+  for ws in ${hosts[@]+"${hosts[@]}"}; do
+    if ! remote_run "${HOST_SSH[$ws]}" \
+         "f=\$(mktemp) && cat > \"\$f\" && Rscript \"\$f\"; rc=\$?; rm -f \"\$f\"; exit \$rc" \
+         "$tsv.$ws.out" /dev/null < "$REPO_ROOT/data-raw/host_inputs.R"; then
       echo "  ✗ $ws inputs could not be read"; rm -f "$tsv.$ws.out"; return 1
     fi
     remote_out "$tsv.$ws.out" | tail -n +2 | awk -v h="$ws" 'BEGIN { OFS = "\t" } { print h, $0 }' >> "$tsv"
@@ -1518,7 +1548,7 @@ rows <- utils::read.delim(commandArgs(TRUE)[1], colClasses = "character",
 # Judged against every host of the run, so a host that printed no rows is refused.
 res <- link:::.lnk_inputs_agree(rows, hosts = commandArgs(TRUE)[-1])
 if (!res$ok) cat(paste0("    ", res$why), sep = "\n")
-q(status = if (res$ok) 0L else 1L)' "$tsv" dispatcher ${HOST_ARR[@]+"${HOST_ARR[@]}"})
+q(status = if (res$ok) 0L else 1L)' "$tsv" dispatcher ${hosts[@]+"${hosts[@]}"})
 }
 
 preflight_hosts() {

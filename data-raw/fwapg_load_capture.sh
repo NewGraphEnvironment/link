@@ -55,7 +55,9 @@ if [ -z "$TRACE" ]; then
   START=$(date -u +%Y-%m-%dT%H:%M:%SZ)
   echo "fwapg_load_capture: running $FW/load.sh (fwapg ${commit:-unknown}); trace -> $TRACE"
   rc=0
-  (cd "$FW" && DATABASE_URL="$DATABASE_URL" ./load.sh) 2> >(tee "$TRACE" >&2) || rc=$?
+  # A pipeline, not a process substitution: the shell waits for tee, so the trace is
+  # whole before it is read. stdout goes to fd 3 (the terminal), stderr into tee.
+  { (cd "$FW" && DATABASE_URL="$DATABASE_URL" ./load.sh) 2>&1 1>&3 | tee "$TRACE" >&2; } 3>&1 || rc=$?
   END=$(date -u +%Y-%m-%dT%H:%M:%SZ)
   [ "$rc" = 0 ] || { echo "FATAL: load.sh exited $rc; nothing recorded (trace kept: $TRACE)" >&2; exit "$rc"; }
 else

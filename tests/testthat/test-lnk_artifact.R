@@ -193,6 +193,32 @@ test_that("the probe-vs-loader rule holds in a real database", {
   expect_identical(get()$version_id, "P3")
 })
 
+test_that("an FWA loader row gives way to a probe once the table's rows changed since it", {
+  # A reload that skipped fwapg_load_capture.sh would otherwise leave a loader
+  # row naming the old load forever (a probe never replaces a loader row whose
+  # table is as it was). The row count is the tell; a reload that keeps it is
+  # invisible, as for probes.
+  conn <- skip_if_no_db()
+  host <- paste0("test270-", Sys.getpid())
+  withr::defer(DBI::dbExecute(conn, sprintf(
+    "DELETE FROM provenance.source_artifact WHERE host = %s",
+    DBI::dbQuoteLiteral(conn, host))))
+  tbl <- "whse_basemapping.fwa_obstructions_sp"
+  one <- function(v) data.frame(table_name = tbl, url = prim_url(tbl), version_id = v)
+  get <- function() DBI::dbGetQuery(conn, sprintf(
+    "SELECT version_id, recorded_by FROM provenance.source_artifact WHERE host = %s",
+    DBI::dbQuoteLiteral(conn, host)))
+  lnk_artifact_record(conn, one("L1"), "loader", host = host)
+  lnk_artifact_record(conn, one("P1"), "probe", host = host)
+  expect_identical(get()$recorded_by, "loader")
+  DBI::dbExecute(conn, sprintf(
+    "UPDATE provenance.source_artifact SET n_rows = -1 WHERE host = %s",
+    DBI::dbQuoteLiteral(conn, host)))
+  lnk_artifact_record(conn, one("P2"), "probe", host = host)
+  expect_identical(get()$version_id, "P2")
+  expect_identical(get()$recorded_by, "probe")
+})
+
 test_that("lnk_artifact_read has one shape, recorded or not", {
   local_mocked_bindings(
     .lnk_artifact_wsgs = function(conn) "BULK",

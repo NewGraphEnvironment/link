@@ -1296,7 +1296,9 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
 #' (`<tag>-<n>-g<sha>`) is a code identity that weekly rebuilds of one commit
 #' share. The db tier takes `model_type = 'LINEAR'` by `date_completed`
 #' (`smnorris/bcfishpass@3bd2824`: `model_type` is LINEAR or LATERAL, and
-#' `date_completed` a timestamp without zone, read in the server's zone); the
+#' `date_completed` a timestamp without zone, written by the job's session in
+#' the server's zone, so read in the server's zone: `pg_settings.reset_val`,
+#' because RPostgres sets this session's own zone to UTC); the
 #' ledger tier takes only rows that loaded the views ([.lnk_bcfp_log_ledger()]);
 #' the env tier reads `LNK_BCFP_DATE_COMPLETED` beside the version.
 #'
@@ -1323,11 +1325,12 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
     } else {
       res <- DBI::dbGetQuery(conn,
         "SELECT model_run_id, model_version,
-                date_completed AT TIME ZONE current_setting('TimeZone')
+                date_completed AT TIME ZONE
+                  (SELECT reset_val FROM pg_settings WHERE name = 'TimeZone')
                   AS date_completed
            FROM bcfishpass.log
           WHERE model_type = 'LINEAR'
-          ORDER BY date_completed DESC, model_run_id DESC LIMIT 1")
+          ORDER BY date_completed DESC NULLS LAST, model_run_id DESC LIMIT 1")
       if (nrow(res) == 0L) {
         NULL
       } else {

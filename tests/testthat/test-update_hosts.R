@@ -32,7 +32,10 @@ uh_world <- function(remotes, env = parent.frame()) {
                  '  *commits/main*) printf %s 2222222222222222222222222222222222222222 ;;',
                  '  *) printf %s notasha ;;',
                  'esac'))
-  stub("ssh", sprintf('echo "ssh $*" >> %s', shQuote(log)))
+  # The remote prints the completion marker unless no_marker exists: Tailscale SSH
+  # to a Mac exits 0 whatever ran, so the marker is what the script reads.
+  stub("ssh", c(sprintf('echo "ssh $*" >> %s', shQuote(log)),
+                sprintf('[ -f %s ] || echo __UH_OK__', shQuote(file.path(d, "no_marker")))))
   stub("Rscript", sprintf('echo "Rscript $*" >> %s', shQuote(log)))
   stub("hostname", 'echo stubhost')
   list(dir = d, log = log)
@@ -106,7 +109,17 @@ test_that("link installs without its dependencies, and fresh is re-checked after
   log <- paste(r$calls, collapse = "\n")
   expect_match(log, 'NewGraphEnvironment/link@main", upgrade = FALSE, ask = FALSE, dependencies = FALSE',
                fixed = TRUE)
-  expect_match(log, 'NewGraphEnvironment/fresh@v9.9.9", upgrade = FALSE, ask = FALSE, dependencies = TRUE',
+  # fresh at pak's default (hard dependencies only), not TRUE, which adds Suggests.
+  expect_match(log, 'NewGraphEnvironment/fresh@v9.9.9", upgrade = FALSE, ask = FALSE, dependencies = NA',
                fixed = TRUE)
   expect_match(log, "after the installs, not 1111111111111111111111111111111111111111", fixed = TRUE)
+})
+
+test_that("an ssh that exits 0 without the completion marker fails the run", {
+  # Over Tailscale SSH to a Mac a failed remote command still exits 0.
+  w <- uh_world("    NewGraphEnvironment/fresh@v9.9.9")
+  file.create(file.path(w$dir, "no_marker"))
+  r <- uh_run(w, c("fresh", "m4"), alias = "m1")
+  expect_false(r$status == 0L)
+  expect_match(r$out, "FATAL: install of fresh on m4 failed (no completion marker", fixed = TRUE)
 })

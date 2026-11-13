@@ -309,7 +309,9 @@ lnk_artifact_record <- function(conn, artifacts,
         OR (t.recorded_by = 'probe'
             AND (t.version_id IS NULL
                  OR t.version_id = EXCLUDED.version_id
-                 OR t.n_rows IS DISTINCT FROM EXCLUDED.n_rows))",
+                 OR t.n_rows IS DISTINCT FROM EXCLUDED.n_rows))
+        OR (t.recorded_by = 'loader' AND t.table_name LIKE 'whse\\_basemapping.%%'
+            AND t.n_rows IS DISTINCT FROM EXCLUDED.n_rows)",
     tbl, values,
     paste(sprintf("%s = EXCLUDED.%s", set_cols, set_cols), collapse = ", ")))
 

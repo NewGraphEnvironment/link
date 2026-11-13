@@ -113,6 +113,19 @@ on_host() {   # $1 = host, $2 = command
   fi
 }
 
+# The same, judged by what the command printed: over Tailscale SSH to a Mac, ssh
+# exits 0 whatever the remote command returned, so a command this script must
+# stop on ends by printing __UH_OK__ and its absence is the failure.
+on_host_checked() {   # $1 = host, $2 = command (ending in `echo __UH_OK__`), $3 = what it is
+  local out rc=0
+  out=$(on_host "$1" "$2" 2>&1) || rc=$?
+  printf '%s\n' "$out" | grep -v '^__UH_OK__$' || true
+  if [ "$rc" != 0 ] || ! printf '%s\n' "$out" | grep -qx '__UH_OK__'; then
+    echo "FATAL: $3 on $1 failed (no completion marker; exit $rc)" >&2
+    exit 1
+  fi
+}
+
 # pak where it works: it writes RemoteSha, so the installed build names its own
 # commit, which must be the one resolved here. An old FRESH_GIT_SHA pin in
 # ~/.Renviron would outrank RemoteSha (link's resolver reads the env first), so
@@ -138,7 +151,9 @@ install_pak() {
   # link without its dependencies: pak resolves link@main's own Remotes: and would
   # reinstall fresh at main's pin over the one just installed (0.52.0 back to 0.48.0
   # on m4, 2026-11-02). fresh's RemoteSha is checked again after link (below).
-  local deps="TRUE"
+  # fresh at pak's default (NA: hard dependencies only); TRUE would add its Suggests,
+  # among them a private remote a host without a usable GitHub token cannot install.
+  local deps="NA"
   [ "$pkg" != "link" ] || deps="FALSE"
   cmd="set -e
     Rscript -e 'pak::pkg_install(\"NewGraphEnvironment/${pkg}@${ref}\", upgrade = FALSE, ask = FALSE, dependencies = ${deps})'
@@ -149,8 +164,9 @@ install_pak() {
     fi${unpin}
     echo '${pkg}_sha=${sha} (${ref}, pak)'
     Rscript -e 'cat(\"${pkg}=\", as.character(packageVersion(\"${pkg}\")), \"\\n\", sep=\"\")'
+    echo __UH_OK__
   "
-  on_host "$host" "$cmd"
+  on_host_checked "$host" "$cmd" "install of $pkg"
 }
 
 install_remote() {
@@ -264,6 +280,6 @@ for h in "${HOSTS[@]}"; do
   done
   # Whatever installed after it, fresh must still be the pinned build on this host.
   if [ "$DRY_RUN" = 0 ] && [ -n "$FRESH_SHA" ] && [ "$h" != "cypher" ] && [ "$TARBALL" = 0 ]; then
-    on_host "$h" "got=\$(Rscript -e 'cat(utils::packageDescription(\"fresh\")\$RemoteSha)'); [ \"\$got\" = '$FRESH_SHA' ] || { echo \"FATAL: fresh on $h is \$got after the installs, not $FRESH_SHA\" >&2; exit 1; }"
+    on_host_checked "$h" "got=\$(Rscript -e 'cat(utils::packageDescription(\"fresh\")\$RemoteSha)'); [ \"\$got\" = '$FRESH_SHA' ] || { echo \"fresh on $h is \$got after the installs, not $FRESH_SHA\" >&2; exit 1; }; echo __UH_OK__" "fresh's RemoteSha check"
   fi
 done
