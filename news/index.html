@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.80.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.81.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,9 +32,23 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.80.0/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.81.0" id="link-0810">link 0.81.0<a class="anchor" aria-label="anchor" href="#link-0810"></a></h2>
+<p><strong>A build can classify each full-network segment on its minimal parent’s gradient</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/463" class="external-link">#463</a>). <code>pipeline: gradient: source: parent</code> sets each working segment’s gradient from <code>&lt;schema_full&gt;.streams_parent</code> between break and classify, so a habitat rule tuned on the minimal network reads, on the network link ships, the gradient it was tuned on. The new bundle <code>default_parent</code> (<code>extends: default</code>, schema <code>fresh_default_parent</code>) is <code>cut-full-top acc-v5 grad-parent q-fwapg</code>. Built on BULK, SETN, MORK and COTR beside a <code>default</code> control, it holds the control’s segments and access exactly. Every habitat difference sits on a segment whose gradient changed or in a connected cluster holding one. Rearing rises (CH +3.9 %, ST +3.3 %, CO +1.5 %, BT +1.1 %), and spawning moves within 0.33 % (<code>data-raw/logs/grad_parent_463/</code>).</p>
+<ul><li>
+<strong>It refuses rather than read a stale parent.</strong> Before the log row opens, the group’s newest full and minimal builds must be closed, clean, on one fresh, with the bundle’s tokens, and <code>streams_parent</code> must have been joined from exactly those two runs, a row per segment of the right length. Before gradient is set, the newest builds are read again, and each working segment must map one to one onto the full schema’s by line and measures within 1 mm. A refusal names the rebuild (<code>data-raw/streams_parent_build.R</code>).</li>
+<li>
+<strong>The persisted <code>gradient</code> in a <code>grad-parent</code> schema is the parent’s,</strong> the value classify read; the segment’s own stays in <code>fresh_default</code>. A <code>default_parent</code> build runs only where <code>fresh_default</code>, <code>fresh_default_minimal</code> and <code>streams_parent</code> live (the dispatcher). No province-wide build has been made.</li>
+<li>
+<strong>The near-river distance stays the segment’s own, and on the four groups that costs nothing</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/462" class="external-link">#462</a>). CH’s near-river pair reads 1050/1150 lines only. Over all 1050/1150 segments a segment’s distance and its parent’s differ on 94, by up to 542 m, and none crosses 1,000 m, so no CH rearing is lost to it. Carrying the parent’s distance would need fresh’s classify to take a prepared near-river table.</li>
+<li>
+<strong><code>grad-fwa</code> names reading the Freshwater Atlas segment’s gradient</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/460" class="external-link">#460</a>): <code>whse_basemapping.fwa_stream_networks_sp.gradient</code> on the segment’s <code>linear_feature_id</code>. No link segment crosses an FWA segment boundary (0 of BULK’s 42,458). No build writes it; a consumer’s archive files that setup under it.</li>
+<li>
+<strong>Builds older than the vocabulary stay filed by run id, not given tokens</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/420" class="external-link">#420</a>), and a consumer’s own discharge read is its input, not a <code>q-</code> token (<code>research/output_vocabulary.md</code>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.80.0" id="link-0800">link 0.80.0<a class="anchor" aria-label="anchor" href="#link-0800"></a></h2>
 <p><strong>A one-group run on a machine that holds only some groups can read its downstream groups’ barriers from the habitat export</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/465" class="external-link">#465</a>). A group’s access is walked downstream through every group’s persisted <code>barriers</code> and <code>barrier_overrides</code>, so the export now carries both, one part per group per config, with a map of which groups each group’s walk reads; <code><a href="../reference/lnk_downstream_files.html">lnk_downstream_files()</a></code> lists what a target needs and <code><a href="../reference/lnk_downstream_load.html">lnk_downstream_load()</a></code> loads it. Modelled after loading its 11 dependencies from the export, BULL equals the provincial build row for row in <code>streams</code>, <code>streams_access</code> and <code>streams_mapping_code</code>; without them 341 segments lose their downstream-dam flags.</p>

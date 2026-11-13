@@ -1056,7 +1056,7 @@ writes them to its `log` row (`token_cut`, `token_acc`, `token_grad`,
 |----|----|----|----|
 | cut | `cut-` | break sources in order, `observation_breaks` (when observations cut), gradient classes, and which of the definite-barrier, control and habitat-classification files the bundle declares | canonical string |
 | acc | `acc-` | the modelled species, each species’ `access_gradient_max` and `observation_*` lifts, the presence table, `pipeline: observation_upstream` (resolved; \#401), and the two access rules held in code (`.lnk_classes_bcfp`, [`lnk_presence()`](https://newgraphenvironment.github.io/link/reference/lnk_presence.md)’s groups) | sha256 of the parsed values |
-| grad | `grad-` | how segment gradient is measured | `gradient=segment` (`grad-seg`, every build); `grad-parent` names a reading no build writes (below) |
+| grad | `grad-` | how segment gradient is measured | `gradient=segment` (`grad-seg`, every bundle but one); `gradient=parent;parent_cut=cut-min` (`grad-parent`, `default_parent`, below); `gradient=fwa_segment` (`grad-fwa`, which no build writes: a consumer’s name for reading the Freshwater Atlas segment’s gradient) |
 | flow | `q-` | `discharge_source` and `discharge_fill` | canonical string |
 
 **How a cut token is keyed.** `cut-<source set>[-<qualifier>...]`: the
@@ -1186,7 +1186,7 @@ fresh pin, and a `none` file not reached from `wsg_run_one.R` at HEAD).
 Raw sha equality is not needed: the 2026-11 pair is `193cb8aa` against
 `4dfbfa49`, which differ only in `DESCRIPTION`.
 
-**Nothing on the modelling path touches it.**
+**Nothing on the modelling path writes it.**
 [`lnk_persist_init()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_init.md)
 does not create it, consolidate does not copy it, `host_drop_partials`
 and the verifier do not read it, and the export does not ship it. So a
@@ -1199,11 +1199,72 @@ row, and rows whose `overlap_m + straddle_m` is not the segment’s
 guard against a stale row that `run_id_full` cannot give without the
 log.
 
-**Its token.** `grad-parent` (`gradient=parent;parent_cut=cut-min`)
-names reading the parent’s gradient on a full network. No build writes
-it to `log.token_grad`, because no build reads `streams_parent`; it is
-for a downstream archive (knowledge’s tuning) to name the “full network,
-parent gradient” setup apart from `grad-seg` on the same build.
+**Its token, and the build that reads it (link#463).** `grad-parent`
+(`gradient=parent;parent_cut=cut-min`) names reading the parent’s
+gradient on a full network, apart from `grad-seg` on the same network. A
+bundle gets it with:
+
+``` yaml
+pipeline:
+  schema: fresh_default_parent
+  gradient:
+    source: parent
+    minimal_config: default_minimal   # the bundle whose cut-min builds are the parents
+    schema_full: fresh_default        # where streams_parent and the full builds live
+```
+
+`default_parent` is that bundle (`extends: default`). It cuts the
+network as `default` does, then, between break and classify, sets each
+working segment’s `gradient` to its parent’s `gradient_minimal`, so a
+rule tuned on the minimal network reads the gradient it was tuned on.
+`.lnk_config_pipeline_check()` validates the keys at load
+(`source: segment` is the default and takes no other key).
+
+Two judgements guard it. **Before the log row opens**
+(`.lnk_gradient_parent_judge()`), it refuses unless the persist schema
+is neither `schema_full` nor the minimal schema, the group’s newest
+builds in both are closed, clean, on one fresh sha, with the same
+species, the parent bundle’s `cut`, `acc` and `flow` tokens and
+`grad-seg` (the minimal one with `cut-min`), and `streams_parent` holds
+a row for every segment, joined from exactly those two runs on that
+minimal schema, each row’s `overlap_m + straddle_m` the segment’s
+length. **Before setting gradient** (`.lnk_gradient_parent_apply()`), it
+reads the newest builds again and refuses if either was re-modelled
+since the judgement. It then maps each working segment to
+`schema_full`‘s by `blue_line_key` and both measures within 1 mm (never
+by `id_segment`), and refuses unless the mapping is one to one over the
+whole group. That proves the build cut the network the table was joined
+on. A refusal names the rebuild (`data-raw/streams_parent_build.R`). The
+git half of the pair’s guard (no modelling-path change between the two
+builds’ `link_sha`) stays with that builder, which judges it.
+
+What follows from it:
+
+- **The persisted `gradient` in a grad-parent schema is the parent’s,**
+  the value classify read, so the validator and any re-test agree with
+  the habitat. The segment’s own gradient sits at the same position in
+  `schema_full`.
+- **It runs only where `schema_full`, the minimal schema and
+  `streams_parent` exist** (the dispatcher). A cloud host or worker
+  holds none of them, so a provincial `default_parent` run is
+  dispatcher-only until that changes.
+- **A re-model of either network voids its input:** rebuild
+  `streams_parent` first (below, §8d), then re-model `default_parent`.
+- **`config_hash` covers `default_parent`’s file and `default`’s, not
+  `default_minimal`’s.** The log row’s `notes` name the full and minimal
+  run ids it read.
+- **The near-river distance stays the segment’s own.** CH’s near-river
+  pair (1050/1150 lines under `default`) reads `streams_near_river` on
+  the working network, not the parent’s. On the four proof groups that
+  costs nothing: over all 1050/1150 segments the two distances differ on
+  94, none across 1,000 m (link#462, `data-raw/logs/grad_parent_463/`).
+
+On BULK, SETN, MORK and COTR a `default_parent` build holds `default`’s
+segments and access exactly, and every habitat difference sits on a
+segment whose gradient changed or in a connected cluster holding one.
+Rearing rises (CH +3.9 %, ST +3.3 % over the four groups), the way it
+does on the minimal network itself; spawning moves within 0.33 %
+(`data-raw/logs/grad_parent_463/README.md`).
 
 Only gradient is carried. Discharge needs no column: neither network
 crosses an FWA segment boundary, and discharge is per FWA segment, so a
@@ -2579,7 +2640,9 @@ into `.../build`) and verify again (into `.../verify_after`). `--out`
 has no default and refuses a directory that already holds the files its
 mode writes, so no run overwrites another’s record. The build refuses a
 pair whose modelling code differs, so a run of one network at new code
-waits for the other’s (§6b, “Parent attributes”).
+waits for the other’s (§6b, “Parent attributes”). A `default_parent`
+build refuses until `streams_parent` names both networks’ newest builds,
+so after such a run rebuild it before re-modelling `default_parent`.
 
 ### A missing group costs only itself (link#348)
 

@@ -58,4 +58,5 @@ v[, c("token", "axis", "introduced")]
 #> 14           acc-v5  acc     0.76.0
 #> 15          cut-min  cut     0.77.0
 #> 16      grad-parent grad     0.79.0
+#> 17         grad-fwa grad     0.81.0
 ```

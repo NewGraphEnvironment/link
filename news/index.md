@@ -1,5 +1,55 @@
 # Changelog
 
+## link 0.81.0
+
+**A build can classify each full-network segment on its minimal parent’s
+gradient**
+([\#463](https://github.com/NewGraphEnvironment/link/issues/463)).
+`pipeline: gradient: source: parent` sets each working segment’s
+gradient from `<schema_full>.streams_parent` between break and classify,
+so a habitat rule tuned on the minimal network reads, on the network
+link ships, the gradient it was tuned on. The new bundle
+`default_parent` (`extends: default`, schema `fresh_default_parent`) is
+`cut-full-top acc-v5 grad-parent q-fwapg`. Built on BULK, SETN, MORK and
+COTR beside a `default` control, it holds the control’s segments and
+access exactly. Every habitat difference sits on a segment whose
+gradient changed or in a connected cluster holding one. Rearing rises
+(CH +3.9 %, ST +3.3 %, CO +1.5 %, BT +1.1 %), and spawning moves within
+0.33 % (`data-raw/logs/grad_parent_463/`).
+
+- **It refuses rather than read a stale parent.** Before the log row
+  opens, the group’s newest full and minimal builds must be closed,
+  clean, on one fresh, with the bundle’s tokens, and `streams_parent`
+  must have been joined from exactly those two runs, a row per segment
+  of the right length. Before gradient is set, the newest builds are
+  read again, and each working segment must map one to one onto the full
+  schema’s by line and measures within 1 mm. A refusal names the rebuild
+  (`data-raw/streams_parent_build.R`).
+- **The persisted `gradient` in a `grad-parent` schema is the
+  parent’s,** the value classify read; the segment’s own stays in
+  `fresh_default`. A `default_parent` build runs only where
+  `fresh_default`, `fresh_default_minimal` and `streams_parent` live
+  (the dispatcher). No province-wide build has been made.
+- **The near-river distance stays the segment’s own, and on the four
+  groups that costs nothing**
+  ([\#462](https://github.com/NewGraphEnvironment/link/issues/462)).
+  CH’s near-river pair reads 1050/1150 lines only. Over all 1050/1150
+  segments a segment’s distance and its parent’s differ on 94, by up to
+  542 m, and none crosses 1,000 m, so no CH rearing is lost to it.
+  Carrying the parent’s distance would need fresh’s classify to take a
+  prepared near-river table.
+- **`grad-fwa` names reading the Freshwater Atlas segment’s gradient**
+  ([\#460](https://github.com/NewGraphEnvironment/link/issues/460)):
+  `whse_basemapping.fwa_stream_networks_sp.gradient` on the segment’s
+  `linear_feature_id`. No link segment crosses an FWA segment boundary
+  (0 of BULK’s 42,458). No build writes it; a consumer’s archive files
+  that setup under it.
+- **Builds older than the vocabulary stay filed by run id, not given
+  tokens**
+  ([\#420](https://github.com/NewGraphEnvironment/link/issues/420)), and
+  a consumer’s own discharge read is its input, not a `q-` token
+  (`research/output_vocabulary.md`).
+
 ## link 0.80.0
 
 **A one-group run on a machine that holds only some groups can read its
