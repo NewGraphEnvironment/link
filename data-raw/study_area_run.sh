@@ -1180,8 +1180,8 @@ cat(if (is.na(st$sha)) "" else st$sha, "|",
     echo "  ✗ pre-run gate not cleared: $pt_out"
     [ "$pt_rc" = 1 ] || echo "    (the check itself could not run)"
     echo "    Run: bash data-raw/pretest_run.sh --config=$CONFIG --schema=$SCHEMA"
-    echo "      (a bundle that extends another, with no full history of its own, adds"
-    echo "       --history-schema= and --history-config=: RUNBOOK §8d, \"The pre-run gate\")"
+    echo "      (with no history of its own it finds an ancestor's or picks on every"
+    echo "       input: RUNBOOK §8d, \"The pre-run gate\")"
     echo "    or pass --pretest-note=\"<why>\" (recorded; $SCHEMA must exist first)"
     fail=1
   fi

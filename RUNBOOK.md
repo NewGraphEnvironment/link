@@ -2133,34 +2133,50 @@ nothing). The check applies to every launch, dispatcher-only included;
 Evidence: `data-raw/logs/pretest_372/` (its README indexes it).
 
 
-**A bundle without a full history of its own borrows one (#442).** `default_minimal`
-before its first full run has no groups, minutes or range that stand for it, so it
-reads a config it extends:
+**Where the gate's history comes from, with no flags (#442, #450).** The pick holds
+the gate to one of three histories, writes which to `<out>/history.txt`, and the
+verdict records it in `log_pretest.range_source`:
 
-```bash
-bash data-raw/pretest_history_load.sh --host=<ssh target> --from=fresh_default --to=fresh_default_history
-bash data-raw/pretest_run.sh --config=default_minimal --schema=fresh_default_minimal \
-  --history-schema=fresh_default_history --history-config=default --minutes-exclude=KTSU,OKAN
-```
+| `range_source` | when | groups, range, minutes |
+|---|---|---|
+| `own` | the bundle's own builds in `--schema` cover every group it models, or it has no parent and some builds of its own | its own log, as before |
+| `ancestor` | it extends a config, and its own builds do not cover it | the **nearest** config on its `extends` chain with finished builds on this database, in the schema holding the most of that config's groups, then the newest (`pretest_ancestor_pick()`; scratch `fresh_pretest_*` and `zz_*` schemas are not candidates); or the one `--history-schema` / `--history-config` name |
+| `every_input` | it has no build of its own here and no ancestor with builds here (a parentless bundle on a new database, or `default` today) | no diff: every query in `data-raw/pretest/` counts as changed, two picks each over the groups the config models; `since_sha = until_sha = HEAD` |
 
-- **Only from a config on its `extends` chain, until its own builds cover every group
-  it models.** One build of its own, or a first run stopped partway, does not end the
-  borrowing, and those builds must be in the range too. Once they cover it, a gate must
-  cover them and the flags are refused. Without the flags, such a bundle is refused. A
-  bundle with no parent keeps its own history, whole or not. A group added to the
-  presence table after both histories ended has no route but to model it under the
-  parent and reload, or to launch on `--pretest-note`.
-- **The record names what it borrowed,** so the launch check holds it to the same
-  history. It also keeps naming a schema that must still exist on the dispatcher.
-- **The history must hold every group the config models** (`lnk_wsg_resolve()`),
-  in the pick and at launch. The gate picks only groups the history holds, so m4's
-  4-group `fresh_default` picked exactly those 4. The full log sits on the host a
-  run consolidated on, and the loader copies it into a schema of its own by
-  `pg_dump -t`, with the key and indexes. It refuses a target holding anything else.
-- **ssh's exit status is not read.** The dump must end on `pg_dump`'s trailer and hold
-  the row count the host reports before anything local changes.
-- **The scratch schema is built `LIKE` a schema holding only `log`.** Each pick's
-  `lnk_persist_init()` creates the rest.
+On m1 (2026-11-12), `--config=default_minimal` against a schema with no log found
+`default`'s 241 builds in `fresh_default` with no flags, and `--config=default`
+against an empty schema picked on every input: SETN, BULK, QUES, LFRA, TOAD, HARR,
+UPCE, OKAN, TAKL, HORS and SAJR, the same 11 the #454 gate picked from a hand-seeded
+log (`data-raw/logs/gate_history_450/`).
+
+- **Minutes are a group's, not a schema's.** Each eligible group (every group the
+  config models, `lnk_wsg_resolve()`) takes its newest minutes from the history
+  schema's log, or from the committed record `data-raw/logs/build_minutes.csv`
+  where that holds a newer row (its own config first, then the nearest ancestor's),
+  scaled to the host the gate runs on by the learned host speeds
+  (`host_speeds.tsv`: minutes measured at speed s become minutes × s / this host's
+  speed). A group in neither gets a fixed 60 min (bound 180 at k = 3).
+  `--minutes-exclude` still bounds a known stall on the median. After a
+  provincial run, the summary prints the append command
+  (`data-raw/build_minutes_append.R --schema= --run-uid=`); commit what it writes.
+  The record is in the repo, not in a database, so a new host or a brand-new
+  database has it.
+- **A short ancestor history is still refused** (#442's rule): an ancestor whose
+  builds here miss groups the bundle models would pick around the missing groups'
+  extremes. Model them under the parent first, name a fuller history with the
+  flags (`data-raw/pretest_history_load.sh` copies a host's log into a schema of
+  its own), or launch on `--pretest-note`. A bundle part-built under its own config
+  with no ancestor history here is refused for the same reason: those builds must
+  be in a range, and there is none to diff.
+- **The launch check holds a record to the history it names.** An `ancestor`
+  record's `history_schema` / `history_config` are written whether a flag or the
+  pick found them, and must still exist on the dispatcher. An `every_input` record
+  clears a run only while the bundle has no build of its own in the schema; once it
+  has, those builds are what a gate must cover, and the next gate diffs from them.
+- **The scratch schema is built `LIKE` the resolved history's schema** (or the
+  record schema, empty when new); each pick's `lnk_persist_init()` creates the rest,
+  and the record schema is created if it does not exist.
+
 ### The vintage gate reads load stamps (link#265, absorbing #247)
 
 `lnk_preflight_vintage()` (via `data-raw/host_vintage.R`) judges each snapshot

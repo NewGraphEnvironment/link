@@ -97,27 +97,27 @@ Corrections taken, each reflected in the phases below:
   - Bring §6b's column list up to date (`run_uid`, `bcfp_pin_source`, `bcfp_date_completed`, the tokens).
 
 ## Phase 4 (#450): the gate finds its history with no flags or copies
-- [ ] `data-raw/logs/build_minutes.csv`:
+- [x] `data-raw/logs/build_minutes.csv`:
   - Columns: `wsg, config, run_uid, host, host_class, link_sha, fresh_sha, date_start, minutes`.
-  - A dictionary entry.
+  - Its columns documented in `build_minutes_append.R`'s header and RUNBOOK §8d (`data-raw/logs/` has no dictionary family; the gate's reader validates the columns).
   - Seeded from the 2026-11-03 `default` run and the 2026-11-02 `default_minimal` run. Their minutes are read from m1's or m4's `log` by a committed query, not retyped.
   - `data-raw/build_minutes_append.R --schema= --run-uid=` appends a run.
   - `study_area_run.sh`'s summary prints the append command, as it does for the calibrator.
-- [ ] **Range, when the bundle has no run of its own:**
+- [x] **Range, when the bundle has no run of its own:**
   - With an ancestor: the nearest ancestor with history on this database, found through `pretest_config_chain()` with no flags. The flags stay as overrides, and the record names the source.
   - With no ancestor, or none with history here: every query input counts as changed, giving two picks per input over the groups the config models. The range starts at the bundle's first commit (record `since` = none, reason "no history: every input").
-- [ ] **Minutes:**
+- [x] **Minutes:**
   - A group's own local `log` row wins when it is newer. Otherwise use the CSV row for the same config or its nearest ancestor, scaled by `speeds_state_read()` and `weights_normalize()`. Otherwise use the fixed 60 min bound.
   - Picks no longer require a group to have local history: `pretest_pick()`'s `v$wsg %in% history$wsg` reads the minutes table.
-- [ ] `pretest_check.R` at launch resolves the history source by the same rule. A short history under a parent is still refused, as now.
-- [ ] `pretest_verdict.R` records the source used (ancestor, csv, or every-input).
-- [ ] Tests in `test-pretest.R`:
+- [x] `pretest_check.R` at launch resolves the history source by the same rule. A short history under a parent is still refused, as now.
+- [x] `pretest_verdict.R` records the source used (ancestor, csv, or every-input).
+- [x] Tests in `test-pretest.R`:
   - a bundle with no runs whose parent has history gates without flags;
   - a parentless bundle picks on every input;
   - a group missing from the CSV gets 60 min;
   - a short borrowed history is still refused;
   - a local row newer than the CSV wins.
-- [ ] RUNBOOK §8d, "The pre-run gate": update.
+- [x] RUNBOOK §8d, "The pre-run gate": update.
 
 ## Phase 5 (#269): `update_hosts.sh` installs what `DESCRIPTION` pins
 - [ ] Read fresh's ref from `DESCRIPTION`'s `Remotes:` (and wet's, which is pinned too). Resolve the tag to a commit for the record, and refuse a package with no pin rather than fall back to main.

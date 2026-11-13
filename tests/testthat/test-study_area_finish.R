@@ -956,6 +956,7 @@ test_that("the summary prints the host-speed calibration command after a modelle
                  sprintf("source %s", shQuote(finish_hosts_lib())),
                  sprintf("source %s", shQuote(finish_lib())),
                  sprintf("PHASES_TSV=%s", shQuote(ph)),
+                 "SCHEMA=fresh_x", sprintf("RUN_UID=%s", finish_uid),
                  "run_calibrate_hint", "echo END"), script)
     out <- suppressWarnings(system2(hosts_bash(), script, stdout = TRUE, stderr = TRUE))
     list(out = paste(out, collapse = "\n"), status = attr(out, "status") %||% 0L)
@@ -965,11 +966,15 @@ test_that("the summary prints the host-speed calibration command after a modelle
   expect_equal(r$status, 0L)
   expect_match(r$out, "host_speeds_calibrate.R --plan=", fixed = TRUE)
   expect_match(r$out, paste0("--phases=", ph), fixed = TRUE)
+  # And the minutes the pre-run gate bounds on (link#450), for the run's schema and uid.
+  expect_match(r$out, paste0("build_minutes_append.R --schema=fresh_x --run-uid=", finish_uid),
+               fixed = TRUE)
   # A --recompute-only pass models nothing, so there is nothing to learn from.
   r <- run(c(hdr, sprintf("%s\trecompute\t\t2026-11-01T01:00:00Z\t2026-11-01T02:00:00Z\t60.0\t3\tok",
                           finish_uid)))
   expect_equal(r$status, 0L)
   expect_false(grepl("host_speeds_calibrate", r$out))
+  expect_false(grepl("build_minutes_append", r$out))
   expect_match(r$out, "END")
 })
 

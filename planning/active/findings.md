@@ -53,3 +53,6 @@ The rest of what exploration found is in `task_plan.md`, "Found in exploration".
 |-------|------------|
 | `test-lnk_log.R` ".lnk_run_id is unique across many draws" failed once in a run, passed on rerun | Pre-existing and unrelated: ms timestamp + 24 random bits; a collision in 500 draws should be ~1e-4. Not chased here; noted for a follow-up if it recurs. |
 | Tunnel to the bcfp reference DB refused (port 63333) | Read `bcfishpass.log`'s DDL and writer from `smnorris/bcfishpass@3bd2824` instead (`db/migrations/archive/v0.5.0/sql/tables/log.sql`, `model/02_habitat_linear/habitat_linear.sh:47`). |
+| Ancestor pick chose `fresh_smoke369b` (2 groups) over `fresh_default` (241) | `count(DISTINCT ...)` is bigint, RPostgres returns `integer64`, and `-x` ordering without bit64 attached reads the raw bits. Cast `::integer` in SQL and coerce in R. |
+| `pretest_run.sh`: "bad substitution: no closing }" | An apostrophe inside `${VAR:-...}` within double quotes (code-check-shell). Rewrote with `if`. |
+| Ancestor candidates hit `bcdata.log` ("column config_name does not exist") | Candidates are schemas whose `log` has a `config_name` column (information_schema.columns). |

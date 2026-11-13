@@ -48,9 +48,14 @@ out <- tryCatch({
     chain <- pretest_config_chain(file.path(repo, "inst/extdata/configs"), config)
     own <- if (reg("log")) DBI::dbGetQuery(conn, pretest_history_sql(schema, config)) else NULL
     modelable <- pretest_modelable_groups(repo, config)
-    # A bundle whose own builds do not yet cover it is held to the history its gate borrowed.
-    src <- pretest_record_history(records, schema, config, pretest_history_complete(own$wsg, modelable), chain)
-    hist <- if (!is.null(src)) DBI::dbGetQuery(conn, pretest_history_sql(src$schema, src$config))
+    # A bundle whose own builds do not yet cover it is held to the history its gate
+    # borrowed, or, with no build of its own here, to none (an every-input gate, link#450).
+    src <- pretest_record_history(records, schema, config, pretest_history_complete(own$wsg, modelable),
+                                  chain, own_n = length(unique(own$wsg)))
+    every_input <- isTRUE(src$every_input)
+    hist <- if (!is.null(src) && !every_input) {
+      DBI::dbGetQuery(conn, pretest_history_sql(src$schema, src$config))
+    } else data.frame(link_sha = character(), link_dirty = logical())
     borrowed <- !is.null(src) && !identical(src$config, config)
     short <- if (borrowed) pretest_history_short(hist$wsg, modelable, paste0(src$schema, ".log")) else ""
     if (is.null(src)) {
@@ -62,7 +67,7 @@ out <- tryCatch({
       map <- pretest_map_read(file.path(script_dir, "pretest_inputs.csv"))
       r <- pretest_record_check(records, config, head_sha, fresh_sha, hist$link_sha,
                                 hist$link_dirty, repo, map, chain,
-                                reached = pretest_reach_repo(repo))
+                                reached = pretest_reach_repo(repo), every_input = every_input)
       # Beside a borrowed history, the bundle's own builds so far must be in the range too.
       own_why <- if (r$ok && borrowed) {
         pretest_own_builds_why(repo, r$record$since_sha, r$record$link_sha, own, schema)
@@ -70,9 +75,11 @@ out <- tryCatch({
       if (nzchar(own_why)) {
         r <- list(ok = FALSE, why = paste0("the gate's range: ", own_why), record = r$record)
       } else if (r$ok) {
-        r$why <- sprintf("gate passed at %s (%s UTC), range from %s: %s", substr(r$record$link_sha, 1, 12),
+        r$why <- sprintf("gate passed at %s (%s UTC), %s: %s", substr(r$record$link_sha, 1, 12),
                          format(r$record$run_at, "%Y-%m-%d %H:%M", tz = "UTC"),
-                         substr(r$record$since_sha, 1, 12), r$record$groups)
+                         if (every_input) "on every input (no history)" else
+                           paste("range from", substr(r$record$since_sha, 1, 12)),
+                         r$record$groups)
       }
       r
     }
