@@ -2233,6 +2233,22 @@ fails until
 matters: the ledger skip guard (link#276) exits before anything is loaded or
 recorded.
 
+**An object primitive is judged by whether its source changed (link#273).** For
+a table whose load recorded an ETag (the observations and the modelled
+crossings, both HEADed and fetched by version at load), the gate HEADs the URL
+it was loaded from: a different ETag is **stale whatever its age** ("the source
+changed since this host loaded it"), the same ETag **current whatever its age**.
+A HEAD that fails is no answer, never "unchanged": the table falls back to its
+load-stamp age and the message names it. CABD and PSCIS (API loads, no version
+handle) stay on the age rule, and the message counts which predicate judged
+each table (`judged by source ETag: n (...), load stamp age: n, ...`). Only the
+loader row's ETag counts, never a probe's. The FWA tables are not in the vintage
+set: they gain loader rows at the next FWA reload through
+`data-raw/fwapg_load_capture.sh` (link#270), and can be judged the same way once
+they have them. An ETag is a byte identity, so a re-upload of identical content
+reads as changed: the gate fails toward an unneeded reload, never toward a stale
+one.
+
 ### Three things that look like checks and are not
 
 | looks like | actually |

@@ -168,13 +168,13 @@ Corrections taken, each reflected in the phases below:
   - identical hosts pass.
 
 ## Phase 8 (#273): the vintage gate asks whether the source changed
-- [ ] `lnk_preflight_vintage()`:
+- [x] `lnk_preflight_vintage()`:
   - For an object-kind primitive with a recorded `etag`, HEAD now through `.lnk_artifact_head()`. A different etag is stale whatever the age; the same etag is current whatever the age.
   - A failed HEAD is unknown and falls back to age, never "unchanged".
   - API kinds (CABD, PSCIS) stay on the age rule.
   - `judged_by` gains `etag`, and the message names the predicate per table.
-- [ ] Tests with injected HEAD results (each known answer), plus one live test against the real bchamp bucket: a recorded etag equal to the live one reads current, and a deliberately wrong etag reads stale. That live test skips on CI.
-- [ ] RUNBOOK §8d's vintage lines.
+- [x] Tests with injected HEAD results (each known answer), plus one live test against the real bchamp bucket: a recorded etag equal to the live one reads current, and a deliberately wrong etag reads stale. That live test skips on CI.
+- [x] RUNBOOK §8d's vintage lines.
 
 ## Phase 9 (#270): fwapg loads record what they fetched
 - [ ] `data-raw/fwapg_load_capture.sh <fwapg checkout>`:

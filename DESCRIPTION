@@ -47,6 +47,7 @@ Remotes:
 Suggests:
     bcdata,
     bookdown,
+    curl,
     dplyr,
     duckdb,
     gq,

@@ -88,6 +88,7 @@ lnk_preflight_vintage <- function(conn = NULL,
                                   now = Sys.time(),
                                   vintage = .lnk_vintage_read(conn, tables),
                                   stamp = .lnk_vintage_stamp(conn, tables),
+                                  heads = .lnk_vintage_heads(stamp),
                                   quiet = FALSE) {
   stopifnot(
     is.numeric(max_age_days), length(max_age_days) == 1L,
@@ -98,6 +99,8 @@ lnk_preflight_vintage <- function(conn = NULL,
     all(c("table_name", "last_analyze") %in% names(vintage)),
     is.null(stamp) || (is.data.frame(stamp) &&
                          all(c("table_name", "loaded_at") %in% names(stamp))),
+    is.null(heads) || (is.data.frame(heads) &&
+                         all(c("table_name", "live_etag") %in% names(heads))),
     is.logical(quiet), length(quiet) == 1L, !is.na(quiet))
 
   found <- vintage[vintage$table_name %in% tables, , drop = FALSE]
@@ -152,9 +155,35 @@ lnk_preflight_vintage <- function(conn = NULL,
     unknown <- setdiff(unknown, stamped)
     missing <- sort(union(absent, unknown))
   }
+  # Did the source change since this host loaded it? (link#273) An object whose
+  # load recorded an ETag is judged on a HEAD now, not on age: a different ETag
+  # is stale however recent the load, the same one current however old. A HEAD
+  # that failed answers nothing and leaves the table on its age. The API
+  # primitives (CABD, PSCIS) have no ETag and stay on age.
+  changed <- character(0)
+  etag_ok <- character(0)
+  head_failed <- character(0)
+  if (!is.null(stamp) && !is.null(heads) && "etag" %in% names(stamp)) {
+    rec <- stamp[stamp$table_name %in% names(judged_by)[judged_by == "stamp"], , drop = FALSE]
+    rec <- rec[order(rec$table_name, -as.numeric(rec$loaded_at)), , drop = FALSE]
+    rec <- rec[!duplicated(rec$table_name) & !is.na(rec$etag), , drop = FALSE]
+    for (tbl in rec$table_name) {
+      live <- heads$live_etag[match(tbl, heads$table_name)]
+      if (is.na(live)) {
+        head_failed <- c(head_failed, tbl)
+      } else if (identical(live, rec$etag[rec$table_name == tbl])) {
+        etag_ok <- c(etag_ok, tbl)
+        judged_by[tbl] <- "etag"
+      } else {
+        changed <- c(changed, tbl)
+        judged_by[tbl] <- "etag"
+      }
+    }
+  }
   judged <- names(age)[judged_by[names(age)] != "none"]
   judged_age <- age[judged]
-  stale <- sort(judged[!is.na(judged_age) & judged_age > max_age_days])
+  stale <- judged[!is.na(judged_age) & judged_age > max_age_days]
+  stale <- sort(union(setdiff(stale, etag_ok), changed))
   oldest <- if (any(!is.na(judged_age))) max(judged_age, na.rm = TRUE) else
     NA_real_
 
@@ -162,12 +191,15 @@ lnk_preflight_vintage <- function(conn = NULL,
                 length(unstamped) == 0L,
               vintage = found, stale = stale, missing = missing,
               absent = absent, unknown = unknown, unstamped = unstamped,
-              judged_by = judged_by,
+              judged_by = judged_by, changed = sort(changed),
+              head_failed = sort(head_failed),
               oldest_days = oldest,
               message = .lnk_vintage_message(age, judged_by, stale, absent,
                                              unknown, unstamped,
                                              max_age_days,
-                                             stamp_consulted = !is.null(stamp)))
+                                             stamp_consulted = !is.null(stamp),
+                                             changed = changed,
+                                             head_failed = head_failed))
   if (!quiet) message(out$message)
   invisible(out)
 }
@@ -218,12 +250,19 @@ lnk_preflight_vintage <- function(conn = NULL,
 }
 
 .lnk_vintage_message <- function(age, judged_by, stale, absent, unknown,
-                                 unstamped, max_age_days, stamp_consulted) {
+                                 unstamped, max_age_days, stamp_consulted,
+                                 changed = character(0),
+                                 head_failed = character(0)) {
   head <- sprintf("primitive vintage (window %g d)", max_age_days)
   src <- if (stamp_consulted) {
-    n <- table(factor(judged_by, levels = c("stamp", "pg_stat", "none")))
-    sprintf("judged by load stamp: %d, statistics: %d, none: %d",
-            n[["stamp"]], n[["pg_stat"]], n[["none"]])
+    n <- table(factor(judged_by, levels = c("etag", "stamp", "pg_stat", "none")))
+    sprintf(
+      "judged by source ETag: %d%s, load stamp age: %d, statistics: %d, none: %d%s",
+      n[["etag"]],
+      if (n[["etag"]]) sprintf(" (%s)", paste(names(judged_by)[judged_by == "etag"], collapse = ", ")) else "",
+      n[["stamp"]], n[["pg_stat"]], n[["none"]],
+      if (length(head_failed)) sprintf("; HEAD failed, judged on age: %s",
+                                       paste(head_failed, collapse = ", ")) else "")
   } else {
     "load stamp not consulted (no connection); judged by statistics"
   }
@@ -237,9 +276,11 @@ lnk_preflight_vintage <- function(conn = NULL,
   parts <- sprintf("  %s", src)
   if (length(stale)) {
     parts <- c(parts, sprintf("  stale: %s",
-      paste(sprintf("%s (%.0f d, %s)", stale, age[stale],
-                    ifelse(judged_by[stale] == "stamp", "load stamp",
-                           "statistics")),
+      paste(sprintf("%s (%s)", stale,
+                    ifelse(stale %in% changed, "the source changed since this host loaded it",
+                           sprintf("%.0f d, %s", age[stale],
+                                   ifelse(judged_by[stale] == "stamp", "load stamp",
+                                          "statistics")))),
             collapse = ", ")))
   }
   if (length(unstamped)) {
@@ -272,6 +313,7 @@ lnk_preflight_vintage <- function(conn = NULL,
   if (is.null(conn)) return(NULL)
   empty <- data.frame(table_name = character(0),
                       loaded_at = as.POSIXct(character(0), tz = "UTC"),
+                      etag = character(0), url = character(0),
                       stringsAsFactors = FALSE)
   loc <- .lnk_artifact_location()
   has <- nrow(DBI::dbGetQuery(conn, sprintf(
@@ -280,14 +322,29 @@ lnk_preflight_vintage <- function(conn = NULL,
     DBI::dbQuoteLiteral(conn, loc$schema),
     DBI::dbQuoteLiteral(conn, loc$table)))) > 0L
   if (!has) return(empty)
+  # The newest loader row per table, with the ETag and URL it was loaded from,
+  # which the change test (link#273) HEADs again.
   DBI::dbGetQuery(conn, sprintf(
-    "SELECT table_name, max(loaded_at) AS loaded_at
+    "SELECT DISTINCT ON (table_name) table_name, loaded_at, etag, url
        FROM %s
       WHERE host = %s AND recorded_by = 'loader' AND loaded_at IS NOT NULL
         AND table_name IN (%s)
-      GROUP BY table_name",
+      ORDER BY table_name, loaded_at DESC",
     .lnk_artifact_table(), DBI::dbQuoteLiteral(conn, .lnk_host()),
     paste(vapply(tables, function(t)
       as.character(DBI::dbQuoteLiteral(conn, t)), character(1)),
       collapse = ", ")))
+}
+
+
+# The source's ETag now, for each stamped table whose load recorded one
+# (link#273): a HEAD of the URL it was loaded from, through
+# .lnk_artifact_head(), which never errors. NA where the HEAD failed, which the
+# gate reads as no answer, never as unchanged. NULL with no stamp.
+.lnk_vintage_heads <- function(stamp) {
+  if (is.null(stamp) || !"etag" %in% names(stamp)) return(NULL)
+  s <- stamp[!is.na(stamp$etag) & !is.na(stamp$url), , drop = FALSE]
+  live <- vapply(s$url, function(u) .lnk_artifact_head(u)$etag, character(1))
+  data.frame(table_name = s$table_name, live_etag = unname(live),
+             stringsAsFactors = FALSE)
 }
