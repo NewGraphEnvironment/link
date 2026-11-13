@@ -37,21 +37,22 @@ Approved with the plan (operator, 2026-11-10):
 
 ## Phase 0: resume (review O3, O2)
 
-- [ ] Merge `origin/main` (PR #482's backlog, if merged) before touching `pretest_inputs.csv`,
-      NEWS or CLAUDE.md.
+- [x] Merge `origin/main` (PR #482's backlog, if merged) before touching `pretest_inputs.csv`,
+      NEWS or CLAUDE.md. Merged 2026-11-12 (`1af2bf95`), clean: main had moved to 0.80.0 (#465),
+      so this release is **0.81.0** throughout; #482 still open.
 
 ## Phase 1: grad-fwa and #420's doc line (#460, #420)
 
-- [ ] `inst/extdata/vocabulary.csv`: row `grad-fwa`, axis `grad`, spec `gradient=fwa_segment`,
-      introduced `0.80.0`; definition names its source,
+- [x] `inst/extdata/vocabulary.csv`: row `grad-fwa`, axis `grad`, spec `gradient=fwa_segment`,
+      introduced `0.81.0`; definition names its source,
       `whse_basemapping.fwa_stream_networks_sp.gradient` on `linear_feature_id` (the FWA segment,
       not the whole blue line); no link segment crosses an FWA segment boundary; no link build
       writes it (S1).
-- [ ] `research/output_vocabulary.md`: `grad-fwa` on the gradient axis; a line that a consumer's
+- [x] `research/output_vocabulary.md`: `grad-fwa` on the gradient axis; a line that a consumer's
       own discharge read is its input, not a `q-` token; pre-0.70.0 builds are filed by run id,
       because `default` at 0.66.0 cut at every observation and gradient class before #326/#396 and
       would need a new token on every axis (#420's answer, S2).
-- [ ] `tests/testthat/test-lnk_vocabulary.R`: `grad-fwa` is live, its spec unique, and no shipped
+- [x] `tests/testthat/test-lnk_vocabulary.R`: `grad-fwa` is live, its spec unique, and no shipped
       bundle resolves to it.
 
 ## Phase 2: a build setting that reads the parent's gradient (#463)
@@ -97,7 +98,7 @@ Approved with the plan (operator, 2026-11-10):
 
 ## Phase 3: proof build on m4, and #462's transfer cost
 
-- [ ] Bump DESCRIPTION to 0.80.0 and commit before building; build from a clean committed tree
+- [ ] Bump DESCRIPTION to 0.81.0 and commit before building; build from a clean committed tree
       with `LNK_LOAD=loadall` (O2).
 - [ ] Before building, compare each group's `fresh_default` `log_input` artifact ids with m4's
       `provenance.source_artifact` (A1).

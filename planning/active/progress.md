@@ -29,3 +29,9 @@ Start Phase 1 and run every phase to the PR (/code-check branch, /planning-archi
 /gh-pr-push). This message is the resume instruction that starts the run-to-PR
 mandate; the merge stays with me.
 ```
+
+## Session 2026-11-12
+
+- Resumed in worktree `link-al_461`; merged `origin/main` (0.80.0, #465) cleanly, so the release is 0.81.0.
+- Phase 1: `grad-fwa` row, #420's doc line, test. Verified no link segment crosses an FWA
+  segment boundary (BULK, `fresh_default`: 0 of 42,458).
