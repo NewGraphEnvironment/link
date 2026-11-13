@@ -625,3 +625,100 @@ lnk_artifact_read <- function(conn, host = .lnk_host()) {
   }
   list(ok = !length(why), why = why)
 }
+
+
+#' The object-store URLs an fwapg load fetched, from `load.sh`'s trace (link#270)
+#'
+#' fwapg's `load.sh` runs under `set -x`, which writes every command to stderr
+#' with its variables expanded, so a captured trace names every object the load
+#' read: each table's parquet, each watershed group's partition, the CSVs it
+#' copies through `curl`. Trace lines start with `+`; the URLs are read from
+#' those only, in the order fetched, each once.
+#'
+#' @param lines A character vector, the trace's lines.
+#' @return A character vector of URLs.
+#' @noRd
+.lnk_fwa_trace_urls <- function(lines) {
+  lines <- lines[startsWith(lines, "+")]
+  hits <- regmatches(lines, gregexpr(
+    "https://nrs\\.objectstore\\.gov\\.bc\\.ca/bchamp/[^[:space:]'\"|;)]+", lines))
+  urls <- unlist(hits, use.names = FALSE)
+  unique(urls)
+}
+
+
+#' Map traced URLs to the FWA primitives they load (link#270)
+#'
+#' Each URL is matched against the primitives dictionary's URL templates
+#' (`{wsg}` as any four-letter group). URLs no primitive names (the watershed
+#' group polygons `load.sh` also reads, its other tables) are returned apart:
+#' they stay in the dated trace, and only primitives are recorded.
+#'
+#' @return A list: `matched` (data frame `table_name`, `url`) and `unmatched`
+#'   (character).
+#' @noRd
+.lnk_fwa_trace_match <- function(urls) {
+  prims <- .lnk_input_primitives()
+  prims <- prims[prims$kind == "object" & startsWith(prims$source, "fwapg/"), , drop = FALSE]
+  rx <- paste0("^", gsub("\\{wsg\\}", "[A-Z]{4}", .lnk_regex_escape(prims$url), fixed = TRUE), "$")
+  tbl <- vapply(urls, function(u) {
+    hit <- which(vapply(rx, function(r) grepl(r, u), logical(1)))
+    if (length(hit)) prims$table_name[hit[1]] else NA_character_
+  }, character(1), USE.NAMES = FALSE)
+  list(matched = data.frame(table_name = tbl[!is.na(tbl)], url = urls[!is.na(tbl)],
+                            stringsAsFactors = FALSE),
+       unmatched = urls[is.na(tbl)])
+}
+
+
+#' Record what an fwapg load fetched as `loader` rows (link#270)
+#'
+#' Reads a captured `load.sh` trace, HEADs each primitive object it fetched
+#' (sequentially, stopping after `max_fail` consecutive failures), and writes
+#' `loader` rows to `provenance.source_artifact` stamped `loaded_at = load_end`;
+#' a loader row replaces a probe row for the same artifact. A HEAD runs after
+#' the load, so it names what is current then: an object whose `Last-Modified`
+#' is later than `load_start` changed during the load, and its notes say so.
+#' The fwapg checkout's commit goes in each row's notes (`fwapg_commit=`), since
+#' `log.fwapg_sha` is the checkout's HEAD when a model runs, not the loader's.
+#'
+#' @param conn A connection to the database the load wrote.
+#' @param lines The trace's lines.
+#' @param load_start,load_end When the load started and ended (`POSIXct`).
+#' @param fwapg_commit The fwapg checkout's commit (with `-dirty` when its tree
+#'   was not clean), or NA.
+#' @return Invisibly, the rows recorded; `unmatched` URLs as an attribute.
+#' @noRd
+.lnk_fwa_load_record <- function(conn, lines, load_start, load_end,
+                                 fwapg_commit = NA_character_,
+                                 host = .lnk_host(), max_fail = 5L,
+                                 head = .lnk_artifact_head) {
+  m <- .lnk_fwa_trace_match(.lnk_fwa_trace_urls(lines))
+  a <- m$matched
+  if (!nrow(a)) stop("the trace names no FWA primitive object; was it captured from load.sh?",
+                     call. = FALSE)
+  heads <- vector("list", nrow(a))
+  fails <- 0L
+  for (i in seq_len(nrow(a))) {
+    heads[[i]] <- if (fails >= max_fail) {
+      .lnk_artifact_head_na(sprintf("not HEADed: %d consecutive HEAD failures before it", max_fail))
+    } else {
+      head(a$url[i])
+    }
+    fails <- if (is.na(heads[[i]]$status)) fails + 1L else 0L
+  }
+  h <- do.call(rbind, heads)
+  changed <- !is.na(h$last_modified) & as.numeric(h$last_modified) > as.numeric(load_start)
+  notes <- paste0("fwapg load.sh trace",
+                  if (!is.na(fwapg_commit)) paste0("; fwapg_commit=", fwapg_commit) else "")
+  notes <- ifelse(changed, paste0(notes, "; Last-Modified after the load started: changed during the load"),
+                  notes)
+  notes <- ifelse(is.na(h$notes), notes, paste0(notes, "; ", h$notes))
+  rows <- data.frame(table_name = a$table_name, url = a$url,
+                     version_id = h$version_id, etag = h$etag,
+                     last_modified = h$last_modified, loaded_at = load_end,
+                     notes = notes, stringsAsFactors = FALSE)
+  lnk_artifact_record(conn, rows, recorded_by = "loader", host = host)
+  attr(rows, "unmatched") <- m$unmatched
+  invisible(rows)
+}

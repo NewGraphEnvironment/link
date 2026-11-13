@@ -539,3 +539,65 @@ test_that("a host with no loader row for a table is refused", {
   r <- rbind(inputs_rows("dispatcher"), inputs_rows("job1")[-3, ])
   expect_match(.lnk_inputs_agree(r)$why, "cabd.dams: no loader row on job1", fixed = TRUE)
 })
+
+
+# --- fwapg load.sh's trace as loader rows (link#270) ---------------------------
+
+fwa_trace <- c(
+  "+ PSQL='psql postgresql://x -v ON_ERROR_STOP=1'",
+  "+ for table in \"${tables[@]}\"",
+  "+ ogr2ogr -f PostgreSQL PG:postgresql://x -append -nln whse_basemapping.fwa_lakes_poly /vsicurl/https://nrs.objectstore.gov.bc.ca/bchamp/fwapg/fwa_lakes_poly.parquet",
+  "++ ogr2ogr -f CSV /vsistdout/ /vsicurl/https://nrs.objectstore.gov.bc.ca/bchamp/fwapg/fwa_watershed_groups_poly.parquet -sql 'select x'",
+  "+ ogr2ogr -f PostgreSQL PG:x -nln fwa_stream_networks_sp_load /vsicurl/https://nrs.objectstore.gov.bc.ca/bchamp/fwapg/fwa_stream_networks_sp/ADMS.parquet",
+  "+ ogr2ogr -f PostgreSQL PG:x -nln fwa_stream_networks_sp_load /vsicurl/https://nrs.objectstore.gov.bc.ca/bchamp/fwapg/fwa_stream_networks_sp/BULK.parquet",
+  "+ psql postgresql://x -c '\\copy whse_basemapping.fwa_stream_networks_channel_width FROM PROGRAM '\\''curl -s https://nrs.objectstore.gov.bc.ca/bchamp/fwapg/fwa_stream_networks_channel_width.csv.gz | gunzip'\\'' delimiter '\\'','\\'' csv header'",
+  "fwa_stream_networks_channel_width",
+  "a line load.sh echoed with https://nrs.objectstore.gov.bc.ca/bchamp/fwapg/not_a_trace_line.parquet",
+  "+ ogr2ogr ... /vsicurl/https://nrs.objectstore.gov.bc.ca/bchamp/fwapg/fwa_lakes_poly.parquet")
+
+test_that("the trace's URLs are read from its + lines only, in order, each once", {
+  u <- .lnk_fwa_trace_urls(fwa_trace)
+  base <- "https://nrs.objectstore.gov.bc.ca/bchamp/fwapg/"
+  expect_identical(u, paste0(base, c("fwa_lakes_poly.parquet", "fwa_watershed_groups_poly.parquet",
+                                     "fwa_stream_networks_sp/ADMS.parquet",
+                                     "fwa_stream_networks_sp/BULK.parquet",
+                                     "fwa_stream_networks_channel_width.csv.gz")))
+})
+
+test_that("traced URLs map to FWA primitives; the rest are kept apart", {
+  m <- .lnk_fwa_trace_match(.lnk_fwa_trace_urls(fwa_trace))
+  expect_identical(m$matched$table_name,
+                   c("whse_basemapping.fwa_lakes_poly", "whse_basemapping.fwa_stream_networks_sp",
+                     "whse_basemapping.fwa_stream_networks_sp",
+                     "whse_basemapping.fwa_stream_networks_channel_width"))
+  expect_identical(basename(m$unmatched), "fwa_watershed_groups_poly.parquet")
+})
+
+test_that("a load's objects become loader rows, flagged when changed during the load", {
+  start <- as.POSIXct("2026-11-12 10:00:00", tz = "UTC")
+  end <- as.POSIXct("2026-11-12 13:00:00", tz = "UTC")
+  head <- function(url) {
+    lm <- if (grepl("BULK", url)) "Thu, 12 Nov 2026 11:30:00 GMT" else "Thu, 16 Apr 2026 02:22:39 GMT"
+    data.frame(version_id = paste0("v-", basename(url)), etag = "e1",
+               last_modified = .lnk_http_date(lm), status = 200L, notes = NA_character_,
+               stringsAsFactors = FALSE)
+  }
+  got <- NULL
+  testthat::local_mocked_bindings(lnk_artifact_record = function(conn, artifacts, recorded_by, host) {
+    got <<- list(artifacts = artifacts, recorded_by = recorded_by)
+    invisible(artifacts)
+  })
+  rows <- .lnk_fwa_load_record(NULL, fwa_trace, start, end, fwapg_commit = "8336522abc", head = head)
+  expect_identical(got$recorded_by, "loader")
+  expect_identical(nrow(got$artifacts), 4L)
+  expect_true(all(got$artifacts$loaded_at == end))
+  expect_true(all(grepl("fwapg_commit=8336522abc", got$artifacts$notes, fixed = TRUE)))
+  changed <- grepl("changed during the load", got$artifacts$notes, fixed = TRUE)
+  expect_identical(basename(got$artifacts$url[changed]), "BULK.parquet")
+  expect_identical(basename(attr(rows, "unmatched")), "fwa_watershed_groups_poly.parquet")
+})
+
+test_that("a trace naming no FWA primitive is refused", {
+  expect_error(.lnk_fwa_load_record(NULL, c("+ echo hello"), Sys.time(), Sys.time()),
+               "names no FWA primitive")
+})

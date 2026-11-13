@@ -834,6 +834,20 @@ EXCEPT SELECT watershed_group_code FROM <persist>.log;
     not proof, that they read the same data.** A reload that keeps the row
     count is invisible to it. Check `row_count` / `size_bytes` beside it until
     #270 writes loader rows.
+  - **FWA `loader` rows come from `data-raw/fwapg_load_capture.sh <fwapg
+    checkout>` (link#270).** fwapg's `load.sh` runs under `set -x`, so its
+    stderr names every object it fetched with the variables expanded. The
+    wrapper runs `load.sh`, tees that trace to
+    `data-raw/logs/fwapg_load/<UTC>_load_trace.log`, maps each URL to its
+    primitive (`.lnk_fwa_trace_match()`; URLs no primitive names stay in the
+    trace only), HEADs each object and records it as a `loader` row with
+    `loaded_at` the load's end (`artifact_record.R --fwa-trace`). The checkout's
+    commit goes in the notes (`fwapg_commit=<sha>`, `-dirty` when its tree is
+    not clean). A HEAD after the load names what is current then, so an object
+    whose `Last-Modified` is later than the load's start is noted "changed
+    during the load". A failed `load.sh` records nothing. `--trace=<log>`
+    records from a trace captured earlier. **Not yet run against a real load**:
+    until the next FWA reload, FWA rows stay probes.
   - `kind` is `object` (versioned; a NULL identity is a gap), `api` (PSCIS,
     CABD: no version handle, NULL is permanent) or `derived` (`order_parent`).
   - **`content_md5`** (#465): for an `api` primitive, the loader records an md5

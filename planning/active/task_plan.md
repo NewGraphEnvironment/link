@@ -177,13 +177,13 @@ Corrections taken, each reflected in the phases below:
 - [x] RUNBOOK §8d's vintage lines.
 
 ## Phase 9 (#270): fwapg loads record what they fetched
-- [ ] `data-raw/fwapg_load_capture.sh <fwapg checkout>`:
+- [x] `data-raw/fwapg_load_capture.sh <fwapg checkout>`:
   - runs `load.sh` with stderr teed to a dated log;
   - extracts the distinct object-store URLs, in order;
   - HEADs each one and writes `loader` rows through `lnk_artifact_record()` (via `artifact_record.R`), with the fwapg checkout's commit in `notes` (`fwapg_commit=<sha>`).
   - A loader row replaces the probe row by the existing upsert rule.
-- [ ] Unit test on a captured or synthetic `set -x` trace (URL extraction, the per-group template, dedupe), with `load.sh` stubbed.
-- [ ] RUNBOOK §6b: the FWA loader rows.
+- [x] Unit test on a captured or synthetic `set -x` trace (URL extraction, the per-group template, dedupe), with `load.sh` stubbed.
+- [x] RUNBOOK §6b: the FWA loader rows.
 
 ## Phase 10: proof, release
 - [ ] One primitives reload on m1: `snapshot_bcfp.sh --with-bcfp-views --force` through the new library. Its log shows the four PSCIS views loaded, their counts, and the attempt each took. Then:
