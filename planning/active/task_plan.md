@@ -186,13 +186,13 @@ Corrections taken, each reflected in the phases below:
 - [x] RUNBOOK §6b: the FWA loader rows.
 
 ## Phase 10: proof, release
-- [ ] One primitives reload on m1: `snapshot_bcfp.sh --with-bcfp-views --force` through the new library. Its log shows the four PSCIS views loaded, their counts, and the attempt each took. Then:
+- [x] One primitives reload on m1: `snapshot_bcfp.sh --with-bcfp-views --force` through the new library. Its log shows the four PSCIS views loaded, their counts, and the attempt each took. Then:
   - `artifact_record` read back;
   - `host_vintage.R` passes, judged by etag for the object tables;
   - the new ledger row is read by both the pin and the guard.
-- [ ] `study_area_run.sh --preflight-only` on m1 for `default`: the bcfishobs gate is gone, and the pin prints version plus date. The gate's refusal (code changed) is expected, and is reported, not overridden.
-- [ ] `devtools::test()`, `devtools::check()`, and `lintr` per file and linter against `origin/main`.
-- [ ] NEWS, version 0.81.0, CLAUDE.md status block.
+- [x] `study_area_run.sh --preflight-only` on m1 for `default`: the bcfishobs gate is gone, and the pin prints version plus date. The gate's refusal (code changed) is expected, and is reported, not overridden.
+- [x] `devtools::test()`, `devtools::check()`, and `lintr` per file and linter against `origin/main`.
+- [x] NEWS, version 0.81.0, CLAUDE.md status block.
 
 ## Owed at the end (reported, done after merge)
 
@@ -206,7 +206,7 @@ Corrections taken, each reflected in the phases below:
 
 - [x] Tests pass (5,639; the only failures need the bcfp tunnel, down here)
 - [x] `/code-check` clean (once over the branch with `/code-check branch`: three rounds, 10 findings fixed, ended on round 3's enumeration)
-- [ ] PWF checkboxes match landed work
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
 How each change is proved:

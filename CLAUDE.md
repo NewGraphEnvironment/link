@@ -11,6 +11,20 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-11-13) — a run stamps what it read, the gate finds its own history, primitive loads retry and record (#474, 0.81.0)
+
+**Backlog move 6 (#474) lands as one release: `bcfishobs_sha` retired for the observations' loaded version (#451); one bcfp pin rule with `log.bcfp_date_completed` (#446, #266); the pre-run gate held to an ancestor found through `extends:`, or to every input, bounded on `data-raw/logs/build_minutes.csv` (#450); `update_hosts.sh` on the DESCRIPTION pin (#269); `snapshot_bcfp.sh` retries, row checks and WFS/pyarrow fallbacks (#484, #459); a skip guard on the build date and a pre-spend cross-host compare (#276); vintage by live ETag (#273); fwapg trace capture (#270).** Proved on m1 by one primitives reload (2026-11-13) and a `--preflight-only` launch. Mechanics: RUNBOOK §6b, §6c, §8d ("The pre-run gate", "Every host holds the same primitives", "The vintage gate"). Evidence: `data-raw/logs/gate_history_450/`, `data-raw/logs/snapshot_fallbacks_459/`.
+
+**Owed:** the pre-run gate runs again before the next provincial run (`R/`, `data-raw/pretest_*`, the driver changed); re-snapshot every host (m1 reloaded 2026-11-13 and now differs from m4 on the modelled crossings); a provincial launch with cloud hosts needs `--refresh-primitives`; `fwapg_load_capture.sh` at the next FWA reload (#270 stays open until then); rotate the worker's GitHub token (#269's residue); append the next provincial run to `build_minutes.csv`.
+
+**Facts not worth re-deriving:**
+- **DataBC's GeoServer pages a WFS read only with a sort** (HTTP 400 "Cannot do natural order without a primary key" otherwise), and `objectid` in the PSCIS views is renumbered when DataBC republishes, not per request.
+- **A WFS-fallback PSCIS table equals bc2pg's by value but not by content md5:** bc2pg keeps GeoServer's JSON spelling of each decimal (`55483833`, `488073.0`), every field is `xsd:decimal`, and GDAL reads doubles. So a host that fell back is refused by the compare until it reloads.
+- **The observations parquet has two `observation_key` columns:** an int64 GDAL row index and the string key (the `gdal:schema` fid). GDAL writes doubles to Postgres at 15 significant digits, so the pyarrow fallback does too.
+- **RPostgres sets the session `TimeZone` to UTC;** a timestamp written in the server's zone is read with `pg_settings.reset_val`. A bigint `count()` arrives as `integer64` and orders on raw bits without bit64 (the gate's ancestor pick chose a 2-group schema over 241 until cast).
+- **Nothing clears `log` or `log_recompute`;** `fresh_default`'s extra `log` rows were seeded as #454's gate history (#458).
+- **On 2026-11-12 upstream held `v0.7.15-51-g3bd2824` rebuilt 2026-11-11 under m1's snapshot of the same version (built 2026-10-28)**, which the old version-only guard would have skipped.
+
 ## Status (2026-11-12) — a one-group run reads its downstream groups' barriers from the export (#465)
 
 **The habitat export carries each group's persisted `barriers` and `barrier_overrides` (one part per group per config, manifest `group_parts`), the line-rule dependency map (`dependencies`), and per-build input identities; `lnk_downstream_files()` lists a target's dependencies and `lnk_downstream_load()` loads them into a persist schema (0.80.0).** Proved on m1 by a round trip: BULL modelled after loading its 11 dependencies from an export of `fresh_default` equals the SQL-copied control and the provincial build row for row (`streams`, `streams_access`, `streams_mapping_code`). Mechanics: RUNBOOK §6d, "What a one-group run reads from the export". Evidence: `data-raw/logs/downstream_export_465/` (its README).
