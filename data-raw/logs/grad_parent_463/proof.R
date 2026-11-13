@@ -31,7 +31,9 @@
 #                 connected distances, a network distance no shorter than the
 #                 straight line), of segments that changed gradient or differ in
 #                 that species' habitat, and the cluster holds a changed segment
-#   unexplained   anything else; `accessible` never moves by connectivity
+#   unexplained   anything else, and every `accessible` difference: nothing that
+#                 decides it reads segment gradient (classify sets it from the
+#                 breaks, the gate from streams_access, identical in both builds)
 #
 # #462: CH rearing the near-river distance's transfer costs: CH 1050/1150
 # segments of default_parent, accessible (access_ch >= 1, the same in both
@@ -254,16 +256,16 @@ for (sp in SPECIES) {
        FROM pg_temp.h WHERE changed OR %s",
     paste(sprintf("c_%1$s, p_%1$s", FLAGS), collapse = ", "), REACH_M, any_diff))
   cls[[sp]] <- do.call(rbind, lapply(FLAGS, function(fl) {
-    conn_ok <- if (fl == "accessible") "false" else "x.has_changed"
     q(
       "WITH x AS (SELECT wsg, cid, bool_or(changed) AS has_changed FROM pg_temp.hc GROUP BY 1, 2)
        SELECT hc.wsg, %1$s AS species, %2$s AS flag,
-              CASE WHEN hc.changed THEN 'own_gradient'
+              CASE WHEN %2$s = 'accessible' THEN 'unexplained'
+                   WHEN hc.changed THEN 'own_gradient'
                    WHEN %4$s THEN 'connectivity' ELSE 'unexplained' END AS class,
               count(*) AS n
          FROM pg_temp.hc hc JOIN x USING (wsg, cid)
         WHERE hc.c_%3$s <> hc.p_%3$s
-        GROUP BY 1, 2, 3, 4 ORDER BY 1, 4", lit(sp), lit(fl), fl, conn_ok)
+        GROUP BY 1, 2, 3, 4 ORDER BY 1, 4", lit(sp), lit(fl), fl, "x.has_changed")
   }))
 }
 hab <- do.call(rbind, hab)

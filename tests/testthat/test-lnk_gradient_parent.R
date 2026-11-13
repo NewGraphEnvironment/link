@@ -308,6 +308,20 @@ test_that("a build whose segments are not the full build's is refused before the
   expect_error(apply(), "1 .* segments have no parent row")
   untouched()
   sql("UPDATE %s.streams_parent SET run_id_minimal = 'm-run' WHERE id_segment = 2", s$full)
+  # A row whose length is not its segment's reads as no parent.
+  sql("UPDATE %s.streams_parent SET straddle_m = straddle_m + 1 WHERE id_segment = 2", s$full)
+  expect_error(apply(), "1 .* segments have no parent row")
+  untouched()
+  sql("UPDATE %s.streams_parent SET straddle_m = straddle_m - 1 WHERE id_segment = 2", s$full)
+  # A re-model of either network after the judgement refuses the swap.
+  gp_log(conn, s$full, "f-run2", "cut-full-top", age = "1 minute")
+  expect_error(apply(), "full re-modelled since the parent rows were judged")
+  untouched()
+  sql("DELETE FROM %s.log WHERE run_id = 'f-run2'", s$full)
+  gp_log(conn, s$minimal, "m-run2", "cut-min", age = "1 minute")
+  expect_error(apply(), "minimal re-modelled since the parent rows were judged")
+  untouched()
+  sql("DELETE FROM %s.log WHERE run_id = 'm-run2'", s$minimal)
   # A full segment with no parent row.
   sql("DELETE FROM %s.streams_parent WHERE id_segment = 3", s$full)
   expect_error(apply(), "1 .* segments have no parent row")

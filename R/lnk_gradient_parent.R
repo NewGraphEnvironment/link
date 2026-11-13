@@ -351,7 +351,8 @@
 #' `upstream_route_measure` each within 1 mm. Refuses unless the mapping is one
 #' to one over the whole group (equal counts, each segment on either side
 #' matched exactly once) and every full segment has a parent row from the runs
-#' the judgement named (a row left by a re-model since reads as none): that proves
+#' the judgement named and its segment's length (a row left by a re-model
+#' reads as none; the newest builds are read again first): that proves
 #' this build cut the network the parent table was joined on. Then drops
 #' working `gradient`'s generation expression (fresh makes it a generated
 #' column) and sets it to the parent's `gradient_minimal`, in one transaction.
@@ -362,6 +363,18 @@
 .lnk_gradient_parent_apply <- function(conn, aoi, schema, judged) {
   sf <- judged$schema_full
   lit <- .lnk_quote_literal
+  # The judgement ran before prepare and break. A re-model of either network
+  # since would leave the judged runs' parent rows in place, numbered for
+  # segments that no longer exist, so the newest builds are read again.
+  now <- .lnk_streams_parent_builds(conn, sf, judged$schema_minimal, aoi)
+  moved <- c(full = now$run_id[now$side == "full"],
+             minimal = now$run_id[now$side == "minimal"])
+  was <- c(full = judged$run_id_full, minimal = judged$run_id_minimal)
+  if (!identical(moved, was)) {
+    stop(aoi, ": ", paste(names(was)[moved != was], collapse = " and "),
+         " re-modelled since the parent rows were judged; rebuild ",
+         sf, ".streams_parent (data-raw/streams_parent_build.R)", call. = FALSE)
+  }
   tmp <- c("lnk_gp_f", "lnk_gp_w", "lnk_gp_m")
   drop_tmp <- function() {
     for (t in tmp) .lnk_db_execute(conn, sprintf("DROP TABLE IF EXISTS pg_temp.%s", t))
@@ -372,7 +385,8 @@
     "CREATE TEMP TABLE lnk_gp_f AS
      SELECT f.id_segment, f.blue_line_key AS blk, f.downstream_route_measure AS dm,
             f.upstream_route_measure AS um, p.gradient_minimal,
-            p.id_segment IS NOT NULL AS has_parent
+            p.id_segment IS NOT NULL
+              AND abs(p.overlap_m + p.straddle_m - f.length_metre) <= 1e-3 AS has_parent
        FROM %1$s.streams f
        LEFT JOIN %1$s.streams_parent p
          ON p.id_segment = f.id_segment AND p.watershed_group_code = f.watershed_group_code
