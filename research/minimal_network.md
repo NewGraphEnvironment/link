@@ -1,6 +1,6 @@
 # The minimal network
 
-**Verified:** 2026-11-03 (parent attributes; 2026-11-02 for the proof) · **Issues:** #415 (and #441); #444 (parent attributes) · **Produced by:** `data-raw/logs/minimal_breaks_415/` (`run.sh`, `proof.R`, `lifts.R`) builds at link `6bf9ca06` (0.78.0), fresh 0.52.0, on m4's local fwapg; `lifts.csv` written by `lifts.R` as of `ac52e150`, with `R/` unchanged since the builds · parent attributes by `data-raw/streams_parent_build.R`, evidence `data-raw/logs/streams_parent_444/` · **Status:** proof run on four groups; both networks built province-wide (#441, #454) and joined (#444).
+**Verified:** 2026-11-13 (classifying on the parent's gradient; 2026-11-03 parent attributes; 2026-11-02 the proof) · **Issues:** #415 (and #441); #444 (parent attributes); #463, #462 (classifying on it) · **Produced by:** `data-raw/logs/minimal_breaks_415/` (`run.sh`, `proof.R`, `lifts.R`) builds at link `6bf9ca06` (0.78.0), fresh 0.52.0, on m4's local fwapg; `lifts.csv` written by `lifts.R` as of `ac52e150`, with `R/` unchanged since the builds · parent attributes by `data-raw/streams_parent_build.R`, evidence `data-raw/logs/streams_parent_444/` · classifying on it by `data-raw/logs/grad_parent_463/` (`run.sh`, `proof.R`) at link `6f0eea81` (0.81.0) · **Status:** proof run on four groups; both networks built province-wide (#441, #454) and joined (#444); `default_parent` classifies on the join, proved on four groups (#463).
 
 `default_minimal` cuts streams only at gradient barriers where a modelled species' access changes, falls and user-definite barriers. `default` also cuts at each species' highest fish record per line, at known-habitat end points and at crossings (modelled and PSCIS crossings, and dams). Read this beside `species_paused.md`, which measures the same kind of change for pausing a species.
 
@@ -83,8 +83,17 @@ Raw numbers: `lifts.csv` (per species and per group), `lifts_obs.csv`.
 - **The table is the proof's prototype.** On BULK, SETN, MORK and COTR it gives every full segment the parent `parent_<wsg>.csv.gz` gave it, with identical gradients and lengths within 5.5e-12 m (`prototype_check.csv`). The proof's segment ids still name the same segments, because both networks were cut the same way since.
 - **Only gradient is carried.** Discharge is per FWA segment and neither network crosses an FWA segment boundary, so a full segment and its parent read the same value.
 
+## Classifying on the parent's gradient
+
+**A `default_parent` build cuts `default`'s segments and classifies each on its parent's gradient; on four groups only habitat moves, and rearing rises much as it does on the minimal network itself** (#463). BULK, SETN, MORK and COTR were built under `default` (a control) and `default_parent` at one commit on m4 (`data-raw/logs/grad_parent_463/README.md`).
+
+- **Segments and access are identical,** and the parent build's `gradient` equals `streams_parent.gradient_minimal` on every segment. The gradient changes on 3,316 to 3,777 km per group.
+- **Every habitat difference sits on a segment whose gradient changed, or in a connected cluster holding one** (none unexplained). Over the four groups rearing rises (CH +3.9 %, ST +3.3 %, CO +1.5 %, BT +1.1 %) and spawning moves within ±0.33 %, both ways. BULK CH rearing goes from 2,101 to 2,208 km, against 2,205 on the minimal network (above), so on BULK the minimal network's rise does not need its longer segments: the parent's gradient on the full network's segments gives nearly the same km.
+- **The near-river distance costs nothing here** (#462). CH's near-river pair applies only to 1050/1150 lines under `default`, and on those lines it reads the segment's own distance, not the parent's. Accessible CH segments failing the rear width whose parent is within 1,000 m of a 15 m river and whose own distance is not: 0 in each group (0 km). The two distances differ on 94 segments, by up to 542 m, and none crosses 1,000 m. This is not comparable to knowledge#120's 1,042 km, which applied the pair to every line.
+
 ## What is not measured
 
 - No group in the proof has a dam below it in the scratch schema, so the recompute's downstream-dam branch did not run on real data.
 - The proof groups are all on `cw`; a `mad` group reads discharge, which the proof does not compare.
 - One run of each build, on one host.
+- `default_parent` is proved on four groups only; whether to build it province-wide is an operator decision (it runs only on the dispatcher, where `fresh_default` and `streams_parent` live).

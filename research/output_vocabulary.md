@@ -1,6 +1,6 @@
 # Naming link's outputs: what a token covers
 
-**Verified:** 2026-11-12 · **Issues:** #414, #415, #420, #460, #463 (consumers: a downstream tuning archive) · **Produced by:** reading the six config bundles under `inst/extdata/configs/` and the code paths below; the specs in `inst/extdata/vocabulary.csv` are written by `lnk_vocabulary_resolve()`'s helpers · **Status:** four axes; eight live tokens; `default_extrabreaks` and `default_rearbreaks` have none and refuse
+**Verified:** 2026-11-13 · **Issues:** #414, #415, #420, #460, #462, #463 (consumers: a downstream tuning archive) · **Produced by:** reading the seven config bundles under `inst/extdata/configs/` and the code paths below; the specs in `inst/extdata/vocabulary.csv` are written by `lnk_vocabulary_resolve()`'s helpers · **Status:** four axes; ten live tokens; `default_extrabreaks` and `default_rearbreaks` have none and refuse
 
 ## The question
 
@@ -53,13 +53,14 @@ So access is its own axis, and the cut axis keeps naming the method:
 | grad | `grad-` | how a segment's gradient is measured | `gradient=segment` (built); `gradient=parent;parent_cut=<cut>` (`grad-parent`); `gradient=fwa_segment` (`grad-fwa`, no link build) |
 | flow | `q-` | `discharge_source` and `discharge_fill` | canonical string |
 
-With these axes, six configs take eight live tokens:
+With these axes, seven configs take nine of the ten live tokens (no bundle builds `grad-fwa`):
 
 | Config | cut | acc | grad | flow |
 |---|---|---|---|---|
 | `default` | `cut-full-top` | `acc-v5` | `grad-seg` | `q-fwapg` |
 | `default_tuned` | `cut-full-top` | `acc-v5` | `grad-seg` | `q-wet-fill` |
 | `default_minimal` | `cut-min` | `acc-v5` | `grad-seg` | `q-fwapg` |
+| `default_parent` | `cut-full-top` | `acc-v5` | `grad-parent` | `q-fwapg` |
 | `bcfishpass` | `cut-full-ssf-all` | `acc-bcfp-4` | `grad-seg` | `q-fwapg` |
 | `default_extrabreaks` | none | none | `grad-seg` | `q-fwapg` |
 | `default_rearbreaks` | none | none | `grad-seg` | `q-fwapg` |
@@ -92,7 +93,8 @@ specs; nothing else in the digest moved.
 
 **Three gradient readings are named.** `grad-seg` is each segment's own gradient, as fresh
 computes it on the cut network. `grad-parent` (#444) reads the gradient of the `cut-min`
-segment a full segment lies in; `default_parent` builds it (#463). `grad-fwa` (#460) reads the
+segment a full segment lies in; `default_parent` builds it (#463), and on four groups it holds
+`default`'s segments and access exactly (`data-raw/logs/grad_parent_463/README.md`). `grad-fwa` (#460) reads the
 gradient of the Freshwater Atlas segment a segment lies on
 (`whse_basemapping.fwa_stream_networks_sp.gradient` by `linear_feature_id`; no link segment
 crosses an FWA segment boundary: 0 of BULK's 42,458 in `fresh_default`, 2026-11-12). No link

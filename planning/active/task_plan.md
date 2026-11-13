@@ -125,13 +125,14 @@ Approved with the plan (operator, 2026-11-10):
 
 ## Phase 4: docs and release
 
-- [ ] RUNBOOK §6b (:886, :1000-1003 and "Parent attributes"): what reads `streams_parent` now, the
+- [x] RUNBOOK §6b (:886, :1000-1003 and "Parent attributes"): what reads `streams_parent` now, the
       bundle, the refusals, the git half of the guard as the builder's job, that a grad-parent
       schema's `gradient` is the parent's (the segment's own sits at the same position in
       `schema_full`), that a re-model of either network voids its input, and that it runs only
       where `schema_full` and `streams_parent` exist (the dispatcher) (G2, G9, A2).
-- [ ] `research/output_vocabulary.md`'s config→tokens table gets `default_parent` (G9).
-- [ ] NEWS, CLAUDE.md status.
+- [x] `research/output_vocabulary.md`'s config→tokens table gets `default_parent` (G9).
+- [x] NEWS, CLAUDE.md status. Also `research/minimal_network.md` (results, #462) and the
+      `grad-parent` row's definition in `vocabulary.csv` (it said no build writes it).
 
 ## Owed at the end (reported, done after merge)
 
