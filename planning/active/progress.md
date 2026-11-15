@@ -62,3 +62,9 @@
   the group cannot tell whether its output is a run log; the banner no longer quotes the
   local-only `LNK_STALL_EVERY_S`. Cadence mutant: 2 test failures. One-group checks: two rows
   under the derived 0.5 min default; `stall sampler off` for 5 min under a 1 min bound.
+- code-check round 4 (enumeration): Clean, 25 rows all holding (`review-round4.md`); its three
+  wording notes (cadence "at least two", queries per check, CLAUDE.md "or more often") fixed.
+  Summary: R1 2 found / 2 fixed; R2 2/2 (one inside R1's fix); R3 4/4 (inside R2's fixes, one
+  mechanism); R4 0, enumeration. Five review agents in all with the plan review.
+- The suites touched after the full run (`test-lnk_stall.R`, `test-study_area_finish.R`,
+  `test-study_area_remote.R`) pass at the final code; the full suite last ran at `e82c64bb`.

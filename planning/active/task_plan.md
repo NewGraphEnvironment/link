@@ -110,10 +110,10 @@ Plan approved by the user 2026-11-14 as presented (mechanism choices proposed by
       (redacted by the driver's rule).
 
 ## Phase 6: Docs and release
-- [ ] RUNBOOK §8d: a subsection "A stalled statement leaves samples" beside "A runaway
+- [x] RUNBOOK §8d: a subsection "A stalled statement leaves samples" beside "A runaway
       statement fails its group"; correct that section's stale "it is not passed over ssh"
       (`study_area_remote.sh` passes `LNK_TEST_STALL_WSG` as a group code).
-- [ ] CLAUDE.md status block; NEWS.md; issue #487's body gets a `## Plan` / `## Decisions`
+- [x] CLAUDE.md status block; NEWS.md; issue #487's body gets a `## Plan` / `## Decisions`
       section; DESCRIPTION 0.83.0 as the last commit.
 
 ## Owed at the end (reported, done after merge)
@@ -123,9 +123,9 @@ Plan approved by the user 2026-11-14 as presented (mechanism choices proposed by
       `pretest_inputs.csv` changed).
 
 ## Validation
-- [ ] Tests pass (`devtools::test()`), lint clean against main per file, `devtools::check()`
-- [ ] `/code-check` clean (once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
+- [x] Tests pass (`devtools::test()`: 5839 pass, 3 fail on the unreachable PG_*_SHARE tunnel, unrelated), lint clean on the new files, `devtools::check()` (same 3; no warning or note names a new file)
+- [x] `/code-check` clean (once over the branch with `/code-check branch`): 4 rounds, ended by round 4's 25-row enumeration
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
 Verification: Phase 1's tests red before Phase 2 and green after; each new guard (parent-exit,

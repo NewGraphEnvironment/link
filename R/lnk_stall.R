@@ -131,10 +131,9 @@ ORDER BY ord, blocks_pid NULLS FIRST, pid"
 #'
 #' Checks `parent_pid` every `poll_s` seconds and returns once it has
 #' exited, so the watch ends with its group. It checks every `every_s`
-#' seconds, or more often so that at least two checks fall in each of the
-#' first `after_s` and, given the bound, the window from `after_s` to
-#' `bound_s` (at most once a second): each check returns if the backend is
-#' gone, and
+#' seconds, or every half of `after_s` or of the window from `after_s` to
+#' `bound_s` when shorter (at most once a second; a check waits for the next
+#' parent poll): each check returns if the backend is gone, and
 #' otherwise writes the backend's snapshot (`.lnk_stall_snapshot()`) to
 #' stdout, with the header before the first row, and creates `marker` once a
 #' row is written. Any error is written as one `[wsg_stall_error] <WSG>` line

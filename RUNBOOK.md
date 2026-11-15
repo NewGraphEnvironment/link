@@ -2548,9 +2548,10 @@ went with the cancel. So each group is watched while it runs.
   `connect_timeout 10`, and no `application_name` of its own: it inherits
   `PGAPPNAME`, which the pre-run gate reads to leave a pick's sessions out of
   its load count and to end them). Every 60 s it checks the backend
-  (`.lnk_stall_watch()`, `R/lnk_stall.R`), or more often so that at least two
-  checks fall within N and within the window from N to the bound (it is passed
-  the bound).
+  (`.lnk_stall_watch()`, `R/lnk_stall.R`), or more often: every half of N, and
+  every half of the window from N to the bound (it is passed the bound), so a
+  window longer than a few seconds gets at least one check, usually two (a check
+  waits for the next 2 s parent poll).
 - **What it records:** once the backend has been `active` on one statement for
   more than N minutes, each check writes one line per backend:
   the statement itself (`leader`), its parallel workers (`worker`, by
@@ -2602,7 +2603,7 @@ went with the cancel. So each group is watched while it runs.
   outside those calls would hold the leg. `pgrep -fl wsg_stall_sample` finds
   one.
 - **Cost:** one `load_all()` (or `library(link)`) per group beside the group,
-  and one catalogue query a minute.
+  and two catalogue queries a check.
 - **Not recorded:** the statement's plan. The walk reads its own session's temp
   tables, so another session cannot `EXPLAIN` it; recording it needs code in
   fresh, left until the samples show whether a stall is a wait at all.
