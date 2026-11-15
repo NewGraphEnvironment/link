@@ -41,3 +41,15 @@
   The three are `test-lnk_db_conn.R:10` and `test-lnk_wsg_resolve.R:143,154`, each
   `lnk_db_conn()` refused on port 63333 (the `PG_*_SHARE` tunnel, not up on m1 tonight); neither
   file nor its code changed on the branch.
+- `devtools::check()` at `6a6f2e6c`: 1 error (the same three tunnel tests), 3 warnings and 3
+  notes, none naming a file this branch adds (non-ASCII in older R files, Rd cross-refs and
+  usage, `setNames` globals).
+- code-check round 1 (2 findings, both fixed in `1ca5ac5e`): the default threshold refused
+  `--statement-timeout=1..10` alone; stall lines split the readers line.
+- code-check round 2 (2 findings, both fixed): the `stall samples:` line was a proxy
+  (`bound > threshold`) that round 1's 0.5 min default made false most of the time, a defect
+  inside the previous fix; now the sampler creates a marker with its first row and the line
+  waits for it, and checks run every `min(every_s, after_s)`. `cut` in `run_stalls` now runs
+  `LC_ALL=C` (macOS `/usr/bin/cut` stops at an invalid byte; GNU cut is first on PATH on m1,
+  so the test cannot show it red here). One-group checks: a row and the line at 0.5 min; no
+  row and no line at 5 min.

@@ -463,7 +463,7 @@ run_stalls() {
         r = substr($0, i + length(tag))
         if (substr(r, 1, 4) !~ /^[A-Z][A-Z][A-Z][A-Z]$/ || substr(r, 5, 1) != "\t") next
         print r }' > "$tmp" 2>/dev/null || true
-  for w in $(cut -f1 "$tmp" 2>/dev/null | LC_ALL=C sort -u); do
+  for w in $(LC_ALL=C cut -f1 "$tmp" 2>/dev/null | LC_ALL=C sort -u); do
     LC_ALL=C awk -v w="$w" 'BEGIN { FS = OFS = "\t" }
       $1 == w { sub(/^[^\t]*\t/, "")
         if ($1 == "sampled_utc") { if (!h++) hdr = $0; next }

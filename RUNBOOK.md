@@ -2547,8 +2547,8 @@ went with the cancel. So each group is watched while it runs.
   holds a second connection (`statement_timeout 10s`, `lock_timeout 5s`,
   `connect_timeout 10`, and no `application_name` of its own: it inherits
   `PGAPPNAME`, which the pre-run gate reads to leave a pick's sessions out of
-  its load count and to end them). Every 60 s it checks the backend
-  (`.lnk_stall_watch()`, `R/lnk_stall.R`).
+  its load count and to end them). Every 60 s (or every N, when N is under a
+  minute) it checks the backend (`.lnk_stall_watch()`, `R/lnk_stall.R`).
 - **What it records:** once the backend has been `active` on one statement for
   more than N minutes, each check writes one line per backend:
   the statement itself (`leader`), its parallel workers (`worker`, by
@@ -2571,7 +2571,8 @@ went with the cancel. So each group is watched while it runs.
   The summary prints `stall samples: <file>` for every group that has one (a
   group can stall past N and still finish). A cancelled group prints
   `[wsg_run_one] <WSG> stall samples: <file>` on the line after its `TIMEOUT`
-  line (only when its bound outlasted N), and the INCOMPLETE block prints
+  line only when the sampler wrote a row (it creates a marker file in the
+  group's R tempdir with its first), and the INCOMPLETE block prints
   `samples: <file>` under its statement. The sampler rewrites `[wsg_` and
   `__LNK_` inside a field, so a blocker's query cannot read as a log marker.
 - **Setting N:** `study_area_run.sh --stall-sample-after=<min>`, default 10,

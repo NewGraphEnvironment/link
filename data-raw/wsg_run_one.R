@@ -106,6 +106,7 @@ if (nzchar(want_min) && !identical(bound_ms, as.numeric(want_min) * 60000)) {
 stall_after_min <- suppressWarnings(as.numeric(Sys.getenv("LNK_STALL_AFTER_MIN", "10")))
 stall_every_s <- suppressWarnings(as.numeric(Sys.getenv("LNK_STALL_EVERY_S", "60")))
 stall_file <- NULL
+stall_marker <- tempfile("stall_seen_")
 self <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE))
 sampler <- file.path(dirname(self[1]), "wsg_stall_sample.R")
 if (!isTRUE(stall_after_min > 0 && stall_after_min <= 1440 &&
@@ -120,7 +121,7 @@ if (!isTRUE(stall_after_min > 0 && stall_after_min <= 1440 &&
     backend <- DBI::dbGetQuery(conn, "SELECT pg_backend_pid() AS p")$p
     system2(file.path(R.home("bin"), "Rscript"),
             c(shQuote(sampler), wsg, backend, Sys.getpid(),
-              stall_after_min * 60, stall_every_s), wait = FALSE)
+              stall_after_min * 60, stall_every_s, shQuote(stall_marker)), wait = FALSE)
     TRUE
   }, error = function(e) {
     cat(sprintf("[wsg_run_one] %s stall sampler off: %s\n", wsg,
@@ -144,8 +145,9 @@ name_timeout <- function(e) {
     s <- link:::.lnk_timeout_statement(e, sys.frames())
     if (!is.null(s)) {
       cat(sprintf("[wsg_run_one] %s TIMEOUT after %s: %s\n", wsg, bound, s))
-      # Samples exist only when the bound outlasted the sampler's threshold.
-      if (!is.null(stall_file) && bound_ms > stall_after_min * 60000) {
+      # Named only once the sampler has written a row: it creates the marker
+      # then (a stall can end before its first check lands).
+      if (!is.null(stall_file) && file.exists(stall_marker)) {
         cat(sprintf("[wsg_run_one] %s stall samples: %s\n", wsg, stall_file))
       }
     }

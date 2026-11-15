@@ -1058,6 +1058,8 @@ test_that("wsg_run_one.R names the stall file on the line after its TIMEOUT line
   expect_length(to, 1L)
   expect_length(st, 1L)
   expect_gt(st, to)
+  # Gated on the sampler's own mark that it wrote a row, not on the bound.
+  expect_true(any(grepl("file.exists(stall_marker)", fn[to:st], fixed = TRUE)))
   # The name it prints is the one run_stalls writes.
   expect_match(paste(src, collapse = "\n"), "_stall_", fixed = TRUE)
 })

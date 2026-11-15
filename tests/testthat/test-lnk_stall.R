@@ -134,9 +134,12 @@ test_that("the watch ends when its group's process or backend is gone, and never
   gone_pid <- DBI::dbGetQuery(gone, "SELECT pg_backend_pid() AS p")$p
   DBI::dbDisconnect(gone)
   Sys.sleep(0.5)
+  mk <- tempfile()
   r <- .lnk_stall_watch(conn, pid = gone_pid, parent_pid = Sys.getpid(), wsg = "TEST",
-                        every_s = 0.1, poll_s = 0.1)
+                        every_s = 0.1, poll_s = 0.1, marker = mk)
   expect_identical(r, "backend_gone")
+  # No row written, no marker.
+  expect_false(file.exists(mk))
   closed <- DBI::dbConnect(RPostgres::Postgres(), dbname = "fwapg", host = "localhost",
                            port = 5432L, user = "postgres", password = "postgres")
   DBI::dbDisconnect(closed)
@@ -156,10 +159,12 @@ test_that("the watch writes the header once, then a row per backend per check", 
   pid <- stall_session("SELECT pg_sleep(30) -- link#487 watch", conn)
   # The parent is a process that ends after a few checks.
   parent <- system2("sh", c("-c", shQuote("sleep 4 >/dev/null 2>&1 & echo $!")), stdout = TRUE)
+  mk <- tempfile()
   out <- capture.output(
     r <- .lnk_stall_watch(conn, pid = pid, parent_pid = as.integer(parent), wsg = "TEST",
-                          after_s = 0, every_s = 1, poll_s = 0.2)
+                          after_s = 0, every_s = 1, poll_s = 0.2, marker = mk)
   )
+  expect_true(file.exists(mk))
   expect_identical(r, "parent_gone")
   expect_identical(sum(grepl("^\\[wsg_stall\\] TEST\tsampled_utc\t", out)), 1L)
   expect_gte(sum(grepl("^\\[wsg_stall\\] TEST\t[0-9]{4}-", out)), 2L)

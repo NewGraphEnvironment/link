@@ -12,12 +12,16 @@
 # is one `[wsg_stall_error] <WSG>` line and exit 0.
 #
 # Usage: [LNK_LOAD=loadall] Rscript wsg_stall_sample.R <WSG> <backend pid> \
-#          <parent R pid> <after_s> <every_s>
+#          <parent R pid> <after_s> <every_s> <marker file>
+# The marker is created once a row is written, so the group names its stall
+# file only when there is one.
 
 wsg <- "????"
 tryCatch({
   args <- commandArgs(trailingOnly = TRUE)
-  if (length(args) != 5L) stop("usage: wsg_stall_sample.R <WSG> <pid> <parent pid> <after_s> <every_s>")
+  if (length(args) != 6L) {
+    stop("usage: wsg_stall_sample.R <WSG> <pid> <parent pid> <after_s> <every_s> <marker>")
+  }
   wsg <- args[1]
   num <- suppressWarnings(as.numeric(args[2:5]))
   if (anyNA(num)) stop("non-numeric argument: ", paste(args[2:5], collapse = " "))
@@ -36,7 +40,7 @@ tryCatch({
   DBI::dbExecute(conn, "SET statement_timeout = '10s'")
   DBI::dbExecute(conn, "SET lock_timeout = '5s'")
   link:::.lnk_stall_watch(conn, pid = as.integer(num[1]), parent_pid = as.integer(num[2]),
-                          wsg = wsg, after_s = num[3], every_s = num[4])
+                          wsg = wsg, after_s = num[3], every_s = num[4], marker = args[6])
   try(DBI::dbDisconnect(conn), silent = TRUE)
 }, error = function(e) {
   try(cat(sprintf("[wsg_stall_error] %s %s\n",
