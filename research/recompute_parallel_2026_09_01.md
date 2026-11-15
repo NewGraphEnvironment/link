@@ -222,7 +222,7 @@ psql -h localhost -p 5432 -U postgres -d fwapg -c "
                   'work_mem','maintenance_work_mem') ORDER BY name;"
 ```
 
-Migrated from machine-local memory 2026-09-02 (soul#47). The host's identity
+Migrated from machine-local memory 2026-09-02. The host's identity
 stays in memory; only the shape of the constraint and how to re-measure it
 belong here.
 

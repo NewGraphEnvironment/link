@@ -36,7 +36,12 @@ two access rules held in code (the gradient class each access label
 maps to, and \code{\link[=lnk_presence]{lnk_presence()}}'s species groups). The
 digest is over the parsed values, so a change in quoting or column
 order is not a new rule set.
-\item \strong{grad:} \code{gradient=segment}, the only measure link builds today.
+\item \strong{grad:} how a segment's gradient is read (\verb{pipeline: gradient:}):
+\code{gradient=segment}, the segment's own (the value when absent), or for
+\code{source: parent} \verb{gradient=parent;parent_cut=<cut token>}, the gradient
+of the segment of \code{minimal_config}'s network it lies in, where
+\verb{<cut token>} is the token \code{minimal_config} resolves to. A
+\code{minimal_config} whose acc or flow spec differs from \code{cfg}'s is refused.
 \item \strong{flow:} \code{pipeline: discharge_source} and \code{pipeline: discharge_fill}.
 }
 

@@ -1,0 +1,13 @@
+2026-11-12T06:42:37Z BUILD default:fresh_default -> <scratch>/export_465
+NOTICE:  schema "pg_temp" does not exist, skipping
+
+NOTICE:  schema "pg_temp" does not exist, skipping
+
+NOTICE:  schema "pg_temp" does not exist, skipping
+
+2026-11-12T06:43:37Z built 3 parts and 64 provenance/bundle files in 1 mins; all verify
+2026-11-12T06:43:37Z report in data-raw/logs/downstream_export_465/e2e/export_report
+
+real	1m2.110s
+user	0m8.195s
+sys	0m1.867s

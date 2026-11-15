@@ -53,7 +53,7 @@ Run the real driver once at the run's code, with #418's check list written down 
 3. m4's fresh 0.52.0 has no `RemoteSha` (installed by `R CMD INSTALL`), so the pre-flight cannot resolve `fresh_sha`: reinstall from the tag.
 4. Primitives are stale on both hosts (m4 2026-10-25, m1 2026-10-23, past the 7-day gate); m1 is on fresh 0.48.0.
 5. #440's "last build" is not one comparison: m4's `zz432_post` (fresh 0.52.0, link `a6942b5d`: BULK, MURT, KOTL, KETL, NBNK, SALR) is the near baseline for the code; m1's `fresh_default` is the last provincial build at fresh 0.42.0. No fresh 0.48.0 build of these groups exists at this config, so the 0.48 to 0.52 move cannot be isolated on `default`; parity against `fresh_parity361` reports the move across the whole range.
-6. Postgres: m4's `fresh-db` runs the full tuned preset line for line with fresh's `docker-compose.yml`; m1 has rtj#379's; cloud hosts get theirs at prep. fresh#252 is a docs note. Nothing to merge.
+6. Postgres: m4's `fresh-db` runs the full tuned preset line for line with fresh's `docker-compose.yml`; m1 has an internal issue's; cloud hosts get theirs at prep. fresh#252 is a docs note. Nothing to merge.
 7. Connections at planning: m1 ssh round trip 0.6 s, 0 % loss on 20 pings to m1 and the gateway, jitter 12 to 110 ms, DO API 0.2 s.
 
 ### Timeline (estimates)

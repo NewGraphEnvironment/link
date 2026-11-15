@@ -44,7 +44,7 @@
 - [x] Knit with DB **stopped** — cache-only; numbers + captions + numbering correct.
 - [x] `/code-check` on staged diff.
 - [x] NEWS.md (patch); `/planning-archive`; `/gh-pr-push` (Closes #226; relates #221/#223; ref
-      `NewGraphEnvironment/sred#24`). Version bump (patch) as final commit / at `/gh-pr-merge`.
+      an internal issue). Version bump (patch) as final commit / at `/gh-pr-merge`.
 
 ## Validation
 - [x] Phase 1 gate met (segmentation match + length-consistent join)

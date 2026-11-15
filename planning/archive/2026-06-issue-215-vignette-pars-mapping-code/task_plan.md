@@ -38,7 +38,7 @@ pkgdown CI has **no Postgres and no bcfp snapshot**. The model run + comparison 
 
 ## Phase 5 — Release
 - [x] `NEWS.md` new `# link 0.42.0` section (minor bump — net-new vignette feature) + `DESCRIPTION` Version 0.41.4 → 0.42.0, Date → 2026-06-01.
-- [ ] `/planning-archive` → `/gh-pr-push` (PR body: `Closes #215` + `Relates to NewGraphEnvironment/sred#24`).
+- [ ] `/planning-archive` → `/gh-pr-push` (PR body: `Closes #215` + `Relates to an internal issue`).
 
 ## Dependencies / relations
 

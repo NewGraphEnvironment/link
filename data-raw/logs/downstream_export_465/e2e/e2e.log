@@ -1,0 +1,1084 @@
+NOTICE:  schema "zz465_c" does not exist, skipping
+
+NOTICE:  schema "working_bull" does not exist, skipping
+
+dependencies exported: CANO,CLRH,COLR,ELKR,KHOR,KOTL,KOTR,LARL,REVL,SMAR,UARL 
+NOTICE:  schema "zz465_a" already exists, skipping
+
+NOTICE:  column "run_id" of relation "log" already exists, skipping
+
+NOTICE:  column "watershed_group_code" of relation "log" already exists, skipping
+
+NOTICE:  column "date_start" of relation "log" already exists, skipping
+
+NOTICE:  column "date_end" of relation "log" already exists, skipping
+
+NOTICE:  column "run_uid" of relation "log" already exists, skipping
+
+NOTICE:  column "run_label" of relation "log" already exists, skipping
+
+NOTICE:  column "host" of relation "log" already exists, skipping
+
+NOTICE:  column "config_name" of relation "log" already exists, skipping
+
+NOTICE:  column "config_hash" of relation "log" already exists, skipping
+
+NOTICE:  column "config_drift" of relation "log" already exists, skipping
+
+NOTICE:  column "link_version" of relation "log" already exists, skipping
+
+NOTICE:  column "link_sha" of relation "log" already exists, skipping
+
+NOTICE:  column "link_dirty" of relation "log" already exists, skipping
+
+NOTICE:  column "fresh_version" of relation "log" already exists, skipping
+
+NOTICE:  column "fresh_sha" of relation "log" already exists, skipping
+
+NOTICE:  column "fresh_dirty" of relation "log" already exists, skipping
+
+NOTICE:  column "fresh_sha_source" of relation "log" already exists, skipping
+
+NOTICE:  column "crate_version" of relation "log" already exists, skipping
+
+NOTICE:  column "fwapg_sha" of relation "log" already exists, skipping
+
+NOTICE:  column "bcfishobs_sha" of relation "log" already exists, skipping
+
+NOTICE:  column "arg_dams" of relation "log" already exists, skipping
+
+NOTICE:  column "arg_mapping_code" of relation "log" already exists, skipping
+
+NOTICE:  column "arg_cleanup_working" of relation "log" already exists, skipping
+
+NOTICE:  column "discharge_fill" of relation "log" already exists, skipping
+
+NOTICE:  column "discharge_source" of relation "log" already exists, skipping
+
+NOTICE:  column "near_river" of relation "log" already exists, skipping
+
+NOTICE:  column "token_cut" of relation "log" already exists, skipping
+
+NOTICE:  column "token_acc" of relation "log" already exists, skipping
+
+NOTICE:  column "token_grad" of relation "log" already exists, skipping
+
+NOTICE:  column "token_flow" of relation "log" already exists, skipping
+
+NOTICE:  column "schema_persist" of relation "log" already exists, skipping
+
+NOTICE:  column "species" of relation "log" already exists, skipping
+
+NOTICE:  column "wsg_upstream" of relation "log" already exists, skipping
+
+NOTICE:  column "bcfp_model_run_id" of relation "log" already exists, skipping
+
+NOTICE:  column "bcfp_model_version" of relation "log" already exists, skipping
+
+NOTICE:  column "bcfp_pin_source" of relation "log" already exists, skipping
+
+NOTICE:  column "habitat_gate_n" of relation "log" already exists, skipping
+
+NOTICE:  column "habitat_gate_km" of relation "log" already exists, skipping
+
+NOTICE:  column "habitat_gate_lifted" of relation "log" already exists, skipping
+
+NOTICE:  column "habitat_gate_species" of relation "log" already exists, skipping
+
+NOTICE:  column "notes" of relation "log" already exists, skipping
+
+NOTICE:  column "recompute_id" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "watershed_group_code" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "date_start" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "date_end" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "run_uid" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "run_label" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "host" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "config_name" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "config_hash" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "link_version" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "link_sha" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "link_dirty" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "fresh_version" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "fresh_sha" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "fresh_dirty" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "fresh_sha_source" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "crate_version" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "fwapg_sha" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "bcfishobs_sha" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "schema_persist" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "species" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "views_prebuilt" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "habitat_gate_n" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "habitat_gate_km" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "habitat_gate_lifted" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "habitat_gate_species" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "notes" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "run_id" of relation "log_input" already exists, skipping
+
+NOTICE:  column "watershed_group_code" of relation "log_input" already exists, skipping
+
+NOTICE:  column "table_name" of relation "log_input" already exists, skipping
+
+NOTICE:  column "row_count" of relation "log_input" already exists, skipping
+
+NOTICE:  column "row_count_estimated" of relation "log_input" already exists, skipping
+
+NOTICE:  column "size_bytes" of relation "log_input" already exists, skipping
+
+NOTICE:  column "last_analyze" of relation "log_input" already exists, skipping
+
+NOTICE:  column "source" of relation "log_input" already exists, skipping
+
+NOTICE:  column "source_at" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_url" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_kind" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_version_id" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_etag" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_last_modified" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_loaded_at" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_recorded_by" of relation "log_input" already exists, skipping
+
+NOTICE:  column "table_comment" of relation "log_input" already exists, skipping
+
+NOTICE:  column "config_hash" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "species_code" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "access_gradient_max" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "spawn_gradient_min" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "rear_gradient_min" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_rearing" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_direction" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_bridge_gradient" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_bridge_distance" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_confluence_m" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_spawning" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_spawn_direction" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_spawn_bridge_gradient" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_spawn_bridge_distance" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_spawn_confluence_m" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "observation_threshold" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "observation_date_min" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "observation_buffer_m" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "observation_species" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "observation_control_apply" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "config_hash" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "species_code" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_gradient_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_channel_width_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_channel_width_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_mad_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_mad_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_gradient_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_channel_width_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_channel_width_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_mad_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_mad_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_lake_ha_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_edge_types" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_edge_types" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_river_measure" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_river_discharge_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_river_channel_width_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_river_stream_order_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_river_distance_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_river_measure" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_river_discharge_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_river_channel_width_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_river_stream_order_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_river_distance_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "config_hash" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "species" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_lake" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_stream" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_stream_in_waterbody" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_lake" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_lake_only" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_lake_area_only" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_no_fw" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream_in_waterbody" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_wetland" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_wetland_polygon" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_wetland_area_only" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_wetland_flow" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_near_river" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_all_edges" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "river_skip_cw_min" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream_order_bypass" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream_order_parent_min" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream_order_child_min" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream_order_child_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream_order_distance_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_requires_connected" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_connected_distance_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_connected_direction" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_connected_gradient_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_connected_cw_min" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_connected_edge_types" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_connected_lake_adjacent" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_requires_connected" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_connected_distance_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_lake_ha_min" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_wetland_ha_min" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_lake_connected_distance_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_wetland_connected_distance_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "notes" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  schema "zz465_b" already exists, skipping
+
+NOTICE:  column "run_id" of relation "log" already exists, skipping
+
+NOTICE:  column "watershed_group_code" of relation "log" already exists, skipping
+
+NOTICE:  column "date_start" of relation "log" already exists, skipping
+
+NOTICE:  column "date_end" of relation "log" already exists, skipping
+
+NOTICE:  column "run_uid" of relation "log" already exists, skipping
+
+NOTICE:  column "run_label" of relation "log" already exists, skipping
+
+NOTICE:  column "host" of relation "log" already exists, skipping
+
+NOTICE:  column "config_name" of relation "log" already exists, skipping
+
+NOTICE:  column "config_hash" of relation "log" already exists, skipping
+
+NOTICE:  column "config_drift" of relation "log" already exists, skipping
+
+NOTICE:  column "link_version" of relation "log" already exists, skipping
+
+NOTICE:  column "link_sha" of relation "log" already exists, skipping
+
+NOTICE:  column "link_dirty" of relation "log" already exists, skipping
+
+NOTICE:  column "fresh_version" of relation "log" already exists, skipping
+
+NOTICE:  column "fresh_sha" of relation "log" already exists, skipping
+
+NOTICE:  column "fresh_dirty" of relation "log" already exists, skipping
+
+NOTICE:  column "fresh_sha_source" of relation "log" already exists, skipping
+
+NOTICE:  column "crate_version" of relation "log" already exists, skipping
+
+NOTICE:  column "fwapg_sha" of relation "log" already exists, skipping
+
+NOTICE:  column "bcfishobs_sha" of relation "log" already exists, skipping
+
+NOTICE:  column "arg_dams" of relation "log" already exists, skipping
+
+NOTICE:  column "arg_mapping_code" of relation "log" already exists, skipping
+
+NOTICE:  column "arg_cleanup_working" of relation "log" already exists, skipping
+
+NOTICE:  column "discharge_fill" of relation "log" already exists, skipping
+
+NOTICE:  column "discharge_source" of relation "log" already exists, skipping
+
+NOTICE:  column "near_river" of relation "log" already exists, skipping
+
+NOTICE:  column "token_cut" of relation "log" already exists, skipping
+
+NOTICE:  column "token_acc" of relation "log" already exists, skipping
+
+NOTICE:  column "token_grad" of relation "log" already exists, skipping
+
+NOTICE:  column "token_flow" of relation "log" already exists, skipping
+
+NOTICE:  column "schema_persist" of relation "log" already exists, skipping
+
+NOTICE:  column "species" of relation "log" already exists, skipping
+
+NOTICE:  column "wsg_upstream" of relation "log" already exists, skipping
+
+NOTICE:  column "bcfp_model_run_id" of relation "log" already exists, skipping
+
+NOTICE:  column "bcfp_model_version" of relation "log" already exists, skipping
+
+NOTICE:  column "bcfp_pin_source" of relation "log" already exists, skipping
+
+NOTICE:  column "habitat_gate_n" of relation "log" already exists, skipping
+
+NOTICE:  column "habitat_gate_km" of relation "log" already exists, skipping
+
+NOTICE:  column "habitat_gate_lifted" of relation "log" already exists, skipping
+
+NOTICE:  column "habitat_gate_species" of relation "log" already exists, skipping
+
+NOTICE:  column "notes" of relation "log" already exists, skipping
+
+NOTICE:  column "recompute_id" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "watershed_group_code" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "date_start" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "date_end" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "run_uid" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "run_label" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "host" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "config_name" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "config_hash" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "link_version" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "link_sha" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "link_dirty" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "fresh_version" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "fresh_sha" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "fresh_dirty" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "fresh_sha_source" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "crate_version" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "fwapg_sha" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "bcfishobs_sha" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "schema_persist" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "species" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "views_prebuilt" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "habitat_gate_n" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "habitat_gate_km" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "habitat_gate_lifted" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "habitat_gate_species" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "notes" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "run_id" of relation "log_input" already exists, skipping
+
+NOTICE:  column "watershed_group_code" of relation "log_input" already exists, skipping
+
+NOTICE:  column "table_name" of relation "log_input" already exists, skipping
+
+NOTICE:  column "row_count" of relation "log_input" already exists, skipping
+
+NOTICE:  column "row_count_estimated" of relation "log_input" already exists, skipping
+
+NOTICE:  column "size_bytes" of relation "log_input" already exists, skipping
+
+NOTICE:  column "last_analyze" of relation "log_input" already exists, skipping
+
+NOTICE:  column "source" of relation "log_input" already exists, skipping
+
+NOTICE:  column "source_at" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_url" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_kind" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_version_id" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_etag" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_last_modified" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_loaded_at" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_recorded_by" of relation "log_input" already exists, skipping
+
+NOTICE:  column "table_comment" of relation "log_input" already exists, skipping
+
+NOTICE:  column "config_hash" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "species_code" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "access_gradient_max" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "spawn_gradient_min" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "rear_gradient_min" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_rearing" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_direction" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_bridge_gradient" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_bridge_distance" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_confluence_m" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_spawning" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_spawn_direction" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_spawn_bridge_gradient" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_spawn_bridge_distance" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_spawn_confluence_m" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "observation_threshold" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "observation_date_min" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "observation_buffer_m" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "observation_species" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "observation_control_apply" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "config_hash" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "species_code" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_gradient_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_channel_width_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_channel_width_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_mad_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_mad_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_gradient_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_channel_width_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_channel_width_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_mad_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_mad_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_lake_ha_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_edge_types" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_edge_types" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_river_measure" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_river_discharge_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_river_channel_width_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_river_stream_order_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_river_distance_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_river_measure" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_river_discharge_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_river_channel_width_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_river_stream_order_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_river_distance_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "config_hash" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "species" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_lake" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_stream" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_stream_in_waterbody" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_lake" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_lake_only" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_lake_area_only" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_no_fw" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream_in_waterbody" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_wetland" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_wetland_polygon" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_wetland_area_only" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_wetland_flow" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_near_river" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_all_edges" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "river_skip_cw_min" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream_order_bypass" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream_order_parent_min" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream_order_child_min" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream_order_child_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream_order_distance_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_requires_connected" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_connected_distance_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_connected_direction" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_connected_gradient_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_connected_cw_min" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_connected_edge_types" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_connected_lake_adjacent" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_requires_connected" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_connected_distance_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_lake_ha_min" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_wetland_ha_min" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_lake_connected_distance_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_wetland_connected_distance_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "notes" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  schema "zz465_d" already exists, skipping
+
+NOTICE:  column "run_id" of relation "log" already exists, skipping
+
+NOTICE:  column "watershed_group_code" of relation "log" already exists, skipping
+
+NOTICE:  column "date_start" of relation "log" already exists, skipping
+
+NOTICE:  column "date_end" of relation "log" already exists, skipping
+
+NOTICE:  column "run_uid" of relation "log" already exists, skipping
+
+NOTICE:  column "run_label" of relation "log" already exists, skipping
+
+NOTICE:  column "host" of relation "log" already exists, skipping
+
+NOTICE:  column "config_name" of relation "log" already exists, skipping
+
+NOTICE:  column "config_hash" of relation "log" already exists, skipping
+
+NOTICE:  column "config_drift" of relation "log" already exists, skipping
+
+NOTICE:  column "link_version" of relation "log" already exists, skipping
+
+NOTICE:  column "link_sha" of relation "log" already exists, skipping
+
+NOTICE:  column "link_dirty" of relation "log" already exists, skipping
+
+NOTICE:  column "fresh_version" of relation "log" already exists, skipping
+
+NOTICE:  column "fresh_sha" of relation "log" already exists, skipping
+
+NOTICE:  column "fresh_dirty" of relation "log" already exists, skipping
+
+NOTICE:  column "fresh_sha_source" of relation "log" already exists, skipping
+
+NOTICE:  column "crate_version" of relation "log" already exists, skipping
+
+NOTICE:  column "fwapg_sha" of relation "log" already exists, skipping
+
+NOTICE:  column "bcfishobs_sha" of relation "log" already exists, skipping
+
+NOTICE:  column "arg_dams" of relation "log" already exists, skipping
+
+NOTICE:  column "arg_mapping_code" of relation "log" already exists, skipping
+
+NOTICE:  column "arg_cleanup_working" of relation "log" already exists, skipping
+
+NOTICE:  column "discharge_fill" of relation "log" already exists, skipping
+
+NOTICE:  column "discharge_source" of relation "log" already exists, skipping
+
+NOTICE:  column "near_river" of relation "log" already exists, skipping
+
+NOTICE:  column "token_cut" of relation "log" already exists, skipping
+
+NOTICE:  column "token_acc" of relation "log" already exists, skipping
+
+NOTICE:  column "token_grad" of relation "log" already exists, skipping
+
+NOTICE:  column "token_flow" of relation "log" already exists, skipping
+
+NOTICE:  column "schema_persist" of relation "log" already exists, skipping
+
+NOTICE:  column "species" of relation "log" already exists, skipping
+
+NOTICE:  column "wsg_upstream" of relation "log" already exists, skipping
+
+NOTICE:  column "bcfp_model_run_id" of relation "log" already exists, skipping
+
+NOTICE:  column "bcfp_model_version" of relation "log" already exists, skipping
+
+NOTICE:  column "bcfp_pin_source" of relation "log" already exists, skipping
+
+NOTICE:  column "habitat_gate_n" of relation "log" already exists, skipping
+
+NOTICE:  column "habitat_gate_km" of relation "log" already exists, skipping
+
+NOTICE:  column "habitat_gate_lifted" of relation "log" already exists, skipping
+
+NOTICE:  column "habitat_gate_species" of relation "log" already exists, skipping
+
+NOTICE:  column "notes" of relation "log" already exists, skipping
+
+NOTICE:  column "recompute_id" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "watershed_group_code" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "date_start" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "date_end" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "run_uid" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "run_label" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "host" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "config_name" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "config_hash" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "link_version" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "link_sha" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "link_dirty" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "fresh_version" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "fresh_sha" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "fresh_dirty" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "fresh_sha_source" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "crate_version" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "fwapg_sha" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "bcfishobs_sha" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "schema_persist" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "species" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "views_prebuilt" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "habitat_gate_n" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "habitat_gate_km" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "habitat_gate_lifted" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "habitat_gate_species" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "notes" of relation "log_recompute" already exists, skipping
+
+NOTICE:  column "run_id" of relation "log_input" already exists, skipping
+
+NOTICE:  column "watershed_group_code" of relation "log_input" already exists, skipping
+
+NOTICE:  column "table_name" of relation "log_input" already exists, skipping
+
+NOTICE:  column "row_count" of relation "log_input" already exists, skipping
+
+NOTICE:  column "row_count_estimated" of relation "log_input" already exists, skipping
+
+NOTICE:  column "size_bytes" of relation "log_input" already exists, skipping
+
+NOTICE:  column "last_analyze" of relation "log_input" already exists, skipping
+
+NOTICE:  column "source" of relation "log_input" already exists, skipping
+
+NOTICE:  column "source_at" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_url" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_kind" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_version_id" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_etag" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_last_modified" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_loaded_at" of relation "log_input" already exists, skipping
+
+NOTICE:  column "artifact_recorded_by" of relation "log_input" already exists, skipping
+
+NOTICE:  column "table_comment" of relation "log_input" already exists, skipping
+
+NOTICE:  column "config_hash" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "species_code" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "access_gradient_max" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "spawn_gradient_min" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "rear_gradient_min" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_rearing" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_direction" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_bridge_gradient" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_bridge_distance" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_confluence_m" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_spawning" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_spawn_direction" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_spawn_bridge_gradient" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_spawn_bridge_distance" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "cluster_spawn_confluence_m" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "observation_threshold" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "observation_date_min" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "observation_buffer_m" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "observation_species" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "observation_control_apply" of relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  column "config_hash" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "species_code" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_gradient_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_channel_width_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_channel_width_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_mad_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_mad_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_gradient_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_channel_width_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_channel_width_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_mad_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_mad_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_lake_ha_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_edge_types" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_edge_types" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_river_measure" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_river_discharge_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_river_channel_width_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_river_stream_order_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "spawn_river_distance_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_river_measure" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_river_discharge_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_river_channel_width_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_river_stream_order_min" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "rear_river_distance_max" of relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  column "config_hash" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "species" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_lake" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_stream" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_stream_in_waterbody" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_lake" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_lake_only" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_lake_area_only" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_no_fw" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream_in_waterbody" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_wetland" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_wetland_polygon" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_wetland_area_only" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_wetland_flow" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_near_river" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_all_edges" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "river_skip_cw_min" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream_order_bypass" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream_order_parent_min" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream_order_child_min" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream_order_child_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_stream_order_distance_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_requires_connected" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_connected_distance_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_connected_direction" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_connected_gradient_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_connected_cw_min" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_connected_edge_types" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "spawn_connected_lake_adjacent" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_requires_connected" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_connected_distance_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_lake_ha_min" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_wetland_ha_min" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_lake_connected_distance_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "rear_wetland_connected_distance_max" of relation "log_dimensions" already exists, skipping
+
+NOTICE:  column "notes" of relation "log_dimensions" already exists, skipping
+
+  arm exit minutes
+1   a    0    2.09
+2   b    0    2.04
+3   c    0    1.89
+4   d    0    1.85
+           schema                table  rows                              md5
+a.1       zz465_a              streams 20791 ff498ed2dcf532597b9ca39f3a2eac95
+a.2       zz465_a       streams_access 20791 9f853e84bca10e197ce4f41d884e803e
+a.3       zz465_a streams_mapping_code 20791 79fb08a43aefc2f648291e478e811e02
+b.1       zz465_b              streams 20791 ff498ed2dcf532597b9ca39f3a2eac95
+b.2       zz465_b       streams_access 20791 9f853e84bca10e197ce4f41d884e803e
+b.3       zz465_b streams_mapping_code 20791 79fb08a43aefc2f648291e478e811e02
+c.1       zz465_c              streams 20791 ff498ed2dcf532597b9ca39f3a2eac95
+c.2       zz465_c       streams_access 20791 3dca9f51c82975fea505c54e90fa084e
+c.3       zz465_c streams_mapping_code 20791 868bcc0b144aca6b82b873a78bf9eb10
+d.1       zz465_d              streams 20791 ff498ed2dcf532597b9ca39f3a2eac95
+d.2       zz465_d       streams_access 20791 9f853e84bca10e197ce4f41d884e803e
+d.3       zz465_d streams_mapping_code 20791 79fb08a43aefc2f648291e478e811e02
+1   fresh_default              streams 20791 ff498ed2dcf532597b9ca39f3a2eac95
+2   fresh_default       streams_access 20791 9f853e84bca10e197ce4f41d884e803e
+3   fresh_default streams_mapping_code 20791 79fb08a43aefc2f648291e478e811e02
+      schema                           column segments_differ
+b.1  zz465_b has_barriers_anthropogenic_dnstr               0
+b.2  zz465_b         has_barriers_pscis_dnstr               0
+b.3  zz465_b          has_barriers_dams_dnstr               0
+b.4  zz465_b  has_barriers_remediations_dnstr               0
+b.5  zz465_b                    dam_dnstr_ind               0
+b.6  zz465_b             remediated_dnstr_ind               0
+b.7  zz465_b            has_barriers_bt_dnstr               0
+b.8  zz465_b            has_barriers_ch_dnstr               0
+b.9  zz465_b            has_barriers_cm_dnstr               0
+b.10 zz465_b            has_barriers_co_dnstr               0
+b.11 zz465_b            has_barriers_pk_dnstr               0
+b.12 zz465_b            has_barriers_sk_dnstr               0
+b.13 zz465_b            has_barriers_st_dnstr               0
+b.14 zz465_b           has_barriers_wct_dnstr               0
+b.15 zz465_b            has_barriers_gr_dnstr               0
+b.16 zz465_b            has_barriers_ko_dnstr               0
+b.17 zz465_b            has_barriers_rb_dnstr               0
+b.18 zz465_b                        access_bt               0
+b.19 zz465_b                        access_ch               0
+b.20 zz465_b                        access_cm               0
+b.21 zz465_b                        access_co               0
+b.22 zz465_b                        access_pk               0
+b.23 zz465_b                        access_sk               0
+b.24 zz465_b                        access_st               0
+b.25 zz465_b                       access_wct               0
+b.26 zz465_b                        access_gr               0
+b.27 zz465_b                        access_ko               0
+b.28 zz465_b                        access_rb               0
+b.29 zz465_b                  mapping_code_bt               0
+b.30 zz465_b                  mapping_code_ch               0
+b.31 zz465_b                  mapping_code_cm               0
+b.32 zz465_b                  mapping_code_co               0
+b.33 zz465_b                  mapping_code_pk               0
+b.34 zz465_b                  mapping_code_sk               0
+b.35 zz465_b                  mapping_code_st               0
+b.36 zz465_b                 mapping_code_wct               0
+b.37 zz465_b                  mapping_code_gr               0
+b.38 zz465_b                  mapping_code_ko               0
+b.39 zz465_b                  mapping_code_rb               0
+c.1  zz465_c has_barriers_anthropogenic_dnstr              52
+c.3  zz465_c          has_barriers_dams_dnstr             341
+c.5  zz465_c                    dam_dnstr_ind              52
+c.29 zz465_c                  mapping_code_bt              49
+c.36 zz465_c                 mapping_code_wct              45
+stamp: link 0.79.0 27cd92c5282b2b219ff15c6fc733006758527408 dirty FALSE | fresh 0.52.0 
+
+real	9m56.660s
+user	0m46.753s
+sys	0m3.435s

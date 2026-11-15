@@ -634,7 +634,8 @@
 #' Write `manifest.json` under `root`, atomically.
 #' @noRd
 .lnk_manifest_write <- function(root, parts, files, configs,
-                                built = Sys.time()) {
+                                built = Sys.time(), group_parts = NULL,
+                                dependencies = NULL) {
   m <- list(
     manifest_version = 1L,
     id = sub("/segment$", "", .lnk_export_dataset()),
@@ -644,14 +645,21 @@
       link_sha = .lnk_pkg_git_sha("link"),
       link_dirty = .lnk_pkg_git_dirty("link")
     ),
-    datasets = list(list(
+    datasets = c(list(list(
       dataset = .lnk_export_dataset(),
       schema = list(package = "link",
                     file = "inst/extdata/schemas/habitat_fwa_v1_segment.yaml",
                     cols = .lnk_export_spec()$canonical$cols)
-    )),
+    )), lapply(names(.lnk_export_group_tables()), function(t) {
+      # one part per group: the persisted rows other groups' walks read (#465)
+      list(dataset = .lnk_export_group_dataset(t),
+           schema = list(package = "link", source = paste0("cols_", t),
+                         cols = .lnk_export_group_spec(t)))
+    })),
     configs = configs,
     parts = parts,
+    group_parts = if (is.null(group_parts)) list() else group_parts,
+    dependencies = dependencies,
     files = files
   )
   path <- file.path(root, "manifest.json")
@@ -678,6 +686,10 @@
 #' ```
 #' <root>/manifest.json
 #' <root>/segment/config=<config>/species=<sp>/part-<code>.parquet
+#' <root>/barriers/config=<config>/part-<group>.parquet
+#' <root>/barrier_overrides/config=<config>/part-<group>.parquet
+#' <root>/dependencies/rule=line.parquet
+#' <root>/inputs/<cabd_dams|pscis_assessment>/<content md5>.parquet
 #' <root>/provenance/run_uid=<uid>/run_id=<id>/{log,log_input}.parquet
 #' <root>/provenance/config_hash=<hex>/log_parameters_*.parquet
 #' <root>/config/sha256-<hex>/<bundle files>
@@ -871,6 +883,7 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
 
   parts <- list(prev$parts)
   files <- list(prev$files)
+  group_parts <- list(prev$group_parts)
   cfg_entries <- prev$configs
   for (cf in unique(names(configs))) {
     r_set <- runs[names(configs) == cf]
@@ -915,12 +928,23 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
       }
     }
 
+    # the rows other groups' downstream walks read, from the same builds (#465)
+    holders <- .lnk_export_barrier_holders(conn, unique(r_cf$schema_export))
+    for (i in seq_len(nrow(r_cf))) {
+      group_parts[[length(group_parts) + 1L]] <- .lnk_export_group_parts(
+        conn, r_cf$schema_export[[i]], cf, r_cf$watershed_group_code[[i]],
+        r_cf$run_id[[i]], stage)
+    }
+
     prov <- .lnk_export_provenance(conn, r_cf, root)
     rc_files <- .lnk_export_recompute_files(rc_cf, root)
     sa_file <- .lnk_export_source_artifact(conn, r_cf$host, root)
     hashes <- unique(r_cf$config_hash)
     bnd <- .lnk_export_bundle(cf, hashes, root)
-    files[[length(files) + 1L]] <- rbind(prov, rc_files, sa_file, bnd$files)
+    # CABD and PSCIS by content where the build's are held now (#465)
+    inp <- .lnk_export_inputs(conn, r_cf, root)
+    files[[length(files) + 1L]] <- rbind(prov, rc_files, sa_file, bnd$files,
+                                         inp$files)
 
     thr_logged <- vapply(hashes, function(h) {
       any(vapply(unique(r_cf$schema_export), function(s) {
@@ -956,6 +980,7 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     run_rows$parameters_key <- paste0("provenance/",
                                       vapply(r_cf$config_hash, .lnk_hash_key,
                                              character(1), USE.NAMES = FALSE))
+    run_rows$inputs <- unname(inp$runs[r_cf$run_id])
     run_rows$recompute_keys <- lapply(r_cf$watershed_group_code, function(w) {
       ids <- if (is.null(rc_cf)) character(0) else
         rc_cf$recompute_id[rc_cf$watershed_group_code == w]
@@ -971,6 +996,12 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
       # top-level provenance names only the last export into the root
       exported_by = exported_by,
       schema_persist = I(unique(r_cf$schema_export)),
+      # "held": every group the schemas held (a group outside wsgs and skipped
+      # was not held, so no walk read rows of it); "named": the groups asked for
+      scope = if (is.null(wsgs)) "held" else "named",
+      # groups with rows in the config's barriers or barrier_overrides, which
+      # is what a downstream walk reads (held in streams or not)
+      barrier_holders = I(holders),
       wsgs = I(r_cf$watershed_group_code),
       species = I(sp_cf),
       skipped = skipped,
@@ -994,6 +1025,12 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     )
   }
 
+  # which groups' per-group parts a one-group run fetches (#465)
+  dependencies <- .lnk_export_dependencies(
+    conn, stage,
+    groups = unique(unlist(lapply(runs, function(r) r$watershed_group_code))),
+    schemas = unique(unname(configs)))
+
   # An export replaces each config it names wholesale: refuse one that would
   # drop a group or species the root holds for it, or put an older build of a
   # group in place of a newer one.
@@ -1001,6 +1038,7 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     old_m <- jsonlite::fromJSON(file.path(root, "manifest.json"),
                                 simplifyVector = FALSE)
     new_m <- list(parts = lapply(parts[-1], as.list),
+                  group_parts = lapply(group_parts[-1], as.list),
                   configs = unname(cfg_entries))
     lost <- .lnk_manifest_regressions(old_m, new_m, unique(names(configs)))
     if (length(lost) > 0L) {
@@ -1018,14 +1056,21 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
       stop("could not move the staged parts of config '", cf, "' into place",
            call. = FALSE)
     }
+    .lnk_export_group_swap(root, stage, cf)
   }
+  .lnk_export_dependencies_swap(root, stage)
   parts <- do.call(rbind, parts)
   parts <- parts[order(parts$key, method = "radix"), , drop = FALSE]
   files <- do.call(rbind, files)
   files <- files[!duplicated(files$key), , drop = FALSE]
   files <- files[order(files$key, method = "radix"), , drop = FALSE]
+  group_parts <- do.call(rbind, group_parts)
+  group_parts <- group_parts[order(group_parts$key, method = "radix"), ,
+                             drop = FALSE]
   cfg_entries <- unname(cfg_entries[order(names(cfg_entries), method = "radix")])
-  invisible(.lnk_manifest_write(root, parts, files, cfg_entries, built))
+  invisible(.lnk_manifest_write(root, parts, files, cfg_entries, built,
+                                group_parts = group_parts,
+                                dependencies = dependencies))
 }
 
 #' Groups the export asked for and no schema of the config exported, one
@@ -1097,6 +1142,8 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
 #' `configs`:
 #' - absent from `new`;
 #' - a group:species pair `old` holds and `new` does not;
+#' - a per-group part (`barriers`, `barrier_overrides`) `old` holds and `new`
+#'   does not;
 #' - a group whose build in `new` started before the one in `old` (a
 #'   different `run_id` with an earlier `date_start`);
 #' - a group with the same build in both whose `new` export misses a
@@ -1130,6 +1177,15 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
         "config '%s' drops %d group:species pair(s) (%s%s)", cf, length(lost),
         paste(utils::head(lost, 5L), collapse = ", "),
         if (length(lost) > 5L) ", ..." else ""))
+    }
+    # per-group parts (#465); a manifest from before them holds none to lose
+    g_lost <- setdiff(.lnk_manifest_group_pairs(old$group_parts, cf),
+                      .lnk_manifest_group_pairs(new$group_parts, cf))
+    if (length(g_lost) > 0L) {
+      out <- c(out, sprintf(
+        "config '%s' drops %d per-group part(s) (%s%s)", cf, length(g_lost),
+        paste(utils::head(g_lost, 5L), collapse = ", "),
+        if (length(g_lost) > 5L) ", ..." else ""))
     }
     ob <- .lnk_entry_builds(o[[1]])
     nb <- .lnk_entry_builds(n[[1]])
@@ -1270,7 +1326,8 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
 #' @noRd
 .lnk_manifest_previous <- function(root, configs) {
   path <- file.path(root, "manifest.json")
-  empty <- list(parts = NULL, files = NULL, configs = list())
+  empty <- list(parts = NULL, files = NULL, group_parts = NULL,
+                configs = list())
   if (!file.exists(path)) return(empty)
   m <- jsonlite::fromJSON(path, simplifyVector = FALSE)
   keep_parts <- Filter(function(p) !p$config %in% configs, m$parts)
@@ -1298,6 +1355,8 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
   }
   keep_cfg <- Filter(function(x) !x$config %in% configs, m$configs)
   names(keep_cfg) <- vapply(keep_cfg, function(x) x$config, character(1))
-  list(parts = parts, files = files, configs = keep_cfg)
+  list(parts = parts, files = files,
+       group_parts = .lnk_manifest_previous_groups(root, m, configs),
+       configs = keep_cfg)
 }
 # nolint end: indentation_linter

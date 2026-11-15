@@ -42,11 +42,7 @@ lnk_catalog <- function(manifest) {
   parts <- m$parts
   if (length(parts) == 0L) stop("manifest lists no parts: ", manifest,
                                 call. = FALSE)
-  base <- if (startsWith(manifest, "s3://") || grepl("^https?://", manifest)) {
-    sub("/[^/]*$", "", manifest)
-  } else {
-    dirname(manifest)
-  }
+  base <- .lnk_manifest_base(manifest)
   out <- do.call(rbind, lapply(parts, function(p) {
     h <- .lnk_part_parse(p$key)
     md5 <- as.character(p$md5 %||% NA_character_)
@@ -69,6 +65,16 @@ lnk_catalog <- function(manifest) {
   attr(out, "configs") <- m$configs
   attr(out, "files") <- m$files
   out
+}
+
+#' The directory or prefix a manifest's keys are relative to.
+#' @noRd
+.lnk_manifest_base <- function(manifest) {
+  if (startsWith(manifest, "s3://") || grepl("^https?://", manifest)) {
+    sub("/[^/]*$", "", manifest)
+  } else {
+    dirname(manifest)
+  }
 }
 
 #' Hive fields of a part key; the one parser for writer-shaped keys.

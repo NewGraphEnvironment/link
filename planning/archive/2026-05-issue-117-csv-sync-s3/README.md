@@ -4,4 +4,4 @@ csv-sync rewritten to read from `s3://fresh-bc/bcfishpass/` (populated weekly by
 
 Closed by: PR #143 / v0.31.0 (merge SHA e8f0793).
 
-Architectural unblocking: NewGraphEnvironment/db_newgraph#4 (PR #5) for the upstream S3 dump, NewGraphEnvironment/rtj#114 for the public-read bucket policy on `s3://fresh-bc/bcfishpass/*`.
+Architectural unblocking: an internal issue (PR #5) for the upstream S3 dump, an internal issue for the public-read bucket policy on `s3://fresh-bc/bcfishpass/*`.

@@ -40,38 +40,8 @@ cols_streams_parent <- c(
   invisible(TRUE)
 }
 
-#' The newest build of a group on each side of a parent join
-#'
-#' The newest `log` row by `date_start` must be closed: an open newest row is
-#' a build that is running or failed part-way, so `streams` may not be the
-#' build a closed row describes.
-#'
-#' @return A two-row data frame (`side` `full`, `minimal`) of the log columns
-#'   a parent join records and a pair guard reads.
-#' @noRd
-.lnk_streams_parent_builds <- function(conn, schema, schema_minimal, wsg) {
-  one <- function(side, s) {
-    sql <- sprintf(
-      "SELECT run_id, run_uid, date_start, date_end, config_hash, link_sha,
-              link_dirty, fresh_sha, fresh_dirty, token_cut, token_acc,
-              token_grad, token_flow, array_to_string(species, ',') AS species
-         FROM %s.log WHERE watershed_group_code = %s
-        ORDER BY date_start DESC LIMIT 1",
-      s, .lnk_quote_literal(wsg)
-    )
-    d <- DBI::dbGetQuery(conn, sql)
-    if (nrow(d) != 1L) {
-      stop("no build of ", wsg, " in ", s, ".log", call. = FALSE)
-    }
-    if (is.na(d$date_end)) {
-      stop("the newest build of ", wsg, " in ", s, ".log is open (run_id ",
-           d$run_id, "): it is running or failed, so ", s,
-           ".streams may not be a finished build", call. = FALSE)
-    }
-    cbind(data.frame(side = side, schema = s, stringsAsFactors = FALSE), d)
-  }
-  rbind(one("full", schema), one("minimal", schema_minimal))
-}
+# .lnk_streams_parent_builds() lives in R/lnk_gradient_parent.R, beside the
+# build-time judgement that also reads it (#463).
 
 #' Join each full segment to the minimal segment it was cut from
 #'

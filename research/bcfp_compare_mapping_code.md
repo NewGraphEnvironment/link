@@ -389,7 +389,7 @@ parity:
 > Phase 6 full parity vs bcfp tunnel (`mapping_code_<sp>` bit-perfect
 > diff) deferred — depends on `lnk_pipeline_prepare` observations bug
 > + populated CABD dams flow + bcfishobs.observations parquet
-> (rtj#66 blocker). Tracked as follow-up; not blocking v0.32.0.
+> (an internal issue blocker). Tracked as follow-up; not blocking v0.32.0.
 
 So `lnk_pipeline_crossings` shipped tested via mocks + a non-dams
 smoke test. The dams-flow gap is what this document + driver are

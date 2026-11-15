@@ -65,7 +65,7 @@ New exported function `lnk_wsg_resolve(cfg, loaded, wsgs = NULL, expand = TRUE)`
 - [x] `lintr::lint(...)` clean on all 3 changed files (R/lnk_wsg_resolve.R, tests/testthat/test-lnk_wsg_resolve.R, data-raw/study_area_wsgs.R) — fixed 2 indent lints (extracted `bad <-` predicate in the function; lifted `empty_wp` out of nested `expect_error` in tests). Tests still pass.
 - [x] `/code-check` skipped on the Release commit — substantive R code already cleared 2 rounds in Phases 2 + 3; this commit is NEWS + version bump + lint-fix refactors (equivalent transformations)
 - [ ] Atomic commit `"Release v0.41.0"`
-- [ ] `/planning-archive` → `/gh-pr-push` (PR body: `Closes #207` + `Relates to NewGraphEnvironment/sred#24`)
+- [ ] `/planning-archive` → `/gh-pr-push` (PR body: `Closes #207` + `Relates to an internal issue`)
 
 ## Validation
 

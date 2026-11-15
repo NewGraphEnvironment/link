@@ -14,9 +14,9 @@
 
 ## Cross-repo context
 
-rtj#163 (commit `a0aef66`, 2026-05-18) swept rtj's `scripts/cypher/{up,down,run,snapshot}.sh` for the same bug class. Motivation was identical: `cypher_up.sh`'s `tofu apply ... | tee -a $LOG` masked DO 422 errors during M1 trip-prep. This issue is the link-side complement — rtj#163 covered the cypher orchestration scripts (which run on M1/M4), this fix covers the cypher prep script (which runs on the cypher itself).
+An internal issue (commit `a0aef66`, 2026-05-18) swept rtj's `scripts/cypher/{up,down,run,snapshot}.sh` for the same bug class. Motivation was identical: `cypher_up.sh`'s `tofu apply ... | tee -a $LOG` masked DO 422 errors during M1 trip-prep. This issue is the link-side complement — an internal issue covered the cypher orchestration scripts (which run on M1/M4), this fix covers the cypher prep script (which runs on the cypher itself).
 
-rtj#165 RUNBOOK.md (commit `bfc95d9`, 2026-05-18) documents tour-mode operations: M1 as primary driver, Blink/tmux/iPhone workflow. Loud failure signals are critical when scrolling logs on a phone.
+An internal issue RUNBOOK.md (commit `bfc95d9`, 2026-05-18) documents tour-mode operations: M1 as primary driver, Blink/tmux/iPhone workflow. Loud failure signals are critical when scrolling logs on a phone.
 
 ## Bug-class precedent in CLAUDE.md
 
@@ -44,4 +44,4 @@ Alternative (option A using `PIPESTATUS[0]`) is shorter but loses the full log o
 
 - Bounded retry on snapshot transients (3 attempts, 30s backoff) — issue body documents shape.
 - Umbrella ssh exit-code capture (`wsgs_run_pipeline.sh:259-269`) — currently only checks the grep marker.
-- Pipefail audit across other `data-raw/*.sh` scripts (mirror of rtj#163's sweep for the link repo).
+- Pipefail audit across other `data-raw/*.sh` scripts (mirror of an internal issue's sweep for the link repo).

@@ -250,7 +250,7 @@ History: Prior runs (e.g. 2026-05-12 with 67 M1 WSGs OK) worked only because the
 
 - **link#163** — adaptive `host_speeds` learning (LPT recalibrates from observed wall times)
 - **link#166** — data-raw script rename to noun-first convention
-- **soul#46** — document noun-first naming convention org-wide
+- **an internal issue** — document noun-first naming convention org-wide
 
 ## Done
 

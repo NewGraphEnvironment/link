@@ -17,4 +17,4 @@
 - `with_mapping_code = TRUE` errors with explicit Phase 2 message — guard against premature use.
 - Tests: 29 PASS / 0 FAIL. Cover arg validation, reference dispatch, pipeline phase order, rollup tibble shape, diff_pct edge cases (NA ref, zero ref).
 - Full suite: 1047 PASS / 0 FAIL.
-- Surfaced morning's link#160/#161: SIGPIPE in snapshot_bcfp.sh Parquet check (NOT conda env activation — rtj#129 was wrong diagnosis). Plan Phase 7 updated to reflect v0.35.1 baseline.
+- Surfaced morning's link#160/#161: SIGPIPE in snapshot_bcfp.sh Parquet check (NOT conda env activation — an internal issue was wrong diagnosis). Plan Phase 7 updated to reflect v0.35.1 baseline.

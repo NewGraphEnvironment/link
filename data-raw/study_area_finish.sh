@@ -442,6 +442,41 @@ run_timeouts() {
     || TIMED_OUT=""
 }
 
+# run_stalls: split the run's stall samples (link#487) out of its host logs.
+# Each group's sampler (data-raw/wsg_stall_sample.R) writes
+# `[wsg_stall] <WSG>\t<fields>` lines into the same log as the group, a header
+# line (first field `sampled_utc`) before its first row; this writes them to
+# $LOG_DIR/<ts>_stall_<WSG>.tsv, <ts> the run_uid's timestamp as for
+# run_timeouts, one header and every row in log order, rewritten on each
+# call. Matched unanchored and byte-wise, as run_timeouts is, and never fatal:
+# it only adds files and lines to the report. Sets STALL_WSGS, the groups with
+# a file, sorted, comma-separated.
+run_stalls() {
+  local ts="${RUN_UID%-*}" logs w tmp
+  STALL_WSGS=""
+  logs=$(find "$LOG_DIR" -maxdepth 1 -name "${ts}_run_*.log" 2>/dev/null | sort) || logs=""
+  [ -n "$logs" ] || return 0
+  tmp=$(mktemp "${TMPDIR:-/tmp}/lnk_stall.XXXXXX") || return 0
+  printf '%s\n' "$logs" | while IFS= read -r f; do cat "$f" 2>/dev/null || true; done \
+    | LC_ALL=C awk -v tag='[wsg_stall] ' '{
+        i = index($0, tag); if (!i) next
+        r = substr($0, i + length(tag))
+        if (substr(r, 1, 4) !~ /^[A-Z][A-Z][A-Z][A-Z]$/ || substr(r, 5, 1) != "\t") next
+        print r }' > "$tmp" 2>/dev/null || true
+  for w in $(LC_ALL=C cut -f1 "$tmp" 2>/dev/null | LC_ALL=C sort -u); do
+    LC_ALL=C awk -v w="$w" 'BEGIN { FS = OFS = "\t" }
+      $1 == w { sub(/^[^\t]*\t/, "")
+        if ($1 == "sampled_utc") { if (!h++) hdr = $0; next }
+        rows[++n] = $0 }
+      END { if (h) print hdr; for (i = 1; i <= n; i++) print rows[i] }' "$tmp" \
+      > "$LOG_DIR/${ts}_stall_${w}.tsv.tmp" 2>/dev/null \
+      && mv "$LOG_DIR/${ts}_stall_${w}.tsv.tmp" "$LOG_DIR/${ts}_stall_${w}.tsv" \
+      && STALL_WSGS="${STALL_WSGS:+$STALL_WSGS,}$w"
+  done
+  rm -f "$tmp"
+  return 0
+}
+
 # run_finish <expected csv> [signals csv] [excluded csv]: coverage, recompute,
 # compare and the final report. The excluded groups are a failed consolidate
 # source's (consolidate_outcomes): never recomputed, named as not consolidated,
@@ -769,6 +804,43 @@ run_calibrate_hint() {
   echo "  learn host speeds from this run's legs (a plan packed on --minutes-schema):"
   echo "    Rscript data-raw/host_speeds_calibrate.R --plan=<study_area_buckets.R --plan-out> \\"
   echo "      --phases=$PHASES_TSV [--skip=<name>:<reason>] [--dry-run]"
+  # The pre-run gate bounds its picks on these minutes (link#450), so a new database
+  # or a new bundle gets a real gate without a copied log. Commit the file it writes.
+  echo "  record this run's build minutes for the pre-run gate (then commit the file):"
+  echo "    Rscript data-raw/build_minutes_append.R --schema=$SCHEMA --run-uid=$RUN_UID"
+}
+
+# run_export_hint: the commands that republish the habitat export from this
+# run (link#465), so a one-group run elsewhere reads the barriers this run
+# persisted. Printed, never run: PUBLISH writes to the bucket, which is the
+# operator's call. The root is seeded from the bucket first, because an export
+# replaces only the configs it names and PUBLISH refuses a root that would lose
+# what is live. Only after a modelled run, as the calibration hint, and only
+# after a complete one: models run with LNK_HABITAT_GATE=0, so until the
+# recompute settles them the habitat flags are not what to publish. RUNBOOK
+# section 6d.
+# run_complete: exit 0 when the run finished every group, its recompute,
+# consolidate and compare. The one copy of the predicate run_finish_report's
+# INCOMPLETE branch and run_export_hint read (link#465), so a new cause cannot
+# reach one and not the other. RECOMPUTE_RAN is the hint's own extra: a run
+# whose recompute never ran has no settled habitat to publish.
+run_complete() {
+  [ "${RUN_INCOMPLETE:-0}" = "0" ] && [ "${RECOMPUTE_FAIL:-0}" = "0" ] \
+    && [ "${KEPT_CAUSE_N:-0}" -le 0 ] && [ "${COMPARE_FAIL:-0}" = "0" ]
+}
+
+run_export_hint() {
+  [ -n "${PHASES_TSV:-}" ] && [ -s "$PHASES_TSV" ] || return 0
+  awk -F'\t' '$2 == "model" { found = 1 } END { exit !found }' "$PHASES_TSV" || return 0
+  if ! run_complete || [ "${RECOMPUTE_RAN:-0}" != "1" ]; then
+    echo "  habitat export: not republished from an incomplete run; republish once a"
+    echo "    --recompute-only finishes it (RUNBOOK section 8d, After the run)"
+    return 0
+  fi
+  echo "  republish the habitat export from this run (barriers a one-group run reads):"
+  echo "    aws s3 sync s3://fresh-bc/habitat/fwa/v1 <root>"
+  echo "    Rscript data-raw/habitat_publish.R --root=<root> --configs=$CONFIG:$SCHEMA"
+  echo "    LNK_PUBLISH=1 Rscript data-raw/habitat_publish.R --root=<root>"
 }
 
 # run_readers_report: the groups outside the run that read a group it rebuilt
@@ -816,9 +888,17 @@ run_finish_report() {
   # Before the INCOMPLETE branch below, which exits (link#375).
   phases_report
   run_calibrate_hint
+  run_export_hint
   echo "  run WSGs:        ${RUN_WSGS:-<none>}"
   echo "  recomputed WSGs: ${ALL_WSGS:-<none>}"
   [ -z "${READERS_RECOMPUTE:-}" ] || echo "    of them outside the run (readers of it): $READERS_RECOMPUTE"
+  # Before the INCOMPLETE branch, which exits; a group can stall past the
+  # sampler's threshold and still finish (link#487).
+  run_stalls
+  local sw
+  for sw in $(printf '%s' "${STALL_WSGS:-}" | tr ',' ' '); do
+    echo "  stall samples: $LOG_DIR/${RUN_UID%-*}_stall_${sw}.tsv"
+  done
   if [ -n "${CMP_WSGS:-}" ] && [ "${COMPARE_FAIL:-0}" = "0" ]; then
     echo "  compare CSV: $COMPARE_CSV"
     tail -40 "$LOG_DIR/${TS}_compare.log" || true
@@ -841,8 +921,7 @@ run_finish_report() {
   run_readers_report
   local hosts_kept=0
   [ "${KEPT_CAUSE_N:-0}" -gt 0 ] && hosts_kept=1
-  if [ "${RUN_INCOMPLETE:-0}" != "0" ] || [ "${RECOMPUTE_FAIL:-0}" != "0" ] \
-     || [ "$hosts_kept" != "0" ] || [ "${COMPARE_FAIL:-0}" != "0" ]; then
+  if ! run_complete; then
     echo "=== study_area_run INCOMPLETE ==="
     if [ "$hosts_kept" != "0" ]; then
       echo "  $KEPT_CAUSE_N cypher(s) were NOT burned for cause: each may hold groups"
@@ -875,7 +954,12 @@ run_finish_report() {
         run_timeouts "$COV_MISSING"
         if [ -n "$TIMED_OUT" ]; then
           echo "    statement bound hit:             $TIMED_OUT"
-          printf '%s\n' "$TIMEOUT_LINES" | sed 's/^/      /'
+          printf '%s\n' "$TIMEOUT_LINES" | while IFS= read -r tl; do
+            echo "      $tl"
+            tw="${tl%% *}"
+            [ ! -f "$LOG_DIR/${RUN_UID%-*}_stall_${tw}.tsv" ] \
+              || echo "        samples: $LOG_DIR/${RUN_UID%-*}_stall_${tw}.tsv"
+          done
         fi
         # A held cypher may hold this run's finished work, unconsolidated. What
         # to do with each of its groups depends on whether the host could be

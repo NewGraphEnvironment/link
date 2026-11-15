@@ -89,7 +89,12 @@ lnk_vocabulary_read <- function() {
 #'   maps to, and [lnk_presence()]'s species groups). The
 #'   digest is over the parsed values, so a change in quoting or column
 #'   order is not a new rule set.
-#' - **grad:** `gradient=segment`, the only measure link builds today.
+#' - **grad:** how a segment's gradient is read (`pipeline: gradient:`):
+#'   `gradient=segment`, the segment's own (the value when absent), or for
+#'   `source: parent` `gradient=parent;parent_cut=<cut token>`, the gradient
+#'   of the segment of `minimal_config`'s network it lies in, where
+#'   `<cut token>` is the token `minimal_config` resolves to. A
+#'   `minimal_config` whose acc or flow spec differs from `cfg`'s is refused.
 #' - **flow:** `pipeline: discharge_source` and `pipeline: discharge_fill`.
 #'
 #' A config whose specification matches no token, or only a retired one,
@@ -118,10 +123,13 @@ lnk_vocabulary_resolve <- function(cfg, loaded = NULL) {
 
 # The four specification strings for `cfg`, named by axis.
 .lnk_vocabulary_specs <- function(cfg, loaded) {
-  c(cut  = .lnk_vocabulary_spec_cut(cfg, loaded),
-    acc  = .lnk_vocabulary_spec_acc(cfg, loaded),
-    grad = "gradient=segment",
-    flow = .lnk_vocabulary_spec_flow(cfg))
+  s <- c(cut  = .lnk_vocabulary_spec_cut(cfg, loaded),
+         acc  = .lnk_vocabulary_spec_acc(cfg, loaded),
+         flow = .lnk_vocabulary_spec_flow(cfg))
+  # The parent gradient's spec reads the minimal config's specs, and refuses
+  # one whose access or flow differ from these (R/lnk_gradient_parent.R).
+  c(s[c("cut", "acc")], grad = .lnk_vocabulary_spec_grad(cfg, s),
+    flow = s[["flow"]])
 }
 
 .lnk_vocabulary_spec_cut <- function(cfg, loaded) {

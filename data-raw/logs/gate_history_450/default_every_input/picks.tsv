@@ -1,0 +1,12 @@
+wsg	inputs	minutes	host	bound	statement_min
+QUES	near_river_conn	18.75230510804	cypher-job3	56.25691532412	30
+BULK	crossings	6.64462701381996	cypher-job1	19.9338810414599	20
+SETN	gradient,segments	6.35	m1	19.05	20
+LFRA	obs_upstream,observations	6.21369932045507	cypher-job1	18.6410979613652	19
+TOAD	gradient,segments	3.48	m1	10.44	11
+OKAN	dams	3.05124608689013	cypher-job2	9.15373826067038	10
+HARR	obs_upstream	2.84070016034206	m4	8.52210048102619	9
+TAKL	near_river_conn	2.80798045353898	cypher-job3	8.42394136061693	9
+UPCE	observations	2.25194472016492	cypher-job1	6.75583416049477	7
+HORS	crossings	1.48798579827441	m4	5	5
+SAJR	dams	1.19547682675422	cypher-job1	5	5

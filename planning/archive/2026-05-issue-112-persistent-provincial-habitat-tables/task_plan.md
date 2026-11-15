@@ -112,6 +112,6 @@ All literal-rewires done. Plus new wiring:
 - [ ] NEWS.md entry — 0.26.0 minor (new persistence capability)
 - [ ] DESCRIPTION version 0.25.1 → 0.26.0
 - [ ] `/code-check` on staged diff — 3 rounds clean
-- [ ] PR with `Fixes #112` + `Relates to NewGraphEnvironment/sred-2025-2026#24`
+- [ ] PR with `Fixes #112` + `Relates to an internal issue`
 - [ ] `/gh-pr-merge` after review
 - [ ] `/planning-archive` after merge

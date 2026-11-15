@@ -3,7 +3,7 @@
 **Issue:** [#65](https://github.com/NewGraphEnvironment/link/issues/65)
 **Branch:** `65-config-manifest-data-split`
 **Target version:** v0.18.0
-**SRED:** Relates to NewGraphEnvironment/sred-2025-2026#28
+**SRED:** Relates to an internal issue
 
 ## Phase 1: Foundation
 - [x] Add `crate (>= 0.0.0.9000)` to `DESCRIPTION` Imports + tibble + tools
@@ -72,5 +72,5 @@
 - [x] NEWS.md entry — describe the manifest/data split + crate integration in user-facing terms
 - [x] `/code-check` on staged diff (round 1 clean; flagged pre-existing observation_exclusions column-name issue unrelated to this PR)
 - [ ] Commit refactor + push
-- [ ] Open PR with `Fixes #65` + `Relates to NewGraphEnvironment/sred-2025-2026#28`
+- [ ] Open PR with `Fixes #65` + `Relates to an internal issue`
 - [ ] After merge: pull, nuke local branch, archive PWF, tag v0.18.0

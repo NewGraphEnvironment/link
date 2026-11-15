@@ -10,15 +10,22 @@
 #
 # --history-schema and --history-config read the history from another config the
 # bundle extends, until the bundle's own builds cover every group it models
-# (pretest_history_source()).
+# (pretest_history_source()). Without them (link#450), a bundle that extends
+# another and whose own builds do not cover it is held to the nearest ancestor
+# with builds on this database (pretest_ancestor_pick()); a bundle with no
+# build of its own and no such ancestor picks on every input, with no range
+# to diff. <out>/history.txt says which (range_source own | ancestor |
+# every_input) and names the history, for pretest_run.sh and the verdict.
 #
 # --since defaults to the link SHA of the earliest of the groups' newest
 # finished builds in the history (the last provincial run, even where a group
-# was re-modelled after it). A group is picked only if the history has a
-# finished build of it, so the config can model it. Its bound is its newest
-# finished minutes in --minutes-schema (default the history's schema); a group in
-# --minutes-exclude, whose newest minutes are a known stall, or with no row
-# there, is bounded on the median. Writes <out>/picks.tsv (one row per group) and
+# was re-modelled after it). A group is picked from those the config models
+# (lnk_wsg_resolve()). Its bound is its newest minutes, scaled to this host by
+# the learned host speeds: from --minutes-schema's log (default the history's
+# schema), or from data-raw/logs/build_minutes.csv where that holds a newer
+# row (link#450), or a fixed PRETEST_FIXED_MIN where neither does; a group in
+# --minutes-exclude, whose newest minutes are a known stall, is bounded on the
+# median. Writes <out>/picks.tsv (one row per group) and
 # <out>/pretest.md (what changed, which input each file named, each query and
 # its top groups, the picks). Exit 0 with picks, 2 refused (an unmapped file,
 # a bad argument, no history).
@@ -68,6 +75,15 @@ suppressPackageStartupMessages({
 conn <- DBI::dbConnect(RPostgres::Postgres(), dbname = "fwapg", host = "localhost",
                        port = 5432L, user = "postgres", password = "postgres")
 
+# Host speeds for scaling minutes to this host (data-raw/study_area_packing.R; link#450).
+source(file.path(script_dir, "study_area_packing.R"))
+speed_state <- speeds_state_read(file.path(script_dir, "logs", "host_speeds.tsv"))
+speed_of <- function(h) speeds_resolve(host_class(h), state = speed_state)$speed
+gate_host <- host_class(Sys.getenv("LNK_HOST_ALIAS", Sys.info()[["nodename"]]))
+gate_speed <- speed_of(gate_host)
+build_minutes <- tryCatch(pretest_build_minutes_read(file.path(script_dir, "logs", "build_minutes.csv")),
+                          error = function(e) refuse(conditionMessage(e)))
+
 has_log <- function(s) {
   !is.na(DBI::dbGetQuery(conn, sprintf("SELECT to_regclass('%s.log')::text AS t", s))$t)
 }
@@ -76,25 +92,66 @@ chain <- tryCatch(pretest_config_chain(file.path(repo, "inst/extdata/configs"), 
 own <- if (has_log(schema)) DBI::dbGetQuery(conn, pretest_history_sql(schema, config)) else
   data.frame(wsg = character(), link_sha = character(), link_dirty = logical())
 modelable <- tryCatch(pretest_modelable_groups(repo, config), error = function(e) refuse(conditionMessage(e)))
-hist_src <- tryCatch(pretest_history_source(schema, config, arg_val("--history-schema"),
-                                            arg_val("--history-config"), chain,
-                                            pretest_history_complete(own$wsg, modelable)),
-                     error = function(e) refuse(conditionMessage(e)))
+own_n <- length(unique(own$wsg))
+own_complete <- pretest_history_complete(own$wsg, modelable)
+flags <- nzchar(arg_val("--history-schema")) || nzchar(arg_val("--history-config"))
+range_source <- "own"
+if (!flags && !own_complete && (length(chain) > 1L || own_n == 0L)) {
+  # No flag names a history (link#450): the nearest ancestor with builds here, else
+  # every input. A bundle part-built under its own config and with no ancestor
+  # history here has builds a range must cover and nothing to diff them from.
+  cands <- list()
+  if (length(chain) > 1L) {
+    for (sc in DBI::dbGetQuery(conn, pretest_history_candidates_sql())$schema) {
+      cands[[sc]] <- DBI::dbGetQuery(conn, pretest_history_count_sql(sc, chain[-1]))
+    }
+  }
+  hist_src <- pretest_ancestor_pick(do.call(rbind, cands), chain)
+  if (!is.null(hist_src)) {
+    range_source <- "ancestor"
+    message(sprintf("history: %s's builds in %s.log, the nearest config %s extends with builds here",
+                    hist_src$config, hist_src$schema, config))
+  } else if (own_n == 0L) {
+    range_source <- "every_input"
+    hist_src <- list(schema = schema, config = config, borrowed = FALSE)
+    message(sprintf("history: none for %s or any config it extends on this database; picking on every input",
+                    config))
+  } else {
+    refuse(schema, ".log holds ", own_n, " of the ", length(modelable), " groups ", config,
+           " models and no config it extends has builds on this database; model the rest, pass ",
+           "--history-schema= and --history-config=, or launch on --pretest-note")
+  }
+} else {
+  hist_src <- tryCatch(pretest_history_source(schema, config, arg_val("--history-schema"),
+                                              arg_val("--history-config"), chain, own_complete),
+                       error = function(e) refuse(conditionMessage(e)))
+  if (hist_src$borrowed) range_source <- "ancestor"
+}
+every_input <- identical(range_source, "every_input")
 # Minutes come from where the history does, under the same config, unless named.
 if (!nzchar(arg_val("--minutes-schema"))) minutes_schema <- hist_src$schema
-for (s in unique(c(hist_src$schema, minutes_schema))) {
-  if (!has_log(s)) refuse(s, ".log does not exist: no history")
+if (!every_input) {
+  for (s in unique(c(hist_src$schema, minutes_schema))) {
+    if (!has_log(s)) refuse(s, ".log does not exist: no history")
+  }
+  built <- DBI::dbGetQuery(conn, pretest_history_sql(hist_src$schema, hist_src$config))
+  if (!nrow(built)) refuse(hist_src$schema, ".log has no finished rows under config ", hist_src$config)
+  # Refused under --pick-only too: picks from either history say nothing about a run.
+  bad_history <- pretest_history_uncoverable(built$link_sha, built$link_dirty)
+  if (nzchar(bad_history)) refuse(bad_history, "; a gate on it cannot clear a run")
+  if (hist_src$borrowed) {
+    short <- pretest_history_short(built$wsg, modelable, paste0(hist_src$schema, ".log"))
+    if (nzchar(short)) refuse(short)
+  }
+} else {
+  built <- data.frame(wsg = character(), host = character(), link_sha = character(),
+                      link_dirty = logical(), minutes = numeric(), stringsAsFactors = FALSE)
+  built$date_start <- as.POSIXct(character(), tz = "UTC")
 }
-built <- DBI::dbGetQuery(conn, pretest_history_sql(hist_src$schema, hist_src$config))
-if (!nrow(built)) refuse(hist_src$schema, ".log has no finished rows under config ", hist_src$config)
-# Refused under --pick-only too: picks from either history say nothing about a run.
-bad_history <- pretest_history_uncoverable(built$link_sha, built$link_dirty)
-if (nzchar(bad_history)) refuse(bad_history, "; a gate on it cannot clear a run")
-if (hist_src$borrowed) {
-  short <- pretest_history_short(built$wsg, modelable, paste0(hist_src$schema, ".log"))
-  if (nzchar(short)) refuse(short)
-}
-if (!nzchar(since)) {
+if (every_input) {
+  # Nothing to diff: the record names HEAD at both ends.
+  since <- until
+} else if (!nzchar(since)) {
   since <- tryCatch(pretest_since_default(built), error = function(e) refuse(conditionMessage(e)))
   message(sprintf("--since from %s.log: the earliest of the groups' newest builds, link %s",
                   hist_src$schema, substr(since, 1, 12)))
@@ -105,8 +162,9 @@ until_sha <- tryCatch(pretest_git(repo, c("rev-parse", "--verify", paste0(until,
                       error = function(e) refuse(conditionMessage(e)))
 # The record check holds a gate to covering every build the history holds;
 # say so now rather than after an hour of modelling.
-cover <- tryCatch(pretest_since_covers(repo, since_sha, until_sha, built$link_sha, built$link_dirty),
-                  error = function(e) refuse(conditionMessage(e)))
+cover <- if (every_input) "" else
+  tryCatch(pretest_since_covers(repo, since_sha, until_sha, built$link_sha, built$link_dirty),
+           error = function(e) refuse(conditionMessage(e)))
 # Beside a borrowed history, the bundle's own builds so far must be in the range too.
 if (hist_src$borrowed) {
   own_why <- tryCatch(pretest_own_builds_why(repo, since_sha, until_sha, own, schema),
@@ -130,6 +188,11 @@ changed <- tryCatch(rbind(pretest_changed_link(repo, since_sha, until_sha, chain
                     error = function(e) refuse(conditionMessage(e)))
 map <- pretest_map_read(file.path(script_dir, "pretest_inputs.csv"))
 m <- pretest_match(changed, map, chain)
+if (every_input) {
+  # Every query input, as if each had changed: the widest gate, not none.
+  m$hits <- data.frame(repo = "link", path = "(no history: every input)",
+                       input = pretest_all_inputs(script_dir), stringsAsFactors = FALSE)
+}
 # A file relabelled inside the range is judged by both labels: the map as it
 # stood at `since` adds its inputs (a relabel to none cannot hide an edit).
 old_map <- tryCatch(pretest_git(repo, c("show", paste0(since_sha, ":data-raw/pretest_inputs.csv"))),
@@ -164,13 +227,26 @@ w <- function(...) cat(..., "\n", sep = "", file = md, append = TRUE)
 cat("", file = md)
 w("# Pre-run gate (link#372)")
 w("")
-w(sprintf("- config `%s` (chain: %s), history in `%s.log` under `%s`%s", config,
+w(if (every_input) {
+  sprintf(paste0("- config `%s` (chain: %s): no build of it or of any config it extends on this ",
+                 "database, so every input counts as changed (link#450)"),
+          config, paste(chain, collapse = " < "))
+} else {
+  sprintf("- config `%s` (chain: %s), history in `%s.log` under `%s`%s", config,
           paste(chain, collapse = " < "), hist_src$schema, hist_src$config,
-          if (hist_src$borrowed) ", borrowed: its own builds do not cover it" else ""))
+          if (hist_src$borrowed) {
+            paste0(", borrowed", if (!flags) " (found through extends)" else "",
+                   ": its own builds do not cover it")
+          } else {
+            ""
+          })
+})
 w(sprintf("- link `%s..%s`; fresh `%s..%s`", substr(since_sha, 1, 12), substr(until_sha, 1, 12),
           fresh_from, fresh_to))
-w(sprintf("- per input %d groups; bound %g x last minutes in `%s.log`, floor %g min; statement bound <= %d min",
-          per_input, k, minutes_schema, floor_min, stmt_cap))
+w(sprintf(paste0("- per input %d groups; bound %g x last minutes (`%s.log`, or ",
+                 "`data-raw/logs/build_minutes.csv` where newer, scaled to %s at speed %.2f; ",
+                 "%g min where neither has the group), floor %g min; statement bound <= %d min"),
+          per_input, k, minutes_schema, gate_host, gate_speed, PRETEST_FIXED_MIN, floor_min, stmt_cap))
 if (length(minutes_exclude)) w(sprintf("- minutes excluded (bounded on the median): %s",
                                        paste(minutes_exclude, collapse = ", ")))
 w("")
@@ -203,21 +279,26 @@ if (length(unex)) {
 }
 
 # Minutes named from the bundle's own schema read its own config, not the one borrowed.
-mins <- if (identical(minutes_schema, hist_src$schema)) built else
+mins <- if (identical(minutes_schema, hist_src$schema)) {
+  built
+} else if (has_log(minutes_schema)) {
   DBI::dbGetQuery(conn, pretest_history_sql(minutes_schema,
                                             if (identical(minutes_schema, schema)) config else hist_src$config))
-history <- data.frame(wsg = built$wsg, stringsAsFactors = FALSE)
-i <- match(history$wsg, mins$wsg)
-history$minutes <- mins$minutes[i]
-history$host <- mins$host[i]
-history$minutes[history$wsg %in% minutes_exclude] <- NA
-med <- stats::median(history$minutes, na.rm = TRUE)
-fill <- is.na(history$minutes)
-history$host[fill] <- "median"
-history$minutes[fill] <- med
-if (any(fill)) {
-  message(sprintf("%d group(s) bounded on the median %.1f min (excluded or no row in %s.log)",
-                  sum(fill), med, minutes_schema))
+} else {
+  built[0, , drop = FALSE]
+}
+# Every group the config models is eligible; each is bounded on its newest minutes,
+# from the log or the committed record, scaled to this host (link#450).
+history <- pretest_minutes(modelable, mins, build_minutes, chain, speed_of, gate_speed,
+                           exclude = minutes_exclude)
+for (src in c("record", "fixed", "median")) {
+  n_src <- sum(history$source == src)
+  if (n_src) {
+    message(sprintf("%d group(s) bounded on %s", n_src,
+                    switch(src, record = "data-raw/logs/build_minutes.csv (newer than the log)",
+                           fixed = sprintf("a fixed %g min (no minutes anywhere)", PRETEST_FIXED_MIN),
+                           median = "the median (--minutes-exclude)")))
+  }
 }
 
 inputs <- pretest_inputs(m$hits)
@@ -242,7 +323,7 @@ for (inp in inputs) {
   v <- utils::head(v[order(-v$value, v$wsg), , drop = FALSE], 5)
   w(sprintf("### %s (`%s`)", inp, f))
   w("")
-  w(sprintf("Top five among groups with history: %s.",
+  w(sprintf("Top five among groups the config models: %s.",
             paste(sprintf("%s %s", v$wsg, format(round(v$value), big.mark = ",", trim = TRUE)),
                   collapse = "; ")))
   w("")
@@ -260,16 +341,23 @@ utils::write.table(groups, file.path(out, "picks.tsv"), sep = "\t", quote = FALS
                    row.names = FALSE, na = "NA")
 w("## Picks")
 w("")
-w("| group | inputs | last minutes | measured on | bound (min) | statement bound (min) |")
-w("|---|---|---|---|---|---|")
+w("| group | inputs | last minutes (here) | measured on | from | bound (min) | statement bound (min) |")
+w("|---|---|---|---|---|---|---|")
 for (i in seq_len(nrow(groups))) {
-  w(sprintf("| %s | %s | %.1f | %s | %.1f | %d |", groups$wsg[i], groups$inputs[i],
-            groups$minutes[i], groups$host[i], groups$bound[i], groups$statement_min[i]))
+  w(sprintf("| %s | %s | %.1f | %s | %s | %.1f | %d |", groups$wsg[i], groups$inputs[i],
+            groups$minutes[i], groups$host[i], history$source[match(groups$wsg[i], history$wsg)],
+            groups$bound[i], groups$statement_min[i]))
 }
 w("")
 w(sprintf("Estimated modelling: %.1f min (sum of last minutes).", sum(groups$minutes)))
 w("")
 writeLines(c(since_sha, until_sha), file.path(out, "range.txt"))
+# What the gate was held to, for pretest_run.sh (the scratch schema's shapes, the record
+# schema) and the verdict (link#450). Written whether or not a flag named it.
+writeLines(c(paste0("range_source=", range_source),
+             paste0("history_schema=", if (every_input) "" else hist_src$schema),
+             paste0("history_config=", if (every_input) "" else hist_src$config)),
+           file.path(out, "history.txt"))
 
 message(sprintf("%d changed file(s), inputs: %s", nrow(changed),
                 if (length(inputs)) paste(inputs, collapse = ", ") else "(none)"))

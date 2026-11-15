@@ -32,7 +32,10 @@ cols_source_artifact <- c(
   loaded_at              = "timestamptz",
   recorded_at            = "timestamptz NOT NULL",
   recorded_by            = "text NOT NULL CHECK (recorded_by IN ('loader', 'probe'))",
-  notes                  = "text"
+  notes                  = "text",
+  # md5 of the loaded table's rows (.lnk_table_content_md5()), for the `api`
+  # primitives, which have no version handle (#465). Recorded by the loader.
+  content_md5            = "text"
 )
 
 # Where the table lives. One function rather than an argument: the gate, the
@@ -254,6 +257,16 @@ lnk_artifact_record <- function(conn, artifacts,
   a$n_rows <- .lnk_artifact_count(conn, a)
   tbls <- unique(a$table_name)
   missing_tbl <- tbls[!.lnk_artifact_exists(conn, tbls)]
+  # An `api` primitive has no version handle, so the loader records what it
+  # loaded by content (#465); an object has its version id, and a probe says
+  # nothing about what is loaded.
+  a$content_md5 <- vapply(seq_len(nrow(a)), function(i) {
+    if (recorded_by != "loader" || a$kind[i] != "api" ||
+        a$table_name[i] %in% missing_tbl) {
+      return(NA_character_)
+    }
+    .lnk_table_content_md5(conn, a$table_name[i])
+  }, character(1))
   absent <- a$table_name %in% missing_tbl
   a$notes[absent] <- vapply(a$notes[absent], function(n) {
     paste(stats::na.omit(c(n, "table absent at record time")), collapse = "; ")
@@ -274,19 +287,21 @@ lnk_artifact_record <- function(conn, artifacts,
     }, character(1), USE.NAMES = FALSE)
   }
   values <- paste(sprintf(
-    "(%s, %s, %s, %s, %s, %s, %s::timestamptz, %s::bigint, %s::timestamptz, now(), %s, %s)",
+    "(%s, %s, %s, %s, %s, %s, %s::timestamptz, %s::bigint, %s::timestamptz, now(), %s, %s, %s)",
     lit(rep(host, nrow(a))), lit(a$table_name), lit(a$url), lit(a$kind),
     lit(a$version_id), lit(a$etag), lit(a$last_modified), lit(a$n_rows),
-    lit(a$loaded_at), lit(rep(recorded_by, nrow(a))), lit(a$notes)),
+    lit(a$loaded_at), lit(rep(recorded_by, nrow(a))), lit(a$notes),
+    lit(a$content_md5)),
     collapse = ",\n  ")
 
   tbl <- .lnk_artifact_table()
   set_cols <- c("kind", "version_id", "etag", "last_modified", "n_rows",
-                "loaded_at", "recorded_at", "recorded_by", "notes")
+                "loaded_at", "recorded_at", "recorded_by", "notes",
+                "content_md5")
   .lnk_db_execute(conn, sprintf(
     "INSERT INTO %s AS t
        (host, table_name, url, kind, version_id, etag, last_modified, n_rows,
-        loaded_at, recorded_at, recorded_by, notes)
+        loaded_at, recorded_at, recorded_by, notes, content_md5)
      VALUES
        %s
      ON CONFLICT (host, table_name, url) DO UPDATE SET %s
@@ -294,7 +309,9 @@ lnk_artifact_record <- function(conn, artifacts,
         OR (t.recorded_by = 'probe'
             AND (t.version_id IS NULL
                  OR t.version_id = EXCLUDED.version_id
-                 OR t.n_rows IS DISTINCT FROM EXCLUDED.n_rows))",
+                 OR t.n_rows IS DISTINCT FROM EXCLUDED.n_rows))
+        OR (t.recorded_by = 'loader' AND t.table_name LIKE 'whse\\_basemapping.%%'
+            AND t.n_rows IS DISTINCT FROM EXCLUDED.n_rows)",
     tbl, values,
     paste(sprintf("%s = EXCLUDED.%s", set_cols, set_cols), collapse = ", ")))
 
@@ -527,4 +544,191 @@ lnk_artifact_read <- function(conn, host = .lnk_host()) {
     }
   }
   n
+}
+
+#' md5 of a table's rows, independent of their physical order
+#'
+#' Each row's text form, sorted in byte order and joined, hashed in the
+#' database. The same rows in the same column order give the same md5 on any
+#' host; a reloaded table whose columns come back in another order reads as
+#' changed, which is the safe direction. For the `api` primitives (CABD,
+#' PSCIS), which have no version handle (#465).
+#' @param conn DBI connection.
+#' @param table Schema-qualified table name.
+#' @return A 32-character md5, or NA when the table is absent.
+#' @noRd
+.lnk_table_content_md5 <- function(conn, table) {
+  .lnk_validate_identifier(table, "table")
+  # to_regclass, so a temporary table (pg_temp) is found too
+  there <- DBI::dbGetQuery(conn, "SELECT to_regclass($1) IS NOT NULL AS x",
+                           params = list(table))$x
+  if (!isTRUE(there)) return(NA_character_)
+  x <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT md5(coalesce(string_agg(t::text, E'\\n' ORDER BY t::text COLLATE \"C\"),
+                         '')) AS md5
+       FROM %s t", table))$md5
+  as.character(x)
+}
+
+
+#' Do the hosts of one run hold the same snapshot primitives? (link#276)
+#'
+#' `study_area_run.sh`'s pre-flight reads each host's newest `loader` row per
+#' snapshot primitive (`data-raw/host_inputs.R`) after prep and before any write,
+#' and refuses a run whose hosts would model on different data. Until this, the
+#' check ran only after the run (`provincial_246/verify_extra.sql`, then
+#' `study_area_verify.sql` section 2c over `log_input`), when a mixed run had
+#' already been paid for.
+#'
+#' Per table:
+#' - **object-store primitives** (observations, modelled crossings): one
+#'   `version_id` on every host, none empty;
+#' - **API primitives** (CABD, PSCIS), which have no version handle: one
+#'   `content_md5` where every host recorded one (link#465); where a host
+#'   recorded none (a load before link#465), one `n_rows` instead, which is
+#'   weaker and said so.
+#'
+#' A host with no row for a table holds an unrecorded load, which is refused,
+#' and so is a host in `hosts` that printed no row at all (no provenance table,
+#' or loads from before link#265): judged against the hosts the run has, not
+#' the hosts that answered.
+#'
+#' @param rows A data frame with `host`, `table_name`, `version_id`,
+#'   `content_md5`, `n_rows` (empty strings for absent values).
+#' @param hosts Every host of the run, whether it printed rows or not.
+#' @param tables The snapshot primitives to judge.
+#' @return A list: `ok`, and `why`, one line per disagreement.
+#' @noRd
+.lnk_inputs_agree <- function(rows, hosts, tables = .lnk_vintage_primitives()) {
+  blank <- function(x) is.na(x) | !nzchar(x)
+  stopifnot(is.character(hosts), length(hosts) >= 1L, !anyNA(hosts))
+  hosts <- sort(unique(hosts))
+  stray <- setdiff(rows$host, hosts)
+  if (length(stray)) stop("rows from hosts not in the run: ", paste(stray, collapse = ", "), call. = FALSE)
+  why <- character()
+  kinds <- .lnk_input_primitives()
+  for (tbl in tables) {
+    r <- rows[rows$table_name == tbl, , drop = FALSE]
+    missing <- setdiff(hosts, r$host)
+    if (length(missing)) {
+      why <- c(why, sprintf("%s: no loader row on %s", tbl, paste(missing, collapse = ", ")))
+      next
+    }
+    by_host <- function(col) {
+      paste(sprintf("%s %s", r$host, ifelse(blank(r[[col]]), "(none)", r[[col]])), collapse = ", ")
+    }
+    kind <- kinds$kind[match(tbl, kinds$table_name)]
+    if (identical(kind, "object")) {
+      if (any(blank(r$version_id)) || length(unique(r$version_id)) > 1L) {
+        why <- c(why, sprintf("%s: versions differ or are unrecorded (%s)", tbl, by_host("version_id")))
+      }
+    } else if (!any(blank(r$content_md5))) {
+      if (length(unique(r$content_md5)) > 1L) {
+        why <- c(why, sprintf("%s: content differs (md5: %s)", tbl,
+                              paste(sprintf("%s %s", r$host, substr(r$content_md5, 1, 10)),
+                                    collapse = ", ")))
+      }
+    } else if (any(blank(r$n_rows)) || length(unique(r$n_rows)) > 1L) {
+      why <- c(why, sprintf("%s: row counts differ (%s; no content md5 on every host)", tbl,
+                            by_host("n_rows")))
+    }
+  }
+  list(ok = !length(why), why = why)
+}
+
+
+#' The object-store URLs an fwapg load fetched, from `load.sh`'s trace (link#270)
+#'
+#' fwapg's `load.sh` runs under `set -x`, which writes every command to stderr
+#' with its variables expanded, so a captured trace names every object the load
+#' read: each table's parquet, each watershed group's partition, the CSVs it
+#' copies through `curl`. Trace lines start with `+`; the URLs are read from
+#' those only, in the order fetched, each once.
+#'
+#' @param lines A character vector, the trace's lines.
+#' @return A character vector of URLs.
+#' @noRd
+.lnk_fwa_trace_urls <- function(lines) {
+  lines <- lines[startsWith(lines, "+")]
+  hits <- regmatches(lines, gregexpr(
+    "https://nrs\\.objectstore\\.gov\\.bc\\.ca/bchamp/[^[:space:]'\"|;)]+", lines))
+  urls <- unlist(hits, use.names = FALSE)
+  unique(urls)
+}
+
+
+#' Map traced URLs to the FWA primitives they load (link#270)
+#'
+#' Each URL is matched against the primitives dictionary's URL templates
+#' (`{wsg}` as any four-letter group). URLs no primitive names (the watershed
+#' group polygons `load.sh` also reads, its other tables) are returned apart:
+#' they stay in the dated trace, and only primitives are recorded.
+#'
+#' @return A list: `matched` (data frame `table_name`, `url`) and `unmatched`
+#'   (character).
+#' @noRd
+.lnk_fwa_trace_match <- function(urls) {
+  prims <- .lnk_input_primitives()
+  prims <- prims[prims$kind == "object" & startsWith(prims$source, "fwapg/"), , drop = FALSE]
+  rx <- paste0("^", gsub("\\{wsg\\}", "[A-Z]{4}", .lnk_regex_escape(prims$url), fixed = TRUE), "$")
+  tbl <- vapply(urls, function(u) {
+    hit <- which(vapply(rx, function(r) grepl(r, u), logical(1)))
+    if (length(hit)) prims$table_name[hit[1]] else NA_character_
+  }, character(1), USE.NAMES = FALSE)
+  list(matched = data.frame(table_name = tbl[!is.na(tbl)], url = urls[!is.na(tbl)],
+                            stringsAsFactors = FALSE),
+       unmatched = urls[is.na(tbl)])
+}
+
+
+#' Record what an fwapg load fetched as `loader` rows (link#270)
+#'
+#' Reads a captured `load.sh` trace, HEADs each primitive object it fetched
+#' (sequentially, stopping after `max_fail` consecutive failures), and writes
+#' `loader` rows to `provenance.source_artifact` stamped `loaded_at = load_end`;
+#' a loader row replaces a probe row for the same artifact. A HEAD runs after
+#' the load, so it names what is current then: an object whose `Last-Modified`
+#' is later than `load_start` changed during the load, and its notes say so.
+#' The fwapg checkout's commit goes in each row's notes (`fwapg_commit=`), since
+#' `log.fwapg_sha` is the checkout's HEAD when a model runs, not the loader's.
+#'
+#' @param conn A connection to the database the load wrote.
+#' @param lines The trace's lines.
+#' @param load_start,load_end When the load started and ended (`POSIXct`).
+#' @param fwapg_commit The fwapg checkout's commit (with `-dirty` when its tree
+#'   was not clean), or NA.
+#' @return Invisibly, the rows recorded; `unmatched` URLs as an attribute.
+#' @noRd
+.lnk_fwa_load_record <- function(conn, lines, load_start, load_end,
+                                 fwapg_commit = NA_character_,
+                                 host = .lnk_host(), max_fail = 5L,
+                                 head = .lnk_artifact_head) {
+  m <- .lnk_fwa_trace_match(.lnk_fwa_trace_urls(lines))
+  a <- m$matched
+  if (!nrow(a)) stop("the trace names no FWA primitive object; was it captured from load.sh?",
+                     call. = FALSE)
+  heads <- vector("list", nrow(a))
+  fails <- 0L
+  for (i in seq_len(nrow(a))) {
+    heads[[i]] <- if (fails >= max_fail) {
+      .lnk_artifact_head_na(sprintf("not HEADed: %d consecutive HEAD failures before it", max_fail))
+    } else {
+      head(a$url[i])
+    }
+    fails <- if (is.na(heads[[i]]$status)) fails + 1L else 0L
+  }
+  h <- do.call(rbind, heads)
+  changed <- !is.na(h$last_modified) & as.numeric(h$last_modified) > as.numeric(load_start)
+  notes <- paste0("fwapg load.sh trace",
+                  if (!is.na(fwapg_commit)) paste0("; fwapg_commit=", fwapg_commit) else "")
+  notes <- ifelse(changed, paste0(notes, "; Last-Modified after the load started: changed during the load"),
+                  notes)
+  notes <- ifelse(is.na(h$notes), notes, paste0(notes, "; ", h$notes))
+  rows <- data.frame(table_name = a$table_name, url = a$url,
+                     version_id = h$version_id, etag = h$etag,
+                     last_modified = h$last_modified, loaded_at = load_end,
+                     notes = notes, stringsAsFactors = FALSE)
+  lnk_artifact_record(conn, rows, recorded_by = "loader", host = host)
+  attr(rows, "unmatched") <- m$unmatched
+  invisible(rows)
 }

@@ -96,8 +96,10 @@ if [ -n "$HISTORY_SCHEMA$HISTORY_CONFIG" ]; then
   [[ "$HISTORY_CONFIG" =~ ^[a-z][a-z0-9_]*$ ]] || { echo "REFUSED: bad --history-config '$HISTORY_CONFIG'" >&2; exit 2; }
   [ "$HISTORY_SCHEMA" != "$SCRATCH" ] || { echo "REFUSED: --history-schema is the scratch schema $SCRATCH" >&2; exit 2; }
 fi
+# Where the history is when a flag names it; otherwise the pick resolves it (an
+# ancestor's builds found through extends, or none: link#450) and says so in
+# $OUT/history.txt, read below.
 SHAPE_SCHEMA="${HISTORY_SCHEMA:-$SCHEMA}"
-[ -n "$MINUTES_SCHEMA" ] || MINUTES_SCHEMA="$SHAPE_SCHEMA"
 TS="$(date -u +%Y%m%d_%H%M%S)"
 [ -n "$OUT" ] || OUT="$REPO_ROOT/data-raw/logs/pretest/${TS}_${CONFIG}"
 mkdir -p "$OUT"
@@ -109,7 +111,12 @@ psql_q() { PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d fwapg -X
 
 echo "=== pre-run gate (link#372) ==="
 echo "  config:          $CONFIG"
-echo "  history schema:  $SHAPE_SCHEMA${HISTORY_CONFIG:+ under $HISTORY_CONFIG, borrowed} (minutes from $MINUTES_SCHEMA${MINUTES_EXCLUDE:+, excluding $MINUTES_EXCLUDE})"
+if [ -n "$HISTORY_SCHEMA" ]; then
+  echo "  history schema:  $HISTORY_SCHEMA under $HISTORY_CONFIG, borrowed"
+else
+  echo "  history schema:  resolved by the pick (own builds in $SCHEMA, else an ancestor config with builds here, else every input)"
+fi
+echo "  minutes:         ${MINUTES_SCHEMA:-from the history schema}${MINUTES_EXCLUDE:+, excluding $MINUTES_EXCLUDE}, or build_minutes.csv where newer"
 echo "  record schema:   $SCHEMA"
 echo "  scratch schema:  $SCRATCH (dropped and rebuilt)"
 echo "  range:           ${SINCE:-<earliest newest build in $SHAPE_SCHEMA.log>}..$UNTIL"
@@ -131,7 +138,8 @@ fi
 
 pick_args=(--config="$CONFIG" --schema="$SCHEMA" --out="$OUT" --until="$UNTIL"
            --per-input="$PER_INPUT" --k="$K" --floor-min="$FLOOR_MIN"
-           --statement-timeout="$STMT" --minutes-schema="$MINUTES_SCHEMA")
+           --statement-timeout="$STMT")
+[ -z "$MINUTES_SCHEMA" ] || pick_args+=(--minutes-schema="$MINUTES_SCHEMA")
 [ -z "$SINCE" ] || pick_args+=(--since="$SINCE")
 [ -z "$MINUTES_EXCLUDE" ] || pick_args+=(--minutes-exclude="$MINUTES_EXCLUDE")
 [ -z "$FRESH_REPO" ] || pick_args+=(--fresh-repo="$FRESH_REPO")
@@ -141,6 +149,14 @@ prc=0
 (cd "$REPO_ROOT" && Rscript data-raw/pretest_pick.R "${pick_args[@]}") || prc=$?
 [ "$prc" = 0 ] || { echo "pick exited $prc"; exit "$prc"; }
 [ "$PICK_ONLY" = 0 ] || { echo "pick only: $OUT/pretest.md"; exit 0; }
+
+# The scratch schema's shapes come from the history the pick resolved (link#450): an
+# ancestor's schema found through extends, else the record schema (empty when it is
+# new; lnk_persist_init() creates what a run needs).
+resolved=$(sed -n 's/^history_schema=//p' "$OUT/history.txt")
+[ -z "$resolved" ] || SHAPE_SCHEMA="$resolved"
+[[ "$SHAPE_SCHEMA" =~ ^[a-z_][a-z0-9_]*$ ]] || { echo "REFUSED: bad history schema '$SHAPE_SCHEMA' in history.txt" >&2; exit 2; }
+echo "  held to:         $(sed -n 's/^range_source=//p' "$OUT/history.txt")${resolved:+ ($resolved)}"
 
 # The record must describe the code being modelled.
 until_sha=$(sed -n 2p "$OUT/range.txt")
@@ -280,8 +296,9 @@ notes=""
 if [ -s "$OUT/unexercised.txt" ]; then
   notes="${notes:+$notes; }unexercised: $(paste -sd, "$OUT/unexercised.txt")"
 fi
-# A borrowing bundle's persist schema need not exist yet; the record lives there.
-[ -z "$HISTORY_SCHEMA" ] || psql_q -c "SET client_min_messages = warning; CREATE SCHEMA IF NOT EXISTS ${SCHEMA}" >/dev/null
+# A bundle with no build of its own need not have its persist schema yet; the record
+# lives there. The verdict reads what the gate was held to from $OUT/history.txt.
+psql_q -c "SET client_min_messages = warning; CREATE SCHEMA IF NOT EXISTS ${SCHEMA}" >/dev/null
 history_args=()
 [ -z "$HISTORY_SCHEMA" ] || history_args=(--history-schema="$HISTORY_SCHEMA" --history-config="$HISTORY_CONFIG")
 vrc=0

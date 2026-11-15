@@ -49,7 +49,7 @@ Bundles three cleanups while in the area: `balance_provincial_buckets.R` dedup b
 
 ## Phase 7: full provincial run + acceptance
 
-- [ ] Spin 3 cyphers via `cypher_up.sh --workspace job1`, `--workspace job2`, `--workspace job3`. Verify rtj#129 fix holds.
+- [ ] Spin 3 cyphers via `cypher_up.sh --workspace job1`, `--workspace job2`, `--workspace job3`. Verify an internal issue fix holds.
 - [ ] Pre-flight all 5 hosts (versions match, snapshot_bcfp.sh runs cleanly on cyphers).
 - [ ] Dispatch `./trifecta_provincial.sh --with-mapping-code` with LPT-balanced buckets across 5 hosts. Predicted wall: ~50-60 min with the mapping_code +50% cost.
 - [ ] After completion: aggregate annotated CSV. Verify acceptance: **zero rows with `|diff_pct| >= 2%` AND `class == UNEXPLAINED`**.

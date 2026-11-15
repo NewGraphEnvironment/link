@@ -15,6 +15,12 @@
 #       treats a failure here as a warning: the FWA tables were not loaded by
 #       the snapshot, so a probe failure says nothing about what it loaded.
 #
+#   Rscript data-raw/artifact_record.R --fwa-trace <load.sh trace> <start> <end> [<fwapg commit>]
+#       After an fwapg load (data-raw/fwapg_load_capture.sh, link#270): record
+#       each FWA primitive object the trace shows the load fetched, HEADed now,
+#       as recorded_by = 'loader', loaded_at = <end>. <start> and <end> are
+#       ISO-8601 UTC (...Z). URLs no primitive names are listed, not recorded.
+#
 #   Rscript data-raw/artifact_record.R <manifest.tsv>
 #       After the loads: record each manifest row with recorded_by = 'loader'.
 #       Manifest columns (tab-separated, unquoted, header row):
@@ -33,9 +39,10 @@
 # installed package.
 
 args <- commandArgs(trailingOnly = TRUE)
-if (length(args) != 1L) {
-  stop("usage: artifact_record.R --clear | --probe | <manifest.tsv>",
-       call. = FALSE)
+fwa_mode <- identical(args[1], "--fwa-trace")
+if (!(length(args) == 1L || (fwa_mode && length(args) %in% c(4L, 5L)))) {
+  stop("usage: artifact_record.R --clear | --probe | <manifest.tsv> | ",
+       "--fwa-trace <trace> <start> <end> [<fwapg commit>]", call. = FALSE)
 }
 
 desc <- "DESCRIPTION"
@@ -89,6 +96,35 @@ if (identical(args[1], "--clear")) {
 if (identical(args[1], "--probe")) {
   lnk_artifact_probe(conn)
   DBI::dbDisconnect(conn)
+  quit(status = 0L)
+}
+
+if (fwa_mode) {
+  when <- function(x) {
+    t <- as.POSIXct(x, format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+    if (is.na(t)) stop("not an ISO-8601 UTC time (YYYY-MM-DDTHH:MM:SSZ): ", x, call. = FALSE)
+    t
+  }
+  rows <- link:::.lnk_fwa_load_record(
+    conn, readLines(args[2], warn = FALSE), load_start = when(args[3]), load_end = when(args[4]),
+    fwapg_commit = if (length(args) == 5L && nzchar(args[5])) args[5] else NA_character_)
+  um <- attr(rows, "unmatched")
+  changed <- sum(grepl("changed during the load", rows$notes, fixed = TRUE))
+  cat(sprintf(paste0("artifact_record: %d FWA loader rows (%d tables; %d without a version id; ",
+                     "%d changed during the load); %d traced URLs are not primitives\n"),
+              nrow(rows), length(unique(rows$table_name)), sum(is.na(rows$version_id)), changed,
+              length(um)))
+  # Read back: every recorded artifact is there as a loader row.
+  # An IN list of quoted literals: RPostgres binds a character vector one value per
+  # execution, never as an array, so `url = ANY($1)` fails on any vector.
+  back <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT count(*) AS n FROM %s WHERE host = %s AND recorded_by = 'loader' AND url IN (%s)",
+    link:::.lnk_artifact_table(), DBI::dbQuoteLiteral(conn, link:::.lnk_host()),
+    paste(DBI::dbQuoteLiteral(conn, unique(rows$url)), collapse = ", ")))$n
+  DBI::dbDisconnect(conn)
+  if (back != length(unique(rows$url))) {
+    stop("read back ", back, " of ", length(unique(rows$url)), " loader rows", call. = FALSE)
+  }
   quit(status = 0L)
 }
 

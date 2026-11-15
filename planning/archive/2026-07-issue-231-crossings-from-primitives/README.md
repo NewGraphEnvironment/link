@@ -41,16 +41,16 @@ to a `bcfishpass` DB that LACKS it). Automating that reload weekly is the real
 
 ## How we got here (the rabbit hole, so we don't repeat it)
 
-We published `crossings.csv` to `s3://newgraph` (db_newgraph#15, smnorris PR #57)
+We published `crossings.csv` to `s3://newgraph` (an internal issue, smnorris PR #57)
 believing the models needed a fresh crossings snapshot. A pre-commit **Plan-agent
 review** of the #231 plan caught that the union already replaced the CSV — verified in
-code before writing any implementation. **db_newgraph#16** tracks reconsidering that
+code before writing any implementation. **an internal issue** tracks reconsidering that
 (now model-unneeded) dump.
 
 ## Pointers
 
 - **link#232** — parity: confirm link `<schema>.crossings` ≈ bcfp `crossings_vw`.
-- **db_newgraph#16** — reconsider the newgraph `crossings.csv` dump.
+- **an internal issue** — reconsider the newgraph `crossings.csv` dump.
 - Key code: `R/lnk_pipeline_crossings.R`, `R/lnk_crossings_union.R`,
   `R/lnk_pipeline_load.R:100` (the vestigial CSV read).
 - `findings.md` here = the (still-useful) machinery exploration. `task_plan.md` =

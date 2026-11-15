@@ -236,6 +236,7 @@ test_that("two schemas for one config may not hold the same group, and shared se
   withr::defer(DBI::dbExecute(conn, sprintf(
     "DROP SCHEMA IF EXISTS %s CASCADE", s2)))
   link:::.lnk_log_create_tables(conn, s2)
+  export_copy_barriers(conn, schema, s2)
   DBI::dbExecute(conn, sprintf(
     "CREATE TABLE %s.streams AS SELECT * FROM %s.streams", s2, schema))
   DBI::dbExecute(conn, sprintf(
@@ -286,6 +287,7 @@ test_that("re-exporting one config keeps the other config's parts, and refuses a
   withr::defer(DBI::dbExecute(conn, sprintf(
     "DROP SCHEMA IF EXISTS %s CASCADE", s2)))
   link:::.lnk_log_create_tables(conn, s2)
+  export_copy_barriers(conn, schema, s2)
   for (t in c("streams", "streams_habitat_bt", "streams_habitat_co")) {
     DBI::dbExecute(conn, sprintf(
       "CREATE TABLE %s.%s AS SELECT * FROM %s.%s", s2, t, schema, t))
@@ -370,6 +372,7 @@ test_that("named groups may come from different schemas of one config", {
   withr::defer(DBI::dbExecute(conn, sprintf(
     "DROP SCHEMA IF EXISTS %s CASCADE", s2)))
   link:::.lnk_log_create_tables(conn, s2)
+  export_copy_barriers(conn, schema, s2)
   DBI::dbExecute(conn, sprintf(
     "CREATE TABLE %s.streams AS SELECT * FROM %s.streams
       WHERE watershed_group_code = 'BULK'", s2, schema))
@@ -480,6 +483,7 @@ test_that("a named group is taken from the schema holding its build of the confi
   withr::defer(DBI::dbExecute(conn, sprintf(
     "DROP SCHEMA IF EXISTS %s CASCADE", s2)))
   link:::.lnk_log_create_tables(conn, s2)
+  export_copy_barriers(conn, schema, s2)
   DBI::dbExecute(conn, sprintf(
     "CREATE TABLE %s.streams AS SELECT * FROM %s.streams
       WHERE watershed_group_code = 'ADMS'", s2, schema))
@@ -549,6 +553,7 @@ test_that("skipped lists only groups no schema exported, keyed by group", {
   withr::defer(DBI::dbExecute(conn, sprintf(
     "DROP SCHEMA IF EXISTS %s CASCADE", s2)))
   link:::.lnk_log_create_tables(conn, s2)
+  export_copy_barriers(conn, schema, s2)
   DBI::dbExecute(conn, sprintf(
     "CREATE TABLE %s.streams AS SELECT * FROM %s.streams
       WHERE watershed_group_code = 'ADMS'", s2, schema))
@@ -590,6 +595,7 @@ test_that("an older build of a group does not replace a newer one", {
   withr::defer(DBI::dbExecute(conn, sprintf(
     "DROP SCHEMA IF EXISTS %s CASCADE", s2)))
   link:::.lnk_log_create_tables(conn, s2)
+  export_copy_barriers(conn, schema, s2)
   for (t in c("streams", "streams_habitat_bt", "streams_habitat_co",
               "discharge")) {
     DBI::dbExecute(conn, sprintf(

@@ -26,4 +26,4 @@
   stale values gone; the only `lnk_db_conn()` sits in the `eval=FALSE` demo chunk. `/code-check` round 1:
   1 low latent finding (diff_pct div-by-zero on the generic-reuse path) fixed with an NA guard; PARS
   artifact unchanged.
-- Next: NEWS + patch bump, archive PWF, open PR (Closes #226; ref sred#24).
+- Next: NEWS + patch bump, archive PWF, open PR (Closes #226; ref an internal issue).

@@ -1,0 +1,5 @@
+[wsg_run_one] ADMS statement_timeout=1min
+[wsg_run_one] ADMS stall sampler off: LNK_STALL_AFTER_MIN=5 is not below the bound (1min)
+[wsg_run_one] ADMS TIMEOUT after 1min: SELECT pg_sleep(3600) -- LNK_TEST_STALL_WSG
+Error: Failed to fetch row : ERROR:  canceling statement due to statement timeout
+Execution halted

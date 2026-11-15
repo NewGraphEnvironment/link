@@ -28,7 +28,7 @@ Break the 635-line script into small named functions (one per pipeline phase). C
 - [ ] Tests + runnable examples for each helper (live-DB tests skip without `.lnk_db_available()`)
 - [ ] pkgdown reference entries
 - [ ] `/code-check` before each commit
-- [ ] PR 1: SRED tag (NewGraphEnvironment/sred-2025-2026#24) — Relates to #38
+- [ ] PR 1: SRED tag — Relates to #38
 
 ## PR 2: Add _targets.R + per-partition target fn
 

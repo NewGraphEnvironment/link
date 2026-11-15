@@ -254,7 +254,7 @@ export PGUSER=postgres PGPASSWORD=postgres PGHOST=localhost PGPORT=5432 PGDATABA
 # through pipelines). On success, tail-5 to stdout preserves the
 # umbrella's downstream `grep -q "snapshot_bcfp.sh: complete"` check
 # (data-raw/wsgs_run_pipeline.sh:264). Bug class documented in CLAUDE.md
-# "Shell Scripts → pipefail with ssh+tee"; sibling fix in rtj#163.
+# "Shell Scripts → pipefail with ssh+tee"; sibling fix in an internal issue.
 TMP_SNAP_LOG=$(mktemp)
 if ! bash snapshot_bcfp.sh > "$TMP_SNAP_LOG" 2>&1; then
   echo "FATAL: snapshot_bcfp.sh failed; full log:" >&2

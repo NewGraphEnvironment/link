@@ -24,7 +24,7 @@
 ## Resumed 2026-05-08 (after #137 v0.31.1 ship)
 
 - Branch rebased onto v0.31.1 main.
-- Snapshot script run on local fwapg loaded 6 of 7 tables (PSCIS×4 + cabd.dams + fresh.modelled_stream_crossings). Observations parquet failed via Arrow FID-type error → tracked at rtj#66.
+- Snapshot script run on local fwapg loaded 6 of 7 tables (PSCIS×4 + cabd.dams + fresh.modelled_stream_crossings). Observations parquet failed via Arrow FID-type error → tracked at an internal issue.
 - Phase 2 done: `.lnk_crossings_union(conn, schema, aoi)` shipped — lean column union of PSCIS + CABD + modelled with ID-space offsets per bcfp. xref-presence detected via information_schema.
 - Phase 3 done: `.lnk_crossings_apply_overrides(conn, schema)` shipped — applies pscis_fixes + crossing_fixes (with +1e9 modelled-ID offset in the JOIN). No-op when fix tables absent.
 - Phase 5 done: `lnk_pipeline_crossings(conn, aoi, cfg, loaded, schema, snap_tolerance)` shipped — exported umbrella composing all five steps.

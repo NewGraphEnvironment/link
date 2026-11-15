@@ -56,8 +56,8 @@ Segmentation-mismatch refusal; full-key joins (no fan-out across groups); a spec
 
 - **No public read and no versioning on `habitat/` yet.** The tunings are still moving the outputs (#284, #300, #307, #310, #319), and how habitat ties to the floodplain items (NewGraphEnvironment/floodplains#123) is still being explored. The tree goes to `s3://fresh-bc/habitat/fwa/v1/` under the bucket's private default.
   - So `lnk_catalog()` and `lnk_db_load()` must read through credentials (an `s3://` path), not only anonymously over `https://` as wet does.
-- **Opening it later is small:** one entry in fresh-bc's `public_read_prefixes` and a tofu apply, as `discharge/` was opened (NewGraphEnvironment/rtj#390). Have NewGraphEnvironment/rtj#168's budget and anomaly alerts in place first. Anonymous downloads are billed to us at about $0.09/GB once the account's 100 GB/month free tier is used, and it was used in May 2026 (rtj#168).
-- **History:** data are overwritten in place, and fresh-bc versioning is `Suspended`, so a superseded build cannot be fetched again. That is acceptable while exploring. Versioning is bucket-wide (NewGraphEnvironment/rtj#263). When it is on and `habitat/` should keep history:
+- **Opening it later is small:** one entry in fresh-bc's `public_read_prefixes` and a tofu apply, as `discharge/` was opened. Have an internal issue's budget and anomaly alerts in place first. Anonymous downloads are billed to us at about $0.09/GB once the account's 100 GB/month free tier is used, and it was used in May 2026.
+- **History:** data are overwritten in place, and fresh-bc versioning is `Suspended`, so a superseded build cannot be fetched again. That is acceptable while exploring. Versioning is bucket-wide. When it is on and `habitat/` should keep history:
   - the manifest records each part's `versionId`;
   - `habitat/` gets a keep-the-last-N rule.
 
@@ -80,7 +80,7 @@ The manifest's per-config entry names its `run_uid`s and `config_hash`. A consum
 
 ## Webmap (later, not the first cut)
 
-PMTiles built from the published rows and FWA lines cut at the measures (tippecanoe), regenerated per build at a fixed key. Publication is NewGraphEnvironment/rtj#182; a browser reader also needs NewGraphEnvironment/rtj#392's CORS fix. Open question: one tileset per config, or one per config × species.
+PMTiles built from the published rows and FWA lines cut at the measures (tippecanoe), regenerated per build at a fixed key. Publication is an internal issue; a browser reader also needs an internal issue's CORS fix. Open question: one tileset per config, or one per config × species.
 
 
 Relates to #305, #307, #203, #226, NewGraphEnvironment/wet#7, NewGraphEnvironment/floodplains#123.

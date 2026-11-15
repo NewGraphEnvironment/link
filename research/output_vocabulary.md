@@ -1,6 +1,6 @@
 # Naming link's outputs: what a token covers
 
-**Verified:** 2026-11-01 · **Issues:** #414, #415 (consumers: a downstream tuning archive) · **Produced by:** reading the six config bundles under `inst/extdata/configs/` and the code paths below; the specs in `inst/extdata/vocabulary.csv` are written by `lnk_vocabulary_resolve()`'s helpers · **Status:** four axes; eight live tokens; `default_extrabreaks` and `default_rearbreaks` have none and refuse
+**Verified:** 2026-11-13 · **Issues:** #414, #415, #420, #460, #462, #463 (consumers: a downstream tuning archive) · **Produced by:** reading the seven config bundles under `inst/extdata/configs/` and the code paths below; the specs in `inst/extdata/vocabulary.csv` are written by `lnk_vocabulary_resolve()`'s helpers · **Status:** four axes; ten live tokens; `default_extrabreaks` and `default_rearbreaks` have none and refuse
 
 ## The question
 
@@ -50,16 +50,17 @@ So access is its own axis, and the cut axis keeps naming the method:
 |---|---|---|---|
 | cut | `cut-` | break sources in order; `observation_breaks` when observations are a source; gradient classes (name and value); whether the run has the definite-barrier, control and habitat-classification files | canonical string |
 | acc | `acc-` | species the rules model; each species' access gradient and observation lifts (`parameters_fresh.csv`); the presence table; which records make code 2 (`pipeline: observation_upstream`, resolved, since #401) | sha256 of the parsed values |
-| grad | `grad-` | how a segment's gradient is measured | `gradient=segment` |
+| grad | `grad-` | how a segment's gradient is measured | `gradient=segment` (built); `gradient=parent;parent_cut=<cut>` (`grad-parent`); `gradient=fwa_segment` (`grad-fwa`, no link build) |
 | flow | `q-` | `discharge_source` and `discharge_fill` | canonical string |
 
-With these axes, six configs take eight live tokens:
+With these axes, seven configs take nine of the ten live tokens (no bundle builds `grad-fwa`):
 
 | Config | cut | acc | grad | flow |
 |---|---|---|---|---|
 | `default` | `cut-full-top` | `acc-v5` | `grad-seg` | `q-fwapg` |
 | `default_tuned` | `cut-full-top` | `acc-v5` | `grad-seg` | `q-wet-fill` |
 | `default_minimal` | `cut-min` | `acc-v5` | `grad-seg` | `q-fwapg` |
+| `default_parent` | `cut-full-top` | `acc-v5` | `grad-parent` | `q-fwapg` |
 | `bcfishpass` | `cut-full-ssf-all` | `acc-bcfp-4` | `grad-seg` | `q-fwapg` |
 | `default_extrabreaks` | none | none | `grad-seg` | `q-fwapg` |
 | `default_rearbreaks` | none | none | `grad-seg` | `q-fwapg` |
@@ -89,6 +90,25 @@ alike). `acc-v2` and `acc-bcfp-2` were retired for `acc-v3` and `acc-bcfp-3`, wh
 specs; nothing else in the digest moved.
 
 **Presence edits move the `acc` axis** as the spec intends: `acc-bcfp-4` replaced `acc-bcfp-3` when the weekly sync pulled two bcfishpass presence cells (#429, link 0.74.0), and `acc-v4` replaced `acc-v3` when #402's review edited 121 of `default`'s cells (link 0.75.0).
+
+**Three gradient readings are named.** `grad-seg` is each segment's own gradient, as fresh
+computes it on the cut network. `grad-parent` (#444) reads the gradient of the `cut-min`
+segment a full segment lies in; `default_parent` builds it (#463), and on four groups it holds
+`default`'s segments and access exactly (`data-raw/logs/grad_parent_463/README.md`). `grad-fwa` (#460) reads the
+gradient of the Freshwater Atlas segment a segment lies on
+(`whse_basemapping.fwa_stream_networks_sp.gradient` by `linear_feature_id`; no link segment
+crosses an FWA segment boundary: 0 of BULK's 42,458 in `fresh_default`, 2026-11-12). No link
+build writes `grad-fwa`: it names a consumer's setup, so a tuning archive can file it.
+
+**Builds older than the vocabulary are filed by run id, not given tokens** (#420). A token names a
+method, and before 0.70.0 the methods moved under the same names: `default` at 0.66.0 cut at every
+observation and at every gradient class whatever a species' access did, before #326 and #396, so
+naming those builds would take a new token on every axis for outputs nothing builds any more. Their
+`log` rows carry no tokens (NULL) and stay identified by `run_id` and the stamps beside it.
+
+**A consumer's own discharge read is its input, not a `q-` token.** The flow axis names where a
+link build's `mad_m3s` came from. A consumer that reads discharge itself, after the build, records
+that read in its own archive.
 
 ## What stays out of tokens
 

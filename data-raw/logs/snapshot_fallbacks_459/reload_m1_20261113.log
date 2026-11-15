@@ -1,0 +1,107 @@
+snapshot_bcfp: --force given; bypassing ledger skip-if-current guard.
+artifact_record: link 0.80.0 (source tree)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+artifact_record: cleared 4 loader rows for host m1
+CREATE SCHEMA
+CREATE SCHEMA
+CREATE SCHEMA
+CREATE SCHEMA
+2026-11-12 22:14:20,090:INFO:bcdata.wfs: Total features requested: 19905
+2026-11-12 22:14:21,172:INFO:bcdata.wfs: https://openmaps.gov.bc.ca/geo/pub/wfs?service=WFS&version=2.0.0&request=GetFeature&typeName=WHSE_FISH.PSCIS_ASSESSMENT_SVW&outputFormat=json&SRSNAME=EPSG%3A3005&sortby=STREAM_CROSSING_ID&startIndex=0&count=10000
+2026-11-12 22:14:24,004:INFO:bcdata.database: Creating table whse_fish.pscis_assessment_svw
+2026-11-12 22:14:24,113:INFO:bcdata.bc2pg: Writing WHSE_FISH.PSCIS_ASSESSMENT_SVW to database as whse_fish.pscis_assessment_svw
+2026-11-12 22:14:25,302:INFO:bcdata.wfs: https://openmaps.gov.bc.ca/geo/pub/wfs?service=WFS&version=2.0.0&request=GetFeature&typeName=WHSE_FISH.PSCIS_ASSESSMENT_SVW&outputFormat=json&SRSNAME=EPSG%3A3005&sortby=STREAM_CROSSING_ID&startIndex=10000&count=9905
+2026-11-12 22:14:25,659:INFO:bcdata.bc2pg: Writing WHSE_FISH.PSCIS_ASSESSMENT_SVW to database as whse_fish.pscis_assessment_svw
+2026-11-12 22:14:25,976:INFO:bcdata.database: Logging download date to bcdata.log
+2026-11-12 22:14:25,980:INFO:bcdata.cli: Load of whse_fish.pscis_assessment_svw to whse_fish.pscis_assessment_svw in <db_url> complete
+bc2pg whse_fish.pscis_assessment_svw: 19905 rows on attempt 1 of 3
+2026-11-12 22:14:27,684:INFO:bcdata.wfs: Total features requested: 147
+2026-11-12 22:14:27,989:INFO:bcdata.wfs: https://openmaps.gov.bc.ca/geo/pub/wfs?service=WFS&version=2.0.0&request=GetFeature&typeName=WHSE_FISH.PSCIS_DESIGN_PROPOSAL_SVW&outputFormat=json&SRSNAME=EPSG%3A3005&count=147
+2026-11-12 22:14:30,601:INFO:bcdata.database: Creating table whse_fish.pscis_design_proposal_svw
+2026-11-12 22:14:30,626:INFO:bcdata.bc2pg: Writing WHSE_FISH.PSCIS_DESIGN_PROPOSAL_SVW to database as whse_fish.pscis_design_proposal_svw
+2026-11-12 22:14:30,651:INFO:bcdata.database: Logging download date to bcdata.log
+2026-11-12 22:14:30,654:INFO:bcdata.cli: Load of whse_fish.pscis_design_proposal_svw to whse_fish.pscis_design_proposal_svw in <db_url> complete
+bc2pg whse_fish.pscis_design_proposal_svw: 147 rows on attempt 1 of 3
+2026-11-12 22:14:32,226:INFO:bcdata.wfs: Total features requested: 410
+2026-11-12 22:14:32,734:INFO:bcdata.wfs: https://openmaps.gov.bc.ca/geo/pub/wfs?service=WFS&version=2.0.0&request=GetFeature&typeName=WHSE_FISH.PSCIS_HABITAT_CONFIRMATION_SVW&outputFormat=json&SRSNAME=EPSG%3A3005&count=410
+2026-11-12 22:14:35,309:INFO:bcdata.database: Creating table whse_fish.pscis_habitat_confirmation_svw
+2026-11-12 22:14:35,342:INFO:bcdata.bc2pg: Writing WHSE_FISH.PSCIS_HABITAT_CONFIRMATION_SVW to database as whse_fish.pscis_habitat_confirmation_svw
+2026-11-12 22:14:35,381:INFO:bcdata.database: Logging download date to bcdata.log
+2026-11-12 22:14:35,384:INFO:bcdata.cli: Load of whse_fish.pscis_habitat_confirmation_svw to whse_fish.pscis_habitat_confirmation_svw in <db_url> complete
+bc2pg whse_fish.pscis_habitat_confirmation_svw: 410 rows on attempt 1 of 3
+2026-11-12 22:14:36,909:INFO:bcdata.wfs: Total features requested: 177
+2026-11-12 22:14:37,193:INFO:bcdata.wfs: https://openmaps.gov.bc.ca/geo/pub/wfs?service=WFS&version=2.0.0&request=GetFeature&typeName=WHSE_FISH.PSCIS_REMEDIATION_SVW&outputFormat=json&SRSNAME=EPSG%3A3005&count=177
+2026-11-12 22:14:39,849:INFO:bcdata.database: Creating table whse_fish.pscis_remediation_svw
+2026-11-12 22:14:39,878:INFO:bcdata.bc2pg: Writing WHSE_FISH.PSCIS_REMEDIATION_SVW to database as whse_fish.pscis_remediation_svw
+2026-11-12 22:14:39,905:INFO:bcdata.database: Logging download date to bcdata.log
+2026-11-12 22:14:39,908:INFO:bcdata.cli: Load of whse_fish.pscis_remediation_svw to whse_fish.pscis_remediation_svw in <db_url> complete
+bc2pg whse_fish.pscis_remediation_svw: 177 rows on attempt 1 of 3
+DROP TABLE
+CREATE TABLE
+artifact_record: link 0.80.0 (source tree)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                      table_name    version_id
+          bcfishobs.observations 1790057230537
+                       cabd.dams          <NA>
+ fresh.modelled_stream_crossings 1794344402364
+  whse_fish.pscis_assessment_svw          <NA>
+                               etag       last_modified n_rows
+   5210d24aece4d64f5981c1bfe444a15b 2026-09-22 06:07:10 375962
+                               <NA>                <NA>   2593
+ a1cd45cf8fe7b9b495ad04d1fcba9956-6 2026-11-10 21:00:02 524579
+                               <NA>                <NA>  19905
+           loaded_at
+ 2026-11-13 05:15:05
+ 2026-11-13 05:14:42
+ 2026-11-13 05:14:54
+ 2026-11-13 05:14:40
+artifact_record: recorded 4 loader rows
+artifact_record: link 0.80.0 (source tree)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[artifact] probed 252 artifacts (0 without a version id)
+Stamped data-raw/logs/bcfp_baselines.csv with bcfp build v0.7.15-51-g3bd2824 (head_sha=3bd2824)
+snapshot_bcfp.sh: complete.
+EXIT=0
+2026-11-13T05:21:15Z

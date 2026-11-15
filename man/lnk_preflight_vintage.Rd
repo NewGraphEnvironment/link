@@ -11,6 +11,7 @@ lnk_preflight_vintage(
   now = Sys.time(),
   vintage = .lnk_vintage_read(conn, tables),
   stamp = .lnk_vintage_stamp(conn, tables),
+  heads = .lnk_vintage_heads(stamp),
   quiet = FALSE
 )
 }

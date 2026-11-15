@@ -6,8 +6,11 @@
 #     --scratch=<scratch schema> --config=<bundle> [--k=3] [--floor-min=5] \
 #     [--per-input=2] [--notes=<text>] [--history-schema=<s> --history-config=<c>]
 #
-# Reads <out>/picks.tsv, <out>/exits.tsv (wsg, exit status) and
-# <out>/range.txt; each group's minutes and provenance come from its row in
+# Reads <out>/picks.tsv, <out>/exits.tsv (wsg, exit status),
+# <out>/range.txt and <out>/history.txt (what the pick held the gate to: its
+# range_source and, for an ancestor's history, which; link#450). history.txt
+# wins over the flags, since the pick resolves a history no flag named. Each
+# group's minutes and provenance come from its row in
 # <scratch>.log, the same measure as its history. Appends the verdict table to
 # <out>/pretest.md and writes one row to <schema>.log_pretest, which
 # study_area_run.sh's pre-flight reads. Exit 0 when the gate passes, 1 when it
@@ -50,6 +53,20 @@ exits <- if (nrow(picks)) {
   data.frame(wsg = character(), exit = integer(), others = integer())
 }
 range <- readLines(file.path(out, "range.txt"))
+range_source <- "own"
+hist_file <- file.path(out, "history.txt")
+if (file.exists(hist_file)) {
+  kv <- readLines(hist_file)
+  val <- function(key) sub(paste0("^", key, "="), "", grep(paste0("^", key, "="), kv, value = TRUE)[1])
+  range_source <- val("range_source")
+  if (!range_source %in% c("own", "ancestor", "every_input")) {
+    stop(hist_file, ": range_source must be own, ancestor or every_input, got '", range_source, "'",
+         call. = FALSE)
+  }
+  # Only a borrowed history is a property of the record; own and every-input are not.
+  hist_schema <- if (identical(range_source, "ancestor")) val("history_schema") else ""
+  hist_config <- if (identical(range_source, "ancestor")) val("history_config") else ""
+}
 
 suppressPackageStartupMessages({
   library(DBI)
@@ -168,13 +185,14 @@ if (!exists) {
        verdict     text NOT NULL CHECK (verdict IN ('pass', 'fail', 'override')),
        notes       text,
        history_schema text,
-       history_config text)", schema)))
+       history_config text,
+       range_source text)", schema)))
 } else {
   # A table from before the borrow columns. Read the catalog first, as above.
   have <- DBI::dbGetQuery(conn, sprintf(
     "SELECT column_name FROM information_schema.columns
       WHERE table_schema = '%s' AND table_name = 'log_pretest'", schema))$column_name
-  for (col in setdiff(c("history_schema", "history_config"), have)) {
+  for (col in setdiff(c("history_schema", "history_config", "range_source"), have)) {
     invisible(DBI::dbExecute(conn, sprintf("ALTER TABLE %s.log_pretest ADD COLUMN %s text", schema, col)))
   }
 }
@@ -182,15 +200,16 @@ notes <- paste(c(why, if (nzchar(notes_in)) notes_in), collapse = "; ")
 invisible(DBI::dbExecute(conn, sprintf(
   "INSERT INTO %s.log_pretest (config_name, link_sha, link_dirty, fresh_sha, since_sha,
      until_sha, scratch, k, floor_min, per_input, groups, verdict, notes,
-     history_schema, history_config)
-   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)", schema),
+     history_schema, history_config, range_source)
+   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)", schema),
   params = list(config, if (length(link_sha) == 1L) link_sha else NA_character_, dirty,
                 if (length(fresh_sha) == 1L) fresh_sha else NA_character_,
                 range[1], range[2], scratch, k, floor_min, per_input,
                 paste(sprintf("%s:%s", picks$wsg, picks$verdict), collapse = ","),
                 overall, if (nzchar(notes)) notes else NA_character_,
                 if (nzchar(hist_schema)) hist_schema else NA_character_,
-                if (nzchar(hist_config)) hist_config else NA_character_)))
+                if (nzchar(hist_config)) hist_config else NA_character_,
+                range_source)))
 DBI::dbDisconnect(conn)
 
 for (i in seq_len(nrow(picks))) {

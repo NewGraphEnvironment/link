@@ -117,6 +117,14 @@ per-model minimal reduction, base segments. Passes \code{conn} as
 \item \code{\link[=lnk_pipeline_crossings]{lnk_pipeline_crossings()}} — match PSCIS to modelled crossings.
 \item \code{\link[=lnk_pipeline_break]{lnk_pipeline_break()}} — observations, gradient minimal, definite,
 habitat endpoints, crossings — in config-defined order.
+5a. \strong{Parent gradient} (\code{pipeline: gradient: source: parent}, link#463).
+The working segments are mapped one to one onto \code{schema_full}'s by
+position and their \code{gradient} set to the parent's from
+\verb{<schema_full>.streams_parent}, so classify, connect and the persisted
+\code{gradient} read it. Judged right after the vocabulary, before the log
+opens: the parent rows must come from the group's newest builds in
+\code{schema_full} and the minimal schema, and the persist schema must be
+neither. The log row's \code{notes} name the two runs.
 \item \code{\link[=lnk_pipeline_species]{lnk_pipeline_species()}} — resolve the active species set for this
 AOI (cfg$species ∩ wsg_species_presence). Empty is a group where only
 species the bundle pauses are present: steps 7 and 8 and the habitat

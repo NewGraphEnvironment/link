@@ -23,7 +23,7 @@ Replace two `information_schema.tables` probes with direct manifest-key checks. 
 - [ ] No version bump (pure refactor, no behavior change).
 - [ ] No NEWS entry (or a terse internal-architecture note — reader opinion).
 - [ ] Commit atomically.
-- [ ] PR with SRED tag (`Relates to NewGraphEnvironment/sred-2025-2026#24`). `Fixes #46`.
+- [ ] PR with SRED tag (`Relates to an internal issue`). `Fixes #46`.
 
 ## Versions at start
 

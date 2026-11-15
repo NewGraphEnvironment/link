@@ -6,34 +6,37 @@
 \usage{
 lnk_baseline_current(
   log,
-  host = Sys.info()[["nodename"]],
-  path = "data-raw/logs/bcfp_baselines.csv"
+  host = .lnk_host(),
+  path = "data-raw/logs/bcfp_baselines.csv",
+  views = FALSE
 )
 }
 \arguments{
-\item{log}{A list with at minimum \code{model_version} (e.g. the return of
+\item{log}{A list with \code{model_version} and \code{date_completed} (the return of
 \code{\link[=lnk_bucket_log]{lnk_bucket_log()}}).}
 
-\item{host}{Hostname to scope the check by. Defaults to
-\code{Sys.info()[["nodename"]]}. Pass an explicit value to test other
-hosts' rows.}
+\item{host}{Host to scope the check by. Defaults to \code{.lnk_host()}
+(\code{LNK_HOST_ALIAS} where set, else the node name), the name
+\code{\link[=lnk_baseline_append]{lnk_baseline_append()}} writes rows under.}
 
 \item{path}{Path to the ledger CSV. Defaults to
 \code{data-raw/logs/bcfp_baselines.csv} relative to the working directory.}
+
+\item{views}{\code{TRUE} when the snapshot will load bcfishpass's reference
+views, so only a row that loaded them can make it current.}
 }
 \value{
-\code{TRUE} when the latest row for \code{host} matches \code{log$model_version}
-(snapshot can be skipped — the host is already current at this upstream
-build). \code{FALSE} otherwise — including when the ledger file is missing,
-has no rows for \code{host}, or has a different model_version on its latest
-row for this host.
+\code{TRUE} when the latest counting row for \code{host} matches \code{log}'s
+version and completion time (the snapshot can be skipped). \code{FALSE}
+otherwise — including when the ledger file is missing or has no counting
+row for \code{host}.
 }
 \description{
 Predicate helper for \code{data-raw/snapshot_bcfp.sh} and any other host-side
-snapshot driver. Returns \code{TRUE} when the most recent ledger row for this
-host already stamps the same upstream build that \code{log} carries — meaning
-the local snapshot is already aligned with the bucket and re-running
-would just churn.
+snapshot driver. Returns \code{TRUE} when this host's most recent snapshot row
+already stamps the upstream build \code{log} carries, by its version \strong{and its
+completion time} — meaning the local snapshot is aligned with the bucket
+and re-running would just churn.
 }
 \details{
 Per-host scoping is deliberate. Different hosts (M4, M1, cypher) each
@@ -41,8 +44,19 @@ populate their own local Postgres; one host stamping this week's SHA
 must not gate the others. The predicate filters the ledger to rows
 where \verb{host == <this host>} before checking.
 
+\strong{What counts (link#276, link#446).} Only rows a snapshot wrote
+(\code{run_label} starting \verb{snapshot-}): a \verb{csv-sync-} row loads nothing. With
+\code{views = TRUE} (a snapshot asked for \code{--with-bcfp-views}), only snapshot
+rows that loaded the views, so a newer views-less snapshot cannot skip a
+reload of stale views. And the build must match by \code{date_completed} as
+well as \code{model_version}: \code{model_version} is a code identity, so two weekly
+builds of one commit share it (2026-08-18 and 2026-09-01 at
+\code{v0.7.15-47-ga702229}), and a guard comparing only the version never
+reloaded a host while the upstream rebuilt beneath it. A row whose date
+cannot be read as an instant is not current.
+
 "Latest row for host" means the row with the lexicographically greatest
-\code{run_started_pdt} among rows where \code{host} matches. The ledger's
+\code{run_started_pdt} among the counting rows where \code{host} matches. The ledger's
 \code{run_started_pdt} is written as \verb{YYYY-MM-DD HH:MM} (PDT/PST), so
 lexicographic ordering is also chronological ordering as long as the
 format stays stable.

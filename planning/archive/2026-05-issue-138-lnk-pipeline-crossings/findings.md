@@ -2,7 +2,7 @@
 
 ## Issue context
 
-Issue #138 in NewGraphEnvironment/link. Title: "lnk_pipeline_crossings: build slim fresh.crossings + barriers_* from PSCIS + CABD + modelled artifact". Phase B of the self-sufficiency roadmap (link#117 + db_newgraph#4 shipped Phase A).
+Issue #138 in NewGraphEnvironment/link. Title: "lnk_pipeline_crossings: build slim fresh.crossings + barriers_* from PSCIS + CABD + modelled artifact". Phase B of the self-sufficiency roadmap (link#117 + an internal issue shipped Phase A).
 
 ## Architecture
 
@@ -71,7 +71,7 @@ Rationale: these are generic utilities likely belonging in a future `pac` packag
 - #117 (closed/v0.31.0) — csv-sync from s3://fresh-bc, the consumer-side ledger + bucket reads.
 - #137 — manual snapshot path. Loads PSCIS + bchamp + CABD into local DB. Prerequisite for this issue.
 - #135 (closed/v0.30.2) — `lnk_pipeline_access` + `barrier_sources` consumer. Defines the column shapes `lnk_barriers_emit()` must produce.
-- NewGraphEnvironment/db_newgraph#4 + PR #5 — upstream CSV dump.
+- An internal issue + PR #5 — upstream CSV dump.
 
 ## Out-of-scope (deferred)
 

@@ -1,0 +1,9 @@
+host	table_name	version_id	content_md5	n_rows	loaded_at	notes
+m1	bcfishobs.observations	1790057230537		375962	2026-11-02T09:43:11Z	
+m1	cabd.dams			2593	2026-11-02T09:42:38Z	CABD API; no version handle
+m1	fresh.modelled_stream_crossings	1793134826715		524579	2026-11-02T09:42:55Z	
+m1	whse_fish.pscis_assessment_svw			19905	2026-11-02T09:42:35Z	bcdata bc2pg; no version handle
+m4	bcfishobs.observations	1790057230537		375962	2026-11-02T09:43:11Z	
+m4	cabd.dams			2593	2026-11-02T09:42:18Z	CABD API; no version handle
+m4	fresh.modelled_stream_crossings	1793134826715		524579	2026-11-02T09:42:44Z	
+m4	whse_fish.pscis_assessment_svw			19905	2026-11-02T09:42:15Z	bcdata bc2pg; no version handle

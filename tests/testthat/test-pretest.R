@@ -613,3 +613,123 @@ test_that("a new gate script voids a record without anyone listing it", {
   out <- e$pretest_git(r$dir, c("diff", "--name-only", a, b, "--", e$PRETEST_RULES))
   expect_identical(out, "data-raw/pretest_newthing.R")
 })
+
+
+# -- History without flags, and minutes from the committed record (link#450) -----
+
+test_that("an ancestor's history is found through extends, nearest first, by most groups", {
+  e <- pt_env()
+  ch <- c("default_minimal", "default")
+  cand <- data.frame(
+    schema = c("fresh_default", "fresh_default_20261023", "fresh_smoke369b", "fresh"),
+    config = c("default", "default", "default", "bcfishpass"),
+    # bigint counts arrive as integer64; as text here, so plain-number ordering is what is tested
+    n_groups = c("241", "241", "2", "250"),
+    newest = as.POSIXct(c("2026-11-03", "2026-10-23", "2099-01-01", "2026-11-04"), tz = "UTC"),
+    stringsAsFactors = FALSE)
+  expect_identical(e$pretest_ancestor_pick(cand, ch),
+                   list(schema = "fresh_default", config = "default", borrowed = TRUE))
+  # The nearest ancestor with builds wins over a farther one with more.
+  ch3 <- c("leaf", "mid", "default")
+  cand3 <- rbind(cand, data.frame(schema = "fresh_mid", config = "mid", n_groups = "3",
+                                  newest = as.POSIXct("2026-01-01", tz = "UTC")))
+  expect_identical(e$pretest_ancestor_pick(cand3, ch3)$schema, "fresh_mid")
+  # No parent, or no ancestor with builds here: none.
+  expect_null(e$pretest_ancestor_pick(cand, "default"))
+  expect_null(e$pretest_ancestor_pick(cand[cand$config == "bcfishpass", ], ch))
+  expect_null(e$pretest_ancestor_pick(cand[0, ], ch))
+})
+
+test_that("minutes come from the newer of the log and the record, scaled to the gate host", {
+  e <- pt_env()
+  t <- function(x) as.POSIXct(x, tz = "UTC")
+  local <- data.frame(wsg = c("AAAA", "BBBB"), host = c("m1", "m1"), minutes = c(10, 10),
+                      date_start = t(c("2026-11-05", "2026-10-01")), stringsAsFactors = FALSE)
+  record <- data.frame(wsg = c("AAAA", "BBBB", "CCCC", "CCCC"),
+                       config = c("default", "default", "default", "default_minimal"),
+                       host = c("cloud1", "cloud1", "cloud1", "cloud1"),
+                       minutes = c(20, 20, 30, 40),
+                       date_start = t(c("2026-11-03", "2026-11-03", "2026-11-03", "2026-11-02")),
+                       stringsAsFactors = FALSE)
+  # speeds: m1 2, cloud 1; the gate runs on m1 (2)
+  speed_of <- function(h) ifelse(h == "m1", 2, 1)
+  m <- e$pretest_minutes(c("AAAA", "BBBB", "CCCC", "DDDD"), local, record,
+                         c("default_minimal", "default"), speed_of, gate_speed = 2)
+  # AAAA: the log row is newer, measured on m1 itself (10 * 2 / 2)
+  expect_identical(m$source, c("log", "record", "record", "fixed"))
+  expect_equal(m$minutes[1], 10)
+  # BBBB: the record is newer, measured on cloud at half m1's speed (20 * 1 / 2)
+  expect_equal(m$minutes[2], 10)
+  # CCCC: the nearest config on the chain that has a row (default_minimal's 40, not default's 30)
+  expect_equal(m$minutes[3], 20)
+  # DDDD: in neither, the fixed bound, unscaled
+  expect_equal(m$minutes[4], e$PRETEST_FIXED_MIN)
+  expect_identical(m$host[4], "fixed")
+  # An excluded group takes the median of the measured rest.
+  mx <- e$pretest_minutes(c("AAAA", "BBBB", "CCCC"), local, record,
+                          c("default_minimal", "default"), speed_of, 2, exclude = "CCCC")
+  expect_identical(mx$source[3], "median")
+  expect_equal(mx$minutes[3], 10)
+  # With no log at all, the record alone answers.
+  m0 <- e$pretest_minutes("BBBB", local[0, ], record, "default", speed_of, 2)
+  expect_identical(m0$source, "record")
+})
+
+test_that("the committed minutes record parses and refuses a malformed row", {
+  e <- pt_env()
+  p <- normalizePath(testthat::test_path("..", "..", "data-raw", "logs", "build_minutes.csv"),
+                     mustWork = FALSE)
+  testthat::skip_if_not(file.exists(p), "build_minutes.csv absent")
+  b <- e$pretest_build_minutes_read(p)
+  expect_identical(names(b), e$PRETEST_BUILD_MINUTES_COLS)
+  expect_gt(nrow(b), 0L)
+  expect_false(anyDuplicated(paste(b$config, b$wsg, b$run_uid)) > 0)
+  bad <- withr::local_tempfile(fileext = ".csv")
+  writeLines(c(paste(e$PRETEST_BUILD_MINUTES_COLS, collapse = ","),
+               "ADMS,default,u,m1,m1,s,f,2026-11-03 16:57,2.9"), bad)
+  expect_error(e$pretest_build_minutes_read(bad), "date_start")
+  expect_identical(nrow(e$pretest_build_minutes_read(file.path(tempdir(), "none.csv"))), 0L)
+})
+
+test_that("every query input is known, so a gate with no history picks on each", {
+  e <- pt_env()
+  d <- normalizePath(testthat::test_path("..", "..", "data-raw"), mustWork = FALSE)
+  inp <- e$pretest_all_inputs(d)
+  expect_true(length(inp) >= 7L)
+  expect_true(all(c("crossings", "dams", "gradient", "segments") %in% inp))
+  expect_false(any(inp %in% e$PRETEST_SPECIAL))
+})
+
+test_that("an every-input record holds while the bundle has no build here, and only then", {
+  e <- pt_env()
+  rec <- function(src = "every_input", at = 1) {
+    data.frame(config_name = "default", verdict = "pass", run_at = at,
+               history_schema = NA_character_, history_config = NA_character_,
+               range_source = src, stringsAsFactors = FALSE)
+  }
+  held <- function(records, own_n, ch = "default") {
+    e$pretest_record_history(records, "fresh_default", "default", FALSE, ch, own_n = own_n)
+  }
+  expect_true(isTRUE(held(rec(), 0L)$every_input))
+  # Once the bundle has builds here, those are what a gate must cover.
+  expect_null(held(rec(), 3L)$every_input)
+  # A diffed record is not an every-input record.
+  expect_null(held(rec("own"), 0L)$every_input)
+  # A record table from before range_source reads as a diffed one.
+  expect_null(held(rec()[, setdiff(names(rec()), "range_source")], 0L)$every_input)
+})
+
+test_that("the launch check asks an every-input history for an every-input record", {
+  e <- pt_env()
+  repo <- normalizePath(testthat::test_path("..", ".."), mustWork = FALSE)
+  testthat::skip_if_not(dir.exists(file.path(repo, ".git")), "not a git checkout")
+  head <- e$pretest_git(repo, c("rev-parse", "HEAD"))
+  rec <- data.frame(config_name = "default", verdict = "pass", run_at = 1, link_dirty = FALSE,
+                    fresh_sha = "f", since_sha = head, link_sha = head, notes = NA_character_,
+                    range_source = "own", stringsAsFactors = FALSE)
+  map <- e$pretest_map_read(pt_map_path())
+  r <- e$pretest_record_check(rec, "default", head, "f", character(), logical(), repo, map,
+                              "default", every_input = TRUE)
+  expect_false(r$ok)
+  expect_match(r$why, "diffed a range")
+})

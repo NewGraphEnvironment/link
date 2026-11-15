@@ -116,7 +116,7 @@ test_that("default_minimal differs from default only in its cut token (#415)", {
   expect_identical(minimal[others], def[others])
 })
 
-test_that("grad-parent is live and no shipped config resolves to it (#444)", {
+test_that("grad-parent is live and only default_parent resolves to it (#444, #463)", {
   v <- lnk_vocabulary_read()
   row <- v[v$token == "grad-parent", ]
   expect_equal(nrow(row), 1L)
@@ -129,9 +129,30 @@ test_that("grad-parent is live and no shipped config resolves to it (#444)", {
     tok <- tryCatch(lnk_vocabulary_resolve(lnk_config(cf)), error = function(e) NULL)
     if (is.null(tok)) next
     resolved <- resolved + 1L
-    expect_identical(tok[["grad"]], "grad-seg", info = cf)
+    want <- if (identical(cf, "default_parent")) "grad-parent" else "grad-seg"
+    expect_identical(tok[["grad"]], want, info = cf)
   }
-  # Four bundles resolve today; none resolving would pass the loop vacuously.
+  # Five bundles resolve today; none resolving would pass the loop vacuously.
+  expect_gte(resolved, 5L)
+})
+
+test_that("grad-fwa is live, its spec unique, and no shipped bundle resolves to it (#460)", {
+  v <- lnk_vocabulary_read()
+  row <- v[v$token == "grad-fwa", ]
+  expect_equal(nrow(row), 1L)
+  expect_true(is.na(row$retired))
+  expect_identical(row$axis, "grad")
+  expect_identical(row$spec, "gradient=fwa_segment")
+  expect_equal(sum(v$axis == "grad" & v$spec == row$spec), 1L)
+  expect_match(row$definition, "fwa_stream_networks_sp.gradient", fixed = TRUE)
+  configs <- list.files(system.file("extdata", "configs", package = "link"))
+  resolved <- 0L
+  for (cf in configs) {
+    tok <- tryCatch(lnk_vocabulary_resolve(lnk_config(cf)), error = function(e) NULL)
+    if (is.null(tok)) next
+    resolved <- resolved + 1L
+    expect_false(identical(tok[["grad"]], "grad-fwa"), info = cf)
+  }
   expect_gte(resolved, 4L)
 })
 

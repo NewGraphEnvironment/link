@@ -227,7 +227,7 @@ consolidate, and every run WSG must have rows in the persist afterwards.
 ### Operational facts worth knowing before a run
 
 - **`cypher_up` reports ready ~227s before `cypher@` works** on a snapshot spin.
-  Fixed upstream (NewGraphEnvironment/rtj#250 — it now polls `cloud-init status`
+  Fixed upstream (an internal issue — it now polls `cloud-init status`
   rather than a marker baked into the image), but `--prep-ssh-wait` exists
   because a caller should not depend on that being right.
 - **The run dirties its own repo** — it writes logs into the tracked
@@ -511,7 +511,7 @@ cloud hosts, `--refresh-primitives`, link `ee21eb13`. Both verifiers pass at
 
 ## Operational facts from the first real multi-host run (2026-08-31, 34 WSGs)
 
-Migrated from machine-local memory 2026-09-01 (soul#47). The 2026-05-25 gotchas
+Migrated from machine-local memory 2026-09-01. The 2026-05-25 gotchas
 above still stand; these are additional and were learned on the field-scope run
 (`20260831_232553`, 3 hosts, 158 min, ~$0.83).
 

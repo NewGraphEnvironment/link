@@ -758,11 +758,11 @@ schema, so a network in the DB is self-describing:
 
 | table | grain | holds |
 |---|---|---|
-| `<persist>.log` | one row per run | `date_start` / `date_end`, `config_hash`, `config_drift`, link/fresh version + SHA + dirty flag, `fwapg_sha`, run args, `discharge_fill`, `discharge_source`, `near_river` (the pairs, #364), `species[]`, `wsg_upstream[]`, bcfp baseline |
+| `<persist>.log` | one row per group per build (`run_id`); every dispatch's rows stay | `date_start` / `date_end`, `run_uid` / `run_label`, `config_hash`, `config_drift`, link/fresh version + SHA + dirty flag, `fwapg_sha`, `bcfishobs_sha` (retired, NULL from 0.82.0), run args, `discharge_fill`, `discharge_source`, `near_river` (the pairs, #364), output tokens (`token_cut`, `token_acc`, `token_grad`, `token_flow`, #414), `species[]`, `wsg_upstream[]`, the bcfp pin (`bcfp_model_version`, `bcfp_date_completed`, `bcfp_pin_source`) |
 | `<persist>.log_parameters_fresh` | `(config_hash, species_code)` | **full** `parameters_fresh.csv` rows |
 | `<persist>.log_parameters_habitat_thresholds` | `(config_hash, species_code)` | **full** thresholds rows the run used — the bundle's, or fresh's copy when it has none (#282) |
 | `<persist>.log_dimensions` | `(config_hash, species)` | **full** `dimensions.csv` rows |
-| `<persist>.log_input` | `(run_id, table_name)` | per-primitive row count, size, last-analyze, source |
+| `<persist>.log_input` | `(run_id, table_name)` | per-primitive row count, size, last-analyze, source, and the loaded artifact's identity (`artifact_*`, below) |
 
 Read it with `lnk_log_read(conn, cfg, aoi = "PINE")`. Mirrors `bcfishpass.log`
 + its `log_parameters_*` children.
@@ -809,6 +809,15 @@ EXCEPT SELECT watershed_group_code FROM <persist>.log;
   `log_input`'s row counts and sizes, and `artifact_version_id` /
   `artifact_etag` beside them (below; for FWA these are probe rows, which are
   evidence and not proof).
+- **`bcfishobs_sha` is retired (link#451), NULL from 0.82.0.** It was the HEAD
+  of a local bcfishobs checkout, which no run reads: runs read
+  `bcfishobs.observations` as `snapshot_bcfp.sh` loaded it from the bchamp
+  parquet. The observations a group read are named by `log_input`'s
+  `artifact_version_id` for that table, and `study_area_verify.sql` fails a
+  run where a finished group has none, or where hosts read different versions
+  of the object-store primitives or different content of the API ones
+  (section 2c). The driver no longer resolves, refuses on or exports a
+  bcfishobs checkout. Rows before 0.82.0 keep their checkout SHAs.
 - **Source-artifact identity (link#265).** `provenance.source_artifact` holds,
   per host and primitive artifact, the object store's version id, ETag and
   `Last-Modified`, and `recorded_by` says how strong the record is:
@@ -818,15 +827,40 @@ EXCEPT SELECT watershed_group_code FROM <persist>.log;
   - `probe`: a HEAD after the fact (`lnk_artifact_probe()`, run soft at the
     end of every snapshot), used for the FWA tables because `load.sh` records
     nothing (loader rows for those are link#270). It says "current at the
-    first probe", never "what was loaded". It never overwrites a loader row.
+    first probe", never "what was loaded". It never overwrites a loader row,
+    except an FWA one whose table's row count has changed since it was
+    recorded: then the table was reloaded without the capture wrapper, and
+    the loader row no longer describes it.
     It keeps the earliest probe while the row count is unchanged, and it is
     **not a baseline** for change detection (link#273 must read loader rows
     only). **So an equal FWA `artifact_version_id` on two runs is evidence,
     not proof, that they read the same data.** A reload that keeps the row
     count is invisible to it. Check `row_count` / `size_bytes` beside it until
     #270 writes loader rows.
+  - **FWA `loader` rows come from `data-raw/fwapg_load_capture.sh <fwapg
+    checkout>` (link#270).** fwapg's `load.sh` runs under `set -x`, so its
+    stderr names every object it fetched with the variables expanded. The
+    wrapper runs `load.sh`, tees that trace to
+    `data-raw/logs/fwapg_load/<UTC>_load_trace.log`, maps each URL to its
+    primitive (`.lnk_fwa_trace_match()`; URLs no primitive names stay in the
+    trace only), HEADs each object and records it as a `loader` row with
+    `loaded_at` the load's end (`artifact_record.R --fwa-trace`). The checkout's
+    commit goes in the notes (`fwapg_commit=<sha>`, `-dirty` when its tree is
+    not clean). A HEAD after the load names what is current then, so an object
+    whose `Last-Modified` is later than the load's start is noted "changed
+    during the load". A failed `load.sh` records nothing. `--trace=<log>`
+    records from a trace captured earlier. A reload that skips the wrapper is
+    seen only through the row count (above). **Not yet run against a real
+    load**: until the next FWA reload, FWA rows stay probes.
   - `kind` is `object` (versioned; a NULL identity is a gap), `api` (PSCIS,
     CABD: no version handle, NULL is permanent) or `derived` (`order_parent`).
+  - **`content_md5`** (#465): for an `api` primitive, the loader records an md5
+    of the loaded rows' text forms in byte order (`.lnk_table_content_md5()`),
+    so two loads of CABD or PSCIS can be told apart where no version can. It
+    is what `log_input.artifact_content_md5` carries home, and what the habitat
+    export keys its CABD and PSCIS snapshots by. A ledger written before it
+    records NULL until the next `snapshot_bcfp.sh`; a reload whose columns come
+    back in another order reads as changed (the safe direction).
 
   The bucket is versioned but cannot be listed (`?versions` is AccessDenied),
   so an id not recorded at load time is gone for good. At run open
@@ -854,7 +888,19 @@ EXCEPT SELECT watershed_group_code FROM <persist>.log;
   is still cleared once copied), so a group copied home from a cloud host
   keeps its earlier builds' rows (link#354; before it, every cloud-built group
   kept only its newest row). The set is `.lnk_log_specs()`, read by the DDL
-  and by consolidate. `log_parameters_fresh` / `log_parameters_habitat_thresholds` /
+  and by consolidate.
+- **A build is the rows of one `run_uid`, never the whole table (link#458).**
+  Nothing clears `log` or `log_recompute`: a schema modelled by several
+  dispatches holds every dispatch's rows (`fresh` holds four runs in both).
+  Read one build with `lnk_log_read(conn, cfg, run_uid = <uid>)`, or, for "the
+  build" a schema now holds, the rows of the `run_uid`s its newest
+  `log_recompute` rows name. A reader that takes every `log` row sees several
+  link versions and half-empty token columns. `fresh_default` after #454 shows
+  the trap at its sharpest: its `log` holds the 242 rows of
+  `20261023_074321-24d85e8c` beside the new run's 241, because they were
+  seeded in as the pre-run gate's history, while `log_recompute` holds only
+  the new run's (it was not seeded); #450 removes the need to seed.
+- `log_parameters_fresh` / `log_parameters_habitat_thresholds` /
   `log_dimensions` deliberately
   do not (they key on `config_hash`), so **they do not yet travel between
   hosts** — follow-up PR.
@@ -883,7 +929,7 @@ to its `log` row (`token_cut`, `token_acc`, `token_grad`, `token_flow`).
 |---|---|---|---|
 | cut | `cut-` | break sources in order, `observation_breaks` (when observations cut), gradient classes, and which of the definite-barrier, control and habitat-classification files the bundle declares | canonical string |
 | acc | `acc-` | the modelled species, each species' `access_gradient_max` and `observation_*` lifts, the presence table, `pipeline: observation_upstream` (resolved; #401), and the two access rules held in code (`.lnk_classes_bcfp`, `lnk_presence()`'s groups) | sha256 of the parsed values |
-| grad | `grad-` | how segment gradient is measured | `gradient=segment` (`grad-seg`, every build); `grad-parent` names a reading no build writes (below) |
+| grad | `grad-` | how segment gradient is measured | `gradient=segment` (`grad-seg`, every bundle but one); `gradient=parent;parent_cut=cut-min` (`grad-parent`, `default_parent`, below); `gradient=fwa_segment` (`grad-fwa`, which no build writes: a consumer's name for reading the Freshwater Atlas segment's gradient) |
 | flow | `q-` | `discharge_source` and `discharge_fill` | canonical string |
 
 **How a cut token is keyed.** `cut-<source set>[-<qualifier>...]`: the source set says
@@ -988,7 +1034,7 @@ judged as the pre-run gate judges a record (`pretest_inputs.csv`, the fresh pin,
 `none` file not reached from `wsg_run_one.R` at HEAD). Raw sha equality is not needed: the
 2026-11 pair is `193cb8aa` against `4dfbfa49`, which differ only in `DESCRIPTION`.
 
-**Nothing on the modelling path touches it.** `lnk_persist_init()` does not create it,
+**Nothing on the modelling path writes it.** `lnk_persist_init()` does not create it,
 consolidate does not copy it, `host_drop_partials` and the verifier do not read it, and the
 export does not ship it. So a re-model of either network leaves its rows behind. **After
 any `default` or `default_minimal` re-model, rebuild it:** `streams_parent_build.R --verify`
@@ -997,10 +1043,61 @@ segments without a row, and rows whose `overlap_m + straddle_m` is not the segme
 `length_metre`. A reader can apply that last test itself: it is the guard against a stale
 row that `run_id_full` cannot give without the log.
 
-**Its token.** `grad-parent` (`gradient=parent;parent_cut=cut-min`) names reading the
-parent's gradient on a full network. No build writes it to `log.token_grad`, because no
-build reads `streams_parent`; it is for a downstream archive (knowledge's tuning) to name
-the "full network, parent gradient" setup apart from `grad-seg` on the same build.
+**Its token, and the build that reads it (link#463).** `grad-parent`
+(`gradient=parent;parent_cut=cut-min`) names reading the parent's gradient on a full
+network, apart from `grad-seg` on the same network. A bundle gets it with:
+
+```yaml
+pipeline:
+  schema: fresh_default_parent
+  gradient:
+    source: parent
+    minimal_config: default_minimal   # the bundle whose cut-min builds are the parents
+    schema_full: fresh_default        # where streams_parent and the full builds live
+```
+
+`default_parent` is that bundle (`extends: default`). It cuts the network as `default`
+does, then, between break and classify, sets each working segment's `gradient` to its
+parent's `gradient_minimal`, so a rule tuned on the minimal network reads the gradient it
+was tuned on. `.lnk_config_pipeline_check()` validates the keys at load (`source: segment`
+is the default and takes no other key).
+
+Two judgements guard it. **Before the log row opens** (`.lnk_gradient_parent_judge()`), it
+refuses unless the persist schema is neither `schema_full` nor the minimal schema, the
+group's newest builds in both are closed, clean, on one fresh sha, with the same species,
+the parent bundle's `cut`, `acc` and `flow` tokens and `grad-seg` (the minimal one with
+`cut-min`), and `streams_parent` holds a row for every segment, joined from exactly those
+two runs on that minimal schema, each row's `overlap_m + straddle_m` the segment's length.
+**Before setting gradient** (`.lnk_gradient_parent_apply()`), it reads the newest builds
+again and refuses if either was re-modelled since the judgement. It then maps each working
+segment to `schema_full`'s by `blue_line_key` and both measures within 1 mm (never by
+`id_segment`), and refuses unless the mapping is one to one over the whole group. That
+proves the build cut the network the table was joined on. A refusal names the rebuild
+(`data-raw/streams_parent_build.R`). The git half of the pair's guard (no modelling-path
+change between the two builds' `link_sha`) stays with that builder, which judges it.
+
+What follows from it:
+
+- **The persisted `gradient` in a grad-parent schema is the parent's,** the value classify
+  read, so the validator and any re-test agree with the habitat. The segment's own gradient
+  sits at the same position in `schema_full`.
+- **It runs only where `schema_full`, the minimal schema and `streams_parent` exist** (the
+  dispatcher). A cloud host or worker holds none of them, so a provincial `default_parent`
+  run is dispatcher-only until that changes.
+- **A re-model of either network voids its input:** rebuild `streams_parent` first (below,
+  §8d), then re-model `default_parent`.
+- **`config_hash` covers `default_parent`'s file and `default`'s, not `default_minimal`'s.**
+  The log row's `notes` name the full and minimal run ids it read.
+- **The near-river distance stays the segment's own.** CH's near-river pair (1050/1150
+  lines under `default`) reads `streams_near_river` on the working network, not the
+  parent's. On the four proof groups that costs nothing: over all 1050/1150 segments the
+  two distances differ on 94, none across 1,000 m (link#462, `data-raw/logs/grad_parent_463/`).
+
+On BULK, SETN, MORK and COTR a `default_parent` build holds `default`'s segments and access
+exactly, and every habitat difference sits on a segment whose gradient changed or in a
+connected cluster holding one. Rearing rises (CH +3.9 %, ST +3.3 % over the four groups),
+the way it does on the minimal network itself; spawning moves within 0.33 %
+(`data-raw/logs/grad_parent_463/README.md`).
 
 Only gradient is carried. Discharge needs no column: neither network crosses an FWA
 segment boundary, and discharge is per FWA segment, so a full segment and its parent read
@@ -1095,19 +1192,41 @@ snapshot, and `snapshot_bcfp.sh` already records the build it loaded in
 time would name the build the tunnel is at *now* — it rebuilds weekly — not the
 one the numbers were computed against. **A wrong pin, not a missing one.**
 
-Three tiers, and `bcfp_pin_source` records which answered:
+Three tiers, and `bcfp_pin_source` records which answered. Each names the
+newest bcfishpass **linear** build whose reference views were loaded, and
+carries that build's completion time into `log.bcfp_date_completed` beside
+`bcfp_model_version` (link#266, link#446):
 
-| tier | source | when |
+| tier | source | rule |
 |---|---|---|
-| `env` | `LNK_BCFP_MODEL_VERSION` | every host of a driver run |
-| `db` | `bcfishpass.log` | a real bcfp connection (the tunnel) |
-| `ledger` | `bcfp_baselines.csv`, this host's latest row | local, hand-invoked |
+| `env` | `LNK_BCFP_MODEL_VERSION`, `LNK_BCFP_DATE_COMPLETED` | every host of a driver run |
+| `db` | `bcfishpass.log` | `model_type = 'LINEAR'`, newest `date_completed` (read in the server's zone), then `model_run_id`; a real bcfp connection (the tunnel) |
+| `ledger` | `bcfp_baselines.csv`, this host's newest row that loaded the views | `run_label` starts `snapshot-` and `notes` holds `--with-bcfp-views` |
 
-Tier 0 exists because the ledger is **per host** and a cypher has no row of its
-own — it git-resets the repo, so the file is present, but it never snapshots
-under its own hostname. Without the export every cypher row lands unpinned: 13
-of 34 last field run, the majority at 217. Same shape, same fix, as
-`FWAPG_GIT_SHA`.
+**`model_version` is a code identity, not a build.** It is
+`<tag>-<commits>-g<sha>`, and bcfishpass rebuilds weekly from whatever commit is
+current, so two builds two weeks apart can share it (`v0.7.15-47-ga702229`,
+2026-08-18 and 2026-09-01). `bcfp_date_completed` is what tells them apart.
+NULL on rows before 0.82.0.
+
+The ledger's rows come from `log.json` ([`lnk_bucket_log()`]), which carries
+`model_version`, `date_completed` and `head_sha` but no `model_type`, so the
+ledger tier cannot filter to linear builds itself. It takes what bcfishpass's
+weekly job published, which today is its linear model.
+
+**Why the ledger reads only rows that loaded the views.** The ledger also holds
+`csv-sync-` rows (`sync_bcfishpass_csvs.R`, which loads nothing) and snapshot
+rows without `--with-bcfp-views` (every cloud host's prep). Taking the newest row
+of any kind pinned #440's parity run at `-51-g3bd2824` while m1's views were
+`-50-g620dbe4` (link#446).
+
+Tier 0 exists because the ledger is **per host**, and only the dispatcher's
+views are the compare reference: a cloud host writes its own row at prep, from
+a snapshot without the views. The driver resolves the dispatcher's pin once and
+exports both values to every leg, as it does `FWAPG_GIT_SHA`.
+
+flooded no longer reads `bcfishpass.log` (flooded#87 records link's own log
+fields), so this is the one rule; there is no second reader to keep in step.
 
 **`bcfp_model_run_id` stays NULL on the tunnel-free path and that is correct.**
 `log.json` carries no such key. Honest absence beats a fabricated id — do not
@@ -1148,6 +1267,9 @@ s3://fresh-bc/habitat/fwa/v1/            (private until opened; read with creden
   provenance/recompute_id=<id>/log_recompute.parquet
   provenance/source_artifact/<md5>.parquet       this database's record at export, by content
   config/sha256-<hex>/<the files config_hash was computed over>
+  barriers/config=<config>/part-<WSG>.parquet           one group's persisted barriers (#465)
+  barrier_overrides/config=<config>/part-<WSG>.parquet  one group's persisted overrides
+  dependencies/rule=line.parquet                        which groups each group's walk reads
 ```
 
 **The key is FWA position, `(blue_line_key, downstream_route_measure,
@@ -1236,6 +1358,87 @@ time; what a run actually read is its `log_input.artifact_*` (#265).
 did.** Otherwise the manifest's `bundles[]` entry says the bundle has changed,
 and the run's own `log_parameters_*` snapshots under `provenance/` are the
 record.
+
+**What a one-group run reads from the export (#465).** A group's access is
+walked downstream through every group's persisted `barriers` and
+`barrier_overrides` (§3, §8c), so a machine that holds only some groups needs
+the rows the other groups wrote. The export carries them:
+
+- **One part per group per config of each table** (`group_parts` in the
+  manifest, beside `parts`, so `lnk_catalog()` and `lnk_db_load()` read only
+  segments), from the same build as the group's segment parts, written even
+  with no rows (none is not missing). Columns are the persist definition
+  (`cols_barriers`, `cols_barrier_overrides`); `ltree`, `text[]` and `bigint`
+  go as their Postgres text forms and geometry as hex WKB (EPSG:3005), each
+  cast back by the loader. `bigint` is text because before duckdb 1.5.6
+  `duckdb::duckdb_register()` read an `integer64` column's bits as a double
+  on a default connection: `linear_feature_id` 703016261 came back as
+  3.5e-315, silently. duckdb 1.5.6 fixed it (`duckdb/duckdb-r#2819`); text
+  stays, because it is right on every version. Replaced per
+  config and carried forward like `parts`; the regressions judgement refuses
+  an export that drops one. A paused-only group (#432) has barrier parts and
+  no segment parts.
+- **The dependency map** (`dependencies` in the manifest): for every group,
+  every group touching a blue line that carries one of its codes or their
+  ancestors (the line rule, `.lnk_wsg_deps_line()`, `R/lnk_wsg_deps.R`, the
+  same query the recompute scheduler uses, §8d). Province-wide whatever groups
+  an export names, because a one-group machine has no province FWA to compute
+  it from; replaced on every export (it follows FWA, so it is not a write-once
+  file). The outlet closure is narrower and misses readers (#374). Checked on
+  `fresh_default` 2026-11-12: every one of 7,749,648 barrier and 44,069 override
+  rows sits on a line its own group touches in FWA, so the rule covers every
+  row a walk can read (`data-raw/logs/downstream_export_465/superset_*.log`).
+  The export refuses to compute it unless the database's FWA holds every BC
+  group (`inst/extdata/wsg_regions.csv`, 246), every group it holds and every
+  group holding barriers, because the map is read for any target, configs
+  carried forward included. It records those groups (`groups`), and
+  `lnk_downstream_files()` refuses a target outside them rather than read a
+  missing row as "no dependencies" (38 groups truly have none).
+- **`scope`** on each config entry: `held` when the export took every group
+  the schemas held, `named` when it took a list; **`barrier_holders`**, the
+  groups with rows in the config's `barriers` or `barrier_overrides`. A
+  dependency outside the export is `not_held` only under `held` and only when
+  it holds no such rows, since those rows, not `streams`, are what a walk
+  reads: a build that died between unifying and persisting its barriers
+  leaves rows and no streams. Otherwise it is `not_exported` (a gap).
+
+On the one-group machine: `lnk_downstream_files(manifest, wsg, config)` lists
+the target's dependencies, each `exported` (its two parts, with the build's
+`run_id`, `config_hash` and link), `skipped` (the export had no finished build
+of it), `not_held` or `not_exported`, with the FWA object each needs loaded.
+`lnk_downstream_load(conn, files, cfg)` fetches and checks every part before
+writing, refuses a gap unless `allow_missing`, refuses to replace rows the
+schema built itself or holds from no recorded load unless `replace`, loads
+every group in one transaction, and records each load in
+`<schema>.log_downstream_load`, so loaded rows are never mistaken for built
+ones. It reports a dependency built under another `config_hash` than the
+target's bundle, and refuses nothing for it; its input report names each input
+it could not compare (no identity recorded at build, or no input record),
+so silence means agreement, never "not compared".
+
+- **Input snapshots** (each run entry's `inputs`): CABD and PSCIS, the two
+  inputs with no version handle, province-wide at
+  `inputs/<cabd_dams|pscis_assessment>/<content md5>.parquet` (every column as
+  text, geometry as hex EWKB; kind `input` in `files`, written once), only for
+  a build whose logged `artifact_content_md5` is what the exporting database
+  holds now, because the builds ran on several hosts with loads of their own.
+  Otherwise the entry says why: `not read` (CABD under `dams = FALSE`), `no
+  content identity at build` (every build before #465), or `changed since
+  build`. A key already in the root is referenced without asking again.
+  Observations and modelled crossings are versioned objects: the entry cites
+  each build's loader version id and ETag. The loader compares these with this
+  database (content md5 now, the loader's version id) and reports, never
+  refuses, a difference.
+
+What it does not cover: the target's own inputs still decide its own barriers
+and lifts, and `observations_province` (every group's records, upstream ones
+too) is a machine primitive, not an export part, so a newer local record can
+lift a barrier the provincial run did not. The machine also needs the
+dependencies' FWA streams: the target's gradient search runs along whole
+lines, the dam and crossing snaps cross group boundaries, and the downstream
+check (§8c) matches dams to streams. The round trip is proved on one host
+(`data-raw/logs/downstream_export_465/`); a database holding only some groups
+is not yet tested.
 
 **Not yet:** public read, versioning and PUBLISH gates on `run_uid` /
 `link_dirty` (#334); discharge from wet's `discharge.fwa_v1_segment_monthly`
@@ -1816,6 +2019,16 @@ stated assumption.
 **Known bound:** inherits `frs_wsg_drainage()`'s one-outlet-per-group model. A
 WSG draining by two independent paths would be under-covered.
 
+**A one-group run on a machine that holds only some groups** reads the
+downstream groups' persisted rows from the habitat export (§6d, "What a
+one-group run reads from the export"): `lnk_downstream_files()` then
+`lnk_downstream_load()` before `wsg_run_one.R`. The guard checks per dam that a
+blocking dam is persisted, so the loaded `CABD` rows satisfy it, but it finds
+the dams by matching them to streams, so the dependencies' FWA streams must be
+loaded too (#464 makes a missing downstream group refuse instead of pass). The
+groups to load are the line rule's, not the outlet closure's: the walk reads
+every group's rows by position.
+
 ---
 
 ## 8d. Pre-flight gates on a multi-host run (link#246)
@@ -1989,34 +2202,91 @@ nothing). The check applies to every launch, dispatcher-only included;
 Evidence: `data-raw/logs/pretest_372/` (its README indexes it).
 
 
-**A bundle without a full history of its own borrows one (#442).** `default_minimal`
-before its first full run has no groups, minutes or range that stand for it, so it
-reads a config it extends:
+**Where the gate's history comes from, with no flags (#442, #450).** The pick holds
+the gate to one of three histories, writes which to `<out>/history.txt`, and the
+verdict records it in `log_pretest.range_source`:
 
-```bash
-bash data-raw/pretest_history_load.sh --host=<ssh target> --from=fresh_default --to=fresh_default_history
-bash data-raw/pretest_run.sh --config=default_minimal --schema=fresh_default_minimal \
-  --history-schema=fresh_default_history --history-config=default --minutes-exclude=KTSU,OKAN
-```
+| `range_source` | when | groups, range, minutes |
+|---|---|---|
+| `own` | the bundle's own builds in `--schema` cover every group it models, or it has no parent and some builds of its own | its own log, as before |
+| `ancestor` | it extends a config, and its own builds do not cover it | the **nearest** config on its `extends` chain with finished builds on this database, in the schema holding the most of that config's groups, then the newest (`pretest_ancestor_pick()`; scratch `fresh_pretest_*` and `zz_*` schemas are not candidates); or the one `--history-schema` / `--history-config` name |
+| `every_input` | it has no build of its own here and no ancestor with builds here (a parentless bundle on a new database, or `default` today) | no diff: every query in `data-raw/pretest/` counts as changed, two picks each over the groups the config models; `since_sha = until_sha = HEAD` |
 
-- **Only from a config on its `extends` chain, until its own builds cover every group
-  it models.** One build of its own, or a first run stopped partway, does not end the
-  borrowing, and those builds must be in the range too. Once they cover it, a gate must
-  cover them and the flags are refused. Without the flags, such a bundle is refused. A
-  bundle with no parent keeps its own history, whole or not. A group added to the
-  presence table after both histories ended has no route but to model it under the
-  parent and reload, or to launch on `--pretest-note`.
-- **The record names what it borrowed,** so the launch check holds it to the same
-  history. It also keeps naming a schema that must still exist on the dispatcher.
-- **The history must hold every group the config models** (`lnk_wsg_resolve()`),
-  in the pick and at launch. The gate picks only groups the history holds, so m4's
-  4-group `fresh_default` picked exactly those 4. The full log sits on the host a
-  run consolidated on, and the loader copies it into a schema of its own by
-  `pg_dump -t`, with the key and indexes. It refuses a target holding anything else.
-- **ssh's exit status is not read.** The dump must end on `pg_dump`'s trailer and hold
-  the row count the host reports before anything local changes.
-- **The scratch schema is built `LIKE` a schema holding only `log`.** Each pick's
-  `lnk_persist_init()` creates the rest.
+On m1 (2026-11-12), `--config=default_minimal` against a schema with no log found
+`default`'s 241 builds in `fresh_default` with no flags, and `--config=default`
+against an empty schema picked on every input: SETN, BULK, QUES, LFRA, TOAD, HARR,
+UPCE, OKAN, TAKL, HORS and SAJR, the same 11 the #454 gate picked from a hand-seeded
+log (`data-raw/logs/gate_history_450/`).
+
+- **Minutes are a group's, not a schema's.** Each eligible group (every group the
+  config models, `lnk_wsg_resolve()`) takes its newest minutes from the history
+  schema's log, or from the committed record `data-raw/logs/build_minutes.csv`
+  where that holds a newer row (its own config first, then the nearest ancestor's),
+  scaled to the host the gate runs on by the learned host speeds
+  (`host_speeds.tsv`: minutes measured at speed s become minutes × s / this host's
+  speed). A group in neither gets a fixed 60 min (bound 180 at k = 3).
+  `--minutes-exclude` still bounds a known stall on the median. After a
+  provincial run, the summary prints the append command
+  (`data-raw/build_minutes_append.R --schema= --run-uid=`); commit what it writes.
+  The record is in the repo, not in a database, so a new host or a brand-new
+  database has it.
+- **A short ancestor history is still refused** (#442's rule): an ancestor whose
+  builds here miss groups the bundle models would pick around the missing groups'
+  extremes. Model them under the parent first, name a fuller history with the
+  flags (`data-raw/pretest_history_load.sh` copies a host's log into a schema of
+  its own), or launch on `--pretest-note`. A bundle part-built under its own config
+  with no ancestor history here is refused for the same reason: those builds must
+  be in a range, and there is none to diff.
+- **The launch check holds a record to the history it names.** An `ancestor`
+  record's `history_schema` / `history_config` are written whether a flag or the
+  pick found them, and must still exist on the dispatcher. An `every_input` record
+  clears a run only while the bundle has no build of its own in the schema; once it
+  has, those builds are what a gate must cover, and the next gate diffs from them.
+- **The scratch schema is built `LIKE` the resolved history's schema** (or the
+  record schema, empty when new); each pick's `lnk_persist_init()` creates the rest,
+  and the record schema is created if it does not exist.
+
+### Every host holds the same primitives, judged before any write (link#276)
+
+A multi-host run once modelled on two input states: on 2026-09-01 a cloud host
+pulled PSCIS live at prep while m1 modelled on a load 33 hours old, and every row
+carried the same `fwapg_sha`. Three pieces now stop that:
+
+- **The skip guard reads the build, not the commit.** `lnk_baseline_current()`
+  takes this host's newest **snapshot** row (`csv-sync-` rows load nothing), one
+  that loaded the views when the snapshot will load them, and is current only
+  when that row's `bcfp_model_version` **and** `bcfp_date_completed` equal
+  `log.json`'s. `model_version` is a code identity: on 2026-11-12 upstream held
+  `v0.7.15-51-g3bd2824` built 2026-11-11, m1's newest snapshot the same version
+  built 2026-10-28, and the old version-only guard would have skipped. It keys on
+  `.lnk_host()`, the name rows are written under (it read the node name, so on a
+  host with `LNK_HOST_ALIAS` it never matched). `snapshot_bcfp.sh` loads link from
+  the checkout for the guard and the stamp, as `artifact_record.R` does.
+- **Cloud hosts mean the dispatcher reloads too.** Cloud hosts snapshot at prep,
+  so `preflight_local()` refuses a run with cloud hosts and no
+  `--refresh-primitives`, before any spend: PSCIS and CABD (API loads, no version
+  handle) change between a days-old dispatcher load and prep often enough that
+  the run would otherwise stop after the spin.
+- **After prep, before any write, every host's loads are compared**
+  (`compare_inputs`, `preflight_hosts()`): each host prints its newest loader row
+  per snapshot primitive (`data-raw/host_inputs.R`, plain SQL), and
+  `.lnk_inputs_agree()` requires one version id per object-store primitive
+  (observations, modelled crossings) and one content md5 per API primitive (CABD,
+  PSCIS), or one row count where a host recorded no md5 (loads before link#465).
+  `--preflight-note` does not downgrade it. The rows land in `<TS>_inputs.tsv`.
+  Persistent workers load only when the operator does, and are reachable before
+  any spend, so `preflight_local()` already compares them with the dispatcher
+  (`<TS>_inputs_pre.tsv`): a worker on an older load refuses the launch before
+  the spin; reload it (`snapshot_bcfp.sh --force`). `host_inputs.R` is piped over
+  ssh, so a worker's clone need not be on the branch yet. Under
+  `--preflight-only` the cloud-host refresh gate only warns. After
+  the run, `study_area_verify.sql` section 2c checks the same from `log_input`.
+
+The two checks are two implementations of one rule (one in R over
+`provenance.source_artifact` before the run, one in SQL over `log_input` after
+it), each tested against the same states: a host on another version, an
+unrecorded version, same-size different content, no md5, a missing row.
+
 ### The vintage gate reads load stamps (link#265, absorbing #247)
 
 `lnk_preflight_vintage()` (via `data-raw/host_vintage.R`) judges each snapshot
@@ -2035,6 +2305,22 @@ fails until
 `bash data-raw/snapshot_bcfp.sh --with-bcfp-views --force` has run. `--force`
 matters: the ledger skip guard (link#276) exits before anything is loaded or
 recorded.
+
+**An object primitive is judged by whether its source changed (link#273).** For
+a table whose load recorded an ETag (the observations and the modelled
+crossings, both HEADed and fetched by version at load), the gate HEADs the URL
+it was loaded from: a different ETag is **stale whatever its age** ("the source
+changed since this host loaded it"), the same ETag **current whatever its age**.
+A HEAD that fails is no answer, never "unchanged": the table falls back to its
+load-stamp age and the message names it. CABD and PSCIS (API loads, no version
+handle) stay on the age rule, and the message counts which predicate judged
+each table (`judged by source ETag: n (...), load stamp age: n, ...`). Only the
+loader row's ETag counts, never a probe's. The FWA tables are not in the vintage
+set: they gain loader rows at the next FWA reload through
+`data-raw/fwapg_load_capture.sh` (link#270), and can be judged the same way once
+they have them. An ETag is a byte identity, so a re-upload of identical content
+reads as changed: the gate fails toward an unneeded reload, never toward a stale
+one.
 
 ### Three things that look like checks and are not
 
@@ -2079,7 +2365,9 @@ and if it names a group, rebuild (the same command without `--verify`, into `...
 and verify again (into `.../verify_after`). `--out` has no default and refuses a directory
 that already holds the files its mode writes, so no run overwrites another's record. The
 build refuses a pair whose modelling code differs, so a run of one network at new code
-waits for the other's (§6b, "Parent attributes").
+waits for the other's (§6b, "Parent attributes"). A `default_parent` build refuses until
+`streams_parent` names both networks' newest builds, so after such a run rebuild it before
+re-modelling `default_parent`.
 
 ### A missing group costs only itself (link#348)
 
@@ -2240,11 +2528,93 @@ error, which the path above already handles.
   slow statement: re-model it with a larger `PGOPTIONS` bound by hand, and look
   at `pg_stat_activity` while it runs.
 - **Exercising it:** `LNK_TEST_STALL_WSG=<WSG>` makes that group's
-  `wsg_run_one.R` run `SELECT pg_sleep(3600)` first. It works on the local leg
-  only (it is not passed over ssh), and `wsg_run_one.R` refuses it when no
-  bound is in effect. With `--statement-timeout=1` the group fails after a
+  `wsg_run_one.R` run `SELECT pg_sleep(3600)` first. It crosses ssh only as a
+  four-letter group code (`remote_leg_cmd`), and `wsg_run_one.R` refuses it
+  when no bound is in effect. With `--statement-timeout=1` the group fails after a
   minute, and the run carries on. The banner prints a `TEST HOOK:` line
   whenever the variable is set. Evidence: `data-raw/logs/statement_timeout_371/`.
+
+### A stalled statement leaves samples (link#487)
+
+A bound tells a slow statement from a stuck one, and cancels it; a cancelled
+backend can no longer be read. `frs_near_river_walk` stalled on the dispatcher
+on four dates (2026-10-23, 10-25, 11-13, 11-14) and each time the evidence
+went with the cancel. So each group is watched while it runs.
+
+- **What runs:** `wsg_run_one.R`, once its bound is checked, starts
+  `data-raw/wsg_stall_sample.R` with `system2(wait = FALSE)`, passing its
+  backend's pid (`pg_backend_pid()`), its own R pid and the group. The sampler
+  holds a second connection (`statement_timeout 10s`, `lock_timeout 5s`,
+  `connect_timeout 10`, and no `application_name` of its own: it inherits
+  `PGAPPNAME`, which the pre-run gate reads to leave a pick's sessions out of
+  its load count and to end them). Every 60 s it checks the backend
+  (`.lnk_stall_watch()`, `R/lnk_stall.R`), or more often: every half of N, and
+  every half of the window from N to the bound (it is passed the bound), so a
+  window longer than a few seconds gets at least one check, usually two (a check
+  waits for the next 2 s parent poll).
+- **What it records:** once the backend has been `active` on one statement for
+  more than N minutes, each check writes one line per backend:
+  the statement itself (`leader`), its parallel workers (`worker`, by
+  `leader_pid`) and every session `pg_blocking_pids()` names for any of them
+  (`blocker`, with `blocks_pid`). Columns: `sampled_utc`, `wsg`, `role`, `pid`,
+  `leader_pid`, `blocks_pid`, `state`, `wait_event_type`, `wait_event`,
+  `query_start`, `query` (first 200 characters, leader and blockers), the
+  host's `load1`/`load5`/`load15`, and `n_active` (active backends on the
+  database, the sampler left out). A series shows whether the wait changed,
+  e.g. a `Lock` wait that clears when consolidation ends.
+  `pg_blocking_pids()` sees heavyweight locks only: an LWLock, buffer-pin or I/O
+  wait shows in `wait_event` with no blocker row.
+- **Where it goes:** to the group's own stdout, as
+  `[wsg_stall] <WSG>\t<fields>` lines (a header line first), so it lands in the
+  host log on every host kind, including a cloud host that is burned after its
+  leg. `run_stalls` (`study_area_finish.sh`) splits them into
+  `$LOG_DIR/<ts>_stall_<WSG>.tsv` (`<ts>` the run_uid's timestamp) in the
+  summary, before the INCOMPLETE branch, and rewrites them on each call: a
+  driver killed before `run_finish` splits nothing until a `--recompute-only`.
+  The summary prints `stall samples: <file>` for every group that has one (a
+  group can stall past N and still finish). A cancelled group prints
+  `[wsg_run_one] <WSG> stall samples: the [wsg_stall] <WSG> lines above
+  (<ts>_stall_<WSG>.tsv in a driver run)` on the line after its `TIMEOUT` line,
+  only when the sampler wrote a row (it creates a marker file in the group's R
+  tempdir with its first); it cannot tell whether its output is a run log, so
+  it names the lines first. The INCOMPLETE block prints
+  `samples: <file>` under its statement. The sampler rewrites `[wsg_` and
+  `__LNK_` inside a field, so a blocker's query cannot read as a log marker.
+- **Setting N:** unset, `wsg_run_one.R` takes 10 min, or half its
+  connection's bound when that is shorter, so every caller (the driver, the
+  pre-run gate, a printed re-model) gets the same default.
+  `study_area_run.sh --stall-sample-after=<min>` (1 to 1440) sets it, refused
+  at or above `--statement-timeout` (it would never record) and under
+  `--recompute-only`; it reaches both legs as `LNK_STALL_AFTER_MIN` (empty when
+  not given; the both-legs rule, `REMOTE_LEG_VARS`). `wsg_run_one.R` turns the
+  sampler off, with a line, when `LNK_STALL_AFTER_MIN` is not below the bound.
+  `LNK_STALL_EVERY_S` (default 60, fractional minutes allowed in
+  `LNK_STALL_AFTER_MIN`) is a test knob read on the local leg only.
+- **It cannot fail the group.** It is another process; a bad setting, a missing
+  script or a failed start prints `[wsg_run_one] <WSG> stall sampler off: <why>`
+  and the group runs without it, and any error inside it prints one
+  `[wsg_stall_error] <WSG>` line and ends it with exit 0.
+- **It ends with its group.** It checks its parent's pid every 2 s and the
+  backend at each check, and returns when either is gone. That matters on a
+  remote leg: the sampler holds the ssh channel's stdout, and sshd keeps the
+  session (so the leg's accounting, consolidate and burn) open until it exits.
+  Every blocking call inside it is bounded (connect 10 s, statements 10 s);
+  `system2(wait = FALSE)` gives the parent no pid to kill, so a sampler hung
+  outside those calls would hold the leg. `pgrep -fl wsg_stall_sample` finds
+  one.
+- **Cost:** one `load_all()` (or `library(link)`) per group beside the group,
+  and two catalogue queries a check.
+- **Not recorded:** the statement's plan. The walk reads its own session's temp
+  tables, so another session cannot `EXPLAIN` it; recording it needs code in
+  fresh, left until the samples show whether a stall is a wait at all.
+- **Reading one:** a `Lock` leader with a `blocker` row names the session and
+  its statement; a leader with no wait (`wait_event` empty) and rising load is
+  working; an `IO` or `LWLock` wait with no blocker is contention inside
+  Postgres. Write the reading into #487 and file the fix where it lives.
+- **Exercising it:** `LNK_TEST_STALL_WSG=<WSG>` with `--statement-timeout=2
+  --stall-sample-after=1` (and `LNK_STALL_EVERY_S=15` in the driver's
+  environment for more rows) gives `PgSleep` rows. Evidence:
+  `data-raw/logs/stall_sample_487/`.
 
 ### Where a run's time went: `<TS>_phases.tsv` (link#375)
 
@@ -2627,12 +2997,26 @@ one `--focal=` list per worker after the dispatcher's and before the cyphers'
   variable the leg exports (`REMOTE_LEG_VARS`, held to `remote_leg_cmd`'s
   exports by a test), every `LNK_*` (all link reads; `LNK_HOST_ALIAS`, which
   only names the host, excepted), and the pins `LINK_GIT_SHA`,
-  `LINK_GIT_DIRTY`, `FWAPG_GIT_SHA`, `BCFISHOBS_GIT_SHA` and `PGOPTIONS`. A
+  `LINK_GIT_DIRTY`, `FWAPG_GIT_SHA` and `PGOPTIONS`. A
   `FRESH_GIT_SHA` must be the installed fresh's `RemoteSha`, and
   `FRESH_GIT_DIRTY` may only be `false` beside it. Under load_all link's sha
   comes from the clone's git. `--auto-install` on a worker installs fresh at
   DESCRIPTION's `Remotes:` pin and re-checks once; it refuses while a
   `FRESH_GIT_SHA` pin is set, which would outlive the install.
+- **`scripts/update_hosts.sh` installs the fresh DESCRIPTION pins (link#269).**
+  It reads `NewGraphEnvironment/fresh@<tag>` from `Remotes:`, resolves the tag
+  to its commit once, and refuses when fresh is unpinned rather than fall back
+  to fresh's main, which could put one host on a fresh no other installs (the
+  pre-flight then refuses the run). link, which nothing pins, goes on at main's
+  head. It installs with pak, which writes `RemoteSha`; it checks that
+  `RemoteSha` is the resolved commit and then removes any `FRESH_GIT_SHA` /
+  `FRESH_GIT_DIRTY` pin from `~/.Renviron`, which would outrank it. On `cypher`
+  (pak's libpath bug, r-lib/pak#658), and anywhere under `--tarball`, it keeps
+  the tarball install and pins the commit in `~/.Renviron`. The host it runs on
+  (`LNK_HOST_ALIAS`, else `hostname -s`) is installed locally, never over ssh to
+  itself. `--dry-run` prints the refs and each host's plan. A host whose GitHub
+  token is refused (the worker, #439) cannot pak-install: rotate the token, or
+  use `--tarball`.
 - **Primitives and fresh are the operator's to bring current, once,** because
   both are shared with the machine's other sessions. Measured on the first
   worker (2026-10-25): fresh by `--auto-install` (or `worker_prep.sh`'s
@@ -2742,6 +3126,18 @@ byte-identical on one host and differs by up to 3.7e-9 m across architectures, s
 "identical across hosts" is a digest after rounding; and a recompute over a
 subset of groups differs from the full one wherever a group holds lines
 coded to another basin or with barriers below it in a group outside the subset (NATR's two Fraser-coded segments; TOOD's two with barriers below them in FROG, LKEC, UKEC and ULRD).
+
+### After the run: republish the export (link#465)
+
+A one-group run elsewhere reads the downstream groups' barriers from the
+habitat export (§6d), so the export follows each provincial run, not a clock.
+The run summary prints the three commands after a complete modelled run (seed
+the root from the bucket, BUILD for the run's config and schema, PUBLISH);
+nothing is published without the operator. After an incomplete run it says
+not to republish: models run with `LNK_HABITAT_GATE=0`, so habitat is
+settled only by the recompute, and the export would publish unsettled flags. Before the next provincial run, re-snapshot
+every host's primitives (`snapshot_bcfp.sh --force`) so its builds carry
+CABD's and PSCIS's content md5 and the export can snapshot them.
 
 ### Learned host speeds (link#259, folding in #163)
 

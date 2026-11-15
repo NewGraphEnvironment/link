@@ -6,4 +6,4 @@ Operational hardening from the post-compact provincial dispatch session. Three n
 
 Closed by: PR #171, released as v0.36.1 (tag 91f2544).
 
-Follow-up issues: link#167 (tunnel autossh), link#168 (decouple compare), link#169 (simplify lnk_persist_init), link#170 (S3 consolidate), rtj#145 (clean cypher snapshot), fresh#199 reopened (M4 PG over-tuning), link#172 (rename + autonomous wrapper — next).
+Follow-up issues: link#167 (tunnel autossh), link#168 (decouple compare), link#169 (simplify lnk_persist_init), link#170 (S3 consolidate), an internal issue (clean cypher snapshot), fresh#199 reopened (M4 PG over-tuning), link#172 (rename + autonomous wrapper — next).
