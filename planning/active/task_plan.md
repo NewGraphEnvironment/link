@@ -87,9 +87,9 @@ Plan approved by the user 2026-11-14 as presented (mechanism choices proposed by
 - [x] Phase 1's sampler tests green.
 
 ## Phase 3: `wsg_run_one.R`
-- [ ] Read and validate `LNK_STALL_AFTER_MIN` / `LNK_STALL_EVERY_S`; start the sampler after
+- [x] Read and validate `LNK_STALL_AFTER_MIN` / `LNK_STALL_EVERY_S`; start the sampler after
       the bound check, inside `tryCatch` (a launch failure prints a line and the group runs on).
-- [ ] `name_timeout()` prints the `stall samples:` line; header comment documents both vars.
+- [x] `name_timeout()` prints the `stall samples:` line; header comment documents both vars.
 
 ## Phase 4: The driver
 - [ ] `study_area_run.sh --stall-sample-after=<min>` (default 10, 1–1440), usage text, banner

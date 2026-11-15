@@ -25,6 +25,15 @@
 #   LNK_TEST_STALL_WSG=<WSG>  -> that group runs SELECT pg_sleep(3600) first, to
 #                                exercise the bound; refused when none is set.
 #
+# Stall samples (link#487). Beside each group, data-raw/wsg_stall_sample.R
+# watches this connection's backend from a second one. While one statement runs
+# past LNK_STALL_AFTER_MIN minutes (default 10), it writes what the backend,
+# its parallel workers and its blockers are doing into this log, one
+# `[wsg_stall] <WSG>` line per backend every LNK_STALL_EVERY_S seconds (default
+# 60); the driver splits them into <TS>_stall_<WSG>.tsv. It ends with this
+# process and cannot fail the group: a bad setting or a failed start prints
+# one `stall sampler off` line and the group runs without it.
+#
 # Usage: [LNK_LOAD=loadall] Rscript wsg_run_one.R <WSG> [config]
 #   LNK_LOAD=loadall -> pkgload::load_all() (dispatcher dev checkout)
 #   default          -> library(link)       (pak-installed, e.g. cyphers)
@@ -94,6 +103,39 @@ if (nzchar(want_min) && !identical(bound_ms, as.numeric(want_min) * 60000)) {
        "statement_timeout is ", bound, ": PGOPTIONS did not reach it",
        call. = FALSE)
 }
+stall_after_min <- suppressWarnings(as.numeric(Sys.getenv("LNK_STALL_AFTER_MIN", "10")))
+stall_every_s <- suppressWarnings(as.numeric(Sys.getenv("LNK_STALL_EVERY_S", "60")))
+stall_file <- NULL
+self <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE))
+sampler <- file.path(dirname(self[1]), "wsg_stall_sample.R")
+if (!isTRUE(stall_after_min > 0 && stall_after_min <= 1440 &&
+              stall_every_s >= 1 && stall_every_s <= 3600)) {
+  cat(sprintf(paste("[wsg_run_one] %s stall sampler off: LNK_STALL_AFTER_MIN=%s",
+                    "(above 0, at most 1440) or LNK_STALL_EVERY_S=%s (1 to 3600) out of range\n"),
+              wsg, Sys.getenv("LNK_STALL_AFTER_MIN"), Sys.getenv("LNK_STALL_EVERY_S")))
+} else if (length(self) != 1L || !file.exists(sampler)) {
+  cat(sprintf("[wsg_run_one] %s stall sampler off: %s not found\n", wsg, sampler))
+} else {
+  started <- tryCatch({
+    backend <- DBI::dbGetQuery(conn, "SELECT pg_backend_pid() AS p")$p
+    system2(file.path(R.home("bin"), "Rscript"),
+            c(shQuote(sampler), wsg, backend, Sys.getpid(),
+              stall_after_min * 60, stall_every_s), wait = FALSE)
+    TRUE
+  }, error = function(e) {
+    cat(sprintf("[wsg_run_one] %s stall sampler off: %s\n", wsg,
+                gsub("[[:space:]]+", " ", conditionMessage(e))))
+    FALSE
+  })
+  if (started) {
+    uid <- Sys.getenv("LNK_RUN_UID")
+    stall_file <- if (nzchar(uid)) {
+      sprintf("%s_stall_%s.tsv", sub("-.*$", "", uid), wsg)
+    } else {
+      sprintf("the [wsg_stall] %s lines of this log", wsg)
+    }
+  }
+}
 # A calling handler, so the stack still holds the cancelled statement; the
 # error then carries on as before (non-zero exit, the log row left open).
 # Naming must never replace the error it names.
@@ -102,6 +144,10 @@ name_timeout <- function(e) {
     s <- link:::.lnk_timeout_statement(e, sys.frames())
     if (!is.null(s)) {
       cat(sprintf("[wsg_run_one] %s TIMEOUT after %s: %s\n", wsg, bound, s))
+      # Samples exist only when the bound outlasted the sampler's threshold.
+      if (!is.null(stall_file) && bound_ms > stall_after_min * 60000) {
+        cat(sprintf("[wsg_run_one] %s stall samples: %s\n", wsg, stall_file))
+      }
     }
   }, error = function(err) NULL)
 }
