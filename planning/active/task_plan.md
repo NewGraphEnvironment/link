@@ -58,23 +58,23 @@ Plan approved by the user 2026-11-14 as presented (mechanism choices proposed by
 6. The plan (EXPLAIN) stays out, per the issue: it needs code inside fresh's session.
 
 ## Phase 1: Tests first, shown red
-- [ ] `tests/testthat/test-lnk_stall.R`, no DB: the line formatter squishes and truncates a
+- [x] `tests/testthat/test-lnk_stall.R`, no DB: the line formatter squishes and truncates a
       query to 200 chars, strips tabs/newlines, writes the header once; load average parses
       both forms.
-- [ ] Live (`skip_if_no_db()`): a background Rscript session (tagged `application_name`) runs
+- [x] Live (`skip_if_no_db()`): a background Rscript session (tagged `application_name`) runs
       `pg_sleep(30)`; past a 2 s threshold the snapshot has a `leader` row with
       `wait_event = 'PgSleep'`; under the threshold it has none.
-- [ ] Live lock case: a test session `LOCK TABLE <scratch> IN ACCESS EXCLUSIVE MODE` in an open
+- [x] Live lock case: a test session `LOCK TABLE <scratch> IN ACCESS EXCLUSIVE MODE` in an open
       transaction; the stalled session's `SELECT count(*)` on it waits; the snapshot's
       `blocker` row names the locker's pid and its `LOCK TABLE` query, and the leader's
       `wait_event_type` is `Lock`.
-- [ ] The watch loop exits within seconds of its parent pid going away, and a broken connection
+- [x] The watch loop exits within seconds of its parent pid going away, and a broken connection
       gives one error line and a normal return, never a condition.
-- [ ] `test-study_area_finish.R`: `run_stalls` splits fake local and remote host logs into one
+- [x] `test-study_area_finish.R`: `run_stalls` splits fake local and remote host logs into one
       file per group with the header once; the INCOMPLETE block prints the file beside the
       group's statement; the summary lists the files; `wsg_run_one.R` prints the
       `stall samples:` line inside `name_timeout()` after the TIMEOUT line (structural test).
-- [ ] Run them; record the red output in `progress.md`.
+- [x] Run them; record the red output in `progress.md`.
 
 ## Phase 2: The sampler
 - [ ] `R/lnk_stall.R`: `.lnk_stall_snapshot(conn, pid, after_s)` (one query over

@@ -944,6 +944,85 @@ test_that("the printed re-model carries the bound the run's groups reported", {
   expect_true(all(grepl("\\\\$", cmd[-length(cmd)])), info = paste(cmd, collapse = "\n"))
 })
 
+# --- a stalled statement's samples (link#487) --------------------------------
+
+# Tagged lines as the sampler writes them: `[wsg_stall] <WSG>\t<fields>`.
+stall_line <- function(wsg, ...) paste0("[wsg_stall] ", wsg, "\t", paste(c(...), collapse = "\t"))
+stall_hdr <- function(wsg) stall_line(wsg, "sampled_utc", "wsg", "role")
+
+test_that("run_stalls splits every host's log into one file per group, the header once", {
+  skip_if_no_finish_lib()
+  w <- finish_world()
+  run_log(w, "local", c(
+    "[wsg_run_one] SANJ statement_timeout=60min",
+    stall_hdr("SANJ"),
+    stall_line("SANJ", "2026-11-14T00:05:00Z", "SANJ", "leader"),
+    # Mid-line, as an R warning flushed without a newline leaves it.
+    paste0("  Warning.", stall_line("SANJ", "2026-11-14T00:06:00Z", "SANJ", "blocker")),
+    # A re-model under the same uid starts with its own header.
+    stall_hdr("SANJ"),
+    stall_line("SANJ", "2026-11-14T01:00:00Z", "SANJ", "leader"),
+    "[wsg_stall] sanj\tnot a group code",
+    "[wsg_stall_error] SALM could not connect"
+  ))
+  run_log(w, "job1", c(stall_hdr("TAHS"), stall_line("TAHS", "2026-11-13T04:00:00Z", "TAHS", "leader")))
+  # Another run's log: never read.
+  writeLines(c(stall_hdr("XXXX"), stall_line("XXXX", "x", "XXXX", "leader")),
+             file.path(w, "logs", "20261019_000000_run_local.log"))
+  r <- run_finish_sh(w, "unused", c("run_stalls; echo \"STALLS=$STALL_WSGS\"", "echo REACHED_END"))
+  expect_equal(r$status, 0L, info = r$out)
+  expect_identical(printed(r, "STALLS"), "SANJ,TAHS")
+  expect_match(r$out, "REACHED_END", fixed = TRUE)
+  sanj <- readLines(file.path(w, "logs", "20261018_000000_stall_SANJ.tsv"))
+  expect_identical(sanj, c("sampled_utc\twsg\trole",
+                           "2026-11-14T00:05:00Z\tSANJ\tleader",
+                           "2026-11-14T00:06:00Z\tSANJ\tblocker",
+                           "2026-11-14T01:00:00Z\tSANJ\tleader"))
+  expect_identical(readLines(file.path(w, "logs", "20261018_000000_stall_TAHS.tsv")),
+                   c("sampled_utc\twsg\trole", "2026-11-13T04:00:00Z\tTAHS\tleader"))
+  expect_false(file.exists(file.path(w, "logs", "20261018_000000_stall_XXXX.tsv")))
+  expect_false(file.exists(file.path(w, "logs", "20261018_000000_stall_SALM.tsv")))
+  # Run again: the files are rewritten, not appended to.
+  r <- run_finish_sh(w, "unused", "run_stalls")
+  expect_identical(length(readLines(file.path(w, "logs", "20261018_000000_stall_SANJ.tsv"))), 4L)
+})
+
+test_that("the report names each stall file, and the INCOMPLETE block puts it beside the statement", {
+  skip_if_no_finish_lib()
+  conn <- skip_if_no_db()
+  sc <- finish_fixture(conn)
+  w <- finish_world()
+  run_log(w, "local", c(
+    stall_hdr("AAAA"), stall_line("AAAA", "2026-10-18T00:10:00Z", "AAAA", "leader"),
+    "[wsg_run_one] CCCC statement_timeout=30min",
+    stall_hdr("CCCC"), stall_line("CCCC", "2026-10-18T00:20:00Z", "CCCC", "leader"),
+    "[wsg_run_one] CCCC TIMEOUT after 30min: CREATE TEMP TABLE pg_temp.frs_near_river_walk AS SELECT 1",
+    "[wsg_run_one] CCCC stall samples: 20261018_000000_stall_CCCC.tsv"
+  ))
+  r <- run_finish_sh(w, sc, "run_finish AAAA,BBBB,CCCC ''")
+  expect_equal(r$status, 1L, info = r$out)
+  out <- strsplit(r$out, "\n")[[1]]
+  expect_length(grep("^  stall samples: .*20261018_000000_stall_AAAA\\.tsv$", out), 1L)
+  expect_length(grep("^  stall samples: .*20261018_000000_stall_CCCC\\.tsv$", out), 1L)
+  i <- grep("CCCC (bound 30min): CREATE TEMP TABLE", out, fixed = TRUE)
+  expect_length(i, 1L)
+  expect_match(out[i + 1L], "^        samples: .*20261018_000000_stall_CCCC\\.tsv$")
+})
+
+test_that("wsg_run_one.R names the stall file on the line after its TIMEOUT line", {
+  skip_if_no_finish_lib()
+  src <- readLines(testthat::test_path("..", "..", "data-raw", "wsg_run_one.R"))
+  fn <- src[grep("^name_timeout <- function", src):length(src)]
+  fn <- fn[seq_len(which(fn == "}")[1])]
+  to <- grep("TIMEOUT after %s: %s", fn, fixed = TRUE)
+  st <- grep("\"[wsg_run_one] %s stall samples: %s\\n\"", fn, fixed = TRUE)
+  expect_length(to, 1L)
+  expect_length(st, 1L)
+  expect_gt(st, to)
+  # The name it prints is the one run_stalls writes.
+  expect_match(paste(src, collapse = "\n"), "_stall_", fixed = TRUE)
+})
+
 test_that("the summary prints the host-speed calibration command after a modelled run (#259)", {
   skip_if_no_finish_lib()
   d <- withr::local_tempdir()
