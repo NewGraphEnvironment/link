@@ -927,7 +927,7 @@ The four speed issues (#369, #371, #374, #375) do have their 2026-11-03 numbers 
 - state: premise holds. No such script exists; only the CLAUDE.md:1138 status from July.
 - files: a new `data-raw/` parity script, `research/bcfishpass_parity.md`
 - shared cost: live DB access to the bcfishpass crossings reference
-- links: #231 (closed); db_newgraph#16
+- links: #231 (closed); the database repository's issue on reconsidering the crossings dump
 - if-never: none stated
 - comments: none
 - closure candidate: no. It could be folded into #321's per-crossing parity.
@@ -970,7 +970,7 @@ The four speed issues (#369, #371, #374, #375) do have their 2026-11-03 numbers 
 - whether the knowledge `thresholds.csv` I read is pushed;
 - whether the #342 harness guard still blocks;
 - the repo of #334's bare "#52";
-- the states of fresh#40, #277 and db_newgraph#16, which I didn't check.
+- the states of fresh#40, #277, and the database repository's crossings-dump issue, which I didn't check.
 
 
 ## Reader C: #222–#2
