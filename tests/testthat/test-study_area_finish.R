@@ -1035,6 +1035,14 @@ test_that("the driver passes the stall threshold on both legs and refuses a bad 
   r <- run_drv("--stall-sample-after=40")
   expect_equal(r$status, 1L)
   expect_match(r$out, "must be below --statement-timeout (30)", fixed = TRUE)
+  # Unset, the default gives way to a short bound: these pass the stall check
+  # and stop at the next one (--wsgs is for --recompute-only).
+  for (b in c("1", "5", "10")) {
+    r <- run_drv(paste0("--statement-timeout=", b), "--wsgs=AAAA")
+    expect_equal(r$status, 1L, info = b)
+    expect_match(r$out, "--wsgs= is for --recompute-only", fixed = TRUE, info = b)
+    expect_no_match(r$out, "stall-sample-after", fixed = TRUE)
+  }
   r <- run_drv("--recompute-only", paste0("--run-uid=", finish_uid), "--stall-sample-after=5")
   expect_equal(r$status, 1L)
   expect_match(r$out, "--recompute-only takes no", fixed = TRUE)

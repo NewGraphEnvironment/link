@@ -2576,7 +2576,8 @@ went with the cancel. So each group is watched while it runs.
   `__LNK_` inside a field, so a blocker's query cannot read as a log marker.
 - **Setting N:** `study_area_run.sh --stall-sample-after=<min>`, default 10,
   1 to 1440, refused at or above `--statement-timeout` (it would never record)
-  and under `--recompute-only`. It reaches both legs as `LNK_STALL_AFTER_MIN`
+  and under `--recompute-only`. Unset, it gives way to a shorter bound: one
+  minute under it, or 0.5 under `--statement-timeout=1`. It reaches both legs as `LNK_STALL_AFTER_MIN`
   (the both-legs rule; `REMOTE_LEG_VARS`). A hand run of `wsg_run_one.R`
   reads `LNK_STALL_AFTER_MIN` (default 10, fractional minutes allowed) and
   `LNK_STALL_EVERY_S` (default 60); without `LNK_RUN_UID` its `stall samples:`

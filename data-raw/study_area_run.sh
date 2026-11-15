@@ -153,7 +153,8 @@
 #                           second connection starts recording, every 60 s,
 #                           what its backend, parallel workers and blockers
 #                           are doing (default 10, 1..1440, below the
-#                           statement bound; link#487). Passed on both legs as
+#                           statement bound; unset, it drops to 1 min under a
+#                           shorter bound, 0.5 under a 1 min one; link#487). Passed on both legs as
 #                           LNK_STALL_AFTER_MIN; the rows land in each host's
 #                           log and are split into <TS>_stall_<WSG>.tsv.
 #   --prep-ssh-wait=N       seconds to wait for a fresh droplet to accept a
@@ -399,8 +400,19 @@ else
   [ -z "$RUN_UID_ARG" ] || {
     echo "FATAL: --run-uid= is for --recompute-only; a run mints its own" >&2; exit 1; }
   # A sampler waiting as long as the bound never records anything (link#487).
-  [ "$STALL_AFTER_MIN" -lt "$STATEMENT_TIMEOUT_MIN" ] || {
-    echo "FATAL: --stall-sample-after ($STALL_AFTER_MIN) must be below --statement-timeout ($STATEMENT_TIMEOUT_MIN): it would never record" >&2; exit 1; }
+  # An explicit threshold that does is refused; the default gives way to a short
+  # bound (--statement-timeout=1 exercises the bound, RUNBOOK §8d), to one
+  # minute under it, or half a minute under a 1 min bound (wsg_run_one.R reads
+  # fractional minutes).
+  if [ "$STALL_AFTER_MIN" -ge "$STATEMENT_TIMEOUT_MIN" ]; then
+    if [ "$STALL_AFTER_SET" = "1" ]; then
+      echo "FATAL: --stall-sample-after ($STALL_AFTER_MIN) must be below --statement-timeout ($STATEMENT_TIMEOUT_MIN): it would never record" >&2; exit 1
+    elif [ "$STATEMENT_TIMEOUT_MIN" -gt 1 ]; then
+      STALL_AFTER_MIN=$((STATEMENT_TIMEOUT_MIN - 1))
+    else
+      STALL_AFTER_MIN=0.5
+    fi
+  fi
   [ -z "$WSGS_ARG" ] || {
     echo "FATAL: --wsgs= is for --recompute-only; a run's groups come from --focal" >&2; exit 1; }
 fi

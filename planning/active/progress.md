@@ -37,3 +37,7 @@
   different modelled crossings since 2026-11-13, so the pre-spend compare refuses it. Scratch
   schema dropped, worktree removed. Evidence `data-raw/logs/stall_sample_487/`.
 - The banner printed "every 60 s" under `LNK_STALL_EVERY_S=15`: it now prints the variable.
+- Full suite at `e82c64bb` (2026-11-15 00:20-00:35Z): `[ FAIL 3 | WARN 7 | SKIP 1 | PASS 5839 ]`.
+  The three are `test-lnk_db_conn.R:10` and `test-lnk_wsg_resolve.R:143,154`, each
+  `lnk_db_conn()` refused on port 63333 (the `PG_*_SHARE` tunnel, not up on m1 tonight); neither
+  file nor its code changed on the branch.

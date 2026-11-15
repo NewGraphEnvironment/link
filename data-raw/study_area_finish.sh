@@ -891,6 +891,7 @@ run_finish_report() {
   run_export_hint
   echo "  run WSGs:        ${RUN_WSGS:-<none>}"
   echo "  recomputed WSGs: ${ALL_WSGS:-<none>}"
+  [ -z "${READERS_RECOMPUTE:-}" ] || echo "    of them outside the run (readers of it): $READERS_RECOMPUTE"
   # Before the INCOMPLETE branch, which exits; a group can stall past the
   # sampler's threshold and still finish (link#487).
   run_stalls
@@ -898,7 +899,6 @@ run_finish_report() {
   for sw in $(printf '%s' "${STALL_WSGS:-}" | tr ',' ' '); do
     echo "  stall samples: $LOG_DIR/${RUN_UID%-*}_stall_${sw}.tsv"
   done
-  [ -z "${READERS_RECOMPUTE:-}" ] || echo "    of them outside the run (readers of it): $READERS_RECOMPUTE"
   if [ -n "${CMP_WSGS:-}" ] && [ "${COMPARE_FAIL:-0}" = "0" ]; then
     echo "  compare CSV: $COMPARE_CSV"
     tail -40 "$LOG_DIR/${TS}_compare.log" || true
