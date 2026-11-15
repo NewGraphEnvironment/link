@@ -152,9 +152,9 @@
 #   --stall-sample-after=N  minutes one modelling statement may run before a
 #                           second connection starts recording, every 60 s,
 #                           what its backend, parallel workers and blockers
-#                           are doing (default 10, 1..1440, below the
-#                           statement bound; unset, it drops to 1 min under a
-#                           shorter bound, 0.5 under a 1 min one; link#487). Passed on both legs as
+#                           are doing (1..1440, below the statement bound;
+#                           unset, wsg_run_one.R takes 10 min, or half the
+#                           bound when that is shorter; link#487). Passed on both legs as
 #                           LNK_STALL_AFTER_MIN; the rows land in each host's
 #                           log and are split into <TS>_stall_<WSG>.tsv.
 #   --prep-ssh-wait=N       seconds to wait for a fresh droplet to accept a
@@ -248,7 +248,9 @@ RECOMPUTE_JOBS=4
 STATEMENT_TIMEOUT_MIN=30
 STATEMENT_TIMEOUT_SET=0
 # Minutes on one statement before the stall sampler records it (link#487).
-STALL_AFTER_MIN=10
+# Empty: wsg_run_one.R derives it from the group's bound, as every other
+# caller of it gets.
+STALL_AFTER_MIN=""
 STALL_AFTER_SET=0
 # Set when the recompute did not complete for every WSG. Initialised here, not
 # at the recompute, so `set -u` cannot bite on any earlier exit path.
@@ -400,18 +402,10 @@ else
   [ -z "$RUN_UID_ARG" ] || {
     echo "FATAL: --run-uid= is for --recompute-only; a run mints its own" >&2; exit 1; }
   # A sampler waiting as long as the bound never records anything (link#487).
-  # An explicit threshold that does is refused; the default gives way to a short
-  # bound (--statement-timeout=1 exercises the bound, RUNBOOK §8d), to one
-  # minute under it, or half a minute under a 1 min bound (wsg_run_one.R reads
-  # fractional minutes).
-  if [ "$STALL_AFTER_MIN" -ge "$STATEMENT_TIMEOUT_MIN" ]; then
-    if [ "$STALL_AFTER_SET" = "1" ]; then
-      echo "FATAL: --stall-sample-after ($STALL_AFTER_MIN) must be below --statement-timeout ($STATEMENT_TIMEOUT_MIN): it would never record" >&2; exit 1
-    elif [ "$STATEMENT_TIMEOUT_MIN" -gt 1 ]; then
-      STALL_AFTER_MIN=$((STATEMENT_TIMEOUT_MIN - 1))
-    else
-      STALL_AFTER_MIN=0.5
-    fi
+  # Only an explicit threshold is judged here; unset, wsg_run_one.R takes 10 min
+  # or half the group's bound.
+  if [ "$STALL_AFTER_SET" = "1" ] && [ "$STALL_AFTER_MIN" -ge "$STATEMENT_TIMEOUT_MIN" ]; then
+    echo "FATAL: --stall-sample-after ($STALL_AFTER_MIN) must be below --statement-timeout ($STATEMENT_TIMEOUT_MIN): it would never record" >&2; exit 1
   fi
   [ -z "$WSGS_ARG" ] || {
     echo "FATAL: --wsgs= is for --recompute-only; a run's groups come from --focal" >&2; exit 1; }
@@ -635,7 +629,7 @@ echo "  recompute -j: $RECOMPUTE_JOBS"
   && echo "  recompute:    early (each group once it and every group it reads have landed; link#374)" \
   || echo "  recompute:    at the end (--recompute-at-end: after the last leg and consolidate)"; }
 [ "$RECOMPUTE_ONLY" = "1" ] || echo "  statement:    ${STATEMENT_TIMEOUT_MIN} min per modelling statement (PGOPTIONS, both legs); recompute 10 min (wsg_recompute_one.R)"
-[ "$RECOMPUTE_ONLY" = "1" ] || echo "  stall:        samples after ${STALL_AFTER_MIN} min on one statement, every ${LNK_STALL_EVERY_S:-60} s (LNK_STALL_AFTER_MIN, both legs; <TS>_stall_<WSG>.tsv)"
+[ "$RECOMPUTE_ONLY" = "1" ] || echo "  stall:        samples after ${STALL_AFTER_MIN:-10 (or half the bound, if shorter)} min on one statement (LNK_STALL_AFTER_MIN, both legs; <TS>_stall_<WSG>.tsv)"
 # The stall hook (link#371) rides the driver's environment onto the local leg,
 # so one left exported in the operator's shell would stall a real group.
 [ -z "${LNK_TEST_STALL_WSG:-}" ] || echo "  TEST HOOK:    LNK_TEST_STALL_WSG=$LNK_TEST_STALL_WSG (that group stalls until the statement bound cancels it)"

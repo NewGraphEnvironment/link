@@ -130,9 +130,11 @@ ORDER BY ord, blocks_pid NULLS FIRST, pid"
 #' Watch one backend and write a stall sample at each check
 #'
 #' Checks `parent_pid` every `poll_s` seconds and returns once it has
-#' exited, so the watch ends with its group. Every `every_s` seconds, or every
-#' `after_s` when that is shorter (so a stall between `after_s` and a bound
-#' twice as long is still caught), it returns if the backend is gone, and
+#' exited, so the watch ends with its group. It checks every `every_s`
+#' seconds, or more often so that at least two checks fall in each of the
+#' first `after_s` and, given the bound, the window from `after_s` to
+#' `bound_s` (at most once a second): each check returns if the backend is
+#' gone, and
 #' otherwise writes the backend's snapshot (`.lnk_stall_snapshot()`) to
 #' stdout, with the header before the first row, and creates `marker` once a
 #' row is written. Any error is written as one `[wsg_stall_error] <WSG>` line
@@ -144,15 +146,17 @@ ORDER BY ord, blocks_pid NULLS FIRST, pid"
 #' @param wsg Group code.
 #' @param after_s Seconds on one statement before it is sampled.
 #' @param every_s Seconds between checks.
+#' @param bound_s The group's statement bound in seconds; 0 when unbounded.
 #' @param poll_s Seconds between checks of `parent_pid`.
 #' @param marker A file to create once a row is written (the group names its
 #'   stall file only then), or NULL.
 #' @return `"parent_gone"`, `"backend_gone"` or `"error"`, invisibly.
 #' @noRd
 .lnk_stall_watch <- function(conn, pid, parent_pid, wsg, after_s = 600,
-                             every_s = 60, poll_s = 2, marker = NULL) {
+                             every_s = 60, bound_s = 0, poll_s = 2, marker = NULL) {
   header_done <- FALSE
-  every_s <- min(every_s, max(after_s, 1))
+  every_s <- min(every_s, max(after_s / 2, 1))
+  if (bound_s > after_s) every_s <- min(every_s, max((bound_s - after_s) / 2, 1))
   next_at <- Sys.time() + every_s
   repeat {
     if (!isTRUE(tools::pskill(parent_pid, 0L))) return(invisible("parent_gone"))

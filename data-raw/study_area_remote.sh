@@ -26,7 +26,7 @@
 # never touched (link#376).
 #
 # Globals read by remote_leg_cmd: SCHEMA CONFIG RUN_UID RUN_LABEL RUN_SHA
-#   STATEMENT_TIMEOUT_MIN STALL_AFTER_MIN (default 10) FWAPG_GIT_SHA LNK_BCFP_MODEL_VERSION
+#   STATEMENT_TIMEOUT_MIN STALL_AFTER_MIN (empty: wsg_run_one.R's default) FWAPG_GIT_SHA LNK_BCFP_MODEL_VERSION
 #   LNK_BCFP_DATE_COMPLETED
 #   LNK_TEST_STALL_WSG HOST_KIND (assoc, keyed by host)
 #
@@ -112,7 +112,7 @@ remote_leg_cmd() {
   if [ "${HOST_KIND[$host]:-cypher}" = "worker" ]; then
     guard="[ \"\$(git rev-parse HEAD)\" = '${RUN_SHA:-}' ] || { echo \"[WARN] worker WSG \$w not run: HEAD moved off ${RUN_SHA:-}\"; continue; }; "
   fi
-  printf '%s' "$(.remote_cd "$host") && ${stall}export LNK_SCHEMA='$SCHEMA' && export LNK_GUARD_DOWNSTREAM=warn && export LNK_HABITAT_GATE=0 && export PGOPTIONS='-c statement_timeout=${STATEMENT_TIMEOUT_MIN}min' && export LNK_STATEMENT_TIMEOUT_MIN='$STATEMENT_TIMEOUT_MIN' && export LNK_STALL_AFTER_MIN='${STALL_AFTER_MIN:-10}' && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export LNK_RUN_UID='$RUN_UID' && export LNK_RUN_LABEL='${RUN_LABEL:-}' && export LNK_BCFP_MODEL_VERSION='${LNK_BCFP_MODEL_VERSION:-}' && export LNK_BCFP_DATE_COMPLETED='${LNK_BCFP_DATE_COMPLETED:-}' && { for w in $groups; do ${guard}Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done; echo __LNK_LEG_END__; }"
+  printf '%s' "$(.remote_cd "$host") && ${stall}export LNK_SCHEMA='$SCHEMA' && export LNK_GUARD_DOWNSTREAM=warn && export LNK_HABITAT_GATE=0 && export PGOPTIONS='-c statement_timeout=${STATEMENT_TIMEOUT_MIN}min' && export LNK_STATEMENT_TIMEOUT_MIN='$STATEMENT_TIMEOUT_MIN' && export LNK_STALL_AFTER_MIN='${STALL_AFTER_MIN:-}' && export FWAPG_GIT_SHA='${FWAPG_GIT_SHA:-}' && export LNK_RUN_UID='$RUN_UID' && export LNK_RUN_LABEL='${RUN_LABEL:-}' && export LNK_BCFP_MODEL_VERSION='${LNK_BCFP_MODEL_VERSION:-}' && export LNK_BCFP_DATE_COMPLETED='${LNK_BCFP_DATE_COMPLETED:-}' && { for w in $groups; do ${guard}Rscript data-raw/wsg_run_one.R \$w '$CONFIG' || echo \"[WARN] cy WSG \$w failed\"; done; echo __LNK_LEG_END__; }"
 }
 
 # worker_prep_env <host>: the environment worker_prep.sh reads, as words to

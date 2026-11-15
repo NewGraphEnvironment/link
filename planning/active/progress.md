@@ -53,3 +53,12 @@
   `LC_ALL=C` (macOS `/usr/bin/cut` stops at an invalid byte; GNU cut is first on PATH on m1,
   so the test cannot show it red here). One-group checks: a row and the line at 0.5 min; no
   row and no line at 5 min.
+- code-check round 3 (4 findings, all fixed; one cause): each decision was made where its
+  deciding input was not known. The threshold default now lives in `wsg_run_one.R`, which reads
+  the bound (10 min, or half the bound), so the pre-run gate and printed re-models get it too; the
+  sampler is passed the bound and checks at least twice inside the threshold and inside the
+  window to the bound; the driver passes only an explicit flag (empty otherwise); the
+  `stall samples:` line names the lines above and the file a driver run makes of them, since
+  the group cannot tell whether its output is a run log; the banner no longer quotes the
+  local-only `LNK_STALL_EVERY_S`. Cadence mutant: 2 test failures. One-group checks: two rows
+  under the derived 0.5 min default; `stall sampler off` for 5 min under a 1 min bound.

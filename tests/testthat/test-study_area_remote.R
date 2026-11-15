@@ -392,11 +392,11 @@ test_that("the driver refuses a branch name a remote command could not carry", {
   expect_true(any(grepl(want, near, fixed = TRUE)))
 })
 
-test_that("the stall sampler's threshold crosses ssh, 10 min when the driver sets none", {
+test_that("the stall sampler's threshold crosses ssh, empty when the driver sets none", {
   skip_if_no_remote_lib()
   w <- remote_world()
   r <- run_remote(w, c(worker_globals, "remote_leg_cmd a AAAA"))
-  expect_match(r$out, "export LNK_STALL_AFTER_MIN='10' && ", fixed = TRUE)
+  expect_match(r$out, "export LNK_STALL_AFTER_MIN='' && ", fixed = TRUE)
   r <- run_remote(w, c(worker_globals, "STALL_AFTER_MIN=3", "remote_leg_cmd a AAAA"))
   expect_match(r$out, "export LNK_STALL_AFTER_MIN='3' && ", fixed = TRUE)
 })

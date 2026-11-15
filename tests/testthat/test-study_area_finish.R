@@ -997,7 +997,7 @@ test_that("the report names each stall file, and the INCOMPLETE block puts it be
     "[wsg_run_one] CCCC statement_timeout=30min",
     stall_hdr("CCCC"), stall_line("CCCC", "2026-10-18T00:20:00Z", "CCCC", "leader"),
     "[wsg_run_one] CCCC TIMEOUT after 30min: CREATE TEMP TABLE pg_temp.frs_near_river_walk AS SELECT 1",
-    "[wsg_run_one] CCCC stall samples: 20261018_000000_stall_CCCC.tsv"
+    "[wsg_run_one] CCCC stall samples: the [wsg_stall] CCCC lines above (20261018_000000_stall_CCCC.tsv in a driver run)"
   ))
   r <- run_finish_sh(w, sc, "run_finish AAAA,BBBB,CCCC ''")
   expect_equal(r$status, 1L, info = r$out)
@@ -1035,8 +1035,9 @@ test_that("the driver passes the stall threshold on both legs and refuses a bad 
   r <- run_drv("--stall-sample-after=40")
   expect_equal(r$status, 1L)
   expect_match(r$out, "must be below --statement-timeout (30)", fixed = TRUE)
-  # Unset, the default gives way to a short bound: these pass the stall check
-  # and stop at the next one (--wsgs is for --recompute-only).
+  # Unset, nothing is judged here (wsg_run_one.R takes half a short bound):
+  # these pass the stall check and stop at the next one (--wsgs is for
+  # --recompute-only).
   for (b in c("1", "5", "10")) {
     r <- run_drv(paste0("--statement-timeout=", b), "--wsgs=AAAA")
     expect_equal(r$status, 1L, info = b)

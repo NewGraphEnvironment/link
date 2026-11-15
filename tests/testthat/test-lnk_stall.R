@@ -153,6 +153,26 @@ test_that("the watch ends when its group's process or backend is gone, and never
   expect_match(out, "^\\[wsg_stall_error\\] TEST ")
 })
 
+test_that("the watch checks at least twice inside the threshold and the window to the bound", {
+  conn <- skip_if_no_db()
+  skip_if_not_local_db(conn)
+  # A backend that is gone ends the watch at its first check; time that check.
+  gone <- DBI::dbConnect(RPostgres::Postgres(), dbname = "fwapg", host = "localhost",
+                         port = 5432L, user = "postgres", password = "postgres")
+  gone_pid <- DBI::dbGetQuery(gone, "SELECT pg_backend_pid() AS p")$p
+  DBI::dbDisconnect(gone)
+  first_check <- function(...) {
+    t0 <- Sys.time()
+    .lnk_stall_watch(conn, pid = gone_pid, parent_pid = Sys.getpid(), wsg = "TEST",
+                     poll_s = 0.1, ...)
+    as.numeric(difftime(Sys.time(), t0, units = "secs"))
+  }
+  # Threshold 4 s: a check every 2 s, not every 60.
+  expect_lt(first_check(after_s = 4, every_s = 60), 3.5)
+  # Threshold 600 s, bound 606 s: the 6 s window gets a check every 3 s.
+  expect_lt(first_check(after_s = 600, every_s = 60, bound_s = 606), 4.5)
+})
+
 test_that("the watch writes the header once, then a row per backend per check", {
   conn <- skip_if_no_db()
   skip_if_not_local_db(conn)

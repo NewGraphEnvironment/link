@@ -2547,8 +2547,10 @@ went with the cancel. So each group is watched while it runs.
   holds a second connection (`statement_timeout 10s`, `lock_timeout 5s`,
   `connect_timeout 10`, and no `application_name` of its own: it inherits
   `PGAPPNAME`, which the pre-run gate reads to leave a pick's sessions out of
-  its load count and to end them). Every 60 s (or every N, when N is under a
-  minute) it checks the backend (`.lnk_stall_watch()`, `R/lnk_stall.R`).
+  its load count and to end them). Every 60 s it checks the backend
+  (`.lnk_stall_watch()`, `R/lnk_stall.R`), or more often so that at least two
+  checks fall within N and within the window from N to the bound (it is passed
+  the bound).
 - **What it records:** once the backend has been `active` on one statement for
   more than N minutes, each check writes one line per backend:
   the statement itself (`leader`), its parallel workers (`worker`, by
@@ -2570,19 +2572,23 @@ went with the cancel. So each group is watched while it runs.
   driver killed before `run_finish` splits nothing until a `--recompute-only`.
   The summary prints `stall samples: <file>` for every group that has one (a
   group can stall past N and still finish). A cancelled group prints
-  `[wsg_run_one] <WSG> stall samples: <file>` on the line after its `TIMEOUT`
-  line only when the sampler wrote a row (it creates a marker file in the
-  group's R tempdir with its first), and the INCOMPLETE block prints
+  `[wsg_run_one] <WSG> stall samples: the [wsg_stall] <WSG> lines above
+  (<ts>_stall_<WSG>.tsv in a driver run)` on the line after its `TIMEOUT` line,
+  only when the sampler wrote a row (it creates a marker file in the group's R
+  tempdir with its first); it cannot tell whether its output is a run log, so
+  it names the lines first. The INCOMPLETE block prints
   `samples: <file>` under its statement. The sampler rewrites `[wsg_` and
   `__LNK_` inside a field, so a blocker's query cannot read as a log marker.
-- **Setting N:** `study_area_run.sh --stall-sample-after=<min>`, default 10,
-  1 to 1440, refused at or above `--statement-timeout` (it would never record)
-  and under `--recompute-only`. Unset, it gives way to a shorter bound: one
-  minute under it, or 0.5 under `--statement-timeout=1`. It reaches both legs as `LNK_STALL_AFTER_MIN`
-  (the both-legs rule; `REMOTE_LEG_VARS`). A hand run of `wsg_run_one.R`
-  reads `LNK_STALL_AFTER_MIN` (default 10, fractional minutes allowed) and
-  `LNK_STALL_EVERY_S` (default 60); without `LNK_RUN_UID` its `stall samples:`
-  line names the log lines instead of a file.
+- **Setting N:** unset, `wsg_run_one.R` takes 10 min, or half its
+  connection's bound when that is shorter, so every caller (the driver, the
+  pre-run gate, a printed re-model) gets the same default.
+  `study_area_run.sh --stall-sample-after=<min>` (1 to 1440) sets it, refused
+  at or above `--statement-timeout` (it would never record) and under
+  `--recompute-only`; it reaches both legs as `LNK_STALL_AFTER_MIN` (empty when
+  not given; the both-legs rule, `REMOTE_LEG_VARS`). `wsg_run_one.R` turns the
+  sampler off, with a line, when `LNK_STALL_AFTER_MIN` is not below the bound.
+  `LNK_STALL_EVERY_S` (default 60, fractional minutes allowed in
+  `LNK_STALL_AFTER_MIN`) is a test knob read on the local leg only.
 - **It cannot fail the group.** It is another process; a bad setting, a missing
   script or a failed start prints `[wsg_run_one] <WSG> stall sampler off: <why>`
   and the group runs without it, and any error inside it prints one

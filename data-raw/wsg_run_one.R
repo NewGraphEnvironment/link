@@ -27,12 +27,14 @@
 #
 # Stall samples (link#487). Beside each group, data-raw/wsg_stall_sample.R
 # watches this connection's backend from a second one. While one statement runs
-# past LNK_STALL_AFTER_MIN minutes (default 10), it writes what the backend,
-# its parallel workers and its blockers are doing into this log, one
-# `[wsg_stall] <WSG>` line per backend every LNK_STALL_EVERY_S seconds (default
-# 60); the driver splits them into <TS>_stall_<WSG>.tsv. It ends with this
-# process and cannot fail the group: a bad setting or a failed start prints
-# one `stall sampler off` line and the group runs without it.
+# past LNK_STALL_AFTER_MIN minutes (unset: 10, or half this connection's
+# statement bound when that is shorter), it writes what the backend, its
+# parallel workers and its blockers are doing into this log, one
+# `[wsg_stall] <WSG>` line per backend at most every LNK_STALL_EVERY_S seconds
+# (default 60); the driver splits a run log's lines into <TS>_stall_<WSG>.tsv.
+# It ends with this process and cannot fail the group: a bad setting, a
+# threshold at or above the bound, or a failed start prints one
+# `stall sampler off` line and the group runs without it.
 #
 # Usage: [LNK_LOAD=loadall] Rscript wsg_run_one.R <WSG> [config]
 #   LNK_LOAD=loadall -> pkgload::load_all() (dispatcher dev checkout)
@@ -103,7 +105,16 @@ if (nzchar(want_min) && !identical(bound_ms, as.numeric(want_min) * 60000)) {
        "statement_timeout is ", bound, ": PGOPTIONS did not reach it",
        call. = FALSE)
 }
-stall_after_min <- suppressWarnings(as.numeric(Sys.getenv("LNK_STALL_AFTER_MIN", "10")))
+# The threshold is decided here, where the bound is known: every caller
+# (the driver, the pre-run gate, a printed re-model) gets the same default.
+stall_set <- nzchar(Sys.getenv("LNK_STALL_AFTER_MIN"))
+stall_after_min <- if (stall_set) {
+  suppressWarnings(as.numeric(Sys.getenv("LNK_STALL_AFTER_MIN")))
+} else if (bound_ms > 0) {
+  min(10, bound_ms / 60000 / 2)
+} else {
+  10
+}
 stall_every_s <- suppressWarnings(as.numeric(Sys.getenv("LNK_STALL_EVERY_S", "60")))
 stall_file <- NULL
 stall_marker <- tempfile("stall_seen_")
@@ -114,6 +125,9 @@ if (!isTRUE(stall_after_min > 0 && stall_after_min <= 1440 &&
   cat(sprintf(paste("[wsg_run_one] %s stall sampler off: LNK_STALL_AFTER_MIN=%s",
                     "(above 0, at most 1440) or LNK_STALL_EVERY_S=%s (1 to 3600) out of range\n"),
               wsg, Sys.getenv("LNK_STALL_AFTER_MIN"), Sys.getenv("LNK_STALL_EVERY_S")))
+} else if (bound_ms > 0 && stall_after_min * 60000 >= bound_ms) {
+  cat(sprintf("[wsg_run_one] %s stall sampler off: LNK_STALL_AFTER_MIN=%s is not below the bound (%s)\n",
+              wsg, Sys.getenv("LNK_STALL_AFTER_MIN"), bound))
 } else if (length(self) != 1L || !file.exists(sampler)) {
   cat(sprintf("[wsg_run_one] %s stall sampler off: %s not found\n", wsg, sampler))
 } else {
@@ -121,20 +135,24 @@ if (!isTRUE(stall_after_min > 0 && stall_after_min <= 1440 &&
     backend <- DBI::dbGetQuery(conn, "SELECT pg_backend_pid() AS p")$p
     system2(file.path(R.home("bin"), "Rscript"),
             c(shQuote(sampler), wsg, backend, Sys.getpid(),
-              stall_after_min * 60, stall_every_s, shQuote(stall_marker)), wait = FALSE)
+              stall_after_min * 60, stall_every_s, bound_ms / 1000, shQuote(stall_marker)),
+            wait = FALSE)
     TRUE
   }, error = function(e) {
     cat(sprintf("[wsg_run_one] %s stall sampler off: %s\n", wsg,
                 gsub("[[:space:]]+", " ", conditionMessage(e))))
     FALSE
   })
+  # This process cannot tell whether its output is a run log the driver will
+  # split, so it names the lines, and the file a driver run makes of them.
   if (started) {
     uid <- Sys.getenv("LNK_RUN_UID")
-    stall_file <- if (nzchar(uid)) {
-      sprintf("%s_stall_%s.tsv", sub("-.*$", "", uid), wsg)
-    } else {
-      sprintf("the [wsg_stall] %s lines of this log", wsg)
-    }
+    stall_file <- sprintf("the [wsg_stall] %s lines above%s", wsg,
+                          if (nzchar(uid)) {
+                            sprintf(" (%s_stall_%s.tsv in a driver run)", sub("-.*$", "", uid), wsg)
+                          } else {
+                            ""
+                          })
   }
 }
 # A calling handler, so the stack still holds the cancelled statement; the
