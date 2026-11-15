@@ -77,14 +77,14 @@ Plan approved by the user 2026-11-14 as presented (mechanism choices proposed by
 - [x] Run them; record the red output in `progress.md`.
 
 ## Phase 2: The sampler
-- [ ] `R/lnk_stall.R`: `.lnk_stall_snapshot(conn, pid, after_s)` (one query over
+- [x] `R/lnk_stall.R`: `.lnk_stall_snapshot(conn, pid, after_s)` (one query over
       `pg_stat_activity` with `leader_pid` and `unnest(pg_blocking_pids())` for the leader and
       its workers), `.lnk_stall_lines()`, `.lnk_loadavg()`, `.lnk_stall_watch(conn, pid,
       parent_pid, wsg, after_s, every_s)`; roxygen `@noRd`, matching `R/utils.R`'s style.
-- [ ] `data-raw/wsg_stall_sample.R`: the same `LNK_LOAD` switch as `wsg_run_one.R`, connect,
+- [x] `data-raw/wsg_stall_sample.R`: the same `LNK_LOAD` switch as `wsg_run_one.R`, connect,
       call the watch inside `tryCatch`, always exit 0.
-- [ ] `data-raw/pretest_inputs.csv`: `R/lnk_stall.R` and `data-raw/wsg_stall_sample.R` as `any`.
-- [ ] Phase 1's sampler tests green.
+- [x] `data-raw/pretest_inputs.csv`: `R/lnk_stall.R` and `data-raw/wsg_stall_sample.R` as `any`.
+- [x] Phase 1's sampler tests green.
 
 ## Phase 3: `wsg_run_one.R`
 - [ ] Read and validate `LNK_STALL_AFTER_MIN` / `LNK_STALL_EVERY_S`; start the sampler after

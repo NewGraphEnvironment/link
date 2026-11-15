@@ -16,3 +16,4 @@
   stalled session runs in a background Rscript, found by `application_name`; `count(*)` from
   `pg_stat_activity` arrives as `integer64` (cast `::int`); `tools::pskill(pid, 0L)` is TRUE for a
   live pid and FALSE for a dead one on macOS.
+- Phase 2: `R/lnk_stall.R` and `data-raw/wsg_stall_sample.R`; `test-lnk_stall.R` 37/37 pass. A first run of the watch test failed because `sh -c 'sleep 4 & echo $!'` holds system2's stdout pipe until the sleep exits (redirected the sleep); `test-pretest.R` passes with the two new map rows.

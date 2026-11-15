@@ -19,6 +19,7 @@ link,^R/lnk_pipeline_species\.R$,any,"runs once per group whatever the group hol
 link,^R/lnk_presence\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
 link,^R/lnk_species_pooling\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
 link,^R/lnk_preflight_discharge\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
+link,^R/lnk_stall\.R$,any,"the stall sampler (#487): watches every group's backend from a second connection, whatever the group holds"
 link,^R/lnk_pipeline_break\.R$,segments,cost scales with the group's segments
 link,^R/lnk_pipeline_persist\.R$,segments,cost scales with the group's segments
 link,^R/lnk_persist_init\.R$,segments,cost scales with the group's segments
@@ -154,6 +155,7 @@ fresh,^R/zzz\.R$,none,"not reached from link's modelling path at fresh v0.44.0 a
 link,^R/lnk_habitat_gate\.R$,unexercised,"a run models with LNK_HABITAT_GATE=0 and settles in the recompute, which the gate does not run"
 link,^DESCRIPTION$,none,"the fresh pin is compared as fresh's own changed files and by the record check; other dependency versions (crate, DBI) are not recorded (RUNBOOK §8d)"
 link,^data-raw/wsg_run_one\.R$,any,the per-group entry point every pick runs
+link,^data-raw/wsg_stall_sample\.R$,any,started by wsg_run_one.R beside every group (#487)
 link,^data-raw/wsg_recompute_one\.R$,unexercised,the post-consolidate recompute
 link,^data-raw/schema_consolidate\.R$,unexercised,copies cloud hosts' groups into the dispatcher's persist
 link,^inst/extdata/wsg_regions\.csv$,observations,species pooling regions (lnk_species_pooling)

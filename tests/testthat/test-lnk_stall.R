@@ -143,7 +143,7 @@ test_that("the watch writes the header once, then a row per backend per check", 
   skip_if_not_local_db(conn)
   pid <- stall_session("SELECT pg_sleep(30) -- link#487 watch", conn)
   # The parent is a process that ends after a few checks.
-  parent <- system2("sh", c("-c", shQuote("sleep 4 & echo $!")), stdout = TRUE)
+  parent <- system2("sh", c("-c", shQuote("sleep 4 >/dev/null 2>&1 & echo $!")), stdout = TRUE)
   out <- capture.output(r <- .lnk_stall_watch(
     conn, pid = pid, parent_pid = as.integer(parent), wsg = "TEST",
     after_s = 0, every_s = 1, poll_s = 0.2))
