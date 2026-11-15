@@ -17,7 +17,7 @@ ticked and not **waiting**; `/planning-init <umbrella>` plans it, one phase per 
 
 | move | umbrella | batches | state |
 |---|---|---|---|
-| - [ ] 1 | #469 | 1: the parent gradient and the grad tokens (4 issues) | open: start here |
+| - [x] 1 | #469 | 1: the parent gradient and the grad tokens (4 issues) | done: https://github.com/NewGraphEnvironment/link/pull/486 |
 | - [ ] 2 | #470 | 2, 3: which records count, what each lift rests on (7 issues) | open |
 | - [ ] 3 | #471 | 4: docs, and a check that fails on warnings (4 issues) | open |
 | - [ ] 4 | #472 | 5: `default`'s presence table as a copy plus an overlay (4 issues) | open: after move 2, whose record rule the presence check reads; one provincial re-model covers both moves' `acc` rows |
@@ -67,7 +67,7 @@ built and knowledge#120 reads it.
 
 ### 1. The parent gradient and the grad tokens
 
-- [ ] Carried by move 1, #469
+- [x] Carried by move 1, #469 (merged in https://github.com/NewGraphEnvironment/link/pull/486)
 
 #460 (a `grad-fwa` vocabulary row for the Freshwater Atlas segment's own gradient, which no build writes),
 #420 (tokens for builds older than the vocabulary; its Atlas-line item is #460 now), #462 (under `grad-parent`
