@@ -106,9 +106,9 @@ ORDER BY ord, blocks_pid NULLS FIRST, pid"
 #' `sysctl -n vm.loadavg` (`{ 2.10 1.98 1.85 }`) alike.
 #' @noRd
 .lnk_loadavg_parse <- function(txt) {
-  n <- suppressWarnings(as.numeric(
-    regmatches(paste(txt, collapse = " "),
-               gregexpr("[0-9]+(\\.[0-9]+)?", paste(txt, collapse = " ")))[[1]]))
+  txt <- paste(txt, collapse = " ")
+  hits <- regmatches(txt, gregexpr("[0-9]+(\\.[0-9]+)?", txt))[[1]]
+  n <- suppressWarnings(as.numeric(hits))
   if (length(n) < 3L) return(rep(NA_real_, 3))
   n[1:3]
 }
@@ -154,9 +154,10 @@ ORDER BY ord, blocks_pid NULLS FIRST, pid"
     if (Sys.time() >= next_at) {
       next_at <- next_at + every_s
       res <- tryCatch({
-        here <- DBI::dbGetQuery(conn,
-          "SELECT count(*)::int AS n FROM pg_stat_activity WHERE pid = $1",
-          params = list(as.integer(pid)))$n
+        here <- DBI::dbGetQuery(
+          conn, "SELECT count(*)::int AS n FROM pg_stat_activity WHERE pid = $1",
+          params = list(as.integer(pid))
+        )$n
         if (identical(here, 0L)) {
           "backend_gone"
         } else {

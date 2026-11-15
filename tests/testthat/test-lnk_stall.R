@@ -47,20 +47,25 @@ test_that("the load average parses from Linux and macOS, and is NA when unreadab
 # dbSendQuery until the statement returns. Found by its application_name.
 stall_session <- function(sql, conn, env = parent.frame()) {
   tag <- sprintf("lnk_test_stall_%d_%d", Sys.getpid(), sample.int(1e6, 1L))
-  code <- sprintf(paste(
-    "c <- DBI::dbConnect(RPostgres::Postgres(), dbname = 'fwapg', host = 'localhost',",
-    "port = 5432L, user = 'postgres', password = 'postgres', application_name = '%s');",
-    "DBI::dbExecute(c, \"SET statement_timeout = '60s'\");",
-    "try(DBI::dbExecute(c, %s), silent = TRUE)"), tag, deparse(sql))
-  withr::defer(try(DBI::dbGetQuery(conn, sprintf(
-    "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE application_name = '%s'",
-    tag)), silent = TRUE), envir = env)
+  code <- sprintf(
+    paste(
+      "c <- DBI::dbConnect(RPostgres::Postgres(), dbname = 'fwapg', host = 'localhost',",
+      "port = 5432L, user = 'postgres', password = 'postgres', application_name = '%s');",
+      "DBI::dbExecute(c, \"SET statement_timeout = '60s'\");",
+      "try(DBI::dbExecute(c, %s), silent = TRUE)"
+    ),
+    tag, deparse(sql)
+  )
+  end_sql <- sprintf(
+    "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE application_name = '%s'", tag
+  )
+  withr::defer(try(DBI::dbGetQuery(conn, end_sql), silent = TRUE), envir = env)
   system2(file.path(R.home("bin"), "Rscript"), c("-e", shQuote(code)),
           wait = FALSE, stdout = FALSE, stderr = FALSE)
   for (i in seq_len(100)) {
     p <- DBI::dbGetQuery(conn, sprintf(
-      "SELECT pid FROM pg_stat_activity WHERE application_name = '%s' AND state = 'active'",
-      tag))$pid
+      "SELECT pid FROM pg_stat_activity WHERE application_name = '%s' AND state = 'active'", tag
+    ))$pid
     if (length(p) == 1L) return(p)
     Sys.sleep(0.2)
   }
@@ -122,23 +127,24 @@ test_that("the watch ends when its group's process or backend is gone, and never
   conn <- skip_if_no_db()
   skip_if_not_local_db(conn)
   dead <- as.integer(system2("sh", c("-c", shQuote("echo $$")), stdout = TRUE))
-  expect_identical(
-    .lnk_stall_watch(conn, pid = 1L, parent_pid = dead, wsg = "TEST", poll_s = 0.1),
-    "parent_gone")
+  r <- .lnk_stall_watch(conn, pid = 1L, parent_pid = dead, wsg = "TEST", poll_s = 0.1)
+  expect_identical(r, "parent_gone")
   gone <- DBI::dbConnect(RPostgres::Postgres(), dbname = "fwapg", host = "localhost",
                          port = 5432L, user = "postgres", password = "postgres")
   gone_pid <- DBI::dbGetQuery(gone, "SELECT pg_backend_pid() AS p")$p
   DBI::dbDisconnect(gone)
   Sys.sleep(0.5)
-  expect_identical(
-    .lnk_stall_watch(conn, pid = gone_pid, parent_pid = Sys.getpid(), wsg = "TEST",
-                     every_s = 0.1, poll_s = 0.1),
-    "backend_gone")
+  r <- .lnk_stall_watch(conn, pid = gone_pid, parent_pid = Sys.getpid(), wsg = "TEST",
+                        every_s = 0.1, poll_s = 0.1)
+  expect_identical(r, "backend_gone")
   closed <- DBI::dbConnect(RPostgres::Postgres(), dbname = "fwapg", host = "localhost",
                            port = 5432L, user = "postgres", password = "postgres")
   DBI::dbDisconnect(closed)
-  expect_no_error(out <- capture.output(r <- .lnk_stall_watch(
-    closed, pid = 1L, parent_pid = Sys.getpid(), wsg = "TEST", every_s = 0.1, poll_s = 0.1)))
+  watch_closed <- function() {
+    .lnk_stall_watch(closed, pid = 1L, parent_pid = Sys.getpid(), wsg = "TEST",
+                     every_s = 0.1, poll_s = 0.1)
+  }
+  expect_no_error(out <- capture.output(r <- watch_closed()))
   expect_identical(r, "error")
   expect_length(out, 1L)
   expect_match(out, "^\\[wsg_stall_error\\] TEST ")
@@ -150,9 +156,10 @@ test_that("the watch writes the header once, then a row per backend per check", 
   pid <- stall_session("SELECT pg_sleep(30) -- link#487 watch", conn)
   # The parent is a process that ends after a few checks.
   parent <- system2("sh", c("-c", shQuote("sleep 4 >/dev/null 2>&1 & echo $!")), stdout = TRUE)
-  out <- capture.output(r <- .lnk_stall_watch(
-    conn, pid = pid, parent_pid = as.integer(parent), wsg = "TEST",
-    after_s = 0, every_s = 1, poll_s = 0.2))
+  out <- capture.output(
+    r <- .lnk_stall_watch(conn, pid = pid, parent_pid = as.integer(parent), wsg = "TEST",
+                          after_s = 0, every_s = 1, poll_s = 0.2)
+  )
   expect_identical(r, "parent_gone")
   expect_identical(sum(grepl("^\\[wsg_stall\\] TEST\tsampled_utc\t", out)), 1L)
   expect_gte(sum(grepl("^\\[wsg_stall\\] TEST\t[0-9]{4}-", out)), 2L)

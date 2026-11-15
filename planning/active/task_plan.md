@@ -100,13 +100,13 @@ Plan approved by the user 2026-11-14 as presented (mechanism choices proposed by
 - [x] Phase 1's driver tests green.
 
 ## Phase 5: Live evidence
-- [ ] (review #19) If a persistent worker is reachable, one `--workers=` leg with the hook on a
+- [x] (review #19, measured another way: see the README; a worker run is refused on m1/m4's differing primitives) If a persistent worker is reachable, one `--workers=` leg with the hook on a
       worker group: its `_stall_` file, and the leg ending within seconds of its last group.
-- [ ] One dispatcher-only run on a scratch schema (with `--pretest-note=`, review #9) with `LNK_TEST_STALL_WSG=<small group>`,
+- [x] One dispatcher-only run on a scratch schema (with `--pretest-note=`, review #9) with `LNK_TEST_STALL_WSG=<small group>`,
       `--statement-timeout=2 --stall-sample-after=1`, `LNK_STALL_EVERY_S=15`: the stalled
       group's `_stall_` file holds `PgSleep` rows, the TIMEOUT and `stall samples:` lines and the
       INCOMPLETE block name it, the other group finishes; then a re-model without the hook.
-- [ ] `data-raw/logs/stall_sample_487/README.md` with the run log, the file and the summary
+- [x] `data-raw/logs/stall_sample_487/README.md` with the run log, the file and the summary
       (redacted by the driver's rule).
 
 ## Phase 6: Docs and release

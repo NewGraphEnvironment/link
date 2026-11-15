@@ -623,7 +623,7 @@ echo "  recompute -j: $RECOMPUTE_JOBS"
   && echo "  recompute:    early (each group once it and every group it reads have landed; link#374)" \
   || echo "  recompute:    at the end (--recompute-at-end: after the last leg and consolidate)"; }
 [ "$RECOMPUTE_ONLY" = "1" ] || echo "  statement:    ${STATEMENT_TIMEOUT_MIN} min per modelling statement (PGOPTIONS, both legs); recompute 10 min (wsg_recompute_one.R)"
-[ "$RECOMPUTE_ONLY" = "1" ] || echo "  stall:        samples after ${STALL_AFTER_MIN} min on one statement, every 60 s (LNK_STALL_AFTER_MIN, both legs; <TS>_stall_<WSG>.tsv)"
+[ "$RECOMPUTE_ONLY" = "1" ] || echo "  stall:        samples after ${STALL_AFTER_MIN} min on one statement, every ${LNK_STALL_EVERY_S:-60} s (LNK_STALL_AFTER_MIN, both legs; <TS>_stall_<WSG>.tsv)"
 # The stall hook (link#371) rides the driver's environment onto the local leg,
 # so one left exported in the operator's shell would stall a real group.
 [ -z "${LNK_TEST_STALL_WSG:-}" ] || echo "  TEST HOOK:    LNK_TEST_STALL_WSG=$LNK_TEST_STALL_WSG (that group stalls until the statement bound cancels it)"

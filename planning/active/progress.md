@@ -30,3 +30,10 @@
   `test-study_area_remote.R` 22/22, `test-lnk_pipeline_prepare.R` 56/56, `test-lnk_stall.R` 39/39,
   `test-pretest.R` 155 pass. Mutants red: samples line printed without a file (1 of 4 stall
   tests), `STALL_WSGS` never set (2 of 4), marker neutralising removed (1 failure).
+- Phase 5 (2026-11-15 00:14-00:23Z): run `20261115_001427-474338b7` (NBNK, EUCH stalled) wrote
+  `20261115_001427_stall_EUCH.tsv` (4 PgSleep rows) and named it on the TIMEOUT-following line,
+  in the summary and under the statement; EUCH re-modelled through a pipe, which closed 1.2 s
+  after R exited; `--recompute-only` exit 0. A worker leg was not run: m1 and m4 hold
+  different modelled crossings since 2026-11-13, so the pre-spend compare refuses it. Scratch
+  schema dropped, worktree removed. Evidence `data-raw/logs/stall_sample_487/`.
+- The banner printed "every 60 s" under `LNK_STALL_EVERY_S=15`: it now prints the variable.

@@ -1,0 +1,62 @@
+=== study_area_run 20261115_002010 ===
+  run_uid:      20261115_001427-474338b7
+  run_label:    487-e2e
+  config:       default
+  branch:        (cyphers run this ref)
+  persist:      fresh_487
+  cyphers:      <none> (0)
+  workers:      <none> (0; persistent, never burned)
+  log dir:      /Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run
+  vintage max:  7 d
+  recompute -j: 4
+  buckets:      closure (each --focal= expanded to its drainage closure, DS-first)
+  MODE:         --recompute-only (finish run_uid 20261115_001427-474338b7; no spend)
+  phases:       /Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run/20261115_002010_phases.tsv
+=== --recompute-only: run_uid 20261115_001427-474338b7 ===
+  pre-flight, dispatch and consolidate SKIPPED: this reads only the
+  persisted tables in fresh_487, and spins up nothing.
+  ✓ run_uid 20261115_001427-474338b7 was built with --config=default
+  expected WSGs: 2: the 2 in /Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run/20261115_001427_run_wsgs.tsv
+  [phase] prep ok 2026-11-15T00:20:10Z -> 2026-11-15T00:20:11Z (0.0 min, 2 groups)
+=== verify WSG coverage in fresh_487 (run_uid 20261115_001427-474338b7) ===
+  2/2 run WSGs have rows from a build this run finished
+  classes: /Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run/20261115_002010_coverage.tsv
+  [phase] coverage ok 2026-11-15T00:20:11Z -> 2026-11-15T00:20:11Z (0.0 min, 2 groups)
+=== groups outside the run that read it (fresh_487) ===
+  ✓ outside readers: 0 to recompute, 0 named (/Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run/20261115_002010_outside_readers.tsv)
+=== post-consolidate recompute (lnk_access, 2 WSGs, -j4) ===
+  ✓ log tables present in fresh_487
+  ✓ barrier views built once for fresh_487
+  [phase] views ok 2026-11-15T00:21:25Z -> 2026-11-15T00:21:28Z (0.1 min)
+  ordering 241 known WSG time(s) longest-first (median 0.57 min for the rest)
+[fanout] recompute - OK: 2/2 job(s) succeeded
+  ✓ recompute: 2/2 WSGs
+  [phase] recompute ok 2026-11-15T00:21:28Z -> 2026-11-15T00:21:31Z (0.1 min, 2 groups)
+=== compare (tunnel-free) ===
+  ✓ compare CSV: /Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run/20261115_002010_compare.csv
+  [phase] compare ok 2026-11-15T00:21:32Z -> 2026-11-15T00:21:35Z (0.1 min, 2 groups)
+=== summary ===
+  phases (/Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run/20261115_002010_phases.tsv):
+    phase       host       start_utc            end_utc              minutes groups status
+    prep                   2026-11-15T00:20:10Z 2026-11-15T00:20:11Z     0.0      2 ok
+    coverage               2026-11-15T00:20:11Z 2026-11-15T00:20:11Z     0.0      2 ok
+    views                  2026-11-15T00:21:25Z 2026-11-15T00:21:28Z     0.1        ok
+    recompute              2026-11-15T00:21:28Z 2026-11-15T00:21:31Z     0.1      2 ok
+    compare                2026-11-15T00:21:32Z 2026-11-15T00:21:35Z     0.1      2 ok
+  critical path: 1.4 min (first start to last end)
+  run WSGs:        EUCH,NBNK
+  recomputed WSGs: EUCH,NBNK
+  stall samples: /Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run/20261115_001427_stall_EUCH.tsv
+  compare CSV: /Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run/20261115_002010_compare.csv
+[study_area_compare] 5 rows across 2/2 WSGs -> /Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run/20261115_002010_compare.csv
+# A tibble: 5 × 7
+  wsg   species total_segs match_pct n_diffs top_pattern       top_pattern_count
+* <chr> <chr>        <int>     <dbl>   <int> <chr>                         <int>
+1 EUCH  CH            7578      72.6    2074 "REAR;MODELLED |…               680
+2 NBNK  CM            3895      83.2     653 "ACCESS;NONE | "                455
+3 NBNK  CO            3895      64.6    1378 "REAR;NONE | ACC…               828
+4 NBNK  PK            3895      83.0     661 "ACCESS;NONE | "                455
+5 NBNK  SK            3895      86.6     520 "ACCESS;NONE | "                483
+=== study_area_run done ===
+  ✓ redacted host addresses in 12 log file(s)
+exit=0

@@ -1,3 +1,11 @@
+# link 0.83.0
+
+**A stalled statement leaves a record of what it was waiting on** ([#487](https://github.com/NewGraphEnvironment/link/issues/487)). `frs_near_river_walk` stalled on the dispatcher on four dates and each time the backend was cancelled at the statement bound before anyone read `pg_stat_activity`. No modelling output changes and no vocabulary token moves.
+
+- **Each group is watched from a second connection.** `wsg_run_one.R` starts `data-raw/wsg_stall_sample.R` beside the group. While the group's backend has been on one statement longer than `--stall-sample-after` minutes (default 10), every 60 s it writes one line per backend into the group's log: the statement, its parallel workers and each session `pg_blocking_pids()` names, with their state, wait event, start time and query, the host's load average and the database's active backends. It ends with its group and cannot fail it.
+- **The driver splits the lines into `<TS>_stall_<WSG>.tsv`** (`run_stalls`), lists each file in the summary, and prints it beside the statement under `statement bound hit`; a cancelled group names its file on the line after its `TIMEOUT` line. `--stall-sample-after` reaches both legs as `LNK_STALL_AFTER_MIN` and is refused at or above `--statement-timeout`.
+- The pre-run gate watches `data-raw/wsg_stall_sample.R`, so this release, like any change to `R/`, needs the gate again before a provincial run. Mechanics: RUNBOOK §8d, "A stalled statement leaves samples".
+
 # link 0.82.0
 
 **What a run stamps names what it read, the pre-run gate finds its own history, and primitive loads survive a flaky service and record what they loaded** ([#474](https://github.com/NewGraphEnvironment/link/issues/474), backlog move 6). No modelling output changes and no vocabulary token moves; the pre-run gate runs again before the next provincial run.
