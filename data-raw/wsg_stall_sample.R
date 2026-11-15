@@ -28,8 +28,10 @@ tryCatch({
   }
   conn <- DBI::dbConnect(RPostgres::Postgres(), dbname = "fwapg", host = "localhost",
                          port = 5432L, user = "postgres", password = "postgres",
-                         application_name = "lnk_stall_sample", connect_timeout = 10)
-  # PGOPTIONS carries the group's statement bound; the watch's own queries
+                         connect_timeout = 10)
+  # No application_name of its own: it inherits PGAPPNAME, which the pre-run
+  # gate uses to leave a pick's sessions out of its load count and to end
+  # them. PGOPTIONS carries the group's statement bound; the watch's own queries
   # are catalogue reads, so a tight bound of their own.
   DBI::dbExecute(conn, "SET statement_timeout = '10s'")
   DBI::dbExecute(conn, "SET lock_timeout = '5s'")
@@ -37,7 +39,7 @@ tryCatch({
                           wsg = wsg, after_s = num[3], every_s = num[4])
   try(DBI::dbDisconnect(conn), silent = TRUE)
 }, error = function(e) {
-  cat(sprintf("[wsg_stall_error] %s %s\n",
-              wsg, gsub("[[:space:]]+", " ", conditionMessage(e))))
+  try(cat(sprintf("[wsg_stall_error] %s %s\n",
+                  wsg, gsub("[[:space:]]+", " ", conditionMessage(e)))), silent = TRUE)
 })
 quit(status = 0)

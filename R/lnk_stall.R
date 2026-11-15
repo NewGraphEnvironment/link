@@ -58,7 +58,8 @@ SELECT to_char(clock_timestamp() AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\
        to_char(query_start AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS query_start,
        left(regexp_replace(query, '\\s+', ' ', 'g'), 200) AS query,
        (SELECT count(*)::int FROM pg_stat_activity
-        WHERE datname = current_database() AND state = 'active') AS n_active
+        WHERE datname = current_database() AND state = 'active'
+          AND pid <> pg_backend_pid()) AS n_active
 FROM s
 ORDER BY ord, blocks_pid NULLS FIRST, pid"
   DBI::dbGetQuery(conn, sql, params = list(as.integer(pid), as.numeric(after_s)))
@@ -70,8 +71,9 @@ ORDER BY ord, blocks_pid NULLS FIRST, pid"
 #' @param wsg The group code, in the tag and the `wsg` column.
 #' @param load The host's 1, 5 and 15 minute load averages.
 #' @param header Write the column names first.
-#' @return `[wsg_stall] <WSG>\t<fields>` lines; NA is an empty field, and no
-#'   field holds a tab, carriage return or newline.
+#' @return `[wsg_stall] <WSG>\t<fields>` lines; NA is an empty field, no
+#'   field holds a tab, carriage return or newline, and none holds `[wsg_` or
+#'   `__LNK_`, which the driver's log readers match.
 #' @noRd
 .lnk_stall_lines <- function(df, wsg, load, header = FALSE) {
   tag <- paste0("[wsg_stall] ", wsg, "\t")
@@ -85,6 +87,10 @@ ORDER BY ord, blocks_pid NULLS FIRST, pid"
       v <- as.character(df[[col]])
       v[is.na(v)] <- ""
       v <- gsub("[\t\r\n]+", " ", v)
+      # Host logs are grepped unanchored for `[wsg_run_one] <WSG> done` and
+      # `__LNK_LEG_END__`: a blocker's query text must not read as either.
+      v <- gsub("[wsg_", "[wsg-", v, fixed = TRUE)
+      v <- gsub("__LNK_", "--LNK_", v, fixed = TRUE)
       if (identical(col, "query")) v <- substr(v, 1L, 200L)
       v
     })
@@ -166,9 +172,12 @@ ORDER BY ord, blocks_pid NULLS FIRST, pid"
           "ok"
         }
       }, error = function(e) {
-        cat(sprintf("[wsg_stall_error] %s %s\n", wsg,
-                    gsub("[[:space:]]+", " ", conditionMessage(e))))
-        flush(stdout())
+        # The print itself can fail (a dropped ssh link): still no condition.
+        try({
+          cat(sprintf("[wsg_stall_error] %s %s\n", wsg,
+                      gsub("[[:space:]]+", " ", conditionMessage(e))))
+          flush(stdout())
+        }, silent = TRUE)
         "error"
       })
       if (!identical(res, "ok")) return(invisible(res))

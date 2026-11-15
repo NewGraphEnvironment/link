@@ -1009,6 +1009,37 @@ test_that("the report names each stall file, and the INCOMPLETE block puts it be
   expect_match(out[i + 1L], "^        samples: .*20261018_000000_stall_CCCC\\.tsv$")
 })
 
+test_that("the driver passes the stall threshold on both legs and refuses a bad one", {
+  skip_if_no_finish_lib()
+  drv <- readLines(finish_driver())
+  from <- grep("=== run buckets (DS-first) ===", drv, fixed = TRUE)
+  to <- grep("host runs finished (per-WSG soft-fail", drv, fixed = TRUE)
+  legs <- drv[from:to]
+  legs <- legs[!grepl("^[[:space:]]*#", legs)]
+  expect_length(grep('LNK_STALL_AFTER_MIN="$STALL_AFTER_MIN"', legs, fixed = TRUE), 1L)
+  expect_length(grep("echo \"  stall:", drv, fixed = TRUE), 1L)
+  run_drv <- function(...) {
+    out <- suppressWarnings(system2(hosts_bash(), c(shQuote(finish_driver()), ...),
+                                    stdout = TRUE, stderr = TRUE))
+    list(out = paste(out, collapse = "\n"), status = attr(out, "status") %||% 0L)
+  }
+  for (bad in c("0", "abc", "", "-5", "1441", "1.5")) {
+    r <- run_drv(paste0("--stall-sample-after=", bad))
+    expect_equal(r$status, 1L, info = bad)
+    expect_match(r$out, "--stall-sample-after", fixed = TRUE, info = bad)
+  }
+  # At or above the bound it would never record.
+  r <- run_drv("--statement-timeout=5", "--stall-sample-after=5")
+  expect_equal(r$status, 1L)
+  expect_match(r$out, "must be below --statement-timeout", fixed = TRUE)
+  r <- run_drv("--stall-sample-after=40")
+  expect_equal(r$status, 1L)
+  expect_match(r$out, "must be below --statement-timeout (30)", fixed = TRUE)
+  r <- run_drv("--recompute-only", paste0("--run-uid=", finish_uid), "--stall-sample-after=5")
+  expect_equal(r$status, 1L)
+  expect_match(r$out, "--recompute-only takes no", fixed = TRUE)
+})
+
 test_that("wsg_run_one.R names the stall file on the line after its TIMEOUT line", {
   skip_if_no_finish_lib()
   src <- readLines(testthat::test_path("..", "..", "data-raw", "wsg_run_one.R"))

@@ -26,6 +26,11 @@ test_that("a row is one line: tagged, tab-separated, no tab or newline inside a 
   expect_false(grepl("[\t\n\r]", row[["query"]]))
   expect_lte(nchar(row[["query"]]), 200L)
   expect_true(startsWith(row[["query"]], "CREATE TEMP TABLE t AS SELECT x"))
+  # A blocker's query cannot read as a log marker the driver greps for.
+  df$query <- "SELECT '[wsg_run_one] ABCD done in 1 min', '__LNK_LEG_END__'"
+  q <- .lnk_stall_lines(df, "SANJ", load = c(1, 1, 1))
+  expect_false(grepl("[wsg_run_one]", q, fixed = TRUE))
+  expect_false(grepl("__LNK_LEG_END__", q, fixed = TRUE))
   # No header asked for, none written.
   expect_length(.lnk_stall_lines(df, "SANJ", load = c(1, 1, 1)), 1L)
 })
@@ -115,6 +120,7 @@ test_that("a lock stall names the blocking session's pid and query", {
 
 test_that("the watch ends when its group's process or backend is gone, and never raises", {
   conn <- skip_if_no_db()
+  skip_if_not_local_db(conn)
   dead <- as.integer(system2("sh", c("-c", shQuote("echo $$")), stdout = TRUE))
   expect_identical(
     .lnk_stall_watch(conn, pid = 1L, parent_pid = dead, wsg = "TEST", poll_s = 0.1),

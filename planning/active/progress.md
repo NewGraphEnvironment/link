@@ -23,3 +23,10 @@
   `LNK_STALL_AFTER_MIN=0.25`, `LNK_STALL_EVERY_S=10`): four `PgSleep` leader rows, the TIMEOUT
   and `stall samples:` lines, exit 1, no sampler process left 4 s later
   (`data-raw/logs/stall_sample_487/wsg_run_one_adms.log`).
+- Plan review landed (2026-11-15 ~00:15 UTC): `planning/active/review-487.md`; dispositions in
+  `findings.md`. Folded into Phases 2-4.
+- Phase 4: `--stall-sample-after` (both legs, refused under `--recompute-only` and at or above
+  the bound), `run_stalls` in the finish lib. `test-study_area_finish.R` 48/48,
+  `test-study_area_remote.R` 22/22, `test-lnk_pipeline_prepare.R` 56/56, `test-lnk_stall.R` 39/39,
+  `test-pretest.R` 155 pass. Mutants red: samples line printed without a file (1 of 4 stall
+  tests), `STALL_WSGS` never set (2 of 4), marker neutralising removed (1 failure).

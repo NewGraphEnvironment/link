@@ -57,3 +57,27 @@ Use the existing `LNK_TEST_STALL_WSG` hook: a `pg_sleep` stall must produce rows
 
 | Error | Resolution |
 |-------|------------|
+
+## Plan review disposition (review-487.md)
+
+| # | finding | done |
+|---|---|---|
+| 1 | watch test's parent dead before the watch | fixed in Phase 2 (sleep redirected), found by running it before the review landed |
+| 2 | orphaned sampler holding a remote leg | `connect_timeout = 10`, `statement_timeout 10s`, parent polled every 2 s, error print in `try`; no killable launch (no processx); the residual risk (a sampler hung outside any DB call) is stated in the RUNBOOK; Phase 5 adds a worker leg to measure the leg end |
+| 3 | sampler invisible to the gate | `data-raw/wsg_stall_sample.R` added to `PRETEST_LINK_PATHS` |
+| 4 | remote tests and `set -u` | `${STALL_AFTER_MIN:-10}`, header updated, pinned string updated, a test of the export |
+| 5 | env line placement | on the `LNK_STATEMENT_TIMEOUT_MIN` line; `test-lnk_pipeline_prepare.R` passes |
+| 6 | `--recompute-only` | refuses `--stall-sample-after` |
+| 7 | threshold at or above the bound | driver refuses it; `wsg_run_one.R` names the file only when `bound_ms > N*60000` (already) |
+| 8 | `<TS>` outside the driver | without `LNK_RUN_UID` the line names "the [wsg_stall] <WSG> lines of this log" (already) |
+| 9 | Phase 5 refused by the gate | Phase 5 runs with `--pretest-note=` (an override row) |
+| 10 | live tests on a non-local DB | `skip_if_not_local_db()` added to the watch test |
+| 11 | query text faking a log marker | `[wsg_` and `__LNK_` rewritten in every text field; tested, mutant red |
+| 13 | heavyweight locks only | RUNBOOK says so; leader matched by `pid = $1`, workers by `leader_pid` |
+| 15 | own application_name | removed; it inherits `PGAPPNAME` |
+| 16 | per-group `load_all()` | kept for parity with the group; Phase 5 measures it |
+| 18 | `run_stalls` placement | in `run_finish_report` before the INCOMPLETE exit; RUNBOOK notes a driver killed earlier splits at `--recompute-only` |
+| 19 | remote path unexercised | Phase 5 adds a `--workers=` leg if a worker is reachable |
+| 21 | TIMEOUT line moved | recorded for #487's `## Decisions` |
+| 22 | `n_active` counts the sampler | excludes `pg_backend_pid()` |
+| 12, 14, 17, 20 | confirmations | no change |

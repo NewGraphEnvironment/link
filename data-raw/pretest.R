@@ -108,7 +108,7 @@ pretest_git <- function(dir, args) {
 # the data-raw scripts a run executes.
 PRETEST_LINK_PATHS <- c("R/", "inst/extdata/", "DESCRIPTION", "data-raw/wsg_run_one.R",
                         "data-raw/wsg_recompute_one.R", "data-raw/schema_consolidate.R",
-                        "data-raw/study_area_run.sh")
+                        "data-raw/study_area_run.sh", "data-raw/wsg_stall_sample.R")
 
 # Files changed in link between two commits, under PRETEST_LINK_PATHS, less
 # the config bundles outside `chain` (another bundle's change cannot reach

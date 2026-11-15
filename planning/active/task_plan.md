@@ -92,15 +92,17 @@ Plan approved by the user 2026-11-14 as presented (mechanism choices proposed by
 - [x] `name_timeout()` prints the `stall samples:` line; header comment documents both vars.
 
 ## Phase 4: The driver
-- [ ] `study_area_run.sh --stall-sample-after=<min>` (default 10, 1–1440), usage text, banner
+- [x] `study_area_run.sh --stall-sample-after=<min>` (default 10, 1–1440), usage text, banner
       line, exported on the local leg; `study_area_remote.sh` adds `LNK_STALL_AFTER_MIN` to
       `REMOTE_LEG_VARS` and the ssh string. Tests beside the existing `LNK_TEST_STALL_WSG` ones.
-- [ ] `study_area_finish.sh`: `run_stalls()` (byte-wise, never fatal under `set -e`, same log
+- [x] `study_area_finish.sh`: `run_stalls()` (byte-wise, never fatal under `set -e`, same log
       glob as `run_timeouts()`), called from `run_finish`; INCOMPLETE and summary lines.
-- [ ] Phase 1's driver tests green.
+- [x] Phase 1's driver tests green.
 
 ## Phase 5: Live evidence
-- [ ] One dispatcher-only run on a scratch schema with `LNK_TEST_STALL_WSG=<small group>`,
+- [ ] (review #19) If a persistent worker is reachable, one `--workers=` leg with the hook on a
+      worker group: its `_stall_` file, and the leg ending within seconds of its last group.
+- [ ] One dispatcher-only run on a scratch schema (with `--pretest-note=`, review #9) with `LNK_TEST_STALL_WSG=<small group>`,
       `--statement-timeout=2 --stall-sample-after=1`, `LNK_STALL_EVERY_S=15`: the stalled
       group's `_stall_` file holds `PgSleep` rows, the TIMEOUT and `stall samples:` lines and the
       INCOMPLETE block name it, the other group finishes; then a re-model without the hook.
