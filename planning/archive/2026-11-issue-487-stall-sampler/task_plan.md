@@ -126,7 +126,7 @@ Plan approved by the user 2026-11-14 as presented (mechanism choices proposed by
 - [x] Tests pass (`devtools::test()`: 5839 pass, 3 fail on the unreachable PG_*_SHARE tunnel, unrelated), lint clean on the new files, `devtools::check()` (same 3; no warning or note names a new file)
 - [x] `/code-check` clean (once over the branch with `/code-check branch`): 4 rounds, ended by round 4's 25-row enumeration
 - [x] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] `/planning-archive` on completion
 
 Verification: Phase 1's tests red before Phase 2 and green after; each new guard (parent-exit,
 error-never-raises, file named only when written) restored to its bug once to watch it fail;
