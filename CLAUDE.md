@@ -11,6 +11,10 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-11-09) — the open issues are batched into moves: `planning/backlog.md` (#468)
+
+**Take the next move from `planning/backlog.md`** (`bash <soul>/skills/_shared/backlog_moves.sh next planning/backlog.md`; `/compact-prep` names it): 13 moves, umbrellas #469–#481, each planned with one `/planning-init <umbrella>` and landed in one PR, ticked by `/gh-pr-merge`. Moves 12 and 13 wait on knowledge#139's flow-method decision and fresh 0.54.0. A link issue knowledge waits on says so in its batch section. A new issue joins the open move whose batches touch its files; run `/backlog-sweep` again when one fits none. Record: `planning/archive/2026-11-issue-468-backlog-pass/`.
+
 ## Status (2026-11-15) — a stalled statement leaves samples (#487, 0.83.0)
 
 **`wsg_run_one.R` starts `data-raw/wsg_stall_sample.R` beside each group. While the group's backend has been on one statement longer than `--stall-sample-after` minutes (both legs as `LNK_STALL_AFTER_MIN`; unset, `wsg_run_one.R` takes 10 or half its bound), every 60 s or more often it writes `[wsg_stall] <WSG>` lines into the group's log: the statement, its parallel workers and each session `pg_blocking_pids()` names, with wait events, the host's load and the active backends. `run_stalls` splits them into `<TS>_stall_<WSG>.tsv`, the summary lists each file, and the INCOMPLETE block prints it under the statement (0.83.0).** Proved on m1 (run `20261115_001427-474338b7`: EUCH stalled, four `PgSleep` rows, file named three ways; a re-model through a pipe released it 1.2 s after its group exited). Mechanics: RUNBOOK §8d, "A stalled statement leaves samples". Evidence: `data-raw/logs/stall_sample_487/`.
