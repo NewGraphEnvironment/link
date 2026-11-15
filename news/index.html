@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.82.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.83.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,9 +32,18 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/v0.82.0/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.83.0" id="link-0830">link 0.83.0<a class="anchor" aria-label="anchor" href="#link-0830"></a></h2>
+<p><strong>A stalled statement leaves a record of what it was waiting on</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/487" class="external-link">#487</a>). <code>frs_near_river_walk</code> stalled on the dispatcher on four dates and each time the backend was cancelled at the statement bound before anyone read <code>pg_stat_activity</code>. No modelling output changes and no vocabulary token moves.</p>
+<ul><li>
+<strong>Each group is watched from a second connection.</strong> <code>wsg_run_one.R</code> starts <code>data-raw/wsg_stall_sample.R</code> beside the group. While the group’s backend has been on one statement longer than <code>--stall-sample-after</code> minutes (default 10, or half the statement bound when that is shorter), every 60 s or more often it writes one line per backend into the group’s log: the statement, its parallel workers and each session <code>pg_blocking_pids()</code> names, with their state, wait event, start time and query, the host’s load average and the database’s active backends. It ends with its group and cannot fail it.</li>
+<li>
+<strong>The driver splits the lines into <code>&lt;TS&gt;_stall_&lt;WSG&gt;.tsv</code></strong> (<code>run_stalls</code>), lists each file in the summary, and prints it beside the statement under <code>statement bound hit</code>; a cancelled group names its file on the line after its <code>TIMEOUT</code> line. <code>--stall-sample-after</code> reaches both legs as <code>LNK_STALL_AFTER_MIN</code> and is refused at or above <code>--statement-timeout</code>; unset, <code>wsg_run_one.R</code> derives it from the group’s own bound, so the pre-run gate and a printed re-model get the same default.</li>
+<li>The pre-run gate watches <code>data-raw/wsg_stall_sample.R</code>, so this release, like any change to <code>R/</code>, needs the gate again before a provincial run. Mechanics: RUNBOOK §8d, “A stalled statement leaves samples”.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.82.0" id="link-0820">link 0.82.0<a class="anchor" aria-label="anchor" href="#link-0820"></a></h2>
 <p><strong>What a run stamps names what it read, the pre-run gate finds its own history, and primitive loads survive a flaky service and record what they loaded</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/474" class="external-link">#474</a>, backlog move 6). No modelling output changes and no vocabulary token moves; the pre-run gate runs again before the next provincial run.</p>
