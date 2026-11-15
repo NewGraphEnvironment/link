@@ -442,6 +442,41 @@ run_timeouts() {
     || TIMED_OUT=""
 }
 
+# run_stalls: split the run's stall samples (link#487) out of its host logs.
+# Each group's sampler (data-raw/wsg_stall_sample.R) writes
+# `[wsg_stall] <WSG>\t<fields>` lines into the same log as the group, a header
+# line (first field `sampled_utc`) before its first row; this writes them to
+# $LOG_DIR/<ts>_stall_<WSG>.tsv, <ts> the run_uid's timestamp as for
+# run_timeouts, one header and every row in log order, rewritten on each
+# call. Matched unanchored and byte-wise, as run_timeouts is, and never fatal:
+# it only adds files and lines to the report. Sets STALL_WSGS, the groups with
+# a file, sorted, comma-separated.
+run_stalls() {
+  local ts="${RUN_UID%-*}" logs w tmp
+  STALL_WSGS=""
+  logs=$(find "$LOG_DIR" -maxdepth 1 -name "${ts}_run_*.log" 2>/dev/null | sort) || logs=""
+  [ -n "$logs" ] || return 0
+  tmp=$(mktemp "${TMPDIR:-/tmp}/lnk_stall.XXXXXX") || return 0
+  printf '%s\n' "$logs" | while IFS= read -r f; do cat "$f" 2>/dev/null || true; done \
+    | LC_ALL=C awk -v tag='[wsg_stall] ' '{
+        i = index($0, tag); if (!i) next
+        r = substr($0, i + length(tag))
+        if (substr(r, 1, 4) !~ /^[A-Z][A-Z][A-Z][A-Z]$/ || substr(r, 5, 1) != "\t") next
+        print r }' > "$tmp" 2>/dev/null || true
+  for w in $(LC_ALL=C cut -f1 "$tmp" 2>/dev/null | LC_ALL=C sort -u); do
+    LC_ALL=C awk -v w="$w" 'BEGIN { FS = OFS = "\t" }
+      $1 == w { sub(/^[^\t]*\t/, "")
+        if ($1 == "sampled_utc") { if (!h++) hdr = $0; next }
+        rows[++n] = $0 }
+      END { if (h) print hdr; for (i = 1; i <= n; i++) print rows[i] }' "$tmp" \
+      > "$LOG_DIR/${ts}_stall_${w}.tsv.tmp" 2>/dev/null \
+      && mv "$LOG_DIR/${ts}_stall_${w}.tsv.tmp" "$LOG_DIR/${ts}_stall_${w}.tsv" \
+      && STALL_WSGS="${STALL_WSGS:+$STALL_WSGS,}$w"
+  done
+  rm -f "$tmp"
+  return 0
+}
+
 # run_finish <expected csv> [signals csv] [excluded csv]: coverage, recompute,
 # compare and the final report. The excluded groups are a failed consolidate
 # source's (consolidate_outcomes): never recomputed, named as not consolidated,
@@ -857,6 +892,13 @@ run_finish_report() {
   echo "  run WSGs:        ${RUN_WSGS:-<none>}"
   echo "  recomputed WSGs: ${ALL_WSGS:-<none>}"
   [ -z "${READERS_RECOMPUTE:-}" ] || echo "    of them outside the run (readers of it): $READERS_RECOMPUTE"
+  # Before the INCOMPLETE branch, which exits; a group can stall past the
+  # sampler's threshold and still finish (link#487).
+  run_stalls
+  local sw
+  for sw in $(printf '%s' "${STALL_WSGS:-}" | tr ',' ' '); do
+    echo "  stall samples: $LOG_DIR/${RUN_UID%-*}_stall_${sw}.tsv"
+  done
   if [ -n "${CMP_WSGS:-}" ] && [ "${COMPARE_FAIL:-0}" = "0" ]; then
     echo "  compare CSV: $COMPARE_CSV"
     tail -40 "$LOG_DIR/${TS}_compare.log" || true
@@ -912,7 +954,12 @@ run_finish_report() {
         run_timeouts "$COV_MISSING"
         if [ -n "$TIMED_OUT" ]; then
           echo "    statement bound hit:             $TIMED_OUT"
-          printf '%s\n' "$TIMEOUT_LINES" | sed 's/^/      /'
+          printf '%s\n' "$TIMEOUT_LINES" | while IFS= read -r tl; do
+            echo "      $tl"
+            tw="${tl%% *}"
+            [ ! -f "$LOG_DIR/${RUN_UID%-*}_stall_${tw}.tsv" ] \
+              || echo "        samples: $LOG_DIR/${RUN_UID%-*}_stall_${tw}.tsv"
+          done
         fi
         # A held cypher may hold this run's finished work, unconsolidated. What
         # to do with each of its groups depends on whether the host could be

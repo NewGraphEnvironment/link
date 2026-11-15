@@ -2528,11 +2528,93 @@ error, which the path above already handles.
   slow statement: re-model it with a larger `PGOPTIONS` bound by hand, and look
   at `pg_stat_activity` while it runs.
 - **Exercising it:** `LNK_TEST_STALL_WSG=<WSG>` makes that group's
-  `wsg_run_one.R` run `SELECT pg_sleep(3600)` first. It works on the local leg
-  only (it is not passed over ssh), and `wsg_run_one.R` refuses it when no
-  bound is in effect. With `--statement-timeout=1` the group fails after a
+  `wsg_run_one.R` run `SELECT pg_sleep(3600)` first. It crosses ssh only as a
+  four-letter group code (`remote_leg_cmd`), and `wsg_run_one.R` refuses it
+  when no bound is in effect. With `--statement-timeout=1` the group fails after a
   minute, and the run carries on. The banner prints a `TEST HOOK:` line
   whenever the variable is set. Evidence: `data-raw/logs/statement_timeout_371/`.
+
+### A stalled statement leaves samples (link#487)
+
+A bound tells a slow statement from a stuck one, and cancels it; a cancelled
+backend can no longer be read. `frs_near_river_walk` stalled on the dispatcher
+on four dates (2026-10-23, 10-25, 11-13, 11-14) and each time the evidence
+went with the cancel. So each group is watched while it runs.
+
+- **What runs:** `wsg_run_one.R`, once its bound is checked, starts
+  `data-raw/wsg_stall_sample.R` with `system2(wait = FALSE)`, passing its
+  backend's pid (`pg_backend_pid()`), its own R pid and the group. The sampler
+  holds a second connection (`statement_timeout 10s`, `lock_timeout 5s`,
+  `connect_timeout 10`, and no `application_name` of its own: it inherits
+  `PGAPPNAME`, which the pre-run gate reads to leave a pick's sessions out of
+  its load count and to end them). Every 60 s it checks the backend
+  (`.lnk_stall_watch()`, `R/lnk_stall.R`), or more often: every half of N, and
+  every half of the window from N to the bound (it is passed the bound), so a
+  window longer than a few seconds gets at least one check, usually two (a check
+  waits for the next 2 s parent poll).
+- **What it records:** once the backend has been `active` on one statement for
+  more than N minutes, each check writes one line per backend:
+  the statement itself (`leader`), its parallel workers (`worker`, by
+  `leader_pid`) and every session `pg_blocking_pids()` names for any of them
+  (`blocker`, with `blocks_pid`). Columns: `sampled_utc`, `wsg`, `role`, `pid`,
+  `leader_pid`, `blocks_pid`, `state`, `wait_event_type`, `wait_event`,
+  `query_start`, `query` (first 200 characters, leader and blockers), the
+  host's `load1`/`load5`/`load15`, and `n_active` (active backends on the
+  database, the sampler left out). A series shows whether the wait changed,
+  e.g. a `Lock` wait that clears when consolidation ends.
+  `pg_blocking_pids()` sees heavyweight locks only: an LWLock, buffer-pin or I/O
+  wait shows in `wait_event` with no blocker row.
+- **Where it goes:** to the group's own stdout, as
+  `[wsg_stall] <WSG>\t<fields>` lines (a header line first), so it lands in the
+  host log on every host kind, including a cloud host that is burned after its
+  leg. `run_stalls` (`study_area_finish.sh`) splits them into
+  `$LOG_DIR/<ts>_stall_<WSG>.tsv` (`<ts>` the run_uid's timestamp) in the
+  summary, before the INCOMPLETE branch, and rewrites them on each call: a
+  driver killed before `run_finish` splits nothing until a `--recompute-only`.
+  The summary prints `stall samples: <file>` for every group that has one (a
+  group can stall past N and still finish). A cancelled group prints
+  `[wsg_run_one] <WSG> stall samples: the [wsg_stall] <WSG> lines above
+  (<ts>_stall_<WSG>.tsv in a driver run)` on the line after its `TIMEOUT` line,
+  only when the sampler wrote a row (it creates a marker file in the group's R
+  tempdir with its first); it cannot tell whether its output is a run log, so
+  it names the lines first. The INCOMPLETE block prints
+  `samples: <file>` under its statement. The sampler rewrites `[wsg_` and
+  `__LNK_` inside a field, so a blocker's query cannot read as a log marker.
+- **Setting N:** unset, `wsg_run_one.R` takes 10 min, or half its
+  connection's bound when that is shorter, so every caller (the driver, the
+  pre-run gate, a printed re-model) gets the same default.
+  `study_area_run.sh --stall-sample-after=<min>` (1 to 1440) sets it, refused
+  at or above `--statement-timeout` (it would never record) and under
+  `--recompute-only`; it reaches both legs as `LNK_STALL_AFTER_MIN` (empty when
+  not given; the both-legs rule, `REMOTE_LEG_VARS`). `wsg_run_one.R` turns the
+  sampler off, with a line, when `LNK_STALL_AFTER_MIN` is not below the bound.
+  `LNK_STALL_EVERY_S` (default 60, fractional minutes allowed in
+  `LNK_STALL_AFTER_MIN`) is a test knob read on the local leg only.
+- **It cannot fail the group.** It is another process; a bad setting, a missing
+  script or a failed start prints `[wsg_run_one] <WSG> stall sampler off: <why>`
+  and the group runs without it, and any error inside it prints one
+  `[wsg_stall_error] <WSG>` line and ends it with exit 0.
+- **It ends with its group.** It checks its parent's pid every 2 s and the
+  backend at each check, and returns when either is gone. That matters on a
+  remote leg: the sampler holds the ssh channel's stdout, and sshd keeps the
+  session (so the leg's accounting, consolidate and burn) open until it exits.
+  Every blocking call inside it is bounded (connect 10 s, statements 10 s);
+  `system2(wait = FALSE)` gives the parent no pid to kill, so a sampler hung
+  outside those calls would hold the leg. `pgrep -fl wsg_stall_sample` finds
+  one.
+- **Cost:** one `load_all()` (or `library(link)`) per group beside the group,
+  and two catalogue queries a check.
+- **Not recorded:** the statement's plan. The walk reads its own session's temp
+  tables, so another session cannot `EXPLAIN` it; recording it needs code in
+  fresh, left until the samples show whether a stall is a wait at all.
+- **Reading one:** a `Lock` leader with a `blocker` row names the session and
+  its statement; a leader with no wait (`wait_event` empty) and rising load is
+  working; an `IO` or `LWLock` wait with no blocker is contention inside
+  Postgres. Write the reading into #487 and file the fix where it lives.
+- **Exercising it:** `LNK_TEST_STALL_WSG=<WSG>` with `--statement-timeout=2
+  --stall-sample-after=1` (and `LNK_STALL_EVERY_S=15` in the driver's
+  environment for more rows) gives `PgSleep` rows. Evidence:
+  `data-raw/logs/stall_sample_487/`.
 
 ### Where a run's time went: `<TS>_phases.tsv` (link#375)
 

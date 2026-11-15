@@ -11,6 +11,20 @@ Experimental package — breaking all the time and loving the learning curve. St
 **Prefix:** `lnk_`
 **Branch:** `main` (current version: `DESCRIPTION` / [`NEWS.md`](NEWS.md))
 
+## Status (2026-11-15) — a stalled statement leaves samples (#487, 0.83.0)
+
+**`wsg_run_one.R` starts `data-raw/wsg_stall_sample.R` beside each group. While the group's backend has been on one statement longer than `--stall-sample-after` minutes (both legs as `LNK_STALL_AFTER_MIN`; unset, `wsg_run_one.R` takes 10 or half its bound), every 60 s or more often it writes `[wsg_stall] <WSG>` lines into the group's log: the statement, its parallel workers and each session `pg_blocking_pids()` names, with wait events, the host's load and the active backends. `run_stalls` splits them into `<TS>_stall_<WSG>.tsv`, the summary lists each file, and the INCOMPLETE block prints it under the statement (0.83.0).** Proved on m1 (run `20261115_001427-474338b7`: EUCH stalled, four `PgSleep` rows, file named three ways; a re-model through a pipe released it 1.2 s after its group exited). Mechanics: RUNBOOK §8d, "A stalled statement leaves samples". Evidence: `data-raw/logs/stall_sample_487/`.
+
+**Owed:** the next real stall leaves a `_stall_` file; its reading goes into #487's body and the fix is filed where it lives (#487 stays open). The pre-run gate runs again before the next provincial run (`R/`, `wsg_run_one.R`, `pretest.R`, `pretest_inputs.csv` changed). A remote leg has not run the sampler (m1 and m4 hold different modelled crossings, so a worker run is refused).
+
+**Facts not worth re-deriving:**
+- **RPostgres `dbSendQuery()` blocks until the statement returns,** so a test that watches a stalled session runs that session in a background Rscript, found by `application_name`.
+- **A process started in the background keeps its parent's stdout reader open:** `sh -c 'sleep 4 & echo $!'` under `system2(stdout = TRUE)` returns after the sleep, and a sampler holds an ssh leg's channel until it exits. It checks its parent every 2 s, and every call inside it is bounded (connect 10 s, statements 10 s); `system2(wait = FALSE)` gives the parent no pid to kill.
+- **The sampler sets no `application_name`:** it inherits `PGAPPNAME`, which the pre-run gate reads to leave a pick's sessions out of its load count and to end them.
+- **Host logs are grepped unanchored** for `[wsg_run_one] <WSG> done` and `__LNK_LEG_END__` (accounting and leg status), so the sampler rewrites `[wsg_` and `__LNK_` inside a field.
+- **`pg_blocking_pids()` sees heavyweight locks only:** an LWLock, buffer-pin or I/O wait shows in `wait_event` with no blocker row.
+- **`data-raw/pretest.R` `PRETEST_LINK_PATHS` decides which data-raw files the gate sees;** a map row alone for a new script is dead.
+
 ## Status (2026-11-13) — a run stamps what it read, the gate finds its own history, primitive loads retry and record (#474, 0.82.0)
 
 **Backlog move 6 (#474) lands as one release: `bcfishobs_sha` retired for the observations' loaded version (#451); one bcfp pin rule with `log.bcfp_date_completed` (#446, #266); the pre-run gate held to an ancestor found through `extends:`, or to every input, bounded on `data-raw/logs/build_minutes.csv` (#450); `update_hosts.sh` on the DESCRIPTION pin (#269); `snapshot_bcfp.sh` retries, row checks and WFS/pyarrow fallbacks (#484, #459); a skip guard on the build date and a pre-spend cross-host compare (#276); vintage by live ETag (#273); fwapg trace capture (#270).** Proved on m1 by one primitives reload (2026-11-13) and a `--preflight-only` launch. Mechanics: RUNBOOK §6b, §6c, §8d ("The pre-run gate", "Every host holds the same primitives", "The vintage gate"). Evidence: `data-raw/logs/gate_history_450/`, `data-raw/logs/snapshot_fallbacks_459/`.

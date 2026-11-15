@@ -149,6 +149,14 @@
 #                           own 10 min per statement and 1 min lock wait
 #                           (wsg_recompute_one.R's SET, which a PGOPTIONS would
 #                           not override anyway), not hit on 2026-10-23.
+#   --stall-sample-after=N  minutes one modelling statement may run before a
+#                           second connection starts recording, every 60 s,
+#                           what its backend, parallel workers and blockers
+#                           are doing (1..1440, below the statement bound;
+#                           unset, wsg_run_one.R takes 10 min, or half the
+#                           bound when that is shorter; link#487). Passed on both legs as
+#                           LNK_STALL_AFTER_MIN; the rows land in each host's
+#                           log and are split into <TS>_stall_<WSG>.tsv.
 #   --prep-ssh-wait=N       seconds to wait for a fresh droplet to accept a
 #                           connection as the `cypher` user (default 600).
 #                           cypher_up returns early on snapshot spins
@@ -239,6 +247,11 @@ RECOMPUTE_JOBS=4
 # Minutes one modelling statement may run before Postgres cancels it (link#371).
 STATEMENT_TIMEOUT_MIN=30
 STATEMENT_TIMEOUT_SET=0
+# Minutes on one statement before the stall sampler records it (link#487).
+# Empty: wsg_run_one.R derives it from the group's bound, as every other
+# caller of it gets.
+STALL_AFTER_MIN=""
+STALL_AFTER_SET=0
 # Set when the recompute did not complete for every WSG. Initialised here, not
 # at the recompute, so `set -u` cannot bite on any earlier exit path.
 RECOMPUTE_FAIL=0
@@ -313,6 +326,17 @@ for arg in "$@"; do
                        STATEMENT_TIMEOUT_MIN=$((10#$STATEMENT_TIMEOUT_MIN))
                        [ "$STATEMENT_TIMEOUT_MIN" -gt 0 ] || { echo "FATAL: --statement-timeout must be > 0 (there is no unbounded mode)" >&2; exit 1; }
                        [ "$STATEMENT_TIMEOUT_MIN" -le 1440 ] || { echo "FATAL: --statement-timeout must be <= 1440" >&2; exit 1; } ;;
+    # Normalised like --statement-timeout; held below it after parsing.
+    --stall-sample-after=*)
+                       STALL_AFTER_MIN="${arg#--stall-sample-after=}"
+                       STALL_AFTER_SET=1
+                       case "$STALL_AFTER_MIN" in
+                         ''|*[!0-9]*) echo "FATAL: --stall-sample-after= needs a whole number of minutes (got '$STALL_AFTER_MIN')" >&2; exit 1 ;;
+                       esac
+                       [ "${#STALL_AFTER_MIN}" -le 9 ] || { echo "FATAL: --stall-sample-after must be <= 1440" >&2; exit 1; }
+                       STALL_AFTER_MIN=$((10#$STALL_AFTER_MIN))
+                       [ "$STALL_AFTER_MIN" -gt 0 ] || { echo "FATAL: --stall-sample-after must be > 0" >&2; exit 1; }
+                       [ "$STALL_AFTER_MIN" -le 1440 ] || { echo "FATAL: --stall-sample-after must be <= 1440" >&2; exit 1; } ;;
     --vintage-max-days=*)
                        VINTAGE_MAX_DAYS="${arg#--vintage-max-days=}"
                        case "$VINTAGE_MAX_DAYS" in
@@ -365,9 +389,10 @@ if [ "$RECOMPUTE_ONLY" = "1" ]; then
     echo "FATAL: --recompute-only needs --run-uid=<uid> of the run to finish" >&2; exit 1; }
   if [ "${#FOCAL_ARR[@]}" -gt 0 ] || [ -n "$CY_WS" ] || [ -n "$WORKERS_ARG" ] || [ "$PREFLIGHT_ONLY" = "1" ] \
      || [ "$REFRESH_PRIMITIVES" = "1" ] || [ "$AUTO_INSTALL" = "1" ] || [ "$BUCKETS_EXACT" = "1" ] \
-     || [ "$STATEMENT_TIMEOUT_SET" = "1" ]; then
+     || [ "$STATEMENT_TIMEOUT_SET" = "1" ] || [ "$STALL_AFTER_SET" = "1" ]; then
     echo "FATAL: --recompute-only takes no --focal, --cy-workspaces, --workers, --preflight-only," >&2
-    echo "  --refresh-primitives, --auto-install, --buckets-exact or --statement-timeout:" >&2
+    echo "  --refresh-primitives, --auto-install, --buckets-exact, --statement-timeout or" >&2
+    echo "  --stall-sample-after:" >&2
     echo "  it dispatches nothing." >&2
     exit 1
   fi
@@ -376,6 +401,12 @@ if [ "$RECOMPUTE_ONLY" = "1" ]; then
 else
   [ -z "$RUN_UID_ARG" ] || {
     echo "FATAL: --run-uid= is for --recompute-only; a run mints its own" >&2; exit 1; }
+  # A sampler waiting as long as the bound never records anything (link#487).
+  # Only an explicit threshold is judged here; unset, wsg_run_one.R takes 10 min
+  # or half the group's bound.
+  if [ "$STALL_AFTER_SET" = "1" ] && [ "$STALL_AFTER_MIN" -ge "$STATEMENT_TIMEOUT_MIN" ]; then
+    echo "FATAL: --stall-sample-after ($STALL_AFTER_MIN) must be below --statement-timeout ($STATEMENT_TIMEOUT_MIN): it would never record" >&2; exit 1
+  fi
   [ -z "$WSGS_ARG" ] || {
     echo "FATAL: --wsgs= is for --recompute-only; a run's groups come from --focal" >&2; exit 1; }
 fi
@@ -598,6 +629,7 @@ echo "  recompute -j: $RECOMPUTE_JOBS"
   && echo "  recompute:    early (each group once it and every group it reads have landed; link#374)" \
   || echo "  recompute:    at the end (--recompute-at-end: after the last leg and consolidate)"; }
 [ "$RECOMPUTE_ONLY" = "1" ] || echo "  statement:    ${STATEMENT_TIMEOUT_MIN} min per modelling statement (PGOPTIONS, both legs); recompute 10 min (wsg_recompute_one.R)"
+[ "$RECOMPUTE_ONLY" = "1" ] || echo "  stall:        samples after ${STALL_AFTER_MIN:-10 (or half the bound, if shorter)} min on one statement (LNK_STALL_AFTER_MIN, both legs; <TS>_stall_<WSG>.tsv)"
 # The stall hook (link#371) rides the driver's environment onto the local leg,
 # so one left exported in the operator's shell would stall a real group.
 [ -z "${LNK_TEST_STALL_WSG:-}" ] || echo "  TEST HOOK:    LNK_TEST_STALL_WSG=$LNK_TEST_STALL_WSG (that group stalls until the statement bound cancels it)"
@@ -2077,7 +2109,7 @@ phase_begin model dispatcher
   ( cd "$REPO_ROOT" || exit 1
   for w in $(echo "$DISP_BUCKET" | tr ',' ' '); do
     PGOPTIONS="${PGOPTIONS:+$PGOPTIONS }-c statement_timeout=${STATEMENT_TIMEOUT_MIN}min" \
-    LNK_STATEMENT_TIMEOUT_MIN="$STATEMENT_TIMEOUT_MIN" \
+    LNK_STATEMENT_TIMEOUT_MIN="$STATEMENT_TIMEOUT_MIN" LNK_STALL_AFTER_MIN="$STALL_AFTER_MIN" \
     LNK_LOAD=loadall LNK_GUARD_DOWNSTREAM=warn LNK_HABITAT_GATE=0 \
       Rscript data-raw/wsg_run_one.R "$w" "$CONFIG" \
       || echo "[WARN] dispatcher WSG $w failed (continuing)"

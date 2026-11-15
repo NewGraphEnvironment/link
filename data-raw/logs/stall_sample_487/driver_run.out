@@ -1,0 +1,125 @@
+=== study_area_run 20261115_001427 ===
+  run_uid:      20261115_001427-474338b7
+  run_label:    487-e2e
+  config:       default
+  branch:        (cyphers run this ref)
+  persist:      fresh_487
+  cyphers:      <none> (0)
+  workers:      <none> (0; persistent, never burned)
+  log dir:      /Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run
+  vintage max:  7 d
+  recompute -j: 4
+  recompute:    early (each group once it and every group it reads have landed; link#374)
+  statement:    2 min per modelling statement (PGOPTIONS, both legs); recompute 10 min (wsg_recompute_one.R)
+  stall:        samples after 1 min on one statement, every 60 s (LNK_STALL_AFTER_MIN, both legs; <TS>_stall_<WSG>.tsv)
+  TEST HOOK:    LNK_TEST_STALL_WSG=EUCH (that group stalls until the statement bound cancels it)
+  buckets:      exact (--buckets-exact; each --focal= list as given; the recompute settles access)
+  OVERRIDE:     no pre-run gate record required — link#487 sampler evidence run on scratch schema fresh_487; not a provincial run
+  phases:       /Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run/20261115_001427_phases.tsv
+  [phase] refresh skipped
+=== pre-flight (local; pre-spend) ===
+  ✓ dispatcher fresh exports what the pipeline calls
+  ✓ output tokens: cut-full-top acc-v5 grad-seg q-fwapg 
+  ✓ fwapg_sha 83365223d705 (exported to all hosts)
+  ✓ fresh_sha 245c8d8db60b (clean)
+  WARN: pre-run gate not cleared (no gate record (fresh_487.log_pretest does not exist)) — proceeding on --pretest-note
+  ✓ bcfp reference pinned at v0.7.15-51-g3bd2824, built 2026-11-11T03:45:18Z (exported to all hosts)
+    ok   discharge (fwapg) loaded: whse_basemapping.fwa_stream_networks_discharge
+  ✓ discharge (fwapg) loaded on the dispatcher
+    [preflight] primitive vintage (window 7 d) - OK, oldest 1.8 d (whse_fish.pscis_assessment_svw) [judged by source ETag: 2 (bcfishobs.observations, fresh.modelled_stream_crossings), load stamp age: 2, statistics: 0, none: 0]
+  ✓ dispatcher primitives within 7 d
+  ✓ pre-flight clean (tunnel-free)
+  recorded --pretest-note in fresh_487.log_pretest (run_uid 20261115_001427-474338b7)
+=== resolve exact buckets (--buckets-exact; order as given, species filter only) ===
+  dispatcher (focal=NBNK,EUCH): NBNK,EUCH
+  run groups: /Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run/20261115_001427_run_wsgs.tsv
+=== dispatcher persist (fresh_487): init ===
+  ✓ fresh_487 initialised (see /Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run/20261115_001427_persist_init.log)
+=== early recompute: log tables, barrier views, dependency map ===
+  ✓ log tables present in fresh_487
+  ✓ barrier views built once for fresh_487
+  [phase] views ok 2026-11-15T00:14:39Z -> 2026-11-15T00:14:42Z (0.1 min)
+  ✓ dependency map: 2211 pairs (see /Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run/20261115_001427_recompute_deps.log)
+  [phase] prep ok 2026-11-15T00:14:27Z -> 2026-11-15T00:15:58Z (1.5 min, 2 groups)
+=== run buckets (DS-first) ===
+  early recompute scheduler started (-j4; see /Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run/20261115_001427_recompute_scheduler.log)
+  [phase] model dispatcher ok 2026-11-15T00:15:58Z -> 2026-11-15T00:18:41Z (2.7 min, 2 groups)
+  ✓ host runs finished (per-WSG soft-fail; gaps surface in compare)
+=== dispatcher completeness (database) ===
+  ✗ dispatcher: only 1/2 WSGs accounted for; not finished: EUCH (see /Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run/20261115_001427_run_local.log)
+  [phase] account dispatcher failed 2026-11-15T00:18:41Z -> 2026-11-15T00:18:41Z (0.0 min, 2 groups)
+  WARN: consolidated only the WSGs each host finished. The run will
+        finish so nothing already computed is lost, then exit non-zero.
+  [phase] consolidate skipped
+  [phase] burn skipped
+=== verify WSG coverage in fresh_487 (run_uid 20261115_001427-474338b7) ===
+  1/2 run WSGs have rows from a build this run finished
+  ✗ no rows in fresh_487.streams: EUCH
+  classes: /Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run/20261115_001427_coverage.tsv
+  NOTE: recomputing only the 1 WSGs above; the rest keep
+        whatever rows they hold, and the run will exit non-zero.
+  [phase] coverage failed 2026-11-15T00:18:41Z -> 2026-11-15T00:18:41Z (0.0 min, 2 groups)
+=== groups outside the run that read it (fresh_487) ===
+  ✓ outside readers: 0 to recompute, 0 named (/Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run/20261115_001427_outside_readers.tsv)
+=== post-consolidate recompute (lnk_access, 1 WSGs, -j4) ===
+  1 of 1 group(s) recomputed while the legs ran (see /Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run/20261115_001427_recompute_scheduler.log)
+[fanout] recompute - OK: 1/1 job(s) succeeded
+  ✓ recompute: 1/1 WSGs
+  ✓ recompute audit: no group started before a group it reads had landed
+  [phase] recompute ok 2026-11-15T00:17:06Z -> 2026-11-15T00:18:45Z (1.6 min, 1 groups)
+=== compare (tunnel-free) ===
+  ✓ compare CSV: /Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run/20261115_001427_compare.csv
+  [phase] compare ok 2026-11-15T00:18:45Z -> 2026-11-15T00:18:49Z (0.1 min, 1 groups)
+=== summary ===
+  phases (/Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run/20261115_001427_phases.tsv):
+    phase       host       start_utc            end_utc              minutes groups status
+    refresh                                                                         skipped
+    views                  2026-11-15T00:14:39Z 2026-11-15T00:14:42Z     0.1        ok
+    prep                   2026-11-15T00:14:27Z 2026-11-15T00:15:58Z     1.5      2 ok
+    model       dispatcher 2026-11-15T00:15:58Z 2026-11-15T00:18:41Z     2.7      2 ok
+    account     dispatcher 2026-11-15T00:18:41Z 2026-11-15T00:18:41Z     0.0      2 failed
+    consolidate                                                                     skipped
+    burn                                                                            skipped
+    coverage               2026-11-15T00:18:41Z 2026-11-15T00:18:41Z     0.0      2 failed
+    recompute              2026-11-15T00:17:06Z 2026-11-15T00:18:45Z     1.6      1 ok
+    compare                2026-11-15T00:18:45Z 2026-11-15T00:18:49Z     0.1      1 ok
+  critical path: 4.4 min (first start to last end)
+  longest model leg: 2.7 min (dispatcher)
+  learn host speeds from this run's legs (a plan packed on --minutes-schema):
+    Rscript data-raw/host_speeds_calibrate.R --plan=<study_area_buckets.R --plan-out> \
+      --phases=/Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run/20261115_001427_phases.tsv [--skip=<name>:<reason>] [--dry-run]
+  record this run's build minutes for the pre-run gate (then commit the file):
+    Rscript data-raw/build_minutes_append.R --schema=fresh_487 --run-uid=20261115_001427-474338b7
+  habitat export: not republished from an incomplete run; republish once a
+    --recompute-only finishes it (RUNBOOK section 8d, After the run)
+  run WSGs:        EUCH,NBNK
+  recomputed WSGs: NBNK
+  stall samples: /Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run/20261115_001427_stall_EUCH.tsv
+  compare CSV: /Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run/20261115_001427_compare.csv
+[study_area_compare] 4 rows across 1/1 WSGs -> /Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run/20261115_001427_compare.csv
+# A tibble: 4 × 7
+  wsg   species total_segs match_pct n_diffs top_pattern       top_pattern_count
+* <chr> <chr>        <int>     <dbl>   <int> <chr>                         <int>
+1 NBNK  CM            3895      83.2     653 "ACCESS;NONE | "                455
+2 NBNK  CO            3895      64.6    1378 "REAR;NONE | ACC…               828
+3 NBNK  PK            3895      83.0     661 "ACCESS;NONE | "                455
+4 NBNK  SK            3895      86.6     520 "ACCESS;NONE | "                483
+=== study_area_run INCOMPLETE ===
+  These run WSGs have no rows from a build this run finished, so they
+  were NOT recomputed or compared: EUCH
+    no rows:                         EUCH
+    statement bound hit:             EUCH
+      EUCH (bound 2min): SELECT pg_sleep(3600) -- LNK_TEST_STALL_WSG
+        samples: /Users/airvine/Projects/repo/link_wt487/data-raw/logs/study_area_run/20261115_001427_stall_EUCH.tsv
+  Re-model each of these under this run_uid: EUCH
+    The bound below is the run's; raise it for EUCH if the statement is genuinely slow:
+    PGOPTIONS='-c statement_timeout=2min' \
+    LNK_RUN_UID=20261115_001427-474338b7 LNK_RUN_LABEL=487-e2e LNK_SCHEMA=fresh_487 \
+      LNK_GUARD_DOWNSTREAM=warn LNK_HABITAT_GATE=0 LNK_LOAD=loadall \
+      Rscript data-raw/wsg_run_one.R <WSG> default
+  Then recompute the whole run (every group: a re-modelled group's
+  barriers change access upstream of it):
+    bash data-raw/study_area_run.sh --recompute-only --run-uid=20261115_001427-474338b7 \
+      --config=default --schema=fresh_487 --run-label=487-e2e --wsgs=EUCH,NBNK
+  ✓ redacted host addresses in 21 log file(s)
+exit=1

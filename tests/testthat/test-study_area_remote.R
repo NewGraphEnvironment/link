@@ -264,7 +264,7 @@ test_that("worker prep's environment carries the run, and refuses an origin it c
     "WORKER_PREP_CONFIG='default' WORKER_PREP_SCHEMA='fresh_x' WORKER_PREP_WET_LOAD=''",
     paste0(
       "WORKER_PREP_LEG_VARS='LNK_LOAD LNK_TEST_STALL_WSG LNK_SCHEMA LNK_GUARD_DOWNSTREAM ",
-      "LNK_HABITAT_GATE PGOPTIONS LNK_STATEMENT_TIMEOUT_MIN FWAPG_GIT_SHA ",
+      "LNK_HABITAT_GATE PGOPTIONS LNK_STATEMENT_TIMEOUT_MIN LNK_STALL_AFTER_MIN FWAPG_GIT_SHA ",
       "LNK_RUN_UID LNK_RUN_LABEL LNK_BCFP_MODEL_VERSION LNK_BCFP_DATE_COMPLETED'"
     )
   ))
@@ -390,6 +390,15 @@ test_that("the driver refuses a branch name a remote command could not carry", {
   # Only when a remote host is sent it, and on the whole value.
   want <- 'if [ "$N_HOSTS" -gt 0 ] && ! [[ "$LINK_BRANCH" =~ ^[A-Za-z0-9._/-]+$ ]]; then'
   expect_true(any(grepl(want, near, fixed = TRUE)))
+})
+
+test_that("the stall sampler's threshold crosses ssh, empty when the driver sets none", {
+  skip_if_no_remote_lib()
+  w <- remote_world()
+  r <- run_remote(w, c(worker_globals, "remote_leg_cmd a AAAA"))
+  expect_match(r$out, "export LNK_STALL_AFTER_MIN='' && ", fixed = TRUE)
+  r <- run_remote(w, c(worker_globals, "STALL_AFTER_MIN=3", "remote_leg_cmd a AAAA"))
+  expect_match(r$out, "export LNK_STALL_AFTER_MIN='3' && ", fixed = TRUE)
 })
 
 test_that("worker prep checks every variable a worker's leg exports", {
