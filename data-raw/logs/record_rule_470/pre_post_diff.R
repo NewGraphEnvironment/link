@@ -19,7 +19,12 @@
 #            (the walk's own test, fwa_upstream(..., false, 1));
 #   0 <-> 1/2  the group's lifts for sp differ (barrier_overrides, BEFORE
 #            against AFTER), or a record of D_sp is upstream (its 2 rides on
-#            the same lift change).
+#            the same lift change);
+#   any      the piece is under 2 m and a record of D (any species) sits on
+#            its line within 2 m: a cut at a record that one rule counts and
+#            the other does not moved, and a barrier break within 1 m of it
+#            then applies or not (RUNBOOK §2, a break within 1 m of an
+#            existing end is skipped), so the strip between changes segment.
 # Anything else is unexplained and printed. Writes segments.csv, lifts.csv,
 # transitions.csv and unexplained.csv beside this script.
 pkgload::load_all(quiet = TRUE)
@@ -135,6 +140,10 @@ for (config in names(groups)) {
                        d.blue_line_key, d.downstream_route_measure, d.wscode, d.localcode,
                        false, 1))
             AND NOT (%s AND (pre = 0 OR post = 0))
+            AND NOT (len < 2 AND EXISTS (
+              SELECT 1 FROM pg_temp.rec_diff d
+               WHERE d.blue_line_key = p.blue_line_key
+                 AND abs(d.downstream_route_measure - p.post_start) < 2))
           GROUP BY 1, 2", sp, if (lift_moved) "TRUE" else "FALSE"))
       if (nrow(u)) unexpl[[length(unexpl) + 1]] <- data.frame(config = config, wsg = w, species_code = sp, u)
     }

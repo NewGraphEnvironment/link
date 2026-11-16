@@ -1,0 +1,4 @@
+NOTICE:  schema "zz470_verify_ev" does not exist, skipping
+ERROR:  relation "zz470_default_post.barrier_override_evidence" does not exist
+LINE 1: ...ify_ev.barrier_override_evidence AS SELECT * FROM zz470_defa...
+                                                             ^

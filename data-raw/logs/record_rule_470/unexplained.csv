@@ -1,0 +1,7 @@
+"config","wsg","species_code","pre","post","pieces","km"
+"default","HOMA","CH",0,1,1,0.001
+"default","HOMA","CM",0,1,1,0.001
+"default","HOMA","CO",0,2,1,0.001
+"default","HOMA","PK",0,1,1,0.001
+"default","HOMA","SK",0,1,1,0.001
+"default","HOMA","ST",0,1,1,0.001
