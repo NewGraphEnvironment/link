@@ -7,10 +7,11 @@
 # The full verify script asks for recompute rows, a bcfp pin and loaded-input
 # rows that these scratch builds do not carry, so the evidence block is cut
 # out of the shipped file by its own comment lines and run alone, in a DO
-# block declaring what it reads, over a copy of zz470_default_post's log,
-# barrier_overrides and barrier_override_evidence in zz470_verify_ev. The
-# copy's link_version is raised to 0.84.0 (the builds ran at 0.83.0, which
-# the check leaves unjudged). Expected: healthy PASS, a lift's evidence
+# block declaring what it reads, over a copy of $SRC's log (run $RUN),
+# barrier_overrides and barrier_override_evidence in zz470_verify_ev
+# (default: zz470_default_head, the builds at the branch head, which write
+# the evidence table). The copy's link_version is raised to 0.84.0 (the
+# builds ran at 0.83.0, which the check leaves unjudged). Expected: healthy PASS, a lift's evidence
 # deleted FAIL, an evidence row beside no lift FAIL, a lift listing fewer
 # records than its threshold FAIL.
 set -euo pipefail
@@ -19,7 +20,8 @@ ROOT="$(cd "$DIR/../../.." && pwd)"
 export PGPASSWORD=postgres
 PSQL=(psql -h localhost -U postgres -d fwapg -X -q -t -A -v ON_ERROR_STOP=1)
 S=zz470_verify_ev
-SRC=zz470_default_post
+SRC=${SRC:-zz470_default_head}
+RUN=${RUN:-470_head}
 trap '"${PSQL[@]}" -c "DROP SCHEMA IF EXISTS $S CASCADE" >/dev/null 2>&1 || true' EXIT
 
 BLOCK=$(awk '/-- What each lift rests on \(link#434\)/{p=1} /-- The bcfp pin, with the sanctioned-unpinned escape/{p=0} p' \
@@ -29,7 +31,7 @@ BLOCK=$(awk '/-- What each lift rests on \(link#434\)/{p=1} /-- The bcfp pin, wi
 "${PSQL[@]}" >/dev/null <<SQL
 DROP SCHEMA IF EXISTS $S CASCADE;
 CREATE SCHEMA $S;
-CREATE TABLE $S.log AS SELECT * FROM $SRC.log WHERE run_uid = '470_post';
+CREATE TABLE $S.log AS SELECT * FROM $SRC.log WHERE run_uid = '$RUN';
 UPDATE $S.log SET link_version = '0.84.0';
 CREATE TABLE $S.barrier_overrides AS SELECT * FROM $SRC.barrier_overrides;
 CREATE TABLE $S.barrier_override_evidence AS SELECT * FROM $SRC.barrier_override_evidence;
@@ -41,7 +43,7 @@ check() {  # check <label> <expect PASS|FAIL>
   out=$("${PSQL[@]}" 2>&1 <<SQL
 DO \$\$
 DECLARE
-  v_run text := '470_post';
+  v_run text := '$RUN';
   v_sch text := '$S';
   n_ev int; n_evthr int; bad text;
 BEGIN
