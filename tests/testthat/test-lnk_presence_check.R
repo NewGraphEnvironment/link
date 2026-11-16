@@ -106,6 +106,19 @@ test_that("alias codes count as the species the tracker names, as its own record
   expect_identical(cell(res2, "W1", "CT")$n_kept, 1L)
 })
 
+test_that("an alias does not chain through a pooled row (#470 review)", {
+  # ADV reads as DV; DV pools into BT in W1; the ADV record counts as DV only,
+  # as the pipeline's record rule resolves each tracker row on its own.
+  trk <- data.frame(species_code = c("DV", "BT"), species_obs = c("ADV", "DV"),
+                    scope_level = c("province", "wsg"), scope = c("BC", "W1"),
+                    pool = "yes", stringsAsFactors = FALSE)
+  r <- rbind(rec("k1", "W1", "ADV"), rec("k2", "W1", "DV"))
+  res <- check(r, loaded_pc(pooling = trk))
+  expect_identical(cell(res, "W1", "DV")$n_kept_own, 2L)
+  # BT gets the DV record pooled, not the ADV one
+  expect_identical(cell(res, "W1", "BT")$n_kept_pooled, 1L)
+})
+
 test_that("each of the four release tags keeps a record out", {
   ex <- data.frame(observation_key = "k4", data_error = NA,
                    release_exclude = NA, release_include = "t",

@@ -83,6 +83,12 @@
 
   # -- each record's species, status and year -------------------------------
   r <- records[records$watershed_group_code %in% wsgs, need, drop = FALSE]
+  # The code the record is filed under, kept beside the species it reads as:
+  # pooled evidence is matched on it, so an alias never chains through a
+  # pooled row (ADV is DV, and is not BT through BT <- DV), as the pipeline's
+  # record rule resolves each row on its own (link#470).
+  r$code_recorded <- r$species_code
+  need_r <- c(need, "code_recorded")
   # Alias codes (no species column) read as the species the tracker counts
   # them as in the record's group, within the row's year limit; they are the
   # species' own records, not pooled evidence (link#470).
@@ -99,9 +105,9 @@
     hit <- hit[is.na(hit$obs_year_max) |
                  (!is.na(y) & y <= hit$obs_year_max), , drop = FALSE]
     hit$species_code <- hit$target
-    r <- rbind(r[!r$row_id %in% hit$row_id, c(need, "row_id"), drop = FALSE],
-               hit[, c(need, "row_id"), drop = FALSE])
-    r <- r[order(r$row_id, r$species_code, method = "radix"), need,
+    r <- rbind(r[!r$row_id %in% hit$row_id, c(need_r, "row_id"), drop = FALSE],
+               hit[, c(need_r, "row_id"), drop = FALSE])
+    r <- r[order(r$row_id, r$species_code, method = "radix"), need_r,
            drop = FALSE]
     rownames(r) <- NULL
   }
@@ -146,12 +152,12 @@
   pooled <- own[0, , drop = FALSE]
   if (nrow(pool) > 0L) {
     p <- data.frame(watershed_group_code = pool$watershed_group_code,
-                    species_code = pool$obs_species,
+                    code_recorded = pool$obs_species,
                     target = pool$species_code,
                     obs_year_max = pool$obs_year_max,
                     stringsAsFactors = FALSE)
     m <- merge(r[r$kept, , drop = FALSE], p,
-               by = c("watershed_group_code", "species_code"))
+               by = c("watershed_group_code", "code_recorded"))
     m <- m[is.na(m$obs_year_max) | m$year <= m$obs_year_max, , drop = FALSE]
     m$pooled <- rep(TRUE, nrow(m))
     pooled <- m[, names(own), drop = FALSE]
