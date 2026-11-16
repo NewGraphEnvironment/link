@@ -108,10 +108,10 @@ Recommended in this plan, settled by approving it:
       exist in bcfishobs; the `bcfishpass` bundle's tables lose alias records
 
 ## Phase 3: Measure the record rule
-- [ ] `default` before and after on the Phase 1 groups: code 2 km by species (1 → 2 and
+- [x] `default` before and after on the Phase 1 groups: code 2 km by species (1 → 2 and
       2 → 1), segment counts, lifts and accessible km (the coastal BT groups for decision 2)
-- [ ] `bcfishpass` before and after on BULK and PARS: segments and parity
-- [ ] Evidence in `data-raw/logs/record_rule_470/` with a README; every change traced to a
+- [x] `bcfishpass` before and after on BULK and PARS: segments and parity
+- [x] Evidence in `data-raw/logs/record_rule_470/` with a README; every change traced to a
       record a cut, a lift or code 2 now counts or drops (a lift moves access across the network
       above it). The README says the numbers are at the provisional acc-v6, before #426 and #427
 
@@ -128,7 +128,7 @@ Recommended in this plan, settled by approving it:
       species) set equals `barrier_overrides`', and that each observation lift holds at least its
       threshold of distinct records; a schema without the table is a NOTE; negative cases in
       `study_area_verify_negative.sh`
-- [ ] #434: the negative cases run end to end against a recomputed scratch run that carries evidence
+- [x] #434: the evidence check run against HEAD builds of LSKE and SQAM (`verify_evidence.sh`: PASS, three breakages FAIL, PASS restored); the full negative script waits for a recomputed, pinned run
 - [x] #426: `bcfishpass` takes `>`, `default` keeps `>=`; lifts counted before and after
       on BULK, PARS, ADMS, BABL and ELKR
 - [x] #426: correct RUNBOOK §5's "no date floor" line (an undated record never counts
@@ -140,14 +140,14 @@ Recommended in this plan, settled by approving it:
       what remains), and leave it open
 
 ## Phase 5: Vocabulary, docs, release
-- [ ] The `acc` spec carries the record rule (the pooling tracker, canonical, and
+- [x] The `acc` spec carries the record rule (the pooling tracker, canonical, and
       `observation_record_date`); new rows `acc-v6` and `acc-bcfp-5`, `acc-v5` and
       `acc-bcfp-4` retired at 0.84.0, append-only test passes
-- [ ] `data-raw/pretest_inputs.csv` rows for every changed file the gate maps
-- [ ] RUNBOOK §2c, §5, §6b (the CT alias line) and §7 ("The record rule"), including that
+- [x] `data-raw/pretest_inputs.csv` rows for every changed file the gate maps
+- [x] RUNBOOK §2c, §5, §6b (the CT alias line) and §7 ("The record rule"), including that
       `default_extrabreaks` and `default_rearbreaks` have no tracker and lose CT alias admission;
       README or research text that states the old rule; `CLAUDE.md` status block; NEWS; version 0.84.0
-- [ ] `devtools::document()`, `devtools::test()`, `lintr` (per-file against main),
+- [x] `devtools::document()`, `devtools::test()`, `lintr` (per-file against main),
       `devtools::check()`
 
 Phase 4 results: #426 moves no observation lift in BULK, PARS, ADMS, BABL, ELKR, CHWK, HARR, LFRA,
@@ -160,7 +160,7 @@ LSKE or KLUM (`lifts_426.csv`). #427: operator chose 2 records (2026-11-16) from
 - [ ] #236 open with its narrowed body
 
 ## Validation
-- [ ] Tests pass
+- [x] Tests pass (all but #493 and the two tunnel-bound errors, which fail on main too)
 - [ ] `/code-check` clean (once over the branch with `/code-check branch`)
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion

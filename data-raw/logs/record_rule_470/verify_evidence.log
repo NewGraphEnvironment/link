@@ -1,4 +1,7 @@
-NOTICE:  schema "zz470_verify_ev" does not exist, skipping
-ERROR:  relation "zz470_default_post.barrier_override_evidence" does not exist
-LINE 1: ...ify_ev.barrier_override_evidence AS SELECT * FROM zz470_defa...
-                                                             ^
+copy of zz470_default_head: 1283 lifts, 34288 evidence rows, 2 groups
+  ok   healthy -> PASS
+  ok   LSKE CH lift with no evidence -> FAIL
+  ok   LSKE CH evidence for no lift -> FAIL
+  ok   healthy, restored -> PASS
+  ok   LSKE CH lift below its threshold -> FAIL
+wrong: 0
