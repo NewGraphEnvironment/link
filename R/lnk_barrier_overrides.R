@@ -119,14 +119,12 @@ lnk_barrier_overrides <- function(conn,
   # The code a record is filed under: the observation tables the pipeline
   # builds keep it beside the model species (link#470); a caller's raw
   # table has only species_code.
+  # Asked of the table itself, as Postgres resolves its name (a temp table,
+  # search_path, case), never of information_schema by the literal text.
   obs_recorded <- "o.species_code"
   if (!is.null(observations) && !is.null(evidence)) {
-    op <- strsplit(observations, ".", fixed = TRUE)[[1]]
-    oc <- DBI::dbGetQuery(conn, sprintf(
-      "SELECT column_name FROM information_schema.columns
-       WHERE table_schema = %s AND table_name = %s",
-      if (length(op) == 2L) sprintf("'%s'", op[1]) else "current_schema()",
-      sprintf("'%s'", op[length(op)])))$column_name
+    oc <- names(DBI::dbGetQuery(conn, sprintf(
+      "SELECT * FROM %s LIMIT 0", observations)))
     if ("species_code_recorded" %in% oc) obs_recorded <- "o.species_code_recorded"
   }
 

@@ -564,12 +564,18 @@ fi
 
 # --- 6j/6k/6l. what each lift rests on (link#434) ---------------------------
 # The run's barrier_overrides and barrier_override_evidence are copied for its
-# groups. The check judges only groups built at link 0.84.0 or later, so a run
-# built before that is judged here by raising the copy's link_version: 6j
-# must PASS (a build's evidence agrees with its lifts), 6k must FAIL (a lift
+# groups. The check judges only groups built at link 0.84.0 or later, and so
+# do these cases: a run built before that wrote no evidence, so it is skipped
+# (reported, not counted: the run cannot exercise the check). On a newer run,
+# 6j must PASS (a build's evidence agrees with its lifts), 6k must FAIL (a lift
 # with no evidence) and 6l must FAIL (evidence for no lift).
 HAS_EV=$("${PSQL[@]}" -c "SELECT to_regclass('${SRC_SCHEMA}.barrier_override_evidence') IS NOT NULL")
-if [ "$HAS_EV" != "t" ]; then
+N_NEW=$("${PSQL[@]}" -c "SELECT count(*) FROM ${SCRATCH}.log
+  WHERE (string_to_array(link_version, '.'))[1:3]::int[] >= ARRAY[0, 84, 0]")
+if [ "$N_NEW" = "0" ]; then
+  echo "  ⊘ 6j-6l. SKIPPED: run $RUN_UID was built before link 0.84.0, which"
+  echo "       wrote no evidence; the check leaves it unjudged (not counted)."
+elif [ "$HAS_EV" != "t" ]; then
   echo "  ⊘ 6j-6l. SKIPPED: ${SRC_SCHEMA} has no barrier_override_evidence."
   fails=$((fails + 1))
 else
@@ -580,7 +586,6 @@ CREATE TABLE ${SCRATCH}.barrier_overrides AS
 CREATE TABLE ${SCRATCH}.barrier_override_evidence AS
   SELECT * FROM ${SRC_SCHEMA}.barrier_override_evidence
    WHERE watershed_group_code IN (SELECT watershed_group_code FROM ${SCRATCH}.log);
-UPDATE ${SCRATCH}.log SET link_version = '0.84.0';
 SQL
   EV_ROW=$("${PSQL[@]}" -c "SELECT watershed_group_code || '|' || species_code || '|' ||
                                    blue_line_key || '|' || downstream_route_measure
@@ -632,8 +637,6 @@ SQL
 DROP TABLE IF EXISTS ${SCRATCH}.ev_held;
 DROP TABLE ${SCRATCH}.barrier_overrides;
 DROP TABLE ${SCRATCH}.barrier_override_evidence;
-DELETE FROM ${SCRATCH}.log;
-INSERT INTO ${SCRATCH}.log SELECT * FROM ${SRC_SCHEMA}.log WHERE run_uid = '${RUN_UID}';
 SQL
 fi
 

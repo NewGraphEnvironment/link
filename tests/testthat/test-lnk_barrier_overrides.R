@@ -371,4 +371,14 @@ test_that("each lift's evidence lists the records that met the rule, once each (
     "SELECT blue_line_key, downstream_route_measure, species_code
      FROM %s.bo2", s))
   expect_equal(bo2, bo)
+  # a caller's temp table: the recorded code is read from the table as
+  # Postgres resolves it, not from information_schema by its literal name
+  ex(sprintf("CREATE TEMP TABLE obs_tmp AS SELECT * FROM %s.obs", s))
+  lnk_barrier_overrides(conn, barriers = paste0(s, ".nb"),
+                        observations = "pg_temp.obs_tmp", params = params,
+                        to = paste0(s, ".bo3"), evidence = paste0(s, ".ev3"),
+                        verbose = FALSE)
+  ev3 <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT species_code_recorded FROM %s.ev3 ORDER BY evidence_key", s))
+  expect_equal(ev3$species_code_recorded, c("XX", "XA"))
 })
