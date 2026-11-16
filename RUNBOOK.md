@@ -194,6 +194,17 @@ exist`.) `barriers_per_sp` mechanically requires the *feature view* shape.
 `default_minimal` leaves `observations` out of `break_order`, so no record cuts its
 streams and the key it inherits has no effect (#415).
 
+**Which records, as which species, is the record rule** (§7, "The record rule", link#470).
+`<schema>.observations` and `<schema>.observations_province` hold one row per record and
+species it counts as: `species_code` the model species, `species_code_recorded` the code it is
+filed under. So the cuts (`top_per_species` groups on the model species: a `CCT` record and a
+`CT` record on one line share CT's top), code 2 and the lifts read one rule. Under
+`default` a 1985 chinook record no longer cuts or makes code 2 (`observation_record_date:
+lift_floor`), and a DV record in the lower Skeena no longer cuts as BT, though it still cuts as
+DV. Under `bcfishpass` the cutthroat aliases (`CCT`, `ACT`, `CT/RB`) no longer cut, as
+bcfishpass drops them. `default_extrabreaks` and `default_rearbreaks` declare no tracker and
+lose CT alias admission the same way; they resolve no tokens and are not run.
+
 **What reads an observation break.** Only `access_<sp>` code 2 ("accessible, and the
 species is observed upstream") against code 1. The access walk
 (`lnk_pipeline_access()`, `frs_network_features(direction = "upstream",
@@ -567,7 +578,7 @@ Two senses, keep them apart:
   - `observation_threshold` / `observation_date_min` / `observation_species` →
     the override. These match bcfp exactly: BT row = threshold 1, date 1900,
     species `BT;CH;CO;SK;PK;CM;ST` (bcfp: ≥1 obs, BT+salmon+steelhead, "passable
-    by salmon ⟹ passable by BT"); CH row = threshold 5, date 1990, species
+    by salmon ⟹ passable by BT"); CH row = threshold 5, records after 1990-01-01 (written 1990-01-02, #426), species
     `CH;CM;CO;PK;SK` (bcfp: >5 obs since 1990). The rules exist and are
     species-specific; they're just not wired into `lnk_pipeline_access` yet.
 - **Descriptor (token2):** YES, species-class-specific and already in link —
@@ -625,7 +636,31 @@ GiST on the ltrees) and `lnk_barrier_overrides()` counts over it. Since #401 the
 it too, for code 2 (§2c, "Which records count"); `<schema>.observations` stays AOI-scoped for the
 observation break source and `group_gated`'s gate. Cost: ~4 s per group to build
 both tables, no change to the override step (DUNC, CARP). `default`'s RB row gained a rule shaped like BT's
-(one RB record, only RB counting for RB, no date floor); before it RB had no rule and nothing lifted for it.
+(one RB record, only RB counting for RB); before it RB had no rule and nothing lifted for it.
+
+**An undated record never counts toward a lift.** A row whose `observation_date_min` is empty
+reads as `1900-01-01` (`R/lnk_barrier_overrides.R`), and `observation_date >= '1900-01-01'` is
+not true for a NULL date. A floor is inclusive (`>=`); the `bcfishpass` bundle writes its
+salmon and steelhead floors as `1990-01-02`, so it keeps a record dated after 1990-01-01, as
+bcfishpass's `model_access_*.sql` do (`smnorris/bcfishpass@3bd2824`, link#426; `observation_date`
+is a `date`, so the two read the same records). `default` keeps `1990-01-01`: a date of
+1 January usually stands for "sometime in 1990", inside a 1990 floor.
+
+**Which records a lift reads is the record rule** (§7, "The record rule", link#470): a lift
+counts the rows of every species its `observation_species` names, each already held to that
+species' code mapping and, under `observation_record_date: lift_floor`, its date floor.
+
+**What each lift rests on** (link#434). Given `evidence =`, `lnk_barrier_overrides()` also writes
+one row per lifted barrier, species and evidence record: an observation lift lists each record
+that met the rule (`evidence_key` its `observation_key`, the code it is filed under, its date and
+its own group, which can be a group upstream) with the rule as applied (threshold, floor,
+species list, buffer); a habitat lift lists each confirming habitat row. The pipeline persists it
+as `<persist>.barrier_override_evidence`, per group like `barrier_overrides`, so a study that
+scores records against access can recount a lift without the record being scored, rather than
+re-implementing the override. Each species' (barrier, record) pairs are built once, in a temp
+table the lift and its evidence both read, so the `fwa_upstream()` join runs once.
+`study_area_verify.sql` holds each group's evidence equal to its `barrier_overrides` (groups built
+at 0.84.0 on) and every observation lift at or above its threshold of distinct records.
 
 The count is of distinct records (`count(DISTINCT o.observation_key)`, link#367):
 `natural_barriers` can hold one position twice (a point where two FWA segments overlap, or
@@ -640,19 +675,20 @@ at its barriers; classification, access and mapping code follow the cell as writ
 (`lnk_pipeline_species()`). So an unmarked cell silently discards that
 species' records for breaks, code 2 and every group's lifts. `data-raw/wsg_species_presence_check.R`
 judges `default`'s table cell by cell (`.lnk_presence_check()`: at least one record since 1950,
-releases tagged as bcfishpass tags them and `observation_exclusions.csv` out, CT aliases folded,
-`species_pooling.csv` applied) and merges each disagreement into
+releases tagged as bcfishpass tags them and `observation_exclusions.csv` out, the tracker's
+alias codes read as their species, `species_pooling.csv` applied) and merges each disagreement into
 `configs/default/wsg_species_presence_review.csv` as `pending`. The operator decides each row;
 an `add` or `remove` is an edit to the presence table, whose `notes` cell names the rule, and it
 moves the `acc` token (§6b). The tracker is **not** declared under `files:`: a declared file
 enters `config_hash`, so after a review edit link reads every earlier build as another bundle:
 `recompute_readers_check.R` refuses to recompute the groups outside a partial run that read it
 (`config_changed_since_run`; the run's own groups still recompute), and an export of an earlier
-build ships its habitat without the bundle files ("bundle has changed since the build"). The
-pipeline's filter matches codes exactly, so summer and winter
-steelhead (`SST`, `WST`), anadromous char (`ADV`, `ABT`) and the uncertain `BT/DV`, `DV/BT` and
-`RB/CT` calls never count; the check mirrors it and reports what counting them would change
-(`alias_sensitivity.csv`). Findings: `research/species_presence.md`.
+build ships its habitat without the bundle files ("bundle has changed since the build"). Since
+link#470 the alias codes `default`'s tracker lists count as their species in the pipeline and the
+check alike (summer and winter steelhead `SST`, `WST`; anadromous char `ADV`, `ABT`; the
+cutthroat aliases; `BT/DV` and `DV/BT` where DV pools into BT); `RB/CT` counts as nothing, and
+`alias_sensitivity.csv`, which reported what counting them would change, is no longer written.
+Findings: `research/species_presence.md`.
 
 Before a record counts, it is measured, not judged (operator, 2026-10-31):
 `.lnk_presence_measures()` (`R/lnk_presence_measures.R`) gives each record its own 50k code's
@@ -767,10 +803,10 @@ schema, so a network in the DB is self-describing:
 Read it with `lnk_log_read(conn, cfg, aoi = "PINE")`. Mirrors `bcfishpass.log`
 + its `log_parameters_*` children.
 
-**Why full rows, not a pointer.** `observation_species = BT;DV` at threshold 1
-with no date floor is recorded *in the database*, so two scenario runs stay
-distinguishable after the config file moves on. That is the whole point — see
-link#236, which runs the DV-as-BT override with and without.
+**Why full rows, not a pointer.** A lift rule such as `observation_species = BT`
+at threshold 1 is recorded *in the database*, so two scenario runs stay
+distinguishable after the config file moves on. Which records count as BT (DV
+where the pooling tracker says so) is the tracker, which `config_hash` covers.
 
 **The three-state completion signal:**
 
@@ -989,9 +1025,9 @@ The rules:
   merging an edit to the table.
 
 **Code changes can need a token too.** The specs see the bundle, not the code. A
-change to how fresh finds gradient barriers, to `frs_barriers_minimal()`, to the CT
-alias expansion in observation breaks moves cuts with no
-spec change, and a change to how the access walk reads a record moves codes with none
+change to how fresh finds gradient barriers or to `frs_barriers_minimal()` moves cuts with
+no spec change (which records cut is in the spec since #470: the cut spec carries a digest
+of the record rule, §7), and a change to how the access walk reads a record moves codes with none
 (#399 retired `acc-v1` and `acc-bcfp` for `acc-v2` and `acc-bcfp-2`; #401 retired those for
 `acc-v3` and `acc-bcfp-3`, whose specs also hash `pipeline: observation_upstream`). Retire and re-add
 the affected tokens in the same PR: the retired row and its successor then share a spec,
@@ -1458,8 +1494,47 @@ crate's shape); the webmap (#335).
 | The near-river pair (a river of at least a size within a distance downstream) | `parameters_habitat_thresholds.csv` → `<stage>_river_*` (#364, fresh#263) → `fresh::frs_params()` | inherited by every rule with a size test that is not stamped out; walked into `streams_near_river` |
 | Species residence (resident/anadromous/spawn-only) | **hardcoded** defaults in `lnk_pipeline_mapping_code()` | which mc_barrier flavor + spawn-only token1 |
 | Dam / anthropogenic blocking | **nowhere** — universal `all species` in `lnk_barriers_unify` | `blocks_species` (§2a). Not rules-driven. |
+| Which fish records count, as which species, from which date (the record rule) | `configs/<name>/species_pooling.csv` (aliases and pooling) + `pipeline: observation_record_date:` + `parameters_fresh.csv` → `observation_date_min` (#470) → `.lnk_observation_species_map()` | the observation cuts, code 2 and the lifts' records (§7, "The record rule"); the presence check and measures read its aliases |
 | Which rules species run | `configs/<name>/species_modelled.csv` (#432) → `lnk_config()` → `cfg$species` / `cfg$species_paused` | everything species-keyed: gradient breaks, classify, access, mapping code (§7, "Pausing a species") |
 | What each config column means | `configs/dictionary_dimensions.csv`, `configs/dictionary_parameters_fresh.csv`, `configs/dictionary_parameters_habitat_thresholds.csv` | data dictionaries — per-column type, group, default, description, and (for `parameters_fresh`) `owner` + `consumed_by` file:line |
+
+### The record rule: which fish records count (link#470)
+
+One rule decides which bcfishobs records a build reads, as which species, wherever records
+are read: the observation cuts (§2c), code 2 of the access walk, and the lifts (§5).
+`.lnk_observation_species_map(cfg, loaded, wsgs)` (`R/lnk_observation_records.R`) resolves it
+per group:
+
+- **Codes.** Each species the group's presence row marks present (every presence column, not
+  only `cfg$species`: CT, DV, KO and RB records still cut) counts its own code. Where the bundle
+  declares `species_pooling.csv`, [lnk_species_pooling()] adds what it pools: another species'
+  records (DV as BT where the two names mean one species) and alias codes that are no species
+  column, at the `province` scope (`SST`, `WST` as ST; `ADV` as DV; `ABT` as BT; `CCT`, `ACT`,
+  `CT/RB` as CT) or regionally (`BT/DV`, `DV/BT` as BT only where DV pools into BT). A row
+  counts one code as one target: aliases do not chain (`ADV` never reaches BT through DV).
+  `RB/CT` counts as nothing. A bundle with no tracker counts each species' own code only, as
+  bcfishpass's `load_observations.sql` does: it tests the recorded code against the presence
+  table's codes, so its `species_code_remap` of the cutthroat aliases renames only records
+  already coded `CT` (`smnorris/bcfishpass@3bd2824`; on its output 0 of 2,004 alias records
+  in SQAM, LFRA and VICT reach its upstream arrays, `data-raw/logs/record_rule_470/`).
+- **Whose group.** A record counts as what its own group's presence and pooling say, as presence
+  already worked: a DV record in a pooled upper-Skeena group counts as BT for every barrier
+  and segment downstream of it, in the lower Skeena too.
+- **Dates.** `pipeline: observation_record_date:` `any` (when absent; `bcfishpass`) counts every
+  record. `lift_floor` (`default`) holds each species' records to its lift floor
+  (`observation_date_min`): salmon, steelhead, GR and KO from 1990-01-01; a species with no
+  floor counts every record, undated included (`default`'s WCT floor is empty since #470 for
+  that reason; its lift still drops undated records, §5). A lift list that mixes floors is
+  refused under `lift_floor`, since the stricter would silently win.
+- **Year limits.** A tracker row's `obs_year_max` holds that code to records dated in or before
+  the year.
+
+The cut spec carries a digest of the rule resolved as if every species were present, and the
+acc spec the rule resolved per group (§6b), so a tracker row, a species group, a region or a
+date floor that moves which records count is a new token. Records filed under codes the
+tracker does not list, or with stray spaces (`DVxBT` 6, `" RB"` 1 on 2026-11-16), count as
+nothing. The validator (`lnk_habitat_validate()`) takes the tracker's resolution from its driver,
+so it counts alias codes too; it applies no date floor, since it scores habitat, not access.
 
 ### Pausing a species (link#432)
 

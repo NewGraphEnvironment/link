@@ -185,7 +185,7 @@ provenance:
     source: link (hand-authored)
     upstream_sha: 8f1890564b9148573535a679f2e5563aebe74207
     synced: '2026-11-16'
-    checksum: sha256:545a25f043ed02cfd930076ee8f3da56941e92f5f60c0868ff1819e95d0c5b16
+    checksum: sha256:7942a8031b4ce2e4c7e76620c0d3721796f400eca84e5833d99f75c70f0b693f
     shape_checksum: sha256:2350b190b48ca5e78b576450b72888d96cc922ffb2c7d4eb976e1fa8504f8ee0
   parameters_habitat_thresholds.csv:
     source: link (fresh's copy plus MAD ranges for BT, GR, KO and RB converted from the width minima; link#307)

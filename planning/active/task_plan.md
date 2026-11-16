@@ -129,14 +129,14 @@ Recommended in this plan, settled by approving it:
       threshold of distinct records; a schema without the table is a NOTE; negative cases in
       `study_area_verify_negative.sh`
 - [ ] #434: the negative cases run end to end against a recomputed scratch run that carries evidence
-- [ ] #426: `bcfishpass` takes `>`, `default` keeps `>=`; lifts counted before and after
+- [x] #426: `bcfishpass` takes `>`, `default` keeps `>=`; lifts counted before and after
       on BULK, PARS, ADMS, BABL and ELKR
-- [ ] #426: correct RUNBOOK §5's "no date floor" line (an undated record never counts
+- [x] #426: correct RUNBOOK §5's "no date floor" line (an undated record never counts
       toward a lift)
-- [ ] #427: measure thresholds 1, 2 and 5 for CH, CM, CO, PK, SK, ST, GR and KO on a few
+- [x] #427: measure thresholds 1, 2 and 5 for CH, CM, CO, PK, SK, ST, GR and KO on a few
       `default` groups (lifts added, accessible km added, new lifts resting on one record);
       bring the numbers to the operator, then set `default`'s threshold
-- [ ] #236: rewrite its body to multi-rule overrides only (what pooling answered,
+- [x] #236: rewrite its body to multi-rule overrides only (what pooling answered,
       what remains), and leave it open
 
 ## Phase 5: Vocabulary, docs, release
@@ -149,6 +149,9 @@ Recommended in this plan, settled by approving it:
       README or research text that states the old rule; `CLAUDE.md` status block; NEWS; version 0.84.0
 - [ ] `devtools::document()`, `devtools::test()`, `lintr` (per-file against main),
       `devtools::check()`
+
+Phase 4 results: #426 moves no observation lift in BULK, PARS, ADMS, BABL, ELKR, CHWK, HARR, LFRA,
+LSKE or KLUM (`lifts_426.csv`). #427: operator chose 2 records (2026-11-16) from `lifts_427.csv`.
 
 ## Owed at the end (reported, done after merge)
 - [ ] Provincial re-model of `fresh_default` and `fresh` at `acc-v6` / `acc-bcfp-5`

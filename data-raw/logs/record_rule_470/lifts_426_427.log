@@ -1,0 +1,944 @@
+NOTICE:  schema "zz470_lifts" does not exist, skipping
+
+NOTICE:  table "observations_province" does not exist, skipping
+
+NOTICE:  table "nb" does not exist, skipping
+
+NOTICE:  table "bo_ge" does not exist, skipping
+
+NOTICE:  table "ev_ge" does not exist, skipping
+
+NOTICE:  schema "pg_temp" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "bo_gt" does not exist, skipping
+
+NOTICE:  table "ev_gt" does not exist, skipping
+
+NOTICE:  relation "zz470_lifts_nb_blue_line_key_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_wscode_ltree_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_localcode_ltree_idx" already exists, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  relation "zz470_lifts_nb_blue_line_key_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_wscode_ltree_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_localcode_ltree_idx" already exists, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  relation "zz470_lifts_nb_blue_line_key_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_wscode_ltree_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_localcode_ltree_idx" already exists, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  relation "zz470_lifts_nb_blue_line_key_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_wscode_ltree_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_localcode_ltree_idx" already exists, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  relation "zz470_lifts_nb_blue_line_key_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_wscode_ltree_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_localcode_ltree_idx" already exists, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  relation "zz470_lifts_nb_blue_line_key_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_wscode_ltree_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_localcode_ltree_idx" already exists, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  relation "zz470_lifts_nb_blue_line_key_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_wscode_ltree_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_localcode_ltree_idx" already exists, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  relation "zz470_lifts_nb_blue_line_key_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_wscode_ltree_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_localcode_ltree_idx" already exists, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  relation "zz470_lifts_nb_blue_line_key_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_wscode_ltree_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_localcode_ltree_idx" already exists, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  relation "zz470_lifts_nb_blue_line_key_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_wscode_ltree_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_localcode_ltree_idx" already exists, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+    wsg species_code lifts_ge lifts_gt lost_with_gt gained_with_gt
+1  BULK           BT       33       33            0              0
+2  PARS           BT       14       14            0              0
+3  ELKR           BT       29       29            0              0
+4  ELKR          WCT      685      685            0              0
+5  CHWK           BT       53       53            0              0
+6  CHWK           CH        5        5            0              0
+7  CHWK           CM        5        5            0              0
+8  CHWK           CO        5        5            0              0
+9  CHWK           PK        5        5            0              0
+10 CHWK           SK        5        5            0              0
+11 CHWK           ST        5        5            0              0
+12 HARR           BT      120      120            0              0
+13 HARR           CH        4        4            0              0
+14 HARR           CM        4        4            0              0
+15 HARR           CO        4        4            0              0
+16 HARR           PK        4        4            0              0
+17 HARR           SK        4        4            0              0
+18 HARR           ST        4        4            0              0
+19 LFRA           BT      211      211            0              0
+20 LFRA           CH       13       13            0              0
+21 LFRA           CM       13       13            0              0
+22 LFRA           CO       13       13            0              0
+23 LFRA           PK       13       13            0              0
+24 LFRA           SK       13       13            0              0
+25 LFRA           ST       17       17            0              0
+26 LSKE           BT       72       72            0              0
+27 KLUM           BT       60       60            0              0
+28 KLUM           CH        1        1            0              0
+29 KLUM           CM        1        1            0              0
+30 KLUM           CO        1        1            0              0
+31 KLUM           PK        1        1            0              0
+32 KLUM           SK        1        1            0              0
+33 KLUM           ST        1        1            0              0
+NOTICE:  table "bo_t5" does not exist, skipping
+
+NOTICE:  table "ev_t5" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "bo_t2" does not exist, skipping
+
+NOTICE:  table "ev_t2" does not exist, skipping
+
+NOTICE:  relation "zz470_lifts_nb_blue_line_key_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_wscode_ltree_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_localcode_ltree_idx" already exists, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "bo_t1" does not exist, skipping
+
+NOTICE:  table "ev_t1" does not exist, skipping
+
+NOTICE:  relation "zz470_lifts_nb_blue_line_key_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_wscode_ltree_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_localcode_ltree_idx" already exists, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  relation "zz470_lifts_nb_blue_line_key_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_wscode_ltree_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_localcode_ltree_idx" already exists, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  relation "zz470_lifts_nb_blue_line_key_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_wscode_ltree_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_localcode_ltree_idx" already exists, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  relation "zz470_lifts_nb_blue_line_key_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_wscode_ltree_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_localcode_ltree_idx" already exists, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  relation "zz470_lifts_nb_blue_line_key_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_wscode_ltree_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_localcode_ltree_idx" already exists, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  relation "zz470_lifts_nb_blue_line_key_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_wscode_ltree_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_localcode_ltree_idx" already exists, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  relation "zz470_lifts_nb_blue_line_key_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_wscode_ltree_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_localcode_ltree_idx" already exists, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  relation "zz470_lifts_nb_blue_line_key_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_wscode_ltree_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_localcode_ltree_idx" already exists, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  relation "zz470_lifts_nb_blue_line_key_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_wscode_ltree_idx" already exists, skipping
+
+NOTICE:  relation "zz470_lifts_nb_localcode_ltree_idx" already exists, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+    wsg species_code threshold lifts_t5 lifts added added_one_record
+2  BULK           CH         1        0     2     2                2
+4  BULK           CM         1        0     2     2                2
+6  BULK           CO         1        0     2     2                2
+8  BULK           PK         1        0     2     2                2
+10 BULK           SK         1        0     2     2                2
+12 BULK           ST         1        0     2     2                2
+17 LSKE           CH         2        0     7     7                0
+18 LSKE           CH         1        0    15    15                8
+19 LSKE           CM         2        0     7     7                0
+20 LSKE           CM         1        0    15    15                8
+21 LSKE           CO         2        0     7     7                0
+22 LSKE           CO         1        0    15    15                8
+23 LSKE           PK         2        0     7     7                0
+24 LSKE           PK         1        0    15    15                8
+25 LSKE           SK         2        0     7     7                0
+26 LSKE           SK         1        0    15    15                8
+27 LSKE           ST         2        0     7     7                0
+28 LSKE           ST         1        0    15    15                8
+33 SQAM           CH         2        6    28    22                0
+34 SQAM           CH         1        6    81    75               53
+35 SQAM           CM         2        6    28    22                0
+36 SQAM           CM         1        6    81    75               53
+37 SQAM           CO         2        6    28    22                0
+38 SQAM           CO         1        6    81    75               53
+39 SQAM           PK         2        6    28    22                0
+40 SQAM           PK         1        6    81    75               53
+41 SQAM           SK         2        6    28    22                0
+42 SQAM           SK         1        6    81    75               53
+43 SQAM           ST         2       27    69    42                0
+44 SQAM           ST         1       27   128   101               59
+50 MORR           CH         1        0     7     7                7
+52 MORR           CM         1        0     7     7                7
+54 MORR           CO         1        0     7     7                7
+56 MORR           PK         1        0     7     7                7
+58 MORR           SK         1        0     7     7                7
+59 MORR           ST         2        0     8     8                0
+60 MORR           ST         1        0    15    15                7
+65 HARR           CH         2        2    11     9                0
+66 HARR           CH         1        2    44    42               33
+67 HARR           CM         2        2    11     9                0
+68 HARR           CM         1        2    44    42               33
+69 HARR           CO         2        2    11     9                0
+70 HARR           CO         1        2    44    42               33
+71 HARR           PK         2        2    11     9                0
+72 HARR           PK         1        2    44    42               33
+73 HARR           SK         2        2    11     9                0
+74 HARR           SK         1        2    44    42               33
+75 HARR           ST         2        2    11     9                0
+76 HARR           ST         1        2    54    52               43
+   blocked_km_above_added_max
+2                         6.3
+4                         6.3
+6                         6.3
+8                         6.3
+10                        6.3
+12                        3.3
+17                      578.9
+18                      625.2
+19                      578.9
+20                      625.2
+21                      578.9
+22                      625.2
+23                      578.9
+24                      625.2
+25                      578.9
+26                      625.2
+27                      578.7
+28                      616.8
+33                      467.7
+34                     1483.1
+35                      467.7
+36                     1483.1
+37                      467.7
+38                     1483.1
+39                      467.7
+40                     1483.1
+41                      467.7
+42                     1483.1
+43                     1849.5
+44                     2058.7
+50                       13.7
+52                        0.0
+54                       13.7
+56                       13.7
+58                       13.7
+59                        5.2
+60                       13.2
+65                      281.8
+66                      599.7
+67                      281.8
+68                      599.7
+69                      281.8
+70                      599.7
+71                      281.8
+72                      599.7
+73                      281.8
+74                      599.7
+75                      281.7
+76                      653.8
+NOTICE:  drop cascades to 12 other objects
+DETAIL:  drop cascades to table zz470_lifts.ev_ge
+drop cascades to table zz470_lifts.bo_ge
+drop cascades to table zz470_lifts.ev_gt
+drop cascades to table zz470_lifts.bo_gt
+drop cascades to table zz470_lifts.observations_province
+drop cascades to table zz470_lifts.nb
+drop cascades to table zz470_lifts.ev_t5
+drop cascades to table zz470_lifts.bo_t5
+drop cascades to table zz470_lifts.ev_t2
+drop cascades to table zz470_lifts.bo_t2
+drop cascades to table zz470_lifts.ev_t1
+drop cascades to table zz470_lifts.bo_t1
+
