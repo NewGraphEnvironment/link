@@ -436,6 +436,8 @@ DECLARE
   n_unset  int  := 0;
   n_stale  int  := 0;
   n_lift   int;
+  n_ev     int;
+  n_evthr  int;
   v_sp     text;
   bad      text;
 BEGIN
@@ -751,6 +753,67 @@ BEGIN
       RAISE WARNING
         'run %: % segment(s) of groups outside the run, recomputed because they read it, were lifted after the habitat gate had blanked them (%). Their habitat stays missing until each is re-modelled (under this run_uid with LNK_HABITAT_GATE=0, then --recompute-only).',
         v_run, n_lift, bad;
+    END IF;
+  END IF;
+
+  -- What each lift rests on (link#434). For each run group whose newest
+  -- finished build of the run was made at link 0.84.0 or later (when the
+  -- evidence table began), the (barrier, species) set of
+  -- barrier_override_evidence must equal barrier_overrides', and each
+  -- observation lift must hold at least its threshold of distinct records.
+  -- A schema without the table, or a group built earlier, is noted.
+  IF to_regclass(format('%I.barrier_override_evidence', v_sch)) IS NULL
+     OR to_regclass(format('%I.barrier_overrides', v_sch)) IS NULL THEN
+    RAISE NOTICE 'NOTE: no barrier_override_evidence in %; what each lift rests on is not checked (link#434)', v_sch;
+  ELSE
+    EXECUTE format(
+      $q$WITH g AS (
+           SELECT watershed_group_code FROM (
+             SELECT DISTINCT ON (watershed_group_code)
+                    watershed_group_code, link_version
+               FROM %1$I.log
+              WHERE run_uid = $1 AND date_end IS NOT NULL
+              ORDER BY watershed_group_code, date_end DESC) l
+            WHERE (string_to_array(link_version, '.'))[1:3]::int[]
+                  >= ARRAY[0, 84, 0]),
+         o AS (SELECT DISTINCT blue_line_key, downstream_route_measure,
+                      species_code, watershed_group_code
+                 FROM %1$I.barrier_overrides
+                WHERE watershed_group_code IN (SELECT * FROM g)),
+         e AS (SELECT DISTINCT blue_line_key, downstream_route_measure,
+                      species_code, watershed_group_code
+                 FROM %1$I.barrier_override_evidence
+                WHERE watershed_group_code IN (SELECT * FROM g)),
+         d AS ((SELECT * FROM o EXCEPT SELECT * FROM e)
+               UNION ALL
+               (SELECT * FROM e EXCEPT SELECT * FROM o))
+       SELECT count(*),
+              coalesce(string_agg(DISTINCT watershed_group_code || ' ' || species_code,
+                                  ', '), '')
+         FROM d$q$, v_sch) INTO n_ev, bad USING v_run;
+    IF n_ev > 0 THEN
+      RAISE EXCEPTION
+        'run %: % lifted barrier(s) where barrier_override_evidence and barrier_overrides disagree (%). Every lift must list what it rests on, and every listed lift must be a lift (link#434): re-model those groups under this run_uid.',
+        v_run, n_ev, bad;
+    END IF;
+    EXECUTE format(
+      $q$SELECT count(*),
+                coalesce(string_agg(DISTINCT watershed_group_code || ' ' || species_code,
+                                    ', '), '')
+           FROM (SELECT watershed_group_code, species_code, blue_line_key,
+                        downstream_route_measure,
+                        max(observation_threshold) AS thr,
+                        count(DISTINCT evidence_key) AS n
+                   FROM %1$I.barrier_override_evidence
+                  WHERE evidence = 'observation'
+                    AND watershed_group_code IN
+                        (SELECT watershed_group_code FROM %1$I.log WHERE run_uid = $1)
+                  GROUP BY 1, 2, 3, 4) t
+          WHERE n < thr$q$, v_sch) INTO n_evthr, bad USING v_run;
+    IF n_evthr > 0 THEN
+      RAISE EXCEPTION
+        'run %: % observation lift(s) list fewer records than their threshold (%) (link#434).',
+        v_run, n_evthr, bad;
     END IF;
   END IF;
 

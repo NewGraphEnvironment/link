@@ -175,6 +175,35 @@ cols_barrier_overrides <- c(
   watershed_group_code     = "varchar(4) NOT NULL"
 )
 
+#' Column shape for what each lift rests on (link#434).
+#'
+#' `<persist_schema>.barrier_override_evidence`: one row per barrier a group's
+#' build lifted, species and evidence record, from
+#' [lnk_barrier_overrides()]'s `evidence` table. An observation lift lists
+#' each record that met the rule (`evidence_key` its `observation_key`,
+#' `species_code_recorded` the code it is filed under, `evidence_wsg` its own
+#' group, which can be another group upstream); a habitat lift lists each
+#' confirming habitat row. Every observation row carries the rule as applied.
+#' Its (barrier, species) set equals the group's `barrier_overrides` rows,
+#' which `study_area_verify.sql` checks. One named vector drives the DDL and
+#' the INSERT projection.
+#' @noRd
+cols_barrier_override_evidence <- c(
+  blue_line_key            = "integer NOT NULL",
+  downstream_route_measure = "double precision NOT NULL",
+  species_code             = "text NOT NULL",
+  evidence                 = "text NOT NULL",
+  evidence_key             = "text NOT NULL",
+  species_code_recorded    = "text",
+  observation_date         = "date",
+  evidence_wsg             = "text",
+  observation_threshold    = "integer",
+  observation_date_min     = "date",
+  observation_species      = "text",
+  observation_buffer_m     = "double precision",
+  watershed_group_code     = "varchar(4) NOT NULL"
+)
+
 #' Column shape for the persisted near-river distances (#364).
 #'
 #' `<persist_schema>.streams_near_river` mirrors the table fresh's
@@ -459,6 +488,9 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
                               force_recreate = force_recreate)
   .lnk_validate_persist_table(conn, schema = schema, table = "barrier_overrides",
                               force_recreate = force_recreate)
+  .lnk_validate_persist_table(conn, schema = schema,
+                              table = "barrier_override_evidence",
+                              force_recreate = force_recreate)
   .lnk_validate_persist_table(conn, schema = schema, table = "streams_access",
                               force_recreate = force_recreate)
   .lnk_validate_persist_table(conn, schema = schema,
@@ -568,6 +600,16 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
     sprintf("%s.barrier_overrides (watershed_group_code)", schema))
   .lnk_index_create(conn, have_idx, "barrier_overrides_blk_drm_idx",
     sprintf("%s.barrier_overrides (blue_line_key, downstream_route_measure)", schema))
+
+  # What each lift rests on (link#434): keyed as barrier_overrides is, plus
+  # the evidence record.
+  evidence_pk <- c("blue_line_key", "downstream_route_measure", "species_code",
+                   "watershed_group_code", "evidence", "evidence_key")
+  .lnk_db_execute(conn, sprintf(
+    "CREATE TABLE IF NOT EXISTS %s.barrier_override_evidence (\n  %s\n)",
+    schema, .lnk_cols_clause(cols_barrier_override_evidence, evidence_pk)))
+  .lnk_index_create(conn, have_idx, "barrier_override_evidence_wsg_idx",
+    sprintf("%s.barrier_override_evidence (watershed_group_code)", schema))
 
   # Per-segment per-species access table (link#187). Wide shape (one
   # row per segment, all species columns inline) — matches the QGIS-

@@ -235,6 +235,7 @@ consolidate_missing_persist <- function(tables) {
 #' link's persist tables every species set has. host_drop_partials in
 #' data-raw/study_area_hosts.sh names the same set; a test holds them equal.
 consolidate_persist_core <- c("streams", "barriers", "barrier_overrides",
+                              "barrier_override_evidence",
                               "streams_access", "streams_mapping_code",
                               "streams_near_river")
 

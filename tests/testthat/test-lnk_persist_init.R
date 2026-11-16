@@ -250,8 +250,9 @@ test_that("an up-to-date persist schema waits on no other session's write (#369)
     host = "localhost", port = 5432L, user = "postgres", password = "postgres")
   withr::defer(DBI::dbDisconnect(holder))
   tbls <- c("streams", paste0("streams_habitat_", tolower(sp)), "barriers",
-            "barrier_overrides", "streams_access", "streams_mapping_code",
-            "streams_near_river", "log", "log_input", "log_recompute")
+            "barrier_overrides", "barrier_override_evidence", "streams_access",
+            "streams_mapping_code", "streams_near_river", "log", "log_input",
+            "log_recompute")
   DBI::dbExecute(holder, "BEGIN")
   for (t in tbls) {
     DBI::dbExecute(holder, sprintf("LOCK TABLE %s.%s IN ROW EXCLUSIVE MODE", schema, t))

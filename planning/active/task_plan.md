@@ -116,18 +116,19 @@ Recommended in this plan, settled by approving it:
       above it). The README says the numbers are at the provisional acc-v6, before #426 and #427
 
 ## Phase 4: What each lift rests on (#434, #426, #427, #236)
-- [ ] #434: `lnk_barrier_overrides()` also writes the evidence (observation lifts: each
+- [x] #434: `lnk_barrier_overrides()` also writes the evidence (observation lifts: each
       record's key, recorded code and date; habitat lifts: the habitat row; every row: the
       threshold, date floor, species list and comparison applied), DISTINCT over barrier, species
       and key (natural_barriers repeats positions); optional, and falling back to `species_code`
       for a caller's table with no `species_code_recorded`
-- [ ] #434: `barrier_override_evidence` in `lnk_persist_init()` (`cols_*` vector,
+- [x] #434: `barrier_override_evidence` in `lnk_persist_init()` (`cols_*` vector,
       `.lnk_validate_persist_table()`), `lnk_pipeline_persist()`, consolidate's core table list,
       `_HOSTS_PERSIST_CORE` (`data-raw/study_area_hosts.sh`) and the tests that hold those lists equal
-- [ ] #434: `study_area_verify.sql` asserts, over the run's own groups, that its (barrier,
+- [x] #434: `study_area_verify.sql` asserts, over the run's own groups, that its (barrier,
       species) set equals `barrier_overrides`', and that each observation lift holds at least its
       threshold of distinct records; a schema without the table is a NOTE; negative cases in
       `study_area_verify_negative.sh`
+- [ ] #434: the negative cases run end to end against a recomputed scratch run that carries evidence
 - [ ] #426: `bcfishpass` takes `>`, `default` keeps `>=`; lifts counted before and after
       on BULK, PARS, ADMS, BABL and ELKR
 - [ ] #426: correct RUNBOOK §5's "no date floor" line (an undated record never counts

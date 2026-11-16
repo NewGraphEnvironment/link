@@ -431,7 +431,7 @@ host_db_id() {
 # schema (in `fresh`, the snapshot primitives and the bcfp reference sit
 # beside them, link#376). consolidate_persist_core in schema_consolidate.R is
 # the same set; a test holds them equal.
-_HOSTS_PERSIST_CORE="streams barriers barrier_overrides streams_access streams_mapping_code streams_near_river"
+_HOSTS_PERSIST_CORE="streams barriers barrier_overrides barrier_override_evidence streams_access streams_mapping_code streams_near_river"
 _HOSTS_PERSIST_CORE_SQL=$(printf "'%s'," $_HOSTS_PERSIST_CORE); _HOSTS_PERSIST_CORE_SQL=${_HOSTS_PERSIST_CORE_SQL%,}
 host_drop_partials() {
   local ws="$1" arr out

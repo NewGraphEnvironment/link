@@ -50,6 +50,14 @@
 #'   `IF NOT EXISTS`. Default `c("blue_line_key", "wscode_ltree",
 #'   "localcode_ltree")` — only columns that exist in the table are indexed.
 #' @param to Character. Schema-qualified output table name.
+#' @param evidence Character or `NULL`. Schema-qualified table to (re)create
+#'   holding what each lift rests on (link#434): one row per lifted barrier,
+#'   species and evidence record. An observation lift lists every record that
+#'   met the rule (`observation_key`, the code it is filed under, its date
+#'   and group); a habitat lift lists each confirming habitat row. Every row
+#'   carries the rule as applied (`observation_threshold`,
+#'   `observation_date_min`, `observation_species`, `observation_buffer_m`).
+#'   `NULL` (default) writes none.
 #' @param verbose Logical. Report counts.
 #'
 #' @return Invisible data frame with override counts per species.
@@ -87,8 +95,40 @@ lnk_barrier_overrides <- function(conn,
                                                   "wscode_ltree",
                                                   "localcode_ltree"),
                                    to,
+                                   evidence = NULL,
                                    verbose = TRUE) {
   DBI::dbExecute(conn, sprintf("DROP TABLE IF EXISTS %s", to))
+  if (!is.null(evidence)) {
+    DBI::dbExecute(conn, sprintf("DROP TABLE IF EXISTS %s", evidence))
+    DBI::dbExecute(conn, sprintf(
+      "CREATE TABLE %s (
+        blue_line_key integer,
+        downstream_route_measure double precision,
+        species_code text,
+        evidence text,
+        evidence_key text,
+        species_code_recorded text,
+        observation_date date,
+        evidence_wsg text,
+        observation_threshold integer,
+        observation_date_min date,
+        observation_species text,
+        observation_buffer_m double precision
+      )", evidence))
+  }
+  # The code a record is filed under: the observation tables the pipeline
+  # builds keep it beside the model species (link#470); a caller's raw
+  # table has only species_code.
+  obs_recorded <- "o.species_code"
+  if (!is.null(observations) && !is.null(evidence)) {
+    op <- strsplit(observations, ".", fixed = TRUE)[[1]]
+    oc <- DBI::dbGetQuery(conn, sprintf(
+      "SELECT column_name FROM information_schema.columns
+       WHERE table_schema = %s AND table_name = %s",
+      if (length(op) == 2L) sprintf("'%s'", op[1]) else "current_schema()",
+      sprintf("'%s'", op[length(op)])))$column_name
+    if ("species_code_recorded" %in% oc) obs_recorded <- "o.species_code_recorded"
+  }
 
   # Create output table with unique constraint for ON CONFLICT
   DBI::dbExecute(conn, sprintf(
@@ -189,13 +229,20 @@ lnk_barrier_overrides <- function(conn,
         ""
       }
 
+      # One pass over the upstream join: each (barrier, record) pair that
+      # meets the rule, kept in a temp table that the lift and its evidence
+      # both read (link#434).
       # count(DISTINCT): natural_barriers can hold one position twice (a
       # point in a segment overlap, or a falls and a gradient barrier that
       # round together), and each copy joins the same observations, so a
-      # plain count would credit a record once per copy (link#367).
-      sql <- sprintf(
-        "INSERT INTO %s (blue_line_key, downstream_route_measure, species_code)
-         SELECT b.blue_line_key, b.downstream_route_measure, '%s'
+      # plain count would credit a record once per copy (link#367). A record
+      # counting as two species the list names has two rows with one key.
+      DBI::dbExecute(conn, "DROP TABLE IF EXISTS pg_temp.lnk_bo_pairs")
+      DBI::dbExecute(conn, sprintf(
+        "CREATE TEMP TABLE lnk_bo_pairs AS
+         SELECT DISTINCT b.blue_line_key, b.downstream_route_measure,
+                o.observation_key, %s AS species_code_recorded,
+                o.observation_date, o.watershed_group_code AS evidence_wsg
          FROM %s b
          INNER JOIN %s o
            ON whse_basemapping.fwa_upstream(
@@ -208,18 +255,42 @@ lnk_barrier_overrides <- function(conn,
          WHERE o.species_code IN (%s)
          AND o.observation_date >= '%s'
          %s
-         %s
-         GROUP BY b.blue_line_key, b.downstream_route_measure
-         HAVING count(DISTINCT o.observation_key) >= %d
-         ON CONFLICT DO NOTHING",
-        to, sp,
+         %s",
+        if (is.null(evidence)) "NULL::text" else obs_recorded,
         barriers, observations, buffer_m,
         ctrl_where,
-        obs_sp_sql, date_min, excl_where, ctrl_filter,
-        threshold)
+        obs_sp_sql, date_min, excl_where, ctrl_filter))
+
+      sql <- sprintf(
+        "INSERT INTO %s (blue_line_key, downstream_route_measure, species_code)
+         SELECT o.blue_line_key, o.downstream_route_measure, '%s'
+         FROM pg_temp.lnk_bo_pairs o
+         GROUP BY o.blue_line_key, o.downstream_route_measure
+         HAVING count(DISTINCT o.observation_key) >= %d
+         ON CONFLICT DO NOTHING",
+        to, sp, threshold)
 
       n <- DBI::dbExecute(conn, sql)
       overrides_found <- overrides_found + n
+
+      if (!is.null(evidence)) {
+        DBI::dbExecute(conn, sprintf(
+          "INSERT INTO %s
+           SELECT DISTINCT o.blue_line_key, o.downstream_route_measure, '%s',
+                  'observation', o.observation_key, o.species_code_recorded,
+                  o.observation_date, o.evidence_wsg, %d, '%s'::date, %s, %s
+           FROM pg_temp.lnk_bo_pairs o
+           JOIN (SELECT blue_line_key, downstream_route_measure
+                 FROM pg_temp.lnk_bo_pairs
+                 GROUP BY blue_line_key, downstream_route_measure
+                 HAVING count(DISTINCT observation_key) >= %d) l
+             ON l.blue_line_key = o.blue_line_key
+            AND l.downstream_route_measure = o.downstream_route_measure",
+          evidence, sp, threshold, date_min,
+          .lnk_quote_literal(paste(obs_sp_list, collapse = ";")),
+          buffer_m, threshold))
+      }
+      DBI::dbExecute(conn, "DROP TABLE IF EXISTS pg_temp.lnk_bo_pairs")
     }
 
     # --- Habitat confirmation overrides (any confirmed habitat upstream) ---
@@ -258,6 +329,36 @@ lnk_barrier_overrides <- function(conn,
 
       n <- DBI::dbExecute(conn, sql)
       overrides_found <- overrides_found + n
+
+      if (!is.null(evidence)) {
+        # Each confirming habitat row, keyed by its species and reach.
+        DBI::dbExecute(conn, sprintf(
+          "INSERT INTO %s
+           SELECT DISTINCT b.blue_line_key, b.downstream_route_measure, '%s',
+                  'habitat',
+                  concat_ws(':', h.species_code, h.blue_line_key,
+                            h.downstream_route_measure, h.upstream_route_measure),
+                  h.species_code, NULL::date, NULL::text,
+                  NULL::integer, NULL::date, %s, NULL::double precision
+           FROM %s b
+           INNER JOIN %s h
+             ON (lower(trim(h.spawning::text)) IN ('true', 't', '1') OR
+                 lower(trim(h.rearing::text))  IN ('true', 't', '1'))
+             AND h.species_code IN (%s)
+           INNER JOIN whse_basemapping.fwa_stream_networks_sp s
+             ON s.blue_line_key = h.blue_line_key
+             AND round(h.upstream_route_measure::numeric) >= round(s.downstream_route_measure::numeric)
+             AND round(h.upstream_route_measure::numeric) <= round(s.upstream_route_measure::numeric)
+           WHERE whse_basemapping.fwa_upstream(
+             b.blue_line_key, b.downstream_route_measure,
+             b.wscode_ltree, b.localcode_ltree,
+             h.blue_line_key, h.upstream_route_measure,
+             s.wscode_ltree, s.localcode_ltree,
+             false, 200)",
+          evidence, sp,
+          .lnk_quote_literal(paste(obs_sp_list, collapse = ";")),
+          barriers, habitat, obs_sp_sql))
+      }
     }
 
     results[[length(results) + 1]] <- data.frame(

@@ -585,6 +585,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
     control = control_arg,
     params = loaded$parameters_fresh,
     to = paste0(schema, ".barrier_overrides"),
+    evidence = paste0(schema, ".barrier_override_evidence"),
     verbose = FALSE)
 
   # Kept: lnk_pipeline_run()'s access walk reads it for code 2 (link#401),
