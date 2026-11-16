@@ -8,9 +8,14 @@
 #' salmon together, is a row in the tracker.
 #'
 #' A tracker row is `species_code` (the model species or a group of them),
-#' `species_obs` (the observation species or a group), `scope_level`
-#' (`region`, `subregion` or `wsg`), `scope` (a name in
-#' `inst/extdata/wsg_regions.csv`, or a WSG code) and `pool` (`yes` / `no`).
+#' `species_obs` (the observation species, a group, or a code records are
+#' filed under that is no species column, such as `SST` for summer-run
+#' steelhead), `scope_level` (`province`, `region`, `subregion` or `wsg`),
+#' `scope` (`BC` for `province`, else a name in `inst/extdata/wsg_regions.csv`
+#' or a WSG code) and `pool` (`yes` / `no`). So one table says both which
+#' species' records count as which and which alias codes count as a species:
+#' it is the record rule the pipeline, the presence check and the validator
+#' read (link#470).
 #' An optional `obs_year_max` limits a pooling row to records dated in or
 #' before that year, for evidence whose meaning changed over time (a name
 #' that was applied to another species until recording practice caught up).
@@ -19,7 +24,8 @@
 #'
 #' For each WSG, target and observation species pair, the applicable rows
 #' are resolved in order:
-#' 1. the most specific scope wins (`wsg` over `subregion` over `region`);
+#' 1. the most specific scope wins (`wsg` over `subregion` over `region` over
+#'    `province`);
 #' 2. at equal scope, the row naming fewer groups wins (a species-to-species
 #'    row beats one that names a group);
 #' 3. rows still tied must agree on `pool` and `obs_year_max`, or the call
@@ -126,7 +132,8 @@ lnk_species_pooling <- function(loaded, aoi, species, regions = NULL) {
         (rules$scope_level == "subregion" &
            rules$scope_key %in% norm(reg$subregion)) |
         (rules$scope_level == "region" &
-           rules$scope_key %in% norm(reg$region)),
+           rules$scope_key %in% norm(reg$region)) |
+        rules$scope_level == "province",
       , drop = FALSE]
     hit <- hit[hit$target %in% present, , drop = FALSE]
     self <- data.frame(watershed_group_code = w, species_code = present,
@@ -255,9 +262,9 @@ lnk_species_pooling <- function(loaded, aoi, species, regions = NULL) {
     }
   }
   level <- tolower(trimws(p$scope_level))
-  bad <- which(!level %in% c("region", "subregion", "wsg"))
+  bad <- which(!level %in% c("province", "region", "subregion", "wsg"))
   if (length(bad) > 0L) {
-    stop(sprintf("species_pooling rows %s: scope_level must be region, subregion or wsg",
+    stop(sprintf("species_pooling rows %s: scope_level must be province, region, subregion or wsg",
                  paste(bad, collapse = ", ")), call. = FALSE)
   }
   pool <- tolower(trimws(p$pool))
@@ -268,6 +275,7 @@ lnk_species_pooling <- function(loaded, aoi, species, regions = NULL) {
   }
   key <- up(p$scope)
   valid <- list(
+    province = "BC",
     region = unique(up(stats::na.omit(regions$region))),
     subregion = unique(up(stats::na.omit(regions$subregion))),
     wsg = up(regions$watershed_group_code))
@@ -278,19 +286,25 @@ lnk_species_pooling <- function(loaded, aoi, species, regions = NULL) {
                  paste(unique(trimws(p$scope[bad])), collapse = ", ")),
          call. = FALSE)
   }
-  expand <- function(code) {
+  # The target is a known species or a group. The evidence may also be a code
+  # records are filed under that is no species column (`SST`, `CCT`, `BT/DV`):
+  # an alias, counted as its target wherever the row applies.
+  expand <- function(code, alias_ok = FALSE) {
     if (code %in% names(groups)) return(groups[[code]])
     if (code %in% known_species) return(code)
+    if (alias_ok && grepl("^[A-Z]{1,6}(/[A-Z]{1,6})?$", code)) return(code)
     stop("species_pooling names '", code,
-         "', which is neither a known species nor a species_groups group",
+         if (alias_ok) "', which is not a species, a species_groups group or a record code" else
+           "', which is neither a known species nor a species_groups group",
          call. = FALSE)
   }
   year <- .lnk_sp_year(p$obs_year_max %||% rep(NA, nrow(p)))
-  scope_rank <- c(wsg = 1L, subregion = 2L, region = 3L)
+  scope_rank <- c(wsg = 1L, subregion = 2L, region = 3L, province = 4L)
   rows <- lapply(seq_len(nrow(p)), function(i) {
     t_code <- up(p$species_code[i])
     o_code <- up(p$species_obs[i])
-    grid <- expand.grid(target = expand(t_code), obs = expand(o_code),
+    grid <- expand.grid(target = expand(t_code),
+                        obs = expand(o_code, alias_ok = TRUE),
                         stringsAsFactors = FALSE)
     grid <- grid[grid$target != grid$obs, , drop = FALSE]
     if (nrow(grid) == 0L) return(NULL)

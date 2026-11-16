@@ -23,12 +23,9 @@
 #   groups.csv         per group: region, note, flags, records under codes
 #                      the table has no column for
 #   summary.csv        flags by species
-#   alias_sensitivity.csv  cells whose flag would differ if the records under
-#                      codes naming a table species (summer and winter
-#                      steelhead, anadromous char, uncertain BT/DV and RB/CT
-#                      calls) counted toward it. Not used for any flag: the
-#                      pipeline drops those codes, and the check judges what
-#                      the model reads.
+#   (alias_sensitivity.csv, written until link#470, is gone: the alias codes
+#   it tried now count through the bundle's pooling tracker, in the check and
+#   the pipeline alike.)
 #   measures.csv       per group x species with a counting record: the
 #                      record measures of .lnk_presence_measures() rolled up
 #                      by .lnk_presence_cell_measures() (no record is judged)
@@ -124,6 +121,8 @@ meas <- .lnk_presence_measures(
   conn, zones, sp_barrier, pools, sockeye,
   excl_keys = .lnk_observation_exclusion_keys(loaded),
   incl_keys = excl_all$observation_key[excl_all$release_include %in% c(TRUE, "t")],
+  aliases = .lnk_record_aliases(loaded,
+                                loaded$wsg_species_presence$watershed_group_code),
   year_min = year_min, year_now = year_now)
 if (nrow(meas) != nrow(records)) stop("measures do not cover every record")
 cm <- .lnk_presence_cell_measures(meas)
@@ -149,11 +148,17 @@ dbWriteTable(conn, "pc_incl",
              data.frame(observation_key = excl$observation_key[
                excl$release_include %in% c(TRUE, "t")]),
              temporary = TRUE, overwrite = TRUE)
+# The alias codes the tracker counts as a species (link#470), as the check
+# and the measures read them; the zones carry no group, so only the aliases
+# that mean one species everywhere fold there.
+pc_alias <- .lnk_record_aliases(loaded, loaded$wsg_species_presence$watershed_group_code)
+dbWriteTable(conn, "pc_alias", pc_alias, temporary = TRUE, overwrite = TRUE)
+dbWriteTable(conn, "pc_alias_zone", .lnk_record_aliases_everywhere(pc_alias),
+             temporary = TRUE, overwrite = TRUE)
 sql <- dbGetQuery(conn, sprintf("
   WITH o AS (
     SELECT o.watershed_group_code,
-           CASE WHEN o.species_code IN ('CCT', 'ACT', 'CT/RB') THEN 'CT'
-                ELSE o.species_code END AS species_code,
+           coalesce(a.species_code, o.species_code) AS species_code,
            (x.observation_key IS NOT NULL) AS excluded,
            (x.observation_key IS NULL AND (
               coalesce(substring(o.source FROM 1 FOR position(':' IN o.source)), '')
@@ -166,6 +171,11 @@ sql <- dbGetQuery(conn, sprintf("
     LEFT JOIN pg_temp.pc_excl x ON x.observation_key = o.observation_key
     LEFT JOIN (SELECT DISTINCT observation_key FROM pg_temp.pc_incl) i
       ON i.observation_key = o.observation_key
+    LEFT JOIN pg_temp.pc_alias a
+      ON a.watershed_group_code = o.watershed_group_code
+     AND a.species_obs = o.species_code
+     AND (a.obs_year_max IS NULL
+          OR extract(year FROM o.observation_date) <= a.obs_year_max)
     WHERE o.watershed_group_code IN (%s))
   SELECT watershed_group_code, species_code,
          count(*)::int AS n_records,
@@ -200,8 +210,7 @@ dbWriteTable(conn, "pc_zones_raw", zr, temporary = TRUE, overwrite = TRUE)
 sqm <- dbGetQuery(conn, sprintf("
   WITH o AS (
     SELECT o.observation_key, o.watershed_group_code,
-           CASE WHEN o.species_code IN ('CCT', 'ACT', 'CT/RB') THEN 'CT'
-                ELSE o.species_code END AS species_code,
+           coalesce(a.species_code, o.species_code) AS species_code,
            o.blue_line_key, o.downstream_route_measure, o.wscode, o.localcode,
            replace(o.new_watershed_code, '-', '') AS code_full,
            CASE WHEN o.waterbody_type IN ('Lake', 'Wetland')
@@ -213,6 +222,11 @@ sqm <- dbGetQuery(conn, sprintf("
     LEFT JOIN pg_temp.pc_excl x ON x.observation_key = o.observation_key
     LEFT JOIN (SELECT DISTINCT observation_key FROM pg_temp.pc_incl) i
       ON i.observation_key = o.observation_key
+    LEFT JOIN pg_temp.pc_alias a
+      ON a.watershed_group_code = o.watershed_group_code
+     AND a.species_obs = o.species_code
+     AND (a.obs_year_max IS NULL
+          OR extract(year FROM o.observation_date) <= a.obs_year_max)
     WHERE o.watershed_group_code IN (%s)
       AND x.observation_key IS NULL
       AND NOT (coalesce(substring(o.source FROM 1 FOR position(':' IN o.source)), '')
@@ -244,8 +258,9 @@ sqm <- dbGetQuery(conn, sprintf("
            AS n_above_barrier,
          count(*) FILTER (WHERE EXISTS (
            SELECT 1 FROM pg_temp.pc_zones_raw z
-           WHERE (CASE WHEN z.species_code IN ('CCT', 'ACT', 'CT/RB') THEN 'CT'
-                       ELSE z.species_code END) = o.species_code
+           WHERE coalesce((SELECT az.species_code FROM pg_temp.pc_alias_zone az
+                           WHERE az.species_obs = z.species_code),
+                          z.species_code) = o.species_code
              AND z.code50 = nullif(rtrim(o.code_full, '0'), '')))::int AS n_hist_zone
   FROM o GROUP BY 1, 2",
   paste(sprintf("'%s'", check_wsgs), collapse = ", "), year_min, year_now,
@@ -261,30 +276,6 @@ for (v in setdiff(names(sqm), c("watershed_group_code", "species_code"))) {
 }
 n_cmp_m <- nrow(cmp_m)
 
-# -- sensitivity: codes that name a table species -----------------------------
-# Diagnostic only, never a flag: the pipeline's observation filter matches
-# codes exactly, so these records reach no break, lift or code 2 today.
-alias <- c(SST = "ST", WST = "ST", ADV = "DV", "DV/BT" = "DV", ABT = "BT",
-           "BT/DV" = "BT", "RB/CT" = "RB", " RB" = "RB")
-rec_alias <- records
-hit_alias <- rec_alias$species_code %in% names(alias)
-rec_alias$species_code[hit_alias] <- unname(alias[rec_alias$species_code[hit_alias]])
-res_alias <- .lnk_presence_check(rec_alias, loaded, n_min = n_min,
-                                 year_min = year_min, year_now = year_now,
-                                 regions = regions,
-                                 species_modelled = cfg$species)
-sens <- merge(res[, c("watershed_group_code", "species_code", "flag", "n_kept")],
-              res_alias[, c("watershed_group_code", "species_code", "flag", "n_kept")],
-              by = c("watershed_group_code", "species_code"),
-              suffixes = c("", "_with_aliases"))
-same_flag <- (is.na(sens$flag) & is.na(sens$flag_with_aliases)) |
-  (!is.na(sens$flag) & !is.na(sens$flag_with_aliases) &
-     sens$flag == sens$flag_with_aliases)
-sens <- sens[!same_flag, , drop = FALSE]
-sens <- sens[order(sens$watershed_group_code, sens$species_code,
-                   method = "radix"), , drop = FALSE]
-utils::write.csv(sens, file.path(dir_out, "alias_sensitivity.csv"),
-                 row.names = FALSE, na = "")
 
 # -- outputs ------------------------------------------------------------------
 ord <- function(d) {
@@ -389,8 +380,6 @@ if (seed) {
 }
 
 all_other <- stats::aggregate(list(n = other$n), other["species_code"], sum)
-named <- all_other[all_other$species_code %in% names(alias), , drop = FALSE]
-named <- named[order(-named$n, method = "radix"), , drop = FALSE]
 valid_dates <- records$observation_date[!is.na(records$observation_date) &
                                           records$observation_date <= Sys.Date()]
 writeLines(c(
@@ -408,14 +397,12 @@ writeLines(c(
   sprintf("groups: %d; cells: %d; flagged: %d (present_unsupported %d, absent_recorded %d)",
           nrow(pres), nrow(res), nrow(fl), sum(fl$flag == "present_unsupported"),
           sum(fl$flag == "absent_recorded")),
-  sprintf(paste0("records under codes the table has no column for (not counted, ",
-                 "as in the pipeline): %d records, %d codes (per group in groups.csv); ",
-                 "of them, codes naming a table species: %s"),
+  sprintf(paste0("records under codes the table has no column for and the tracker ",
+                 "counts as no species (not counted, as in the pipeline): %d records, ",
+                 "%d codes (per group in groups.csv); alias codes the tracker counts: %s"),
           sum(all_other$n), nrow(all_other),
-          paste0(trimws(named$species_code), " ", named$n, " -> ",
-                 alias[named$species_code], collapse = "; ")),
-  sprintf("alias sensitivity: %d cells would change flag if those codes counted (alias_sensitivity.csv)",
-          nrow(sens)),
+          paste(sort(unique(paste(pc_alias$species_obs, "->", pc_alias$species_code)),
+                     method = "radix"), collapse = "; ")),
   sprintf("SQL cross-check: %s, %d cells, %d records, all counts agree",
           paste(check_wsgs, collapse = ", "), n_cmp_cells, n_cmp_records),
   sprintf(paste0("measures: %d records; %d cells with a counting record (measures.csv), ",

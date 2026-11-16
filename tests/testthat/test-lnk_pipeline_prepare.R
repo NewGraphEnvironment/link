@@ -772,7 +772,16 @@ test_that(".lnk_pipeline_prep_observations builds species-filtered table", {
   expect_match(joined, "CREATE TABLE w_bulk\\.observations AS")
   expect_match(joined, "FROM bcfishobs\\.observations o")
   expect_match(joined, "o\\.watershed_group_code = 'BULK'")
-  expect_match(joined, "o\\.species_code IN \\('BT', 'CH'\\)")
+  # each present species counts its own code, with no date floor (no cfg)
+  expect_match(joined, "('BULK', 'BT', 'BT', NULL::date, NULL::integer)",
+               fixed = TRUE)
+  expect_match(joined, "('BULK', 'CH', 'CH', NULL::date, NULL::integer)",
+               fixed = TRUE)
+  expect_match(joined, "m.species_obs = o.species_code", fixed = TRUE)
+  expect_match(joined,
+    "RENAME COLUMN species_code TO species_code_recorded", fixed = TRUE)
+  expect_match(joined,
+    "RENAME COLUMN species_code_model TO species_code", fixed = TRUE)
   # No exclusions clause when the loaded list has none
   expect_no_match(joined, "observation_key NOT IN")
 })
@@ -815,14 +824,16 @@ test_that(".lnk_pipeline_prep_observations applies QA exclusions on observation_
   expect_no_match(joined, "'ddd'")
 })
 
-test_that(".lnk_pipeline_prep_observations expands CT to CT/CCT/ACT/CT/RB", {
+test_that("with no pooling tracker, alias codes do not count (as bcfishpass)", {
+  # bcfishpass's load_observations.sql tests the recorded code against the
+  # presence codes, so CCT, ACT and CT/RB never reach bcfishpass.observations
+  # (link#470, Phase 1). Before #470 link admitted them for every bundle.
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
       captured <<- c(captured, sql); invisible(NULL)
     }
   )
-
   loaded <- list(
     wsg_species_presence = data.frame(
       watershed_group_code = "ELKR",
@@ -834,11 +845,11 @@ test_that(".lnk_pipeline_prep_observations expands CT to CT/CCT/ACT/CT/RB", {
   )
   .lnk_pipeline_prep_observations("mock", aoi = "ELKR", loaded = loaded,
     schema = "w_elkr", observations = "bcfishobs.observations")
-
   joined <- paste(captured, collapse = "\n")
-  # CT alias remap mirrors bcfishpass species_code_remap (CCT/ACT/CT/RB → CT)
-  for (sp in c("CT", "CCT", "ACT", "CT/RB", "WCT")) {
-    expect_match(joined, sprintf("'%s'", sp))
+  expect_match(joined, "'CT', 'CT'", fixed = TRUE)
+  expect_match(joined, "'WCT', 'WCT'", fixed = TRUE)
+  for (sp in c("CCT", "ACT", "CT/RB")) {
+    expect_no_match(joined, sprintf("'%s'", sp), fixed = TRUE)
   }
 })
 
@@ -1121,13 +1132,13 @@ test_that("prep_observations builds observations_province from every group's pre
   expect_length(prov, 1L)
   # Each record kept by its OWN group's presence: PARS's KO counts toward a
   # barrier in UPCE, where KO is absent; nothing from XXXX, which has none.
-  expect_match(prov, "('UPCE', 'BT')", fixed = TRUE)
-  expect_match(prov, "('PARS', 'KO')", fixed = TRUE)
-  expect_no_match(prov, "('UPCE', 'KO')", fixed = TRUE)
+  expect_match(prov, "('UPCE', 'BT', 'BT'", fixed = TRUE)
+  expect_match(prov, "('PARS', 'KO', 'KO'", fixed = TRUE)
+  expect_no_match(prov, "('UPCE', 'KO'", fixed = TRUE)
   expect_no_match(prov, "XXXX", fixed = TRUE)
-  expect_match(prov, "p.watershed_group_code = o.watershed_group_code",
+  expect_match(prov, "m.watershed_group_code = o.watershed_group_code",
                fixed = TRUE)
-  expect_match(prov, "p.species_code = o.species_code", fixed = TRUE)
+  expect_match(prov, "m.species_obs = o.species_code", fixed = TRUE)
   expect_no_match(prov, "o.watershed_group_code = 'UPCE'", fixed = TRUE)
   expect_match(prov, "observation_key NOT IN ('aaa')", fixed = TRUE)
   expect_true(any(grepl("observations_province USING gist (wscode)", captured,

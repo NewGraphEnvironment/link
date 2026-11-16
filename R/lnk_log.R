@@ -985,8 +985,8 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
 
 #' Snapshot the config's full parameter rows, once per distinct config_hash.
 #'
-#' This is what makes a network self-describing: `observation_species = BT;DV`
-#' at threshold 1 with no date floor is recorded *in the database*, so a
+#' This is what makes a network self-describing: a lift rule such as
+#' `observation_species = BT` at threshold 1 is recorded *in the database*, so a
 #' scenario run stays identifiable after the config file moves on. Mirrors
 #' bcfp's `log_parameters_habitat_thresholds`.
 #'

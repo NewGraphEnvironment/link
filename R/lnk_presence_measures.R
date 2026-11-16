@@ -51,8 +51,11 @@
 #'   per stream, and a record's own 50k code can name the main river it was
 #'   filed under rather than the stream it is on.
 #'
-#' Cutthroat aliases (`CCT`, `ACT`, `CT/RB`) read as `CT`, as the presence
-#' check reads them.
+#' Alias codes read as the species the bundle's pooling tracker counts them
+#' as in the record's group (`aliases`, from `.lnk_record_aliases()`), as the
+#' presence check and the pipeline read them (link#470). In the zones, which
+#' carry no group, an alias is folded only where it counts as one species in
+#' every group that lists it (the tracker's province rows).
 #'
 #' @param conn A DBI connection to a database holding `bcfishobs`, FWA and
 #'   `fresh_default.barriers`.
@@ -66,17 +69,21 @@
 #' @param excl_keys,incl_keys `observation_key`s excluded
 #'   ([.lnk_observation_exclusion_keys()]) and read as releases
 #'   (`release_include`).
+#' @param aliases Data frame from `.lnk_record_aliases()`.
 #' @param year_min,year_now Years a counting record falls between.
 #' @return A data frame, one row per record.
 #' @noRd
 .lnk_presence_measures <- function(conn, zones, species_barrier, lift_pools,
                                    sockeye_lakes, excl_keys, incl_keys,
+                                   aliases,
                                    year_min = 1950L,
                                    year_now = as.integer(format(Sys.Date(), "%Y"))) {
   stopifnot(all(c("species_code", "code50") %in% names(zones)),
             is.list(lift_pools),
             all(species_barrier %in% names(lift_pools)),
-            length(year_min) == 1L, length(year_now) == 1L)
+            length(year_min) == 1L, length(year_now) == 1L,
+            all(c("watershed_group_code", "species_obs", "species_code") %in%
+                  names(aliases)))
   pools <- do.call(rbind, lapply(species_barrier, function(s) {
     data.frame(species_code = s, pool_species = unique(lift_pools[[s]]),
                stringsAsFactors = FALSE)
@@ -84,11 +91,20 @@
   tmp <- function(name, df) {
     DBI::dbWriteTable(conn, name, df, temporary = TRUE, overwrite = TRUE)
   }
-  # Fold cutthroat aliases in the zones as in the records.
+  # Fold aliases in the zones as in the records, where an alias counts as
+  # one species wherever it is listed.
   z <- zones[, c("species_code", "code50")]
-  z$species_code <- ifelse(z$species_code %in% c("CCT", "ACT", "CT/RB"), "CT",
-                           z$species_code)
+  one <- .lnk_record_aliases_everywhere(aliases)
+  hit <- match(z$species_code, one$species_obs)
+  z$species_code[!is.na(hit)] <- one$species_code[hit[!is.na(hit)]]
   tmp("pm_zones", unique(z))
+  tmp("pm_alias", data.frame(
+    watershed_group_code = as.character(aliases$watershed_group_code),
+    species_obs = as.character(aliases$species_obs),
+    species_code = as.character(aliases$species_code),
+    obs_year_max = as.integer(aliases$obs_year_max %||%
+                                rep(NA_integer_, nrow(aliases))),
+    stringsAsFactors = FALSE))
   tmp("pm_pools", pools)
   tmp("pm_sockeye", data.frame(waterbody_poly_id = as.numeric(sockeye_lakes)))
   tmp("pm_excl", data.frame(observation_key = as.character(excl_keys)))
@@ -112,8 +128,7 @@
 CREATE TEMP TABLE pm_rec AS
 SELECT o.observation_key,
        o.watershed_group_code,
-       CASE WHEN o.species_code IN ('CCT', 'ACT', 'CT/RB') THEN 'CT'
-            ELSE o.species_code END AS species_code,
+       coalesce(a.species_code, o.species_code) AS species_code,
        replace(o.new_watershed_code, '-', '') AS code50_full,
        nullif(rtrim(replace(o.new_watershed_code, '-', ''), '0'), '') AS code50,
        nullif(ST_Z(o.geom), 0) AS elevation_m,
@@ -140,7 +155,14 @@ LEFT JOIN whse_basemapping.fwa_stream_networks_sp s
   ON s.linear_feature_id = o.linear_feature_id
 LEFT JOIN pg_temp.pm_excl x ON x.observation_key = o.observation_key
 LEFT JOIN (SELECT DISTINCT observation_key FROM pg_temp.pm_incl) i
-  ON i.observation_key = o.observation_key", year_min, year_now),
+  ON i.observation_key = o.observation_key
+-- an alias reads as its species in the record's group, within the row's year
+-- limit (.lnk_record_aliases(), link#470); one target per group and code
+LEFT JOIN pg_temp.pm_alias a
+  ON a.watershed_group_code = o.watershed_group_code
+ AND a.species_obs = o.species_code
+ AND (a.obs_year_max IS NULL
+      OR extract(year FROM o.observation_date) <= a.obs_year_max)", year_min, year_now),
     "CREATE INDEX ON pg_temp.pm_rec (species_code)",
     "CREATE INDEX ON pg_temp.pm_rec USING gist (wscode)",
     "ANALYZE pg_temp.pm_rec",

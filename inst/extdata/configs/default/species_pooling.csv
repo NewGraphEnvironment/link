@@ -5,3 +5,20 @@ BT,DV,region,Skeena,no,,medium,"Skeena DV is a current name, not a legacy one: 8
 BT,DV,region,Columbia,yes,,medium,"Inland DV records are bull trout recorded under the other name; juveniles cannot be told apart in the field and the two hybridize where they co-occur, so habitat evidence is pooled","operator call 2026-09-26; McPhail and Carveth 1993, Field Key to the Freshwater Fishes of British Columbia, pp. 218-219, 223",2026-09-26,#290
 BT,DV,subregion,Kootenay,yes,,medium,As Columbia; its own row so the Kootenay can diverge from the rest of the Columbia as evidence accrues,operator call 2026-09-26,2026-09-26,#290
 BT,DV,subregion,Skeena above Hazelton,yes,,medium,"Conservative split at Hazelton (operator call): the interior Skeena above the Bulkley mouth is pooled as the interior drainages are; the coastal lower Skeena (LSKE, KLUM, LKEL, ZYMO) is not",operator call 2026-09-27; data-raw/logs/species_pooling_290,2026-09-27,#290
+CT,CCT,province,BC,yes,,high,"Coastal cutthroat trout, filed under its subspecies code; bcfishpass's species_code_remap intends the same fold",bcfishobs species codes; smnorris/bcfishpass@3bd2824 load_observations.sql,2026-11-16,#398
+CT,ACT,province,BC,yes,,high,"Anadromous cutthroat trout, filed under its own code; bcfishpass's species_code_remap intends the same fold",bcfishobs species codes; smnorris/bcfishpass@3bd2824 load_observations.sql,2026-11-16,#398
+CT,CT/RB,province,BC,yes,,medium,"Recorded as cutthroat or rainbow; counted as cutthroat, as bcfishpass's species_code_remap intends and #398 asked. RB/CT, the other order, counts as neither (operator call 2026-11-16)",smnorris/bcfishpass@3bd2824 load_observations.sql; operator call 2026-11-16,2026-11-16,#398
+ST,SST,province,BC,yes,,high,"Summer-run steelhead: a run timing of steelhead, not another species",bcfishobs species codes; operator call 2026-11-16,2026-11-16,#425
+ST,WST,province,BC,yes,,high,"Winter-run steelhead: a run timing of steelhead, not another species",bcfishobs species codes; operator call 2026-11-16,2026-11-16,#425
+DV,ADV,province,BC,yes,,high,"Anadromous Dolly Varden: a life history of Dolly Varden. Counts as DV only; in a region where DV pools into BT it does not count as BT through DV, since a row pools one code into one target",bcfishobs species codes; operator call 2026-11-16,2026-11-16,#425
+BT,ABT,province,BC,yes,,high,"Anadromous bull trout: a life history of bull trout",bcfishobs species codes; operator call 2026-11-16,2026-11-16,#425
+BT,BT/DV,region,Fraser,yes,,medium,"Recorded as bull trout or Dolly Varden. Counts as BT only where DV records count as BT (the DV rows above), where the two names mean one species; elsewhere it counts as neither (operator call 2026-11-16)",operator call 2026-11-16,2026-11-16,#425
+BT,BT/DV,region,Mackenzie,yes,,medium,As the Fraser row,operator call 2026-11-16,2026-11-16,#425
+BT,BT/DV,region,Columbia,yes,,medium,As the Fraser row,operator call 2026-11-16,2026-11-16,#425
+BT,BT/DV,subregion,Kootenay,yes,,medium,As the Fraser row,operator call 2026-11-16,2026-11-16,#425
+BT,BT/DV,subregion,Skeena above Hazelton,yes,,medium,As the Fraser row,operator call 2026-11-16,2026-11-16,#425
+BT,DV/BT,region,Fraser,yes,,medium,"Recorded as Dolly Varden or bull trout; as BT/DV",operator call 2026-11-16,2026-11-16,#425
+BT,DV/BT,region,Mackenzie,yes,,medium,As the Fraser row,operator call 2026-11-16,2026-11-16,#425
+BT,DV/BT,region,Columbia,yes,,medium,As the Fraser row,operator call 2026-11-16,2026-11-16,#425
+BT,DV/BT,subregion,Kootenay,yes,,medium,As the Fraser row,operator call 2026-11-16,2026-11-16,#425
+BT,DV/BT,subregion,Skeena above Hazelton,yes,,medium,As the Fraser row,operator call 2026-11-16,2026-11-16,#425

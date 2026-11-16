@@ -37,6 +37,11 @@ link,^R/lnk_pipeline_prepare\.R$,segments,"builds the base segments, the gradien
 link,^R/lnk_pipeline_prepare\.R$,gradient,"builds the base segments, the gradient barriers and their per-species reduction, the observation lifts and the dams"
 link,^R/lnk_pipeline_prepare\.R$,observations,"builds the base segments, the gradient barriers and their per-species reduction, the observation lifts and the dams"
 link,^R/lnk_pipeline_prepare\.R$,dams,"builds the base segments, the gradient barriers and their per-species reduction, the observation lifts and the dams"
+link,^R/lnk_pipeline_prepare\.R$,obs_upstream,"builds the observation tables the walk reads for code 2 under the record rule (#470)"
+link,^R/lnk_observation_records\.R$,segments,"the record rule: which records count, as which species, from which date, for the cuts, code 2 and the lifts (#470)"
+link,^R/lnk_observation_records\.R$,gradient,"the record rule: which records count, as which species, from which date, for the cuts, code 2 and the lifts (#470)"
+link,^R/lnk_observation_records\.R$,observations,"the record rule: which records count, as which species, from which date, for the cuts, code 2 and the lifts (#470)"
+link,^R/lnk_observation_records\.R$,obs_upstream,"the record rule: which records count, as which species, from which date, for the cuts, code 2 and the lifts (#470)"
 link,^R/lnk_pipeline_break\.R$,observations,observations are the first break source
 link,^R/lnk_barrier_overrides\.R$,observations,counts observations upstream of each barrier
 link,^R/lnk_barriers_unify\.R$,gradient,stages and locates every barrier row
@@ -92,11 +97,15 @@ link,^inst/extdata/configs/{config}/(rules\.yaml|dimensions\.csv|parameters_habi
 link,^inst/extdata/configs/{config}/parameters_fresh\.csv$,segments,access thresholds and observation-lift parameters
 link,^inst/extdata/configs/{config}/parameters_fresh\.csv$,gradient,access thresholds and observation-lift parameters
 link,^inst/extdata/configs/{config}/parameters_fresh\.csv$,observations,access thresholds and observation-lift parameters
+link,^inst/extdata/configs/{config}/parameters_fresh\.csv$,obs_upstream,"lift date floors, which the record rule also applies to code 2 (#470)"
 link,^inst/extdata/configs/{config}/config\.yaml$,any,"pipeline knobs (break sources, observation breaks, dams, discharge)"
 link,^inst/extdata/configs/{config}/config\.yaml$,segments,"pipeline knobs (break sources, observation breaks, dams, discharge)"
 link,^inst/extdata/configs/{config}/config\.yaml$,observations,"pipeline knobs (break sources, observation breaks, dams, discharge)"
 link,^inst/extdata/configs/{config}/config\.yaml$,dams,"pipeline knobs (break sources, observation breaks, dams, discharge)"
 link,^inst/extdata/configs/{config}/(species_groups|species_pooling)\.csv$,observations,which observation species count
+link,^inst/extdata/configs/{config}/(species_groups|species_pooling)\.csv$,segments,"which records count as which species, for the cuts, code 2 and the lifts (#470)"
+link,^inst/extdata/configs/{config}/(species_groups|species_pooling)\.csv$,gradient,"which records count as which species, for the cuts, code 2 and the lifts (#470)"
+link,^inst/extdata/configs/{config}/(species_groups|species_pooling)\.csv$,obs_upstream,"which records count as which species, for the cuts, code 2 and the lifts (#470)"
 link,^inst/extdata/configs/{config}/species_modelled\.csv$,segments,"which rules species run: a paused species adds no gradient breaks and is not classified (#432)"
 link,^inst/extdata/configs/{config}/species_modelled\.csv$,gradient,"which rules species run: a paused species adds no gradient breaks and is not classified (#432)"
 link,^inst/extdata/configs/{config}/wsg_species_presence_review\.csv$,none,"the presence review tracker (#402): not declared under files:, so no run reads it"
@@ -159,6 +168,9 @@ link,^data-raw/wsg_stall_sample\.R$,any,started by wsg_run_one.R beside every gr
 link,^data-raw/wsg_recompute_one\.R$,unexercised,the post-consolidate recompute
 link,^data-raw/schema_consolidate\.R$,unexercised,copies cloud hosts' groups into the dispatcher's persist
 link,^inst/extdata/wsg_regions\.csv$,observations,species pooling regions (lnk_species_pooling)
+link,^inst/extdata/wsg_regions\.csv$,segments,"pooling regions, which decide which records count as which species (#470)"
+link,^inst/extdata/wsg_regions\.csv$,gradient,"pooling regions, which decide which records count as which species (#470)"
+link,^inst/extdata/wsg_regions\.csv$,obs_upstream,"pooling regions, which decide which records count as which species (#470)"
 link,^inst/extdata/vocabulary\.csv$,any,"output vocabulary; every run resolves its tokens before it opens (lnk_vocabulary_resolve), and a row it cannot match refuses the run"
 link,^inst/extdata/configs/dictionary_[a-z_]+\.csv$,none,data dictionaries; no run reads them
 link,^inst/extdata/(thresholds_default|crossings_example|overrides_example|parameters_habitat_dimensions)\.csv$,none,"package examples and lnk_thresholds() defaults, off the modelling path"

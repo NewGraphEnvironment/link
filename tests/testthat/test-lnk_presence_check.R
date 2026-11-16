@@ -85,10 +85,25 @@ test_that("undated and impossible years count as undated", {
   expect_identical(cell(res, "W1", "DV")$flag, "present_unsupported")
 })
 
-test_that("cutthroat aliases count as CT", {
+test_that("alias codes count as the species the tracker names, as its own records", {
   r <- rbind(rec("k1", "W1", "CCT"), rec("k2", "W1", "ACT"),
              rec("k3", "W1", "CT/RB"), rec("k4", "W1", "CT"))
-  expect_identical(cell(check(r), "W1", "CT")$n_kept, 4L)
+  # no tracker: only CT's own code counts (the pipeline's reading, link#470)
+  expect_identical(cell(check(r), "W1", "CT")$n_kept, 1L)
+  aliases <- data.frame(species_code = "CT",
+                        species_obs = c("CCT", "ACT", "CT/RB"),
+                        scope_level = "province", scope = "BC", pool = "yes",
+                        stringsAsFactors = FALSE)
+  res <- check(r, loaded_pc(pooling = aliases))
+  expect_identical(cell(res, "W1", "CT")$n_kept, 4L)
+  # they are CT's own records, not evidence pooled from another species
+  expect_identical(cell(res, "W1", "CT")$n_kept_pooled, 0L)
+  # a regional alias reads as the species only in its scope
+  bt_dv <- data.frame(species_code = "CT", species_obs = "CCT",
+                      scope_level = "wsg", scope = "W2", pool = "yes",
+                      stringsAsFactors = FALSE)
+  res2 <- check(r, loaded_pc(pooling = bt_dv))
+  expect_identical(cell(res2, "W1", "CT")$n_kept, 1L)
 })
 
 test_that("each of the four release tags keeps a record out", {

@@ -75,7 +75,9 @@ lnk_vocabulary_read <- function() {
 #'
 #' - **cut:** the break sources in the order applied (`pipeline:
 #'   break_order`, or its default), the observation breaks (`all` or
-#'   `top_per_species`; only when `observations` is a source) and the
+#'   `top_per_species`, and a digest of the record rule that decides which
+#'   records cut, resolved as if every species were present; only when
+#'   `observations` is a source) and the
 #'   gradient classes streams are broken at (`pipeline: gradient_classes`,
 #'   or bcfishpass's 15 / 20 / 25 / 30 %), and which of the definite
 #'   barrier, barrier control and habitat classification files the bundle
@@ -84,7 +86,11 @@ lnk_vocabulary_read <- function() {
 #'   gradient barriers cut streams as well as what is accessible: the
 #'   species the rules model, each species' `access_gradient_max` and
 #'   `observation_*` lift parameters, the species presence table, which fish
-#'   records make code 2 (`pipeline: observation_upstream`, resolved), and the
+#'   records make code 2 (`pipeline: observation_upstream`, resolved), the
+#'   record rule resolved for every group in the presence table (which
+#'   recorded codes count as which species, with their date floors and year
+#'   limits: the pooling tracker, its species groups, the region lookup and
+#'   `pipeline: observation_record_date`, link#470), and the
 #'   two access rules held in code (the gradient class each access label
 #'   maps to, and [lnk_presence()]'s species groups). The
 #'   digest is over the parsed values, so a change in quoting or column
@@ -140,7 +146,9 @@ lnk_vocabulary_resolve <- function(cfg, loaded = NULL) {
   parts <- c(
     paste0("break_order=", paste(order, collapse = ",")),
     if ("observations" %in% order) {
-      paste0("observation_breaks=", .lnk_observation_breaks(cfg))
+      c(paste0("observation_breaks=", .lnk_observation_breaks(cfg)),
+        # which records cut: the record rule (link#470)
+        paste0("observation_records=", .lnk_record_rule_digest(cfg, loaded)))
     },
     paste0("gradient_classes=",
            paste(names(classes), .lnk_vocabulary_num(classes), sep = ":",
@@ -206,9 +214,15 @@ lnk_vocabulary_resolve <- function(cfg, loaded = NULL) {
   # species' access label maps to, and which present species make another
   # present (lnk_presence()'s groups). A change to either is a new rule set.
   groups <- eval(formals(lnk_presence)$groups)
+  # The record rule as the pipeline resolves it, so a tracker row, a species
+  # group, a region boundary or a date floor that moves which records count
+  # is a new rule set (link#470).
+  records <- .lnk_observation_species_map(cfg, loaded,
+                                          pres$watershed_group_code)
   payload <- paste(
     paste0("species=", paste(cfg$species, collapse = ",")),
     paste0("observation_upstream=", .lnk_observation_upstream(cfg)),
+    paste0("observation_record_date=", .lnk_observation_record_date(cfg)),
     paste0("access_classes=",
            paste(names(.lnk_classes_bcfp),
                  .lnk_vocabulary_num(.lnk_classes_bcfp), sep = ":",
@@ -219,6 +233,7 @@ lnk_vocabulary_resolve <- function(cfg, loaded = NULL) {
                  sep = ":", collapse = ";")),
     .lnk_vocabulary_canonical(pf[, .lnk_vocabulary_acc_cols, drop = FALSE]),
     .lnk_vocabulary_canonical(pres),
+    .lnk_vocabulary_canonical(records),
     sep = "\n--\n")
   paste0("sha256:",
          digest::digest(payload, algo = "sha256", serialize = FALSE))
