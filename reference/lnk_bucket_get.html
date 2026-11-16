@@ -48,7 +48,7 @@ helper is deliberately format-agnostic."><meta property="og:image" content="http
     <p>Fetch one file from a versioned S3 bucket (e.g., the bcfp build artifacts
 under <code>s3://fresh-bc/bcfishpass/</code>). Returns raw bytes by default so
 callers can decode based on file format (CSV via <code>read.csv</code>, JSON via
-<code><a href="https://jeroen.r-universe.dev/jsonlite/reference/fromJSON.html" class="external-link">jsonlite::fromJSON</a></code>, parquet via <code>arrow::read_parquet</code>, etc.) — the
+<code><a href="https://rdrr.io/pkg/jsonlite/man/fromJSON.html" class="external-link">jsonlite::fromJSON</a></code>, parquet via <code>arrow::read_parquet</code>, etc.) — the
 helper is deliberately format-agnostic.</p>
     </div>
 
@@ -113,7 +113,7 @@ function).</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Or fetch the same file as raw bytes and decode yourself.</span></span></span>
 <span class="r-in"><span><span class="va">bytes</span> <span class="op">&lt;-</span> <span class="fu">lnk_bucket_get</span><span class="op">(</span><span class="st">"log.json"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">jsonlite</span><span class="fu">::</span><span class="fu"><a href="https://jeroen.r-universe.dev/jsonlite/reference/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rawConversion.html" class="external-link">rawToChar</a></span><span class="op">(</span><span class="va">bytes</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">jsonlite</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/jsonlite/man/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rawConversion.html" class="external-link">rawToChar</a></span><span class="op">(</span><span class="va">bytes</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Pull a CSV and parse with read.csv (no temp file needed).</span></span></span>
 <span class="r-in"><span><span class="va">bytes</span> <span class="op">&lt;-</span> <span class="fu">lnk_bucket_get</span><span class="op">(</span><span class="st">"csvs/wsg_species_presence.csv"</span><span class="op">)</span></span></span>

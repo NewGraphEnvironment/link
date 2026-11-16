@@ -4165,7 +4165,7 @@ multi-build comparison (grayling / rainbow / ko / etc.):
 - `lnk_bucket_get(name, prefix, to)` — fetch any artifact from a
   versioned S3 prefix. Returns raw bytes by default (caller decodes —
   [`read.csv()`](https://rdrr.io/r/utils/read.table.html),
-  [`jsonlite::fromJSON()`](https://jeroen.r-universe.dev/jsonlite/reference/fromJSON.html),
+  [`jsonlite::fromJSON()`](https://rdrr.io/pkg/jsonlite/man/fromJSON.html),
   `arrow::read_parquet()`); writes to disk when `to` is supplied.
   Default prefix is NGE’s bcfp dump. Format-agnostic.
 - `lnk_bucket_log(prefix)` — sugar for the most common read: parses

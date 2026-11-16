@@ -4,7 +4,7 @@ Fetch one file from a versioned S3 bucket (e.g., the bcfp build
 artifacts under `s3://fresh-bc/bcfishpass/`). Returns raw bytes by
 default so callers can decode based on file format (CSV via `read.csv`,
 JSON via
-[`jsonlite::fromJSON`](https://jeroen.r-universe.dev/jsonlite/reference/fromJSON.html),
+[`jsonlite::fromJSON`](https://rdrr.io/pkg/jsonlite/man/fromJSON.html),
 parquet via `arrow::read_parquet`, etc.) — the helper is deliberately
 format-agnostic.
 
