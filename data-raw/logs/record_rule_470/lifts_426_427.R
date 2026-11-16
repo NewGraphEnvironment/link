@@ -12,7 +12,9 @@
 #
 # #426: the bcfishpass bundle with its salmon and steelhead floors at
 #   1990-01-01 (>=, link before #470) and 1990-01-02 (> 1990-01-01, as
-#   bcfishpass), on BULK, PARS, ADMS, BABL and ELKR (fresh.barriers).
+#   bcfishpass), on the parity groups BULK, PARS, ADMS, BABL and ELKR, and on
+#   CHWK, HARR, LFRA, LSKE and KLUM, which hold bcfishpass salmon lifts and
+#   records dated 1990-01-01 (fresh.barriers).
 # #427: the default bundle with CH, CM, CO, PK, SK, ST, GR and KO lift
 #   thresholds 5 (shipped), 2 and 1, on BULK, LSKE, SQAM, MORR, HARR
 #   (fresh_default.barriers). For each variant: lifts per species, the lifts
@@ -70,7 +72,8 @@ pf_gt <- ld$parameters_fresh
 pf_ge <- pf_gt
 pf_ge$observation_date_min[pf_ge$observation_date_min == "1990-01-02"] <- "1990-01-01"
 stopifnot(sum(pf_ge$observation_date_min == "1990-01-01", na.rm = TRUE) == 6L)
-r426 <- do.call(rbind, lapply(c("BULK", "PARS", "ADMS", "BABL", "ELKR"), function(w) {
+r426 <- do.call(rbind, lapply(c("BULK", "PARS", "ADMS", "BABL", "ELKR",
+                                "CHWK", "HARR", "LFRA", "LSKE", "KLUM"), function(w) {
   natural("fresh", w, c("FALLS", "GRADIENT", "SUBSURFACE_FLOW"))
   lifts(pf_ge, "ge"); lifts(pf_gt, "gt")
   q(sprintf(
