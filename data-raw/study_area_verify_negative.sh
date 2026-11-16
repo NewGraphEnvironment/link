@@ -570,8 +570,14 @@ fi
 # 6j must PASS (a build's evidence agrees with its lifts), 6k must FAIL (a lift
 # with no evidence) and 6l must FAIL (evidence for no lift).
 HAS_EV=$("${PSQL[@]}" -c "SELECT to_regclass('${SRC_SCHEMA}.barrier_override_evidence') IS NOT NULL")
-N_NEW=$("${PSQL[@]}" -c "SELECT count(*) FROM ${SCRATCH}.log
-  WHERE (string_to_array(link_version, '.'))[1:3]::int[] >= ARRAY[0, 84, 0]")
+# The groups the check judges, chosen as the check chooses them: each group's
+# newest finished build of the run, at 0.84.0 or later.
+JUDGED="SELECT watershed_group_code FROM (
+           SELECT DISTINCT ON (watershed_group_code) watershed_group_code, link_version
+             FROM ${SCRATCH}.log WHERE date_end IS NOT NULL
+            ORDER BY watershed_group_code, date_end DESC) l
+          WHERE (string_to_array(link_version, '.'))[1:3]::int[] >= ARRAY[0, 84, 0]"
+N_NEW=$("${PSQL[@]}" -c "SELECT count(*) FROM (${JUDGED}) j")
 if [ "$N_NEW" = "0" ]; then
   echo "  ⊘ 6j-6l. SKIPPED: run $RUN_UID was built before link 0.84.0, which"
   echo "       wrote no evidence; the check leaves it unjudged (not counted)."
@@ -590,6 +596,7 @@ SQL
   EV_ROW=$("${PSQL[@]}" -c "SELECT watershed_group_code || '|' || species_code || '|' ||
                                    blue_line_key || '|' || downstream_route_measure
                               FROM ${SCRATCH}.barrier_overrides
+                             WHERE watershed_group_code IN (${JUDGED})
                              ORDER BY 1 LIMIT 1")
   if [ -z "$EV_ROW" ]; then
     echo "  ⊘ 6j-6l. SKIPPED: run $RUN_UID lifted no barrier."

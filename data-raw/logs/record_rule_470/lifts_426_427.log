@@ -2,6 +2,8 @@ NOTICE:  schema "zz470_lifts" does not exist, skipping
 
 NOTICE:  table "observations_province" does not exist, skipping
 
+NOTICE:  table "ctrl" does not exist, skipping
+
 NOTICE:  table "nb" does not exist, skipping
 
 NOTICE:  table "bo_ge" does not exist, skipping
@@ -412,12 +414,12 @@ NOTICE:  table "lnk_bo_pairs" does not exist, skipping
 17 HARR           SK        4        4            0              0
 18 HARR           ST        4        4            0              0
 19 LFRA           BT      211      211            0              0
-20 LFRA           CH       13       13            0              0
-21 LFRA           CM       13       13            0              0
-22 LFRA           CO       13       13            0              0
-23 LFRA           PK       13       13            0              0
-24 LFRA           SK       13       13            0              0
-25 LFRA           ST       17       17            0              0
+20 LFRA           CH       12       12            0              0
+21 LFRA           CM       12       12            0              0
+22 LFRA           CO       12       12            0              0
+23 LFRA           PK       12       12            0              0
+24 LFRA           SK       12       12            0              0
+25 LFRA           ST       16       16            0              0
 26 LSKE           BT       72       72            0              0
 27 KLUM           BT       60       60            0              0
 28 KLUM           CH        1        1            0              0
@@ -866,18 +868,18 @@ NOTICE:  table "lnk_bo_pairs" does not exist, skipping
 58 MORR           SK         1        0     7     7                7
 59 MORR           ST         2        0     8     8                0
 60 MORR           ST         1        0    15    15                7
-65 HARR           CH         2        2    11     9                0
-66 HARR           CH         1        2    44    42               33
-67 HARR           CM         2        2    11     9                0
-68 HARR           CM         1        2    44    42               33
-69 HARR           CO         2        2    11     9                0
-70 HARR           CO         1        2    44    42               33
-71 HARR           PK         2        2    11     9                0
-72 HARR           PK         1        2    44    42               33
-73 HARR           SK         2        2    11     9                0
-74 HARR           SK         1        2    44    42               33
-75 HARR           ST         2        2    11     9                0
-76 HARR           ST         1        2    54    52               43
+65 HARR           CH         2        2    10     8                0
+66 HARR           CH         1        2    43    41               33
+67 HARR           CM         2        2    10     8                0
+68 HARR           CM         1        2    43    41               33
+69 HARR           CO         2        2    10     8                0
+70 HARR           CO         1        2    43    41               33
+71 HARR           PK         2        2    10     8                0
+72 HARR           PK         1        2    43    41               33
+73 HARR           SK         2        2    10     8                0
+74 HARR           SK         1        2    43    41               33
+75 HARR           ST         2        2    10     8                0
+76 HARR           ST         1        2    53    51               43
    blocked_km_above_added_max
 2                         6.3
 4                         6.3
@@ -916,24 +918,25 @@ NOTICE:  table "lnk_bo_pairs" does not exist, skipping
 58                       13.7
 59                        5.2
 60                       13.2
-65                      281.8
-66                      599.7
-67                      281.8
-68                      599.7
-69                      281.8
-70                      599.7
-71                      281.8
-72                      599.7
-73                      281.8
-74                      599.7
-75                      281.7
-76                      653.8
-NOTICE:  drop cascades to 12 other objects
+65                       36.0
+66                      359.2
+67                       36.0
+68                      359.2
+69                       36.0
+70                      359.2
+71                       36.0
+72                      359.2
+73                       36.0
+74                      359.2
+75                       36.0
+76                      413.2
+NOTICE:  drop cascades to 13 other objects
 DETAIL:  drop cascades to table zz470_lifts.ev_ge
 drop cascades to table zz470_lifts.bo_ge
 drop cascades to table zz470_lifts.ev_gt
 drop cascades to table zz470_lifts.bo_gt
 drop cascades to table zz470_lifts.observations_province
+drop cascades to table zz470_lifts.ctrl
 drop cascades to table zz470_lifts.nb
 drop cascades to table zz470_lifts.ev_t5
 drop cascades to table zz470_lifts.bo_t5

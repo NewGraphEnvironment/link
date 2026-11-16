@@ -18,6 +18,10 @@ link,^R/lnk_gradient_parent\.R$,any,"the parent gradient (#463): judged once per
 link,^R/lnk_pipeline_species\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
 link,^R/lnk_presence\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
 link,^R/lnk_species_pooling\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
+link,^R/lnk_species_pooling\.R$,segments,"resolves the record rule's codes and pooling, which the cuts, code 2 and the lifts read (#470)"
+link,^R/lnk_species_pooling\.R$,gradient,"resolves the record rule's codes and pooling, which the cuts, code 2 and the lifts read (#470)"
+link,^R/lnk_species_pooling\.R$,observations,"resolves the record rule's codes and pooling, which the cuts, code 2 and the lifts read (#470)"
+link,^R/lnk_species_pooling\.R$,obs_upstream,"resolves the record rule's codes and pooling, which the cuts, code 2 and the lifts read (#470)"
 link,^R/lnk_preflight_discharge\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
 link,^R/lnk_stall\.R$,any,"the stall sampler (#487): watches every group's backend from a second connection, whatever the group holds"
 link,^R/lnk_pipeline_break\.R$,segments,cost scales with the group's segments

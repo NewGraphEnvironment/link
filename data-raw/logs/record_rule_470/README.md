@@ -76,7 +76,11 @@ records as CT, so the script's record sets cannot see a merged top; the trace is
 ## #426 and #427 (`lifts_426_427.R`)
 
 The lift harness runs `lnk_barrier_overrides()` at HEAD's code over each group's persisted natural
-barriers and the province's records under the record rule (observation lifts only).
+barriers and the province's records under the record rule, with the group's
+`barriers_definite_control` rows as the control table, as prepare passes them (observation lifts
+only). Its first run left control out, which lifted the HARR control falls at 356354346 @ 8,876 m
+at threshold 2 and read HARR as +9 (≤ 282 km); the operator chose 2 on that table, and the
+corrected HARR row is +8 (≤ 36 km). Code-check round 3 found it.
 
 - **#426** (`lifts_426.csv`): the `bcfishpass` bundle's lifts with salmon and steelhead floors at
   `>= 1990-01-01` and `> 1990-01-01` are identical in BULK, PARS, ADMS, BABL, ELKR, CHWK, HARR, LFRA,
@@ -89,7 +93,7 @@ barriers and the province's records under the record rule (observation lifts onl
   |---|---|---|
   | SQAM | +22 (≤ 468 km) | +75 (53) (≤ 1,483 km) |
   | LSKE | +7 (≤ 579 km) | +15 (8) (≤ 625 km) |
-  | HARR | +9 (≤ 282 km) | +42 (33) (≤ 600 km) |
+  | HARR | +8 (≤ 36 km) | +41 (33) (≤ 359 km) |
   | MORR | +0 (ST +8) | +7 (7) |
   | BULK | +0 | +2 (2) |
 

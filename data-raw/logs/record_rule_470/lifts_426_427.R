@@ -7,8 +7,11 @@
 # SUBSURFACE_FLOW rows of <schema>.barriers: the positions a build's
 # natural_barriers holds) and the province's fish records built under the
 # record rule (.lnk_pipeline_prep_obs_province(), as prepare builds them),
-# once per variant, into scratch schema zz470_lifts. Nothing persisted is
-# written.
+# with the group's barriers_definite_control rows as the control table (as
+# prepare passes it: a control falls vetoes a lift for a species whose
+# observation_control_apply is TRUE), once per variant, into scratch schema
+# zz470_lifts. Nothing persisted is written. (The first run left control out,
+# which lifted a HARR control falls at threshold 2; code-check round 3.)
 #
 # #426: the bcfishpass bundle with its salmon and steelhead floors at
 #   1990-01-01 (>=, link before #470) and 1990-01-02 (> 1990-01-01, as
@@ -45,7 +48,17 @@ obs_province <- function(cfg, loaded) {
   .lnk_pipeline_prep_obs_province(conn, s, "bcfishobs.observations", map, excl)
 }
 
-natural <- function(src, w, sources) {
+natural <- function(src, w, sources, loaded) {
+  ex(sprintf("DROP TABLE IF EXISTS %s.ctrl", s))
+  ctrl <- loaded$user_barriers_definite_control
+  ctrl <- ctrl[ctrl$watershed_group_code == w, c("blue_line_key",
+               "downstream_route_measure", "barrier_ind"), drop = FALSE]
+  ex(sprintf("CREATE TABLE %s.ctrl (blue_line_key integer,
+                downstream_route_measure double precision, barrier_ind text)", s))
+  if (nrow(ctrl)) DBI::dbAppendTable(conn, DBI::Id(schema = s, table = "ctrl"),
+                                     data.frame(blue_line_key = as.integer(ctrl$blue_line_key),
+                                                downstream_route_measure = as.numeric(ctrl$downstream_route_measure),
+                                                barrier_ind = as.character(ctrl$barrier_ind)))
   ex(sprintf("DROP TABLE IF EXISTS %s.nb", s))
   ex(sprintf(
     "CREATE TABLE %s.nb AS
@@ -60,6 +73,7 @@ natural <- function(src, w, sources) {
 lifts <- function(params, tag) {
   lnk_barrier_overrides(conn, barriers = paste0(s, ".nb"),
                         observations = paste0(s, ".observations_province"),
+                        control = paste0(s, ".ctrl"),
                         params = params, to = sprintf("%s.bo_%s", s, tag),
                         evidence = sprintf("%s.ev_%s", s, tag), verbose = FALSE)
 }
@@ -74,7 +88,7 @@ pf_ge$observation_date_min[pf_ge$observation_date_min == "1990-01-02"] <- "1990-
 stopifnot(sum(pf_ge$observation_date_min == "1990-01-01", na.rm = TRUE) == 6L)
 r426 <- do.call(rbind, lapply(c("BULK", "PARS", "ADMS", "BABL", "ELKR",
                                 "CHWK", "HARR", "LFRA", "LSKE", "KLUM"), function(w) {
-  natural("fresh", w, c("FALLS", "GRADIENT", "SUBSURFACE_FLOW"))
+  natural("fresh", w, c("FALLS", "GRADIENT", "SUBSURFACE_FLOW"), ld)
   lifts(pf_ge, "ge"); lifts(pf_gt, "gt")
   q(sprintf(
     "SELECT %s AS wsg, coalesce(a.species_code, b.species_code) AS species_code,
@@ -99,7 +113,7 @@ variant <- function(t) { p <- pf5; p$observation_threshold[p$species_code %in% s
 acc_cols <- q("SELECT column_name FROM information_schema.columns
                WHERE table_schema = 'fresh_default' AND table_name = 'streams_access'")$column_name
 r427 <- do.call(rbind, lapply(c("BULK", "LSKE", "SQAM", "MORR", "HARR"), function(w) {
-  natural("fresh_default", w, c("FALLS", "GRADIENT"))
+  natural("fresh_default", w, c("FALLS", "GRADIENT"), ld)
   for (t in c(5L, 2L, 1L)) lifts(variant(t), paste0("t", t))
   do.call(rbind, lapply(sal, function(sp) {
     n <- function(t) q(sprintf("SELECT count(*)::int n FROM %s.bo_t%d WHERE species_code = '%s'",

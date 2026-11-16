@@ -35,7 +35,8 @@ for (w in wsgs) {
   schema <- paste0("zz349_time_", tolower(w))
   lnk_pipeline_setup(conn, schema, overwrite = TRUE)
   .lnk_pipeline_prep_load_aux(conn, w, loaded, schema)
-  t_obs <- secs(.lnk_pipeline_prep_observations(conn, w, loaded, schema))
+  t_obs <- secs(.lnk_pipeline_prep_observations(conn, w, loaded, schema,
+                                                cfg = cfg))
   .lnk_pipeline_prep_gradient(conn, w, loaded, schema,
                               .lnk_resolve_classes(NULL, cfg))
   .lnk_pipeline_prep_natural(conn, w, cfg, loaded, schema)

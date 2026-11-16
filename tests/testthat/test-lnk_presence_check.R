@@ -399,7 +399,7 @@ test_that("prep's observation SQL excludes the keys the check excludes", {
       invisible(NULL)
     }
   )
-  .lnk_pipeline_prep_observations("mock", aoi = "W1", loaded = ld,
+  .lnk_pipeline_prep_observations("mock", cfg = list(), aoi = "W1", loaded = ld,
                                   schema = "w_w1")
   joined <- paste(captured, collapse = "\n")
   expect_identical(

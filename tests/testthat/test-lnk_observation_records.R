@@ -69,6 +69,30 @@ test_that("lift_floor holds each target species to its own lift floor", {
     "SQAM"), "parameters_fresh")
 })
 
+test_that("the observation tables refuse a call with no bundle", {
+  expect_error(
+    .lnk_pipeline_prep_observations("mock", "W1",
+      list(wsg_species_presence = presence_rr()), "w_x"),
+    "needs cfg")
+})
+
+test_that("an alias reads as one species in the zones only if every group lists it", {
+  ld <- list(wsg_species_presence = presence_rr(),
+             species_pooling = tracker_rr())
+  a <- .lnk_record_aliases(ld, c("LFRA", "SQAM"))
+  ev <- .lnk_record_aliases_everywhere(a)
+  # CCT and SST are province rows; BT/DV is the Fraser's alone (LFRA)
+  expect_setequal(ev$species_obs, c("CCT", "SST"))
+  # resolved for LFRA only, BT/DV is listed in every group resolved
+  ev1 <- .lnk_record_aliases_everywhere(.lnk_record_aliases(ld, "LFRA"))
+  expect_true("BT/DV" %in% ev1$species_obs)
+  # with only the regional row, BT/DV is not everywhere when SQAM is resolved
+  ld2 <- ld
+  ld2$species_pooling <- tracker_rr()[tracker_rr()$species_obs == "BT/DV", ]
+  ev2 <- .lnk_record_aliases_everywhere(.lnk_record_aliases(ld2, c("LFRA", "SQAM")))
+  expect_equal(nrow(ev2), 0L)
+})
+
 test_that("observation_record_date is checked", {
   expect_identical(.lnk_observation_record_date(list()), "any")
   expect_error(.lnk_observation_record_date(cfg_rr("since_1990")),

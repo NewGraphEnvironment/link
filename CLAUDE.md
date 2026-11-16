@@ -26,7 +26,7 @@ Experimental package — breaking all the time and loving the learning curve. St
 - **A record counts as its own group's presence and pooling say,** so a DV record in pooled upper Skeena lifts BT and makes BT code 2 downstream in LSKE, which is unpooled.
 - **Aliases merge into their species' top:** CT's top on a line is the highest of `CT` and `CCT`, so a cut can move, and a barrier break within 1 m of the old cut then applies (one 1 m strip in HOMA).
 - **Measured at the record rule alone:** BT lifts LSKE 61 → 0, KLUM 123 → 4, SQAM 160 → 13 (DV unpooled); code 2 falls where pre-1990 salmon records stop counting (LSKE 1,172 km).
-- **#426 moves no observation lift** in ten groups holding bcfishpass salmon lifts; it is parity in the SQL. #427 at 2 adds lifts only on two or more records (SQAM +22, LSKE +7, HARR +9 per salmon species).
+- **#426 moves no observation lift** in ten groups holding bcfishpass salmon lifts; it is parity in the SQL. #427 at 2 adds lifts only on two or more records (SQAM +22, LSKE +7, HARR +8 per salmon species).
 - **The lift builds each species' (barrier, record) pairs once** in a temp table that the lift and the evidence both read; evidence is DISTINCT over barrier, species and key (natural_barriers repeats positions; a fanned-out record has one key).
 - **`observation_date` is a `date`,** so `>= 1990-01-02` is exactly bcfishpass's `> 1990-01-01`. An undated record never counts toward a lift (NA floor reads 1900-01-01); under `lift_floor` a species with no floor counts undated records for code 2 and cuts (WCT's floor emptied for that).
 - **7 records carry codes nothing reads** (`DVxBT` 6, `" RB"` 1).

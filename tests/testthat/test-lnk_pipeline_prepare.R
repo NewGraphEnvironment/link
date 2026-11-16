@@ -764,7 +764,7 @@ test_that(".lnk_pipeline_prep_observations builds species-filtered table", {
     ),
     observation_exclusions = NULL
   )
-  .lnk_pipeline_prep_observations("mock", aoi = "BULK", loaded = loaded,
+  .lnk_pipeline_prep_observations("mock", cfg = list(), aoi = "BULK", loaded = loaded,
     schema = "w_bulk", observations = "bcfishobs.observations")
 
   joined <- paste(captured, collapse = "\n")
@@ -809,7 +809,7 @@ test_that(".lnk_pipeline_prep_observations applies QA exclusions on observation_
       stringsAsFactors = FALSE
     )
   )
-  .lnk_pipeline_prep_observations("mock", aoi = "BULK", loaded = loaded,
+  .lnk_pipeline_prep_observations("mock", cfg = list(), aoi = "BULK", loaded = loaded,
     schema = "w_bulk", observations = "bcfishobs.observations")
 
   joined <- paste(captured, collapse = "\n")
@@ -843,7 +843,7 @@ test_that("with no pooling tracker, alias codes do not count (as bcfishpass)", {
     ),
     observation_exclusions = NULL
   )
-  .lnk_pipeline_prep_observations("mock", aoi = "ELKR", loaded = loaded,
+  .lnk_pipeline_prep_observations("mock", cfg = list(), aoi = "ELKR", loaded = loaded,
     schema = "w_elkr", observations = "bcfishobs.observations")
   joined <- paste(captured, collapse = "\n")
   expect_match(joined, "'CT', 'CT'", fixed = TRUE)
@@ -870,7 +870,7 @@ test_that(".lnk_pipeline_prep_observations builds empty table when no species pr
     ),
     observation_exclusions = NULL
   )
-  .lnk_pipeline_prep_observations("mock", aoi = "XXXX", loaded = loaded,
+  .lnk_pipeline_prep_observations("mock", cfg = list(), aoi = "XXXX", loaded = loaded,
     schema = "w_x", observations = "bcfishobs.observations")
 
   joined <- paste(captured, collapse = "\n")
@@ -880,7 +880,7 @@ test_that(".lnk_pipeline_prep_observations builds empty table when no species pr
 
 test_that(".lnk_pipeline_prep_observations errors when wsg_species_presence missing", {
   expect_error(
-    .lnk_pipeline_prep_observations("mock", aoi = "BULK",
+    .lnk_pipeline_prep_observations("mock", cfg = list(), aoi = "BULK",
       loaded = list(wsg_species_presence = NULL),
       schema = "w_bulk", observations = "bcfishobs.observations"),
     "wsg_species_presence not present"
@@ -1124,7 +1124,7 @@ test_that("prep_observations builds observations_province from every group's pre
     observation_exclusions = data.frame(
       observation_key = c("aaa", "bbb"), data_error = c(TRUE, FALSE),
       release_exclude = c(FALSE, FALSE), stringsAsFactors = FALSE))
-  .lnk_pipeline_prep_observations("mock", aoi = "UPCE", loaded = loaded,
+  .lnk_pipeline_prep_observations("mock", cfg = list(), aoi = "UPCE", loaded = loaded,
     schema = "w_upce", observations = "bcfishobs.observations")
 
   prov <- grep("CREATE TABLE w_upce\\.observations_province AS", captured,

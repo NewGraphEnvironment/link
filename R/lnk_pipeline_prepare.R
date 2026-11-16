@@ -312,7 +312,14 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
 #' @noRd
 .lnk_pipeline_prep_observations <- function(conn, aoi, loaded, schema,
                                             observations = "bcfishobs.observations",
-                                            cfg = list()) {
+                                            cfg) {
+  # Required, so a caller cannot build default's tables under `any` by leaving
+  # the bundle out (the date rule is cfg$pipeline$observation_record_date).
+  if (missing(cfg)) {
+    stop(".lnk_pipeline_prep_observations() needs cfg: the record rule's ",
+         "date floor is the bundle's pipeline: observation_record_date",
+         call. = FALSE)
+  }
   .lnk_validate_identifier(observations, "observations table")
 
   if (is.null(loaded$wsg_species_presence)) {
