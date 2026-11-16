@@ -59,6 +59,41 @@ knowledge waits on it: #434 is what NewGraphEnvironment/knowledge#178 (move 9) r
   `1900-01-01` and `observation_date >= '1900-01-01'` is NULL for a NULL date
   (`R/lnk_barrier_overrides.R:144`), against RUNBOOK §5's "no date floor" (line 628).
 
+## Phase 1 (2026-11-16, m1, local fwapg; bcfishobs 375,962 records)
+
+- **bcfishpass drops CT alias records, confirmed on its output.** The reference DB tunnel was
+  down, so this used the local copy of bcfishpass's streams view (`fresh.streams_vw_bcfp`, 4.27 M
+  segments; it carries no version stamp; the current build per `s3://fresh-bc/bcfishpass/log.json`
+  is `v0.7.15-51-g3bd2824`, and `load_observations.sql` is the same at `620dbe4` and `3bd2824`).
+  Keys found in its `observation_key_upstr` arrays in SQAM, LFRA and VICT:
+
+  | code | records | in bcfishpass |
+  |---|---|---|
+  | CT | 2,963 | 2,921 |
+  | CO | 5,518 | 5,480 |
+  | CCT | 1,276 | 0 |
+  | ACT | 727 | 0 |
+  | CT/RB | 1 | 0 |
+
+  The `obsrvtn_species_codes_upstr` arrays hold only presence-column codes (no SST, WST, ADV,
+  ABT or two-way codes). So under the `bcfishpass` bundle alias records go: link admits CT's three
+  aliases today and cuts at them under `observation_breaks: all`.
+- **`bcfishobs.observations.observation_date` is `date`**, so `>= '1990-01-02'` is exactly
+  `> '1990-01-01'` (#426). `observation_key` is `text`.
+- **Both bundles' `parameters_fresh.csv` are link's own** (`source: link (hand-authored)`), so
+  #426's and decision 2's edits go there, with their provenance checksums updated.
+- **Pooling splits BT groups 125 / 33:** of the 158 groups where `default` marks BT present, the
+  tracker pools DV into BT in 125. The 33 others (BARR BRKS COWN HOMA INKR ISKR JERV KINR KITR
+  KLAR KLIN KLUM LBIR LDEN LISR LKEL LNAR LSKE MSTR NASR PARK SKGT SPAT SQAM SWIR TAHR TAYR TUYR
+  UBIR UDEN UNAR UNUR ZYMO) are where BT lifts stop counting DV. Most DV records there: SQAM 492,
+  LSKE 481, LNAR 398, JERV 390, KLUM 376, ZYMO 308.
+- **Alias records, most per group:** LSKE 206 (SST 203), SQAM 107 (WST 88, SST 18), HOMA 78
+  (ADV 55), LFRA 66, MORR 60 (SST 55), COWN 59, HARR 55, CHWK 37, FRCN 36, BULK 31 (SST),
+  KLUM 25 (BT/DV 24). CT aliases: LFRA 1,066, SQAM 704, NIMP 273, COMX 256, VICT 234.
+- **Measurement groups:** `default` on SQAM (WST/SST, CT aliases, unpooled DV), LSKE (SST, unpooled
+  DV), KLUM (BT/DV unpooled), HOMA (ADV), and #425's FINA, UFRT, MFRA, VICT; `bcfishpass` on BULK
+  and PARS (parity groups) plus SQAM (CT aliases dropped).
+
 ## Errors Encountered
 
 | Error | Resolution |

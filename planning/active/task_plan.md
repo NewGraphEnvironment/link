@@ -63,15 +63,15 @@ Recommended in this plan, settled by approving it:
   falls.
 
 ## Phase 1: Check bcfishpass and the inputs before changing anything
-- [ ] On the bcfishpass reference DB, count `bcfishpass.observations` by `species_code`
+- [x] On the bcfishpass reference DB, count `bcfishpass.observations` by `species_code`
       (are `CCT`, `ACT`, `CT/RB`, `SST`, `WST`, `ADV`, `ABT` and the two-way codes absent?),
       pinned to `bcfishpass.log.model_version`; record it in `findings.md`
-- [ ] Type of `bcfishobs.observations.observation_date` (date or timestamp) on local fwapg,
+- [x] Type of `bcfishobs.observations.observation_date` (date or timestamp) on local fwapg,
       which decides how #426's `>` is written
-- [ ] Count alias and two-way records per group on local fwapg, and pick measurement
+- [x] Count alias and two-way records per group on local fwapg, and pick measurement
       groups: FINA, UFRT, MFRA, VICT (#425), a group with CT aliases (#398), two coastal
       or lower-Skeena BT groups where DV lifts today (decision 2), and BULK, PARS for parity
-- [ ] Check `parameters_fresh.csv`'s provenance in both bundles (link's own file or a
+- [x] Check `parameters_fresh.csv`'s provenance in both bundles (link's own file or a
       synced copy), which decides where #426's and decision 2's edits go
 
 ## Phase 2: One record rule (#400, #398, #425)
