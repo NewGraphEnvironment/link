@@ -22,7 +22,9 @@ actually read, and matches it against \code{\link[=lnk_vocabulary_read]{lnk_voca
 \details{
 \itemize{
 \item \strong{cut:} the break sources in the order applied (\code{pipeline: break_order}, or its default), the observation breaks (\code{all} or
-\code{top_per_species}; only when \code{observations} is a source) and the
+\code{top_per_species}, and a digest of the record rule that decides which
+records cut, resolved as if every species were present; only when
+\code{observations} is a source) and the
 gradient classes streams are broken at (\code{pipeline: gradient_classes},
 or bcfishpass's 15 / 20 / 25 / 30 \%), and which of the definite
 barrier, barrier control and habitat classification files the bundle
@@ -31,7 +33,11 @@ declares (their rows are data, which the build record carries).
 gradient barriers cut streams as well as what is accessible: the
 species the rules model, each species' \code{access_gradient_max} and
 \verb{observation_*} lift parameters, the species presence table, which fish
-records make code 2 (\code{pipeline: observation_upstream}, resolved), and the
+records make code 2 (\code{pipeline: observation_upstream}, resolved), the
+record rule resolved for every group in the presence table (which
+recorded codes count as which species, with their date floors and year
+limits: the pooling tracker, its species groups, the region lookup and
+\code{pipeline: observation_record_date}, link#470), and the
 two access rules held in code (the gradient class each access label
 maps to, and \code{\link[=lnk_presence]{lnk_presence()}}'s species groups). The
 digest is over the parsed values, so a change in quoting or column

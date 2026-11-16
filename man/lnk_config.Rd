@@ -30,11 +30,13 @@ with \code{path} (resolved absolute path) and optionally \code{source}
 dispatch ingest via \code{\link[crate:crt_ingest]{crate::crt_ingest()}})
 \item \code{pipeline} — named list of pipeline knobs
 (\code{apply_habitat_overlay}, \code{break_order}, \code{observation_breaks},
-\code{observation_upstream}, \code{cluster}, \code{spawn_connected},
+\code{observation_upstream}, \code{observation_record_date}, \code{cluster},
+\code{spawn_connected},
 \code{discharge_fill}, \code{discharge_source}, \code{gradient}). A
 \code{discharge_source} other than \code{fwapg} or \code{wet}, an
 \code{observation_breaks} other than \code{all} or \code{top_per_species}, an
-\code{observation_upstream} other than \code{province} or \code{group_gated}, or a
+\code{observation_upstream} other than \code{province} or \code{group_gated}, an
+\code{observation_record_date} other than \code{any} or \code{lift_floor}, or a
 \code{gradient} map whose \code{source} is not \code{segment} or \code{parent} (or with
 an unknown key, or for \code{parent} without \code{minimal_config} and
 \code{schema_full}), is an error at load.

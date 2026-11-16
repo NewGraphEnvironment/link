@@ -39,9 +39,14 @@ salmon together, is a row in the tracker.
 }
 \details{
 A tracker row is \code{species_code} (the model species or a group of them),
-\code{species_obs} (the observation species or a group), \code{scope_level}
-(\code{region}, \code{subregion} or \code{wsg}), \code{scope} (a name in
-\code{inst/extdata/wsg_regions.csv}, or a WSG code) and \code{pool} (\code{yes} / \code{no}).
+\code{species_obs} (the observation species, a group, or a code records are
+filed under that is no species column, such as \code{SST} for summer-run
+steelhead), \code{scope_level} (\code{province}, \code{region}, \code{subregion} or \code{wsg}),
+\code{scope} (\code{BC} for \code{province}, else a name in \code{inst/extdata/wsg_regions.csv}
+or a WSG code) and \code{pool} (\code{yes} / \code{no}). So one table says both which
+species' records count as which and which alias codes count as a species:
+it is the record rule the pipeline, the presence check and the validator
+read (link#470).
 An optional \code{obs_year_max} limits a pooling row to records dated in or
 before that year, for evidence whose meaning changed over time (a name
 that was applied to another species until recording practice caught up).
@@ -51,7 +56,8 @@ Empty means no limit. Other columns (\code{confidence}, \code{rationale}, \code{
 For each WSG, target and observation species pair, the applicable rows
 are resolved in order:
 \enumerate{
-\item the most specific scope wins (\code{wsg} over \code{subregion} over \code{region});
+\item the most specific scope wins (\code{wsg} over \code{subregion} over \code{region} over
+\code{province});
 \item at equal scope, the row naming fewer groups wins (a species-to-species
 row beats one that names a group);
 \item rows still tied must agree on \code{pool} and \code{obs_year_max}, or the call
