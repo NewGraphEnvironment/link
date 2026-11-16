@@ -433,7 +433,7 @@ print.lnk_config <- function(x, ...) {
                                     paste0("config '", name, "'"))
   }
   if (!is.null(pipeline[["observation_record_date"]])) {
-    .lnk_observation_record_date_check(pipeline[["observation_record_date"]],
+    .lnk_record_date_check(pipeline[["observation_record_date"]],
                                        paste0("config '", name, "'"))
   }
   if (!is.null(pipeline[["gradient"]])) {

@@ -125,7 +125,7 @@
 #' Columns `(watershed_group_code, species_obs, species_code, date_min,
 #' year_max)`, each value typed so an all-NULL column still casts.
 #' @noRd
-.lnk_observation_species_values <- function(map) {
+.lnk_obs_species_values <- function(map) {
   lit <- function(x) vapply(x, .lnk_quote_literal, character(1))
   ds <- format(map$date_min, "%Y-%m-%d")
   ds[is.na(map$date_min)] <- ""
@@ -167,7 +167,7 @@
               OR extract(year FROM o.observation_date) <= m.year_max)
        %s
        %s",
-      to, observations, .lnk_observation_species_values(map), where,
+      to, observations, .lnk_obs_species_values(map), where,
       excl_filter))
   }
   .lnk_db_execute(conn, sprintf(
@@ -185,13 +185,12 @@
 #' @noRd
 .lnk_observation_record_date <- function(cfg) {
   v <- cfg$pipeline[["observation_record_date"]] %||% "any"
-  .lnk_observation_record_date_check(v, paste0("cfg '", cfg$name %||% "", "'"))
+  .lnk_record_date_check(v, paste0("cfg '", cfg$name %||% "", "'"))
 }
 
 #' Validate an observation_record_date value
 #' @noRd
-.lnk_observation_record_date_check <- function(v,
-                                               what = "observation_record_date") {
+.lnk_record_date_check <- function(v, what = "observation_record_date") {
   ok <- c("any", "lift_floor")
   if (!is.character(v) || length(v) != 1L || is.na(v) || !v %in% ok) {
     stop(what, ": observation_record_date must be one of ",
