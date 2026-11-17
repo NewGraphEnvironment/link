@@ -74,6 +74,10 @@ release, and every group re-models at the next provincial run.
 - RUNBOOK §7, “The record rule”; §5 has the lift floors and the evidence
   table. The pre-run gate runs again before the next provincial run
   (`R/` changed).
+- **The README’s Ecosystem table renders from the shared registry**
+  ([\#492](https://github.com/NewGraphEnvironment/link/pull/492)), so
+  the list of sibling packages stays in step with the other repos’
+  READMEs.
 
 ## link 0.83.0
 
