@@ -21,7 +21,7 @@ ticked and not **waiting**; `/planning-init <umbrella>` plans it, one phase per 
 | - [x] 2 | #470 | 2, 3: which records count, what each lift rests on (7 issues) | done: https://github.com/NewGraphEnvironment/link/pull/495 |
 | - [ ] 3 | #471 | 4: docs, and a check that fails on warnings (4 issues) | open |
 | - [ ] 4 | #472 | 5: `default`'s presence table as a copy plus an overlay (4 issues) | open: after move 2, whose record rule the presence check reads; one provincial re-model covers both moves' `acc` rows |
-| - [ ] 5 | #473 | 6, 7: the export contract, one-group runs that read downstream (6 issues) | open: after move 2, whose rule for code 2 the export's new column carries, and after the provenance track's #466, which rewrites the same manifest |
+| - [x] 5 | #473 | 6, 7: the export contract, one-group runs that read downstream (6 issues) | done: https://github.com/NewGraphEnvironment/link/pull/496 |
 | - [ ] 6 | #474 | 8, 9: what a run stamps and checks before launch, how primitives load (10 issues) | open |
 | - [ ] 7 | #475 | 10: drivers (6 issues) | open |
 | - [ ] 8 | #476 | 11: the rules builder and `dimensions.csv` (7 issues) | open |
@@ -150,7 +150,7 @@ knowledge#177, move 8) waits on to bring rainbow trout rearing back through a pr
 
 ### 6. The export contract
 
-- [ ] Carried by move 5, #473
+- [x] Carried by move 5, #473 (merged in https://github.com/NewGraphEnvironment/link/pull/496)
 
 #423 (the habitat export carries whether the species is recorded upstream, access code 2), #333 (register
 the export's column contract in crate as `nge/habitat/fwa/v1/segment`), #334 (gates before a floodplain item
@@ -163,7 +163,7 @@ One crate release and one republish. A cloud loader in the infrastructure reposi
 
 ### 7. One-group runs that read downstream
 
-- [ ] Carried by move 5, #473
+- [x] Carried by move 5, #473 (merged in https://github.com/NewGraphEnvironment/link/pull/496)
 
 #464 (`lnk_wsg_downstream_check()` passes when the downstream groups are not loaded; refuse and name them)
 and #461 (the same check takes 371 s of a 975 s one-group run; time its steps and make the dominant one fast
