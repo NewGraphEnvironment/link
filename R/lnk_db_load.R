@@ -191,7 +191,21 @@ lnk_db_load <- function(conn, catalog, configs = NULL,
   tmp <- paste0(dest, ".part")
   on.exit(unlink(tmp), add = TRUE)
   vid <- if ("version_id" %in% names(part)) part$version_id[[1]] else NA
-  .lnk_fetch_file(href, tmp, if (is.null(vid)) NA_character_ else vid)
+  vid <- if (is.null(vid)) NA_character_ else as.character(vid)
+  if (is.na(vid)) {
+    .lnk_fetch_file(href, tmp)
+  } else {
+    # Naming a version needs s3:GetObjectVersion, which a reader granted only
+    # s3:GetObject (a scoped user, an anonymous public read) lacks. Where the
+    # versioned read is refused, read the current object: the md5 below
+    # decides whether it is the version the manifest names (review round 3).
+    tryCatch(.lnk_fetch_file(href, tmp, vid), error = function(e) {
+      message(part$key[[1]], ": version ", vid, " not readable (",
+              conditionMessage(e), "); reading the current object, which ",
+              "must still match the manifest's md5")
+      .lnk_fetch_file(href, tmp)
+    })
+  }
   if (!check(tmp)) {
     stop(part$key[[1]], " from ", href, " does not match the manifest's ",
          "size and md5", call. = FALSE)

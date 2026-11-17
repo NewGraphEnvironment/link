@@ -204,3 +204,32 @@ test_that("a part with a recorded version is fetched at that version", {
   expect_true(all(c("--version-id", "'v.123'") %in% seen))
   expect_true("'habitat/fwa/v1/segment/config=cfgx/species=BT/part-100.parquet'" %in% seen)
 })
+
+test_that("a refused versioned read falls back to the current object, held to its md5", {
+  # s3:GetObjectVersion is a permission of its own; a reader with only
+  # s3:GetObject is refused a named version (review round 3)
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  root <- local_export_tree()
+  tbl <- local_load_table(conn)
+  cat <- lnk_catalog(file.path(root, "manifest.json"))
+  cat$href <- paste0("s3://fresh-bc/habitat/fwa/v1/", cat$key)
+  cat$version_id <- "v.123"
+  calls <- character(0)
+  local_mocked_bindings(.lnk_aws = function(args) {
+    calls <<- c(calls, args[2])
+    if (identical(args[2], "get-object")) {
+      return(structure("An error occurred (AccessDenied)", status = 255L))
+    }
+    file.copy(file.path(root, cat$key[1]), gsub("^'|'$", "", args[4]),
+              overwrite = TRUE)
+    character(0)
+  })
+  expect_message(lnk_db_load(conn, cat, table = tbl,
+                             cache_dir = withr::local_tempdir()),
+                 "not readable")
+  expect_identical(calls, c("get-object", "cp"))
+  n <- DBI::dbGetQuery(conn, sprintf("SELECT count(*)::integer AS n FROM %s",
+                                     tbl))$n
+  expect_identical(n, 3L)
+})

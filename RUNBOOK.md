@@ -1530,7 +1530,11 @@ then uploads it, so the copy read back is the one written. `lnk_catalog()`
 returns `version_id`, and `lnk_db_load()` and `lnk_downstream_load()` (through
 `lnk_downstream_files()`'s `version_id`) fetch that version
 (`s3api get-object --version-id`, `?versionId=` over https), so a reader pinned
-to a manifest reads exactly the parts it lists even after a republish. The
+to a manifest reads exactly the parts it lists even after a republish. Naming
+a version needs `s3:GetObjectVersion`, which a reader granted only
+`s3:GetObject` (a scoped user, and the public-read statement #334 will add,
+unless it grants both) lacks; such a reader falls back to the current
+object, and the md5 check then refuses it once a republish has replaced it. The
 manifest cannot name its own version: pin it with
 `aws s3api list-object-versions --bucket fresh-bc --prefix habitat/fwa/v1/manifest.json`
 and read the one you want with `get-object --version-id`. How many versions to
