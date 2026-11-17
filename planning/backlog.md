@@ -18,7 +18,7 @@ ticked and not **waiting**; `/planning-init <umbrella>` plans it, one phase per 
 | move | umbrella | batches | state |
 |---|---|---|---|
 | - [x] 1 | #469 | 1: the parent gradient and the grad tokens (4 issues) | done: https://github.com/NewGraphEnvironment/link/pull/486 |
-| - [ ] 2 | #470 | 2, 3: which records count, what each lift rests on (7 issues) | open |
+| - [x] 2 | #470 | 2, 3: which records count, what each lift rests on (7 issues) | done: https://github.com/NewGraphEnvironment/link/pull/495 |
 | - [ ] 3 | #471 | 4: docs, and a check that fails on warnings (4 issues) | open |
 | - [ ] 4 | #472 | 5: `default`'s presence table as a copy plus an overlay (4 issues) | open: after move 2, whose record rule the presence check reads; one provincial re-model covers both moves' `acc` rows |
 | - [ ] 5 | #473 | 6, 7: the export contract, one-group runs that read downstream (6 issues) | open: after move 2, whose rule for code 2 the export's new column carries, and after the provenance track's #466, which rewrites the same manifest |
@@ -86,7 +86,7 @@ parent-gradient pick.
 
 ### 2. Which records count
 
-- [ ] Carried by move 2, #470
+- [x] Carried by move 2, #470 (merged in https://github.com/NewGraphEnvironment/link/pull/495)
 
 #400 (one written rule for which records make code 2 and the observation breaks: date cut and pooling; the
 count is decided, one record), #398 (cutthroat alias records reach the observation tables but never make CT
@@ -102,7 +102,7 @@ knowledge waits on it: #400 decides which records lift a barrier and make code 2
 
 ### 3. What each lift rests on
 
-- [ ] Carried by move 2, #470
+- [x] Carried by move 2, #470 (merged in https://github.com/NewGraphEnvironment/link/pull/495)
 
 #434 (each build publishes the barriers each observation override lifted, with the records and the rule
 behind each, checked against `access_<sp>`), #426 (lifts count records dated exactly 1990-01-01, which
