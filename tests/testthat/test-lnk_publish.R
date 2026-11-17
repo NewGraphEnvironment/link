@@ -37,6 +37,13 @@ test_that("each kind of build a consumer cannot name or rebuild is refused", {
   r <- .lnk_publish_refusals(m, tempdir())
   expect_length(r, 2L)
   expect_match(r[1], "no thresholds logged at sha256:A")
+  # a tree state that was not recorded is not a clean one
+  m <- clean_manifest()
+  m$configs[[1]]$runs[[1]]$link_dirty <- NULL
+  m$configs[[1]]$exported_by$link_dirty <- NA
+  r <- .lnk_publish_refusals(m, tempdir())
+  expect_true("default ADMS run r1: link_dirty" %in% r)
+  expect_true("default: exported from a dirty link tree" %in% r)
   # a run whose hash the manifest does not know is refused, not passed
   m <- clean_manifest()
   m$configs[[1]]$runs[[1]]$config_hash <- "sha256:Z"

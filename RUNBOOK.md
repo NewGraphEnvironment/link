@@ -1501,7 +1501,8 @@ before link raises its floor. The per-group parts' contracts stay in link.
 
 **A published build must be one a consumer can name and rebuild (#334).**
 PUBLISH (`.lnk_publish_refusals()`, `R/lnk_publish.R`) refuses a tree with a
-build that has no `run_uid`, a dirty link or fresh tree, or no thresholds
+build that has no `run_uid`, a dirty link or fresh tree (or one whose state
+was not recorded), or no thresholds
 logged at its `config_hash`; a recompute behind it with no `run_uid` or a dirty
 tree; or a config exported from a dirty link tree. `LNK_PUBLISH_ALLOW="<reason>"`
 publishes past them, and the manifest records the reason and every refusal

@@ -6,7 +6,7 @@
 #'
 #' - has no `run_uid` (a direct `wsg_run_one.R` run, outside a dispatch);
 #' - was modelled from a dirty link or fresh tree (`link_dirty`,
-#'   `fresh_dirty`);
+#'   `fresh_dirty`), or from one whose state was not recorded;
 #' - logged no habitat thresholds at its `config_hash`, so its spawning and
 #'   rearing ratios are NA (`thresholds_logged`);
 #'
@@ -23,7 +23,9 @@
 #' @noRd
 .lnk_publish_refusals <- function(m, root) {
   out <- character(0)
-  flag <- function(x) isTRUE(as.logical(x %||% NA))
+  # TRUE, or not recorded: an unknown tree is not a clean one, so it too
+  # needs LNK_PUBLISH_ALLOW to name it (review round 1)
+  flag <- function(x) !isFALSE(as.logical(x %||% NA))
   blank <- function(x) is.null(x) || length(x) == 0L || is.na(x) || !nzchar(x)
   for (cf in m$configs) {
     if (flag(cf$exported_by$link_dirty)) {

@@ -158,6 +158,15 @@ test_that("a tree exported before access was added loads with it NULL", {
   expect_identical(got$config, c("cfgnew", "cfgold"))
   expect_identical(got$n, c(3L, 3L))
   expect_identical(got$a, c(3L, 0L))
+
+  # the table now holds access at its end, out of contract order; every later
+  # load still goes in (review round 1)
+  lnk_db_load(conn, lnk_catalog(file.path(old, "manifest.json")), table = tbl)
+  lnk_db_load(conn, lnk_catalog(file.path(new, "manifest.json")), table = tbl)
+  got <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT count(*)::integer AS n, count(access)::integer AS a FROM %s", tbl))
+  expect_identical(got$n, 6L)
+  expect_identical(got$a, 3L)
 })
 
 test_that("a tree whose columns this link's contract does not hold is refused", {

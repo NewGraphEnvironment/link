@@ -180,6 +180,7 @@ link,^inst/extdata/vocabulary\.csv$,any,"output vocabulary; every run resolves i
 link,^inst/extdata/configs/dictionary_[a-z_]+\.csv$,none,data dictionaries; no run reads them
 link,^inst/extdata/(thresholds_default|crossings_example|overrides_example|parameters_habitat_dimensions)\.csv$,none,"package examples and lnk_thresholds() defaults, off the modelling path"
 link,^inst/extdata/parameters_habitat_rules\.yaml$,none,sample rules for fresh's fallback; a run reads its bundle's rules.yaml
+link,^inst/extdata/schemas/,none,"the export's column contract (lnk_scenario_export); moved to crate in 0.85.0 (#333), kept so a range that spans its removal stays mapped"
 fresh,^inst/extdata/falls\.csv$,gradient,the falls link reads as natural barriers (lnk_pipeline_prepare)
 fresh,^inst/extdata/falls\.csv$,dams,the falls link reads as natural barriers (lnk_pipeline_prepare)
 fresh,^inst/extdata/wsg_outlet\.csv$,dams,outlets frs_wsg_drainage() walks for the downstream guard

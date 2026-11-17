@@ -94,9 +94,11 @@ lnk_db_load <- function(conn, catalog, configs = NULL,
                                  DBI::dbQuoteIdentifier(conn, parts$schema)))
     if (.lnk_table_exists(conn, table)) {
       have <- .lnk_table_columns(conn, table)
-      # A table loaded before a column was added to v1 gains it; one with a
-      # column this contract does not hold is another contract's.
-      if (!identical(have, names(ddl)[names(ddl) %in% have])) {
+      # A table loaded before a column was added to v1 gains it, at its end
+      # (rows go in by name, so order does not matter); one with a column
+      # this contract does not hold is another contract's.
+      if (!all(have %in% names(ddl)) ||
+          !all(c("config", "species") %in% have)) {
         stop(table, " has other columns than this export. A new column ",
              "contract belongs in a new table (a new dataset version).",
              call. = FALSE)
