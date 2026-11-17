@@ -1,0 +1,38 @@
+# Findings — Backlog move 5: The habitat export's contract, and one-group runs that read downstream (#473)
+
+## Issue context
+
+**If we do it:** the export carries code 2, its column contract lives in crate, publishing refuses a build it cannot trace, and a one-group run reads its downstream groups' barriers or refuses. **If we never do:** a one-group run on a partial database ignores every dam downstream, and a consumer can pin a build nobody can reproduce.
+
+Move 5 of link's backlog, [`planning/backlog.md`](../blob/main/planning/backlog.md). Run `/planning-init <this issue>`: one phase per batch, one PR. `/gh-pr-merge` ticks the move on merge.
+
+## Batch 6: The export contract
+
+**Why here:** all edit `R/lnk_scenario_export.R`; one crate release and one republish.
+
+#423 (the habitat export carries whether the species is recorded upstream, access code 2), #333 (register the export's column contract in crate as `nge/habitat/fwa/v1/segment`), #334 (gates before a floodplain item pins a build: refuse a missing `run_uid` or a dirty tree, bucket versioning, public read, a per-group streams digest) and #465 (export each group's persisted barriers and input snapshots, so a one-group run reads its downstream groups). Touches `R/lnk_scenario_export.R`, `inst/extdata/schemas/habitat_fwa_v1_segment.yaml`, `R/lnk_catalog.R`, `data-raw/habitat_publish.R`, crate. Gate: #423's column shape; #334's refusals and the bucket decision; #466 (provenance track) rewrites the same manifest, so it lands first or inside this move. One crate release and one republish. A cloud loader in the infrastructure repository waited on #465, which landed first (PR #483), so the move's PR covers #423, #333 and #334.
+
+| issue | title |
+|---|---|
+| #423 | Habitat export: carry whether the species is recorded upstream (access code 2) |
+| #333 | Register the habitat export's column contract in crate (nge/habitat/fwa/v1/segment) |
+| #334 | Gates before a floodplain item pins a habitat build: run_uid, dirty trees, versioning, public read |
+| #465 | Export persisted barriers and input snapshots per group, so a one-group run reads downstream (done ahead of the move, in PR #483, 0.80.0) |
+
+## Batch 7: One-group runs that read downstream
+
+**Why here:** both edit `R/lnk_wsg_downstream_check.R`.
+
+#464 (`lnk_wsg_downstream_check()` passes when the downstream groups are not loaded; refuse and name them) and #461 (the same check takes 371 s of a 975 s one-group run; time its steps and make the dominant one fast without changing pass, fail or override). Touches `R/lnk_wsg_downstream_check.R`, `data-raw/wsg_run_one.R`, `data-raw/wsg_recompute_one.R`, tests. No gate.
+
+| issue | title |
+|---|---|
+| #464 | lnk_wsg_downstream_check() passes when the downstream groups are not loaded |
+| #461 | lnk_wsg_downstream_check() takes 371 s of a 975 s one-group run |
+
+
+
+## Errors Encountered
+
+| Error | Resolution |
+|-------|------------|
