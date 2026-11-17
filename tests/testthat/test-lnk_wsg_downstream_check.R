@@ -277,11 +277,11 @@ unloaded_mocks <- function(env = parent.frame()) {
                watershed_group_code = character(0),
                passability_status_code = integer(0))
   }
-  local_mocked_bindings(
+  testthat::local_mocked_bindings(
     .lnk_dams_blocking_downstream = no_dams,
     lnk_wsg_resolve = function(cfg, loaded, wsgs, ...) wsgs,
     .env = env)
-  local_mocked_bindings(
+  testthat::local_mocked_bindings(
     frs_wsg_drainage = function(conn, wsg, outlets) c("ZZZZ", "PARS"),
     .package = "fresh", .env = env)
 }

@@ -671,7 +671,9 @@ lnk_wsg_downstream_check <- function(conn, aoi, cfg, loaded,
                                unloaded = character(0)) {
   if (length(unloaded)) {
     load <- paste0(
-      sprintf("%s BLOCKED (link#464) — %d watershed group(s) on %s's downstream flow path have no FWA streams in this database: %s.\n\n",
+      sprintf(paste0("%s BLOCKED (link#464) — %d watershed group(s) on %s's ",
+                     "downstream flow path have no FWA streams in this ",
+                     "database: %s.\n\n"),
               aoi, length(unloaded), aoi, paste(unloaded, collapse = ", ")),
       "No dam on them can be found, so the check cannot say whether one blocks.\n",
       "Load their FWA streams (whse_basemapping.fwa_stream_networks_sp), then their\n",
