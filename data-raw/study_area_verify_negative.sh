@@ -22,6 +22,9 @@
 #   6e. newest recompute lifted a settled segment -> expect FAIL (link#349)
 #   6f. an open log row a later finished row supersedes -> expect PASS (link#348 path)
 #   6g. an open log row nothing supersedes          -> expect FAIL
+#   6j. evidence judged (groups at 0.84.0)          -> expect PASS (link#434)
+#   6k.  ... one lift's evidence deleted            -> expect FAIL
+#   6l.  ... an evidence row beside no lift          -> expect FAIL
 #
 # Nothing durable is mutated: every case runs against a SCRATCH SCHEMA holding a
 # copy of the run's rows, so the real persist is never touched at all. Not a
@@ -558,6 +561,91 @@ else
   fails=$((fails + 1))
 fi
 "${PSQL[@]}" >/dev/null -c "DELETE FROM ${SCRATCH}.log_recompute WHERE recompute_id LIKE '%-neg6h'"
+
+# --- 6j/6k/6l. what each lift rests on (link#434) ---------------------------
+# The run's barrier_overrides and barrier_override_evidence are copied for its
+# groups. The check judges only groups built at link 0.84.0 or later, and so
+# do these cases: a run built before that wrote no evidence, so it is skipped
+# (reported, not counted: the run cannot exercise the check). On a newer run,
+# 6j must PASS (a build's evidence agrees with its lifts), 6k must FAIL (a lift
+# with no evidence) and 6l must FAIL (evidence for no lift).
+HAS_EV=$("${PSQL[@]}" -c "SELECT to_regclass('${SRC_SCHEMA}.barrier_override_evidence') IS NOT NULL")
+# The groups the check judges, chosen as the check chooses them: each group's
+# newest finished build of the run, at 0.84.0 or later.
+JUDGED="SELECT watershed_group_code FROM (
+           SELECT DISTINCT ON (watershed_group_code) watershed_group_code, link_version
+             FROM ${SCRATCH}.log WHERE date_end IS NOT NULL
+            ORDER BY watershed_group_code, date_end DESC) l
+          WHERE (string_to_array(link_version, '.'))[1:3]::int[] >= ARRAY[0, 84, 0]"
+N_NEW=$("${PSQL[@]}" -c "SELECT count(*) FROM (${JUDGED}) j")
+if [ "$N_NEW" = "0" ]; then
+  echo "  ⊘ 6j-6l. SKIPPED: run $RUN_UID was built before link 0.84.0, which"
+  echo "       wrote no evidence; the check leaves it unjudged (not counted)."
+elif [ "$HAS_EV" != "t" ]; then
+  echo "  ⊘ 6j-6l. SKIPPED: ${SRC_SCHEMA} has no barrier_override_evidence."
+  fails=$((fails + 1))
+else
+  "${PSQL[@]}" >/dev/null <<SQL
+CREATE TABLE ${SCRATCH}.barrier_overrides AS
+  SELECT * FROM ${SRC_SCHEMA}.barrier_overrides
+   WHERE watershed_group_code IN (SELECT watershed_group_code FROM ${SCRATCH}.log);
+CREATE TABLE ${SCRATCH}.barrier_override_evidence AS
+  SELECT * FROM ${SRC_SCHEMA}.barrier_override_evidence
+   WHERE watershed_group_code IN (SELECT watershed_group_code FROM ${SCRATCH}.log);
+SQL
+  EV_ROW=$("${PSQL[@]}" -c "SELECT watershed_group_code || '|' || species_code || '|' ||
+                                   blue_line_key || '|' || downstream_route_measure
+                              FROM ${SCRATCH}.barrier_overrides
+                             WHERE watershed_group_code IN (${JUDGED})
+                             ORDER BY 1 LIMIT 1")
+  if [ -z "$EV_ROW" ]; then
+    echo "  ⊘ 6j-6l. SKIPPED: run $RUN_UID lifted no barrier."
+    fails=$((fails + 1))
+  else
+    IFS='|' read -r EV_W EV_SP EV_BLK EV_DRM <<< "$EV_ROW"
+    if run_verify -v expected_n="$N_WSG"; then
+      echo "  ✓ 6j. evidence judged          -> PASS (as expected)"
+    else
+      echo "  ✗ 6j. evidence judged          -> FAILED, but should have passed."
+      show_verify
+      fails=$((fails + 1))
+    fi
+    "${PSQL[@]}" >/dev/null <<SQL
+CREATE TABLE ${SCRATCH}.ev_held AS
+  SELECT * FROM ${SCRATCH}.barrier_override_evidence
+   WHERE watershed_group_code = '${EV_W}' AND species_code = '${EV_SP}'
+     AND blue_line_key = ${EV_BLK} AND downstream_route_measure = ${EV_DRM};
+DELETE FROM ${SCRATCH}.barrier_override_evidence
+ WHERE watershed_group_code = '${EV_W}' AND species_code = '${EV_SP}'
+   AND blue_line_key = ${EV_BLK} AND downstream_route_measure = ${EV_DRM};
+SQL
+    if run_verify -v expected_n="$N_WSG"; then
+      echo "  ✗ 6k. $EV_W $EV_SP lift with no evidence -> PASSED, but should have FAILED."
+      show_verify
+      fails=$((fails + 1))
+    else
+      echo "  ✓ 6k. $EV_W $EV_SP lift with no evidence -> FAIL (as expected)"
+    fi
+    "${PSQL[@]}" >/dev/null <<SQL
+INSERT INTO ${SCRATCH}.barrier_override_evidence SELECT * FROM ${SCRATCH}.ev_held;
+DELETE FROM ${SCRATCH}.barrier_overrides
+ WHERE watershed_group_code = '${EV_W}' AND species_code = '${EV_SP}'
+   AND blue_line_key = ${EV_BLK} AND downstream_route_measure = ${EV_DRM};
+SQL
+    if run_verify -v expected_n="$N_WSG"; then
+      echo "  ✗ 6l. $EV_W $EV_SP evidence for no lift -> PASSED, but should have FAILED."
+      show_verify
+      fails=$((fails + 1))
+    else
+      echo "  ✓ 6l. $EV_W $EV_SP evidence for no lift -> FAIL (as expected)"
+    fi
+  fi
+  "${PSQL[@]}" >/dev/null <<SQL
+DROP TABLE IF EXISTS ${SCRATCH}.ev_held;
+DROP TABLE ${SCRATCH}.barrier_overrides;
+DROP TABLE ${SCRATCH}.barrier_override_evidence;
+SQL
+fi
 
 # The healthy case again, LAST. Cases 2/4/5/6 each mutate the scratch schema
 # and restore it, and a restore that silently did not restore would leave every

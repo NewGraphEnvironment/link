@@ -1,0 +1,5 @@
+date: 2026-11-17 00:29 UTC
+link: 0.84.0 @ 75f575e7
+bcfishobs.observations: 375962 rows
+barriers read: fresh (bcfishpass build) and fresh_default (link 0.78.2)
+db: docker fwapg localhost:5432

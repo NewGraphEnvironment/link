@@ -317,8 +317,14 @@ test_that("lnk_pipeline_persist never deletes from a log table (link#354)", {
   )
   deletes <- grep("^\\s*DELETE FROM", captured, value = TRUE)
   # streams, one per species (2), barriers, barrier_overrides,
-  # streams_access, streams_mapping_code, streams_near_river (#364).
-  expect_length(deletes, 8L)
+  # barrier_override_evidence (#434), streams_access, streams_mapping_code,
+  # streams_near_river (#364).
+  expect_length(deletes, 9L)
+  ev_cols <- paste("blue_line_key, downstream_route_measure, species_code,",
+                   "evidence, evidence_key")
+  expect_true(any(grepl(
+    paste0("INSERT INTO fresh.barrier_override_evidence (", ev_cols),
+    captured, fixed = TRUE)))
   # every probe answered present, so the near-river rows are replaced, pair
   # by pair: a species-subset build keeps the other species' distances
   expect_true(any(grepl("INSERT INTO fresh.streams_near_river", captured,

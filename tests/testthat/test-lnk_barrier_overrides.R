@@ -288,14 +288,97 @@ test_that("ctrl_filter gated per-species across mixed params", {
     verbose = FALSE
   )
 
-  # Two per-species INSERTs were emitted. BT's should have no NOT EXISTS;
-  # CH's should. Identify by the species-code literal in SELECT.
-  bt_sql <- captured[grepl("SELECT b.blue_line_key, b.downstream_route_measure, 'BT'",
-    captured, fixed = TRUE)]
-  ch_sql <- captured[grepl("SELECT b.blue_line_key, b.downstream_route_measure, 'CH'",
-    captured, fixed = TRUE)]
-  expect_true(length(bt_sql) >= 1)
-  expect_true(length(ch_sql) >= 1)
-  expect_no_match(paste(bt_sql, collapse = "\n"), "NOT EXISTS")
-  expect_match(paste(ch_sql, collapse = "\n"), "NOT EXISTS", fixed = TRUE)
+  # Each species builds its (barrier, record) pairs, then inserts its lifts
+  # from them (link#434). BT's pairs should have no NOT EXISTS; CH's should.
+  # Each pairs statement is tied to its species by the INSERT that follows.
+  pairs_i <- grep("CREATE TEMP TABLE lnk_bo_pairs", captured, fixed = TRUE)
+  expect_length(pairs_i, 2L)
+  species_of <- vapply(pairs_i, function(i) {
+    ins <- captured[(i + 1):length(captured)]
+    ins <- ins[grepl("FROM pg_temp.lnk_bo_pairs o", ins, fixed = TRUE)][1]
+    sub("^.*downstream_route_measure, '([A-Z]+)'.*$", "\\1", gsub("\n", " ", ins))
+  }, character(1))
+  expect_identical(species_of, c("BT", "CH"))
+  expect_no_match(captured[pairs_i[1]], "NOT EXISTS")
+  expect_match(captured[pairs_i[2]], "NOT EXISTS", fixed = TRUE)
+})
+
+test_that("each lift's evidence lists the records that met the rule, once each (DB, #434)", {
+  skip_if_no_db()
+  conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
+                      user = "postgres", password = "postgres")
+  on.exit(DBI::dbDisconnect(conn), add = TRUE)
+  ex <- function(sql) DBI::dbExecute(conn, sql)
+  s <- "zz_lnk_bo_evidence_test"
+  ex(sprintf("DROP SCHEMA IF EXISTS %s CASCADE", s))
+  ex(sprintf("CREATE SCHEMA %s", s))
+  on.exit(ex(sprintf("DROP SCHEMA IF EXISTS %s CASCADE", s)), add = TRUE,
+          after = FALSE)
+  # Barrier A (line 10 at 100) is held twice, as natural_barriers can hold a
+  # position (link#367); barrier B is on line 10 at 900.
+  ex(sprintf("CREATE TABLE %s.nb (blue_line_key int,
+                downstream_route_measure float8, wscode_ltree ltree,
+                localcode_ltree ltree, label text)", s))
+  ex(sprintf("INSERT INTO %s.nb VALUES
+                (10, 100, '100.200', '100.200', 'x'),
+                (10, 100, '100.200', '100.200', 'x'),
+                (10, 900, '100.200', '100.200', 'x')", s))
+  # k1 sits above A only; k2 above both and is filed as an alias that
+  # counts as two species of the list (two rows, one key); k3 is too old.
+  ex(sprintf("CREATE TABLE %s.obs (observation_key text,
+                watershed_group_code text, species_code text,
+                species_code_recorded text, observation_date date,
+                blue_line_key int, downstream_route_measure float8,
+                wscode ltree, localcode ltree)", s))
+  ex(sprintf("INSERT INTO %s.obs VALUES
+    ('k1', 'AAAA', 'XX', 'XX', '2001-01-01', 10, 500, '100.200', '100.200'),
+    ('k2', 'BBBB', 'XX', 'XA', '2002-01-01', 10, 950, '100.200', '100.200'),
+    ('k2', 'BBBB', 'YY', 'XA', '2002-01-01', 10, 950, '100.200', '100.200'),
+    ('k3', 'AAAA', 'XX', 'XX', '1980-01-01', 10, 600, '100.200', '100.200')",
+    s))
+  params <- data.frame(species_code = "XX", observation_threshold = 2L,
+                       observation_date_min = "1990-01-01",
+                       observation_buffer_m = 20,
+                       observation_species = "XX;YY",
+                       observation_control_apply = FALSE,
+                       stringsAsFactors = FALSE)
+  lnk_barrier_overrides(conn, barriers = paste0(s, ".nb"),
+                        observations = paste0(s, ".obs"), params = params,
+                        to = paste0(s, ".bo"), evidence = paste0(s, ".ev"),
+                        verbose = FALSE)
+  bo <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT blue_line_key, downstream_route_measure, species_code
+     FROM %s.bo", s))
+  ev <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT downstream_route_measure, evidence, evidence_key,
+            species_code_recorded, evidence_wsg, observation_threshold,
+            observation_date_min, observation_species
+     FROM %s.ev ORDER BY evidence_key", s))
+  # A is lifted (k1 and k2, two distinct records); B has k2 alone, below 2
+  expect_equal(bo$downstream_route_measure, 100)
+  expect_equal(ev$downstream_route_measure, c(100, 100))
+  expect_equal(ev$evidence_key, c("k1", "k2"))
+  expect_equal(ev$species_code_recorded, c("XX", "XA"))
+  expect_equal(ev$evidence_wsg, c("AAAA", "BBBB"))
+  expect_equal(ev$observation_threshold, c(2L, 2L))
+  expect_equal(ev$observation_date_min, as.Date(c("1990-01-01", "1990-01-01")))
+  expect_equal(unique(ev$observation_species), "XX;YY")
+  # the same lifts without evidence
+  lnk_barrier_overrides(conn, barriers = paste0(s, ".nb"),
+                        observations = paste0(s, ".obs"), params = params,
+                        to = paste0(s, ".bo2"), verbose = FALSE)
+  bo2 <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT blue_line_key, downstream_route_measure, species_code
+     FROM %s.bo2", s))
+  expect_equal(bo2, bo)
+  # a caller's temp table: the recorded code is read from the table as
+  # Postgres resolves it, not from information_schema by its literal name
+  ex(sprintf("CREATE TEMP TABLE obs_tmp AS SELECT * FROM %s.obs", s))
+  lnk_barrier_overrides(conn, barriers = paste0(s, ".nb"),
+                        observations = "pg_temp.obs_tmp", params = params,
+                        to = paste0(s, ".bo3"), evidence = paste0(s, ".ev3"),
+                        verbose = FALSE)
+  ev3 <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT species_code_recorded FROM %s.ev3 ORDER BY evidence_key", s))
+  expect_equal(ev3$species_code_recorded, c("XX", "XA"))
 })

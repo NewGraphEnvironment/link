@@ -47,11 +47,13 @@
 #'     dispatch ingest via [crate::crt_ingest()])
 #'   - `pipeline` — named list of pipeline knobs
 #'     (`apply_habitat_overlay`, `break_order`, `observation_breaks`,
-#'     `observation_upstream`, `cluster`, `spawn_connected`,
+#'     `observation_upstream`, `observation_record_date`, `cluster`,
+#'     `spawn_connected`,
 #'     `discharge_fill`, `discharge_source`, `gradient`). A
 #'     `discharge_source` other than `fwapg` or `wet`, an
 #'     `observation_breaks` other than `all` or `top_per_species`, an
-#'     `observation_upstream` other than `province` or `group_gated`, or a
+#'     `observation_upstream` other than `province` or `group_gated`, an
+#'     `observation_record_date` other than `any` or `lift_floor`, or a
 #'     `gradient` map whose `source` is not `segment` or `parent` (or with
 #'     an unknown key, or for `parent` without `minimal_config` and
 #'     `schema_full`), is an error at load.
@@ -429,6 +431,10 @@ print.lnk_config <- function(x, ...) {
   if (!is.null(pipeline[["observation_upstream"]])) {
     .lnk_observation_upstream_check(pipeline[["observation_upstream"]],
                                     paste0("config '", name, "'"))
+  }
+  if (!is.null(pipeline[["observation_record_date"]])) {
+    .lnk_record_date_check(pipeline[["observation_record_date"]],
+                                       paste0("config '", name, "'"))
   }
   if (!is.null(pipeline[["gradient"]])) {
     .lnk_gradient_check(pipeline[["gradient"]], paste0("config '", name, "'"))

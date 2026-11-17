@@ -13,6 +13,11 @@ dimensions: dimensions.csv
 # Entries with `source` + `canonical_schema` dispatch through crate::crt_ingest();
 # others fall through to extension-based local read.
 files:
+  # parameters_fresh.csv's salmon and steelhead rows set observation_date_min
+  # 1990-01-02: link keeps a record dated on or after it, and bcfishpass keeps
+  # one dated after 1990-01-01 (model_access_ch_cm_co_pk_sk.sql and
+  # model_access_st.sql, smnorris/bcfishpass@3bd2824). observation_date is a
+  # date, so the two read the same records (link#426).
   parameters_fresh:
     path: parameters_fresh.csv
   parameters_habitat_thresholds:
@@ -136,8 +141,8 @@ provenance:
   parameters_fresh.csv:
     source: link (hand-authored)
     upstream_sha: 8f1890564b9148573535a679f2e5563aebe74207
-    synced: '2026-04-26'
-    checksum: sha256:a877ec23b0e0853514d545fbd8b8f218718382dc44a72377ffcc45526e63984e
+    synced: '2026-11-16'
+    checksum: sha256:12511bf355e3cb545555cf30d4d838ec407eabc5e2293082498d179d52a6bec1
     shape_checksum: sha256:52dcadd062f584fa7e7828d580fbf6f3dd44261d6a6d37e7b831aa0e0b9be2d3
   parameters_habitat_thresholds.csv:
     source: https://github.com/NewGraphEnvironment/fresh

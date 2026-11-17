@@ -1,0 +1,7 @@
+copy of zz470_default_head: 1283 lifts, 34288 evidence rows, 2 groups
+  ok   healthy -> PASS
+  ok   LSKE CH lift with no evidence -> FAIL
+  ok   LSKE CH evidence for no lift -> FAIL
+  ok   healthy, restored -> PASS
+  ok   LSKE CH lift below its threshold -> FAIL
+wrong: 0

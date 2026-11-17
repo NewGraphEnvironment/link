@@ -9,8 +9,10 @@
 #' `promoted_by` say what [lnk_presence()]'s groups make of it.
 #'
 #' A supporting record is one that:
-#' - is of the species, with cutthroat aliases (`CCT`, `ACT`, `CT/RB`) read as
-#'   `CT`, as the pipeline reads them;
+#' - is of the species, with the alias codes the bundle's pooling tracker
+#'   counts as it read as the species (`CCT` as `CT`, `SST` as `ST`, `BT/DV` as
+#'   `BT` where DV pools into BT), as the pipeline reads them
+#'   (`.lnk_observation_species_map()`, link#470);
 #' - is not excluded by `observation_exclusions` (`data_error`,
 #'   `release_exclude`; `.lnk_observation_exclusion_keys()`);
 #' - is not a release, tagged as bcfishpass tags one
@@ -71,10 +73,44 @@
   sp_all <- toupper(cols)
   wsgs <- pres$watershed_group_code
 
+  # -- pooling, resolved as if every species were present -------------------
+  all_present <- pres
+  for (cc in cols) all_present[[cc]] <- "t"
+  loaded_all <- loaded
+  loaded_all$wsg_species_presence <- all_present
+  pool_all <- lnk_species_pooling(loaded_all, aoi = wsgs, species = sp_all,
+                                  regions = regions)
+
   # -- each record's species, status and year -------------------------------
   r <- records[records$watershed_group_code %in% wsgs, need, drop = FALSE]
-  r$species_code <- ifelse(r$species_code %in% c("CCT", "ACT", "CT/RB"),
-                           "CT", r$species_code)
+  # The code the record is filed under, kept beside the species it reads as:
+  # pooled evidence is matched on it, so an alias never chains through a
+  # pooled row (ADV is DV, and is not BT through BT <- DV), as the pipeline's
+  # record rule resolves each row on its own (link#470).
+  r$code_recorded <- r$species_code
+  need_r <- c(need, "code_recorded")
+  # Alias codes (no species column) read as the species the tracker counts
+  # them as in the record's group, within the row's year limit; they are the
+  # species' own records, not pooled evidence (link#470).
+  alias <- .lnk_record_aliases(loaded, wsgs, regions = regions)
+  if (nrow(alias) > 0L && nrow(r) > 0L) {
+    a <- data.frame(watershed_group_code = alias$watershed_group_code,
+                    species_code = alias$species_obs,
+                    target = alias$species_code,
+                    obs_year_max = alias$obs_year_max,
+                    stringsAsFactors = FALSE)
+    r$row_id <- seq_len(nrow(r))
+    hit <- merge(r, a, by = c("watershed_group_code", "species_code"))
+    y <- as.integer(format(hit$observation_date, "%Y"))
+    hit <- hit[is.na(hit$obs_year_max) |
+                 (!is.na(y) & y <= hit$obs_year_max), , drop = FALSE]
+    hit$species_code <- hit$target
+    r <- rbind(r[!r$row_id %in% hit$row_id, c(need_r, "row_id"), drop = FALSE],
+               hit[, c(need_r, "row_id"), drop = FALSE])
+    r <- r[order(r$row_id, r$species_code, method = "radix"), need_r,
+           drop = FALSE]
+    rownames(r) <- NULL
+  }
   other_cols <- c("watershed_group_code", "species_code")
   other <- r[!r$species_code %in% sp_all, other_cols, drop = FALSE]
   other <- if (nrow(other) == 0L) {
@@ -106,14 +142,8 @@
   r$source_name <- ifelse(is.na(r$source), "(no source)",
                           trimws(sub(":.*$", "", r$source)))
 
-  # -- pooling, resolved as if every species were present -------------------
-  all_present <- pres
-  for (cc in cols) all_present[[cc]] <- "t"
-  loaded_all <- loaded
-  loaded_all$wsg_species_presence <- all_present
-  pool <- lnk_species_pooling(loaded_all, aoi = wsgs, species = sp_all,
-                              regions = regions)
-  pool <- pool[pool$scope_level != "self", , drop = FALSE]
+  pool <- pool_all[pool_all$scope_level != "self" &
+                     pool_all$obs_species %in% sp_all, , drop = FALSE]
 
   # -- evidence: each record against each cell it supports ------------------
   own <- r
@@ -122,12 +152,12 @@
   pooled <- own[0, , drop = FALSE]
   if (nrow(pool) > 0L) {
     p <- data.frame(watershed_group_code = pool$watershed_group_code,
-                    species_code = pool$obs_species,
+                    code_recorded = pool$obs_species,
                     target = pool$species_code,
                     obs_year_max = pool$obs_year_max,
                     stringsAsFactors = FALSE)
     m <- merge(r[r$kept, , drop = FALSE], p,
-               by = c("watershed_group_code", "species_code"))
+               by = c("watershed_group_code", "code_recorded"))
     m <- m[is.na(m$obs_year_max) | m$year <= m$obs_year_max, , drop = FALSE]
     m$pooled <- rep(TRUE, nrow(m))
     pooled <- m[, names(own), drop = FALSE]

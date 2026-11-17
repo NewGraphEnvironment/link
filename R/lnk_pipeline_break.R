@@ -224,24 +224,6 @@ lnk_pipeline_break <- function(conn, aoi, cfg, loaded, schema,
 }
 
 
-#' Derive the list of observation species codes for an AOI
-#' from the wsg_species_presence table.
-#' @noRd
-.lnk_pipeline_break_obs_species <- function(loaded, aoi) {
-  wsg_sp <- loaded$wsg_species_presence
-  if (is.null(wsg_sp)) return(character(0))
-  row <- wsg_sp[wsg_sp$watershed_group_code == aoi, ]
-  if (nrow(row) == 0) return(character(0))
-
-  sp <- .lnk_wsg_species_present(row)
-
-  # bcfishfobs records cutthroat as CT, CCT, ACT, or CT/RB — all
-  # resolve to the same species in wsg_species_presence.
-  if ("CT" %in% sp) sp <- c(sp, "CCT", "ACT", "CT/RB")
-  sp
-}
-
-
 #' Build habitat_endpoints: DRM + URM from user_habitat_classification
 #' @noRd
 .lnk_pipeline_break_habitat_endpoints <- function(conn, aoi, schema) {

@@ -14,6 +14,7 @@ lnk_barrier_overrides(
   params,
   cols_index = c("blue_line_key", "wscode_ltree", "localcode_ltree"),
   to,
+  evidence = NULL,
   verbose = TRUE
 )
 }
@@ -66,6 +67,15 @@ barriers table for \code{fwa_upstream()} performance. Indexes are created
 \verb{IF NOT EXISTS}. Default \code{c("blue_line_key", "wscode_ltree", "localcode_ltree")} — only columns that exist in the table are indexed.}
 
 \item{to}{Character. Schema-qualified output table name.}
+
+\item{evidence}{Character or \code{NULL}. Schema-qualified table to (re)create
+holding what each lift rests on (link#434): one row per lifted barrier,
+species and evidence record. An observation lift lists every record that
+met the rule (\code{observation_key}, the code it is filed under, its date
+and group); a habitat lift lists each confirming habitat row. Every row
+carries the rule as applied (\code{observation_threshold},
+\code{observation_date_min}, \code{observation_species}, \code{observation_buffer_m}).
+\code{NULL} (default) writes none.}
 
 \item{verbose}{Logical. Report counts.}
 }

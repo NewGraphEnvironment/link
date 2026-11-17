@@ -94,16 +94,46 @@ test_that("the vocabulary only grows against the default branch", {
 test_that("each shipped config resolves to its tokens", {
   expect_identical(
     lnk_vocabulary_resolve(lnk_config("default")),
-    c(cut = "cut-full-top", acc = "acc-v5", grad = "grad-seg",
+    c(cut = "cut-full-top-2", acc = "acc-v6", grad = "grad-seg",
       flow = "q-fwapg"))
   expect_identical(
     lnk_vocabulary_resolve(lnk_config("default_tuned")),
-    c(cut = "cut-full-top", acc = "acc-v5", grad = "grad-seg",
+    c(cut = "cut-full-top-2", acc = "acc-v6", grad = "grad-seg",
       flow = "q-wet-fill"))
   expect_identical(
     lnk_vocabulary_resolve(lnk_config("bcfishpass")),
-    c(cut = "cut-full-ssf-all", acc = "acc-bcfp-4", grad = "grad-seg",
+    c(cut = "cut-full-ssf-all-2", acc = "acc-bcfp-5", grad = "grad-seg",
       flow = "q-fwapg"))
+})
+
+test_that("the record rule is in the cut and acc specs (#470)", {
+  cfg <- lnk_config("default")
+  ld <- suppressWarnings(lnk_load_overrides(cfg))
+  s0 <- .lnk_vocabulary_specs(cfg, ld)
+  expect_match(s0[["cut"]], "observation_records=sha256:", fixed = TRUE)
+  # a tracker row that counts another alias moves both
+  ld2 <- ld
+  ld2$species_pooling <- rbind(ld$species_pooling, transform(
+    ld$species_pooling[ld$species_pooling$species_obs == "SST", ],
+    species_obs = "XST"))
+  s2 <- .lnk_vocabulary_specs(cfg, ld2)
+  expect_false(identical(s0[["cut"]], s2[["cut"]]))
+  expect_false(identical(s0[["acc"]], s2[["acc"]]))
+  # a rationale edit moves neither
+  ld3 <- ld
+  ld3$species_pooling$rationale <- "edited"
+  s3 <- .lnk_vocabulary_specs(cfg, ld3)
+  expect_identical(s0[c("cut", "acc")], s3[c("cut", "acc")])
+  # the date rule moves both
+  cfg4 <- cfg
+  cfg4$pipeline$observation_record_date <- "any"
+  s4 <- .lnk_vocabulary_specs(cfg4, ld)
+  expect_false(identical(s0[["cut"]], s4[["cut"]]))
+  expect_false(identical(s0[["acc"]], s4[["acc"]]))
+  # the minimal network does not cut at records, so its cut spec has no digest
+  m <- lnk_config("default_minimal")
+  expect_no_match(.lnk_vocabulary_specs(m, suppressWarnings(
+    lnk_load_overrides(m)))[["cut"]], "observation_records", fixed = TRUE)
 })
 
 test_that("default_minimal differs from default only in its cut token (#415)", {

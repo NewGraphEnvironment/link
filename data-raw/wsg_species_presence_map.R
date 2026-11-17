@@ -91,6 +91,8 @@ if (nzchar(cache) && file.exists(cache)) {
     conn, zones, sp_barrier, pools, sockeye,
     excl_keys = .lnk_observation_exclusion_keys(loaded),
     incl_keys = excl$observation_key[excl$release_include %in% c(TRUE, "t")],
+    aliases = .lnk_record_aliases(
+      loaded, loaded$wsg_species_presence$watershed_group_code),
     year_min = 1950L)
 
   # The barrier each record sits behind: pg_temp.pm_bar is left in this

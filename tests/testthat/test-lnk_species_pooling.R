@@ -147,7 +147,11 @@ test_that("bad rows fail loud", {
   bad(pool_row("AAA", "BBB", "region", "Nowhere"), re = "Nowhere")
   bad(pool_row("AAA", "BBB", "wsg", "W9"), re = "W9")
   bad(pool_row("AAA", "BBB", "region", "North", "maybe"), re = "pool")
-  bad(pool_row("AAA", "ZZZ", "region", "North"), re = "ZZZ")
+  # an unknown target errors; on the evidence side a code-shaped name is a
+  # record code (an alias), and anything else errors
+  bad(pool_row("ZZZ", "BBB", "region", "North"), re = "ZZZ")
+  bad(pool_row("AAA", "Z Z", "region", "North"), re = "Z Z")
+  bad(pool_row("AAA", "BBB", "province", "North"), re = "North")
   bad(pool_row("AAA", NA, "region", "North"), re = "species_obs")
   # a group code that is also a species code
   bad(pool_row("AAA", "BBB", "region", "North"),
@@ -242,4 +246,29 @@ test_that("the shipped default bundle resolves over every region", {
   expect_gt(nrow(pooled), 0)
   expect_false(anyNA(pooled$rule))
   expect_true(all(pooled$species_code != pooled$obs_species))
+})
+
+test_that("a province row applies everywhere and loses to any narrower row", {
+  p <- rbind(pool_row("AAA", "BBB", "province", "BC"),
+             pool_row("AAA", "BBB", "region", "South", "no"))
+  res <- lnk_species_pooling(loaded_fx(p), aoi = c("W1", "W2", "W3"),
+                             species = "AAA", regions = regions_fx)
+  expect_equal(obs_for(res, "W1", "AAA"), c("AAA", "BBB"))
+  expect_equal(obs_for(res, "W2", "AAA"), c("AAA", "BBB"))
+  expect_equal(obs_for(res, "W3", "AAA"), "AAA")
+  expect_equal(unique(res$scope_level[res$obs_species == "BBB"]), "province")
+})
+
+test_that("an alias code counts as its target only where its row applies", {
+  # "AAA/X" and "AX" stand for record codes that are no species column
+  p <- rbind(pool_row("AAA", "AX", "province", "BC"),
+             pool_row("AAA", "AAA/X", "region", "North"))
+  res <- lnk_species_pooling(loaded_fx(p), aoi = c("W1", "W3"),
+                             species = "AAA", regions = regions_fx)
+  expect_equal(obs_for(res, "W1", "AAA"), c("AAA", "AAA/X", "AX"))
+  expect_equal(obs_for(res, "W3", "AAA"), c("AAA", "AX"))
+  # an absent target yields no alias row: W4 has no AAA
+  res4 <- lnk_species_pooling(loaded_fx(p), aoi = "W4", species = "AAA",
+                              regions = regions_fx)
+  expect_equal(nrow(res4), 0L)
 })

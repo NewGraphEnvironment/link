@@ -137,6 +137,31 @@ lnk_pipeline_persist <- function(conn, aoi, cfg, species,
       paste(overrides_select, collapse = ", "), schema))
   }
 
+  # ----- barrier_override_evidence (link#434) -----
+  # What each lift rests on: the working table lnk_barrier_overrides wrote
+  # beside barrier_overrides, with the AOI added. Probe-gated the same way.
+  evidence_present <- nrow(DBI::dbGetQuery(conn, sprintf(
+    "SELECT 1 FROM information_schema.tables
+      WHERE table_schema = %s AND table_name = 'barrier_override_evidence'
+      LIMIT 1;",
+    DBI::dbQuoteString(conn, schema)
+  ))) > 0L
+  if (evidence_present) {
+    evidence_table <- paste0(tn$schema, ".barrier_override_evidence")
+    evidence_cols <- names(cols_barrier_override_evidence)
+    evidence_select <- vapply(evidence_cols, function(col) {
+      if (col == "watershed_group_code") paste0(aoi_lit, "::varchar(4)")
+      else col
+    }, character(1))
+    .lnk_db_execute(conn, sprintf(
+      "DELETE FROM %s WHERE watershed_group_code = %s",
+      evidence_table, aoi_lit))
+    .lnk_db_execute(conn, sprintf(
+      "INSERT INTO %s (%s) SELECT %s FROM %s.barrier_override_evidence",
+      evidence_table, paste(evidence_cols, collapse = ", "),
+      paste(evidence_select, collapse = ", "), schema))
+  }
+
   # ----- streams_access (link#187) -----
   # Per-segment per-species access. Working `<schema>.streams_access` is
   # built by lnk_pipeline_access; persist phase copies the per-WSG slice

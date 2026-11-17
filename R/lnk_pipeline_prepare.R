@@ -131,7 +131,8 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
   classes <- .lnk_resolve_classes(classes, cfg)
 
   .lnk_pipeline_prep_load_aux(conn, aoi, loaded, schema)
-  .lnk_pipeline_prep_observations(conn, aoi, loaded, schema, observations)
+  .lnk_pipeline_prep_observations(conn, aoi, loaded, schema, observations,
+                                  cfg = cfg)
   .lnk_pipeline_prep_gradient(conn, aoi, loaded, schema, classes)
   .lnk_pipeline_prep_natural(conn, aoi, cfg, loaded, schema)
   .lnk_pipeline_prep_overrides(conn, loaded, schema)
@@ -286,9 +287,14 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
 #' the outlet falls lifts the fall in link but bcfishpass excludes it
 #' because TWAC has no ST in `wsg_species_presence`.
 #'
-#' bcfishobs records cutthroat as CT/CCT/ACT/CT/RB; when CT is in the
-#' WSG's species set, all four codes are admitted (matches bcfp's
-#' `species_code_remap` CTE).
+#' Which records count, and as which species, is the record rule
+#' (`.lnk_observation_species_map()`, link#470): each species' own code, the
+#' codes the bundle's pooling tracker counts as it (alias codes such as `CCT`
+#' or `SST`, and pooled species), and under `pipeline: observation_record_date:
+#' lift_floor` only records on or after the species' lift floor. A bundle with
+#' no tracker counts each species' own code only, as bcfishpass's filter does.
+#' `species_code` holds the model species; `species_code_recorded` the code the
+#' record is filed under.
 #'
 #' Also builds `<schema>.observations_province`: every group's observations,
 #' each kept when ITS OWN group's presence row admits the species, minus the
@@ -305,7 +311,15 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
 #' source.
 #' @noRd
 .lnk_pipeline_prep_observations <- function(conn, aoi, loaded, schema,
-                                            observations = "bcfishobs.observations") {
+                                            observations = "bcfishobs.observations",
+                                            cfg) {
+  # Required, so a caller cannot build default's tables under `any` by leaving
+  # the bundle out (the date rule is cfg$pipeline$observation_record_date).
+  if (missing(cfg)) {
+    stop(".lnk_pipeline_prep_observations() needs cfg: the record rule's ",
+         "date floor is the bundle's pipeline: observation_record_date",
+         call. = FALSE)
+  }
   .lnk_validate_identifier(observations, "observations table")
 
   if (is.null(loaded$wsg_species_presence)) {
@@ -313,7 +327,6 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
          "per-AOI observations filter (mirrors bcfishpass parity)",
          call. = FALSE)
   }
-  sp <- .lnk_pipeline_break_obs_species(loaded, aoi)
 
   excl_filter <- ""
   keys <- .lnk_observation_exclusion_keys(loaded)
@@ -325,31 +338,16 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
       "AND o.observation_key NOT IN (%s)", keys_sql)
   }
 
-  .lnk_pipeline_prep_obs_province(conn, loaded, schema, observations,
-                                           excl_filter)
-
-  .lnk_db_execute(conn, sprintf(
-    "DROP TABLE IF EXISTS %s.observations", schema))
-
-  if (length(sp) == 0) {
-    # No species marked present — empty table mirroring source schema
-    .lnk_db_execute(conn, sprintf(
-      "CREATE TABLE %s.observations AS
-       SELECT * FROM %s WHERE FALSE", schema, observations))
-    return(invisible(NULL))
-  }
-
-  sp_sql <- paste0(
-    vapply(sp, .lnk_quote_literal, character(1)),
-    collapse = ", ")
-
-  .lnk_db_execute(conn, sprintf(
-    "CREATE TABLE %s.observations AS
-     SELECT * FROM %s o
-     WHERE o.watershed_group_code = %s
-       AND o.species_code IN (%s)
-       %s",
-    schema, observations, .lnk_quote_literal(aoi), sp_sql, excl_filter))
+  map <- .lnk_observation_species_map(
+    cfg, loaded, loaded$wsg_species_presence$watershed_group_code)
+  .lnk_pipeline_prep_obs_province(conn, schema, observations, map,
+                                  excl_filter)
+  .lnk_observation_table_build(
+    conn, paste0(schema, ".observations"), observations,
+    map[map$watershed_group_code == toupper(aoi), , drop = FALSE],
+    where = sprintf("AND o.watershed_group_code = %s",
+                    .lnk_quote_literal(aoi)),
+    excl_filter = excl_filter)
 
   invisible(NULL)
 }
@@ -372,36 +370,14 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
 
 #' Province-wide observations, each filtered by its own group's presence
 #'
-#' See [.lnk_pipeline_prep_observations()]. The presence pairs reach SQL as a
+#' See [.lnk_pipeline_prep_observations()]. The record rule reaches SQL as a
 #' `VALUES` list, so nothing is written but the table itself.
 #' @noRd
-.lnk_pipeline_prep_obs_province <- function(conn, loaded, schema,
-                                                     observations,
-                                                     excl_filter = "") {
+.lnk_pipeline_prep_obs_province <- function(conn, schema, observations, map,
+                                            excl_filter = "") {
   to <- paste0(schema, ".observations_province")
-  pres <- loaded$wsg_species_presence
-  pairs <- unlist(lapply(pres$watershed_group_code, function(w) {
-    sp <- .lnk_pipeline_break_obs_species(loaded, w)
-    if (length(sp) == 0L) return(character(0))
-    sprintf("(%s, %s)", .lnk_quote_literal(w),
-            vapply(sp, .lnk_quote_literal, character(1)))
-  }), use.names = FALSE)
-
-  .lnk_db_execute(conn, sprintf("DROP TABLE IF EXISTS %s", to))
-  if (length(pairs) == 0L) {
-    .lnk_db_execute(conn, sprintf(
-      "CREATE TABLE %s AS SELECT * FROM %s WHERE FALSE", to, observations))
-    return(invisible(NULL))
-  }
-  .lnk_db_execute(conn, sprintf(
-    "CREATE TABLE %s AS
-     SELECT o.* FROM %s o
-     JOIN (VALUES %s) p (watershed_group_code, species_code)
-       ON p.watershed_group_code = o.watershed_group_code
-      AND p.species_code = o.species_code
-     WHERE TRUE
-       %s",
-    to, observations, paste(pairs, collapse = ", "), excl_filter))
+  .lnk_observation_table_build(conn, to, observations, map,
+                               excl_filter = excl_filter)
   .lnk_db_execute(conn, sprintf("CREATE INDEX ON %s USING gist (wscode)", to))
   .lnk_db_execute(conn, sprintf("CREATE INDEX ON %s USING gist (localcode)", to))
   .lnk_db_execute(conn, sprintf("ANALYZE %s", to))
@@ -616,6 +592,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
     control = control_arg,
     params = loaded$parameters_fresh,
     to = paste0(schema, ".barrier_overrides"),
+    evidence = paste0(schema, ".barrier_override_evidence"),
     verbose = FALSE)
 
   # Kept: lnk_pipeline_run()'s access walk reads it for code 2 (link#401),

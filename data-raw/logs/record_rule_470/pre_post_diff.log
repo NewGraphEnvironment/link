@@ -1,0 +1,164 @@
+NOTICE:  schema "pg_temp" does not exist, skipping
+
+NOTICE:  table "rec_post" does not exist, skipping
+
+NOTICE:  table "rec_diff" does not exist, skipping
+
+NOTICE:  table "pieces" does not exist, skipping
+
+
+== segments
+       config  wsg segments_pre segments_post
+1     default LSKE        37636         37354
+2     default KLUM        31532         31374
+3     default SQAM        32038         31551
+4     default HOMA        43098         43092
+5     default VICT         3483          3468
+6     default MFRA         8771          8771
+7     default UFRT        17582         17581
+8     default FINA        30038         30034
+9  bcfishpass BULK        42989         42988
+10 bcfishpass PARS        43776         43776
+11 bcfishpass SQAM        33203         33137
+
+== lifts that moved
+    config  wsg species_code lifts_pre lifts_post lost gained
+1  default LSKE           BT        61          0   61      0
+9  default KLUM           BT       123          4  119      0
+17 default SQAM           BT       160         13  147      0
+25 default HOMA           BT        57          5   52      0
+
+== access km that moved
+       config  wsg species_code pre post      km
+2     default LSKE           BT   1    0 216.198
+7     default LSKE           CH   2    1 201.130
+11    default LSKE           CM   2    1 258.546
+15    default LSKE           CO   2    1 171.520
+NA       <NA> <NA>         <NA>  NA   NA      NA
+NA.1     <NA> <NA>         <NA>  NA   NA      NA
+21    default LSKE           PK   2    1 224.775
+NA.2     <NA> <NA>         <NA>  NA   NA      NA
+26    default LSKE           SK   2    1 135.830
+30    default LSKE           ST   2    1 180.550
+NA.3     <NA> <NA>         <NA>  NA   NA      NA
+34    default KLUM           BT   1    0 168.033
+39    default KLUM           CH   2    1 123.354
+43    default KLUM           CM   2    1  41.111
+47    default KLUM           CO   2    1  78.072
+NA.4     <NA> <NA>         <NA>  NA   NA      NA
+NA.5     <NA> <NA>         <NA>  NA   NA      NA
+53    default KLUM           PK   2    1  32.791
+NA.6     <NA> <NA>         <NA>  NA   NA      NA
+58    default KLUM           SK   2    1  57.303
+62    default KLUM           ST   2    1  91.193
+NA.7     <NA> <NA>         <NA>  NA   NA      NA
+66    default SQAM           BT   1    0 253.548
+71    default SQAM           CH   2    1  25.776
+75    default SQAM           CM   2    1  51.704
+79    default SQAM           CO   2    1  25.395
+NA.8     <NA> <NA>         <NA>  NA   NA      NA
+NA.9     <NA> <NA>         <NA>  NA   NA      NA
+85    default SQAM           PK   2    1  26.804
+NA.10    <NA> <NA>         <NA>  NA   NA      NA
+90    default SQAM           SK   2    1  64.563
+94    default SQAM           ST   2    1  22.291
+NA.11    <NA> <NA>         <NA>  NA   NA      NA
+98    default HOMA           BT   1    0   7.928
+102   default HOMA           CH   0    1   0.001
+104   default HOMA           CH   2    1  24.107
+107   default HOMA           CM   0    1   0.001
+109   default HOMA           CM   2    1  64.763
+112   default HOMA           CO   0    2   0.001
+114   default HOMA           CO   2    1  43.226
+NA.12    <NA> <NA>         <NA>  NA   NA      NA
+NA.13    <NA> <NA>         <NA>  NA   NA      NA
+119   default HOMA           PK   0    1   0.001
+121   default HOMA           PK   2    1 208.702
+NA.14    <NA> <NA>         <NA>  NA   NA      NA
+125   default HOMA           SK   0    1   0.001
+129   default HOMA           ST   0    1   0.001
+131   default HOMA           ST   1    2  10.449
+132   default HOMA           ST   2    1  25.373
+NA.15    <NA> <NA>         <NA>  NA   NA      NA
+NA.16    <NA> <NA>         <NA>  NA   NA      NA
+137   default VICT           CH   1    0   0.001
+139   default VICT           CH   2    1   5.298
+141   default VICT           CM   1    0   0.001
+143   default VICT           CM   2    1   3.859
+147   default VICT           CO   2    0   0.001
+148   default VICT           CO   2    1  10.201
+NA.17    <NA> <NA>         <NA>  NA   NA      NA
+NA.18    <NA> <NA>         <NA>  NA   NA      NA
+153   default VICT           PK   1    0   0.001
+NA.19    <NA> <NA>         <NA>  NA   NA      NA
+NA.20    <NA> <NA>         <NA>  NA   NA      NA
+159   default VICT           ST   1    0   0.001
+161   default VICT           ST   2    1   2.554
+NA.21    <NA> <NA>         <NA>  NA   NA      NA
+NA.22    <NA> <NA>         <NA>  NA   NA      NA
+NA.23    <NA> <NA>         <NA>  NA   NA      NA
+NA.24    <NA> <NA>         <NA>  NA   NA      NA
+NA.25    <NA> <NA>         <NA>  NA   NA      NA
+NA.26    <NA> <NA>         <NA>  NA   NA      NA
+NA.27    <NA> <NA>         <NA>  NA   NA      NA
+NA.28    <NA> <NA>         <NA>  NA   NA      NA
+NA.29    <NA> <NA>         <NA>  NA   NA      NA
+NA.30    <NA> <NA>         <NA>  NA   NA      NA
+NA.31    <NA> <NA>         <NA>  NA   NA      NA
+NA.32    <NA> <NA>         <NA>  NA   NA      NA
+NA.33    <NA> <NA>         <NA>  NA   NA      NA
+NA.34    <NA> <NA>         <NA>  NA   NA      NA
+185   default UFRT           GR   2    1 167.887
+NA.35    <NA> <NA>         <NA>  NA   NA      NA
+NA.36    <NA> <NA>         <NA>  NA   NA      NA
+NA.37    <NA> <NA>         <NA>  NA   NA      NA
+NA.38    <NA> <NA>         <NA>  NA   NA      NA
+NA.39    <NA> <NA>         <NA>  NA   NA      NA
+NA.40    <NA> <NA>         <NA>  NA   NA      NA
+195   default FINA           BT   1    2  17.941
+NA.41    <NA> <NA>         <NA>  NA   NA      NA
+NA.42    <NA> <NA>         <NA>  NA   NA      NA
+NA.43    <NA> <NA>         <NA>  NA   NA      NA
+202   default FINA           GR   2    1  37.387
+NA.44    <NA> <NA>         <NA>  NA   NA      NA
+NA.45    <NA> <NA>         <NA>  NA   NA      NA
+NA.46    <NA> <NA>         <NA>  NA   NA      NA
+NA.47    <NA> <NA>         <NA>  NA   NA      NA
+NA.48    <NA> <NA>         <NA>  NA   NA      NA
+NA.49    <NA> <NA>         <NA>  NA   NA      NA
+NA.50    <NA> <NA>         <NA>  NA   NA      NA
+NA.51    <NA> <NA>         <NA>  NA   NA      NA
+NA.52    <NA> <NA>         <NA>  NA   NA      NA
+NA.53    <NA> <NA>         <NA>  NA   NA      NA
+NA.54    <NA> <NA>         <NA>  NA   NA      NA
+NA.55    <NA> <NA>         <NA>  NA   NA      NA
+NA.56    <NA> <NA>         <NA>  NA   NA      NA
+NA.57    <NA> <NA>         <NA>  NA   NA      NA
+NA.58    <NA> <NA>         <NA>  NA   NA      NA
+NA.59    <NA> <NA>         <NA>  NA   NA      NA
+
+== records counted under one rule only (province-wide)
+                side species_code records     config
+default.1  post_only           BT    4959    default
+default.2  post_only           DV      78    default
+default.3  post_only           ST     631    default
+default.4   pre_only           CH    2346    default
+default.5   pre_only           CM    2215    default
+default.6   pre_only           CO    5380    default
+default.7   pre_only           GR     762    default
+default.8   pre_only           KO     213    default
+default.9   pre_only           PK    2000    default
+default.10  pre_only           SK    1862    default
+default.11  pre_only           ST    8407    default
+bcfishpass  pre_only           CT    4484 bcfishpass
+
+== unexplained
+   config  wsg species_code pre post pieces    km
+1 default HOMA           CH   0    1      1 0.001
+2 default HOMA           CM   0    1      1 0.001
+3 default HOMA           CO   0    2      1 0.001
+4 default HOMA           PK   0    1      1 0.001
+5 default HOMA           SK   0    1      1 0.001
+6 default HOMA           ST   0    1      1 0.001
+
+unexplained pieces: 6
