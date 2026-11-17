@@ -17,3 +17,12 @@
 - Code-check round 1: 3 findings, all fixed: a table that gained `access` (at its end) was refused by the next load (order check; now a subset check, test loads a third time); the removed contract path had no gate row (restored); an unrecorded dirty flag passed PUBLISH (now refused).
 - Code-check round 2: 3 findings, all fixed: the crate 0.19.0 floor would have stopped modelling on every host with an older crate (floor back to 0.0.2; the export asks for 0.19.0 when called; crate merge and tag owed first); a missing `fwa_watershed_groups_poly` table errored the guard (now snaps every dam); `lnk_downstream_files()` ignored recorded versions (now carries and fetches them). None was inside a round 1 fix.
 - Code-check round 3 (asked for the mechanism; enumerated every consumer of the changed column, fields, log column, dependency and table: all hold): 1 finding, fixed: a versioned read needs `s3:GetObjectVersion`, which scoped and anonymous readers lack; a refused versioned read now falls back to the current object, held to its md5. Mechanism named: a contract change written for the author's environment reached a consumer in another state.
+- Code-check round 4: Clean (the round 3 fallback cannot return bytes other than the manifest's; the mechanism's further reaches checked and holding). Loop ended on a clean round 4 with no finding inside a previous round's fix, after round 3's enumeration.
+
+| Round | Findings | Fixed | Accepted | Inside previous fix? |
+|---|---|---|---|---|
+| 1 | 3 | 3 | 0 | — |
+| 2 | 3 | 3 | 0 | n |
+| 3 | 1 | 1 | 0 | n |
+| 4 | 0 | 0 | 0 | n |
+- Full suite after the review fixes: 6,008 assertions; the same three tests fail as on main; 2 skipped (one pretest test skips on a dirty checkout: the planning files were uncommitted during the run).

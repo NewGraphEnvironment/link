@@ -40,7 +40,7 @@ Settled by the session from the plan review (`review-plan.md`): #464 checks the 
 - [x] #423: add an `access` integer column to the contract after `has_barriers_dnstr`. Select it in `.lnk_export_rows()` from `streams_access.access_<sp>` (NULL where the table or column is absent); `.lnk_export_conform()` types it. Tests: 0/1/2 survive, the absent case is NA.
 - [x] #423 / B1: `lnk_db_load()` takes each tree's columns from its manifest (`datasets[].schema.cols`), loads a part lacking `access` with it NULL, and adds the column to an existing table; refuses only a column it cannot reconcile. Tests on an old-contract tree, an existing table, and a root carrying a config not re-exported (G11; refuse or carry per manifest).
 - [x] #423: each config entry in the manifest summarises its builds' four tokens (the runs already carry them, A3). Mixed tokens are listed, not refused. RUNBOOK notes a lifting recompute turns 0 into 1, not 2 (A2).
-- [ ] #333 (crate, its own branch and PR): copy the final YAML to `inst/extdata/schemas/nge/habitat/fwa/v1/segment.yaml`, add the `schema_only` registry row with `canonical_cols`, NEWS, release 0.19.0.
+- [x] #333 (crate, its own branch and PR): copy the final YAML to `inst/extdata/schemas/nge/habitat/fwa/v1/segment.yaml`, add the `schema_only` registry row with `canonical_cols`, NEWS, 0.19.0 (crate PR #72; its merge and tag are owed below).
 - [x] #333 (link): raise the `crate` floor; `.lnk_export_spec()` reads the YAML from the installed crate (`system.file()`, G8), keeps the type check, drops link's copy. The manifest cites crate's tagged URL at a released version (G10); `contract_md5` becomes an md5 over names and types, and `exported_by` records crate's version (G9). Group-part contracts stay in link.
 - [x] #334: `streams_md5` on `<schema>.log`: `v1:` + md5 of per-row md5s over `cols_streams` in order, by `id_segment`, at a pinned `extra_float_digits` (G12), written in `.lnk_log_run_finish()`. Prove it survives a COPY round trip into a scratch schema. The export reports `match` / `differs` / `no digest` per group; `differs` stops BUILD.
 - [x] #334: an R/ helper `.lnk_publish_refusals()` (G15), called in PUBLISH's pre-write block: refuses builds or recomputes without `run_uid`, `link_dirty` or `fresh_dirty` TRUE, `thresholds_logged` FALSE, or an exporter with `link_dirty`, over parts and group parts, unless `LNK_PUBLISH_ALLOW="<reason>"`, recorded in the manifest. Tests per refusal and the override.
@@ -53,14 +53,15 @@ Settled by the session from the plan review (`review-plan.md`): #464 checks the 
 - [x] Drop the scratch database `fwapg473`.
 
 ## Owed at the end (reported, done after merge)
+- [ ] crate PR #72 merges and is tagged `v0.19.0` before this PR merges (link's CI reads the contract from crate's main; the manifest cites the tag); hosts that export then install crate 0.19.0.
 - [ ] PUBLISH of the new export (operator's word); the next provincial run re-models to `acc-v6`, and its republish carries the new values and the first `streams_md5`.
 - [ ] #334's public read: infrastructure-repo tofu after budget and anomaly alerts (operator).
 - [ ] The pre-run gate runs again before the next provincial run (`R/` changed).
 
 ## Validation
-- [ ] Tests pass (`devtools::test()`, `devtools::check()`, `lintr` per file against main)
-- [ ] `/code-check` clean (once over the branch, three-round floor)
-- [ ] PWF checkboxes match landed work
+- [x] Tests pass (`devtools::test()`, `devtools::check()`, `lintr` per file against main): three tests fail identically on main
+- [x] `/code-check` clean (once over the branch, three-round floor)
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
 Verification: #461's before/after equality on four groups, with the timing table; #464's red-then-green fixture test; export round trip (BUILD → `lnk_catalog()` → `lnk_db_load()`), checking the `access` column against `streams_access` row for row on one group; each PUBLISH refusal driven by a test with a stubbed `aws`; the digest equal on a group before and after a consolidate copy.
