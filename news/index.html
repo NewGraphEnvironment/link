@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.83.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.84.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,25 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.84.0" id="link-0840">link 0.84.0<a class="anchor" aria-label="anchor" href="#link-0840"></a></h2>
+<p><strong>One rule says which fish records count, and each lift is published with the records behind it</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/470" class="external-link">#470</a>, backlog move 2). Records now count the same way for the observation cuts, code 2 (“accessible, the species recorded upstream”) and the barrier lifts, and the rule is data in the bundle. <code>default</code> is <code>cut-full-top-2 acc-v6</code>, <code>bcfishpass</code> is <code>cut-full-ssf-all-2 acc-bcfp-5</code>; their predecessors retire at this release, and every group re-models at the next provincial run.</p>
+<ul><li>
+<strong>Alias codes count as their species</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/398" class="external-link">#398</a>, <a href="https://github.com/NewGraphEnvironment/link/issues/425" class="external-link">#425</a>). <code>default</code>’s <code>species_pooling.csv</code> lists them at a new <code>province</code> scope: <code>SST</code> and <code>WST</code> as ST, <code>ADV</code> as DV, <code>ABT</code> as BT, <code>CCT</code>, <code>ACT</code> and <code>CT/RB</code> as CT. <code>BT/DV</code> and <code>DV/BT</code> count as BT only where the tracker pools DV into BT, and <code>RB/CT</code> counts as nothing. Before, the cutthroat aliases cut streams but never made CT read 2 (the walk tested exact codes), and the steelhead and char aliases counted nowhere.</li>
+<li>
+<strong>Which records count is one rule</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/400" class="external-link">#400</a>). <code>.lnk_observation_species_map()</code> resolves it per group and the observation tables carry the model species, so the cuts, the walk and the lifts read it unchanged. Under <code>default</code> (<code>pipeline: observation_record_date: lift_floor</code>) salmon, steelhead, GR and KO records need 1990-01-01 or later for code 2 and the cuts as for a lift; resident species count every record, undated included. DV counts as BT only where the tracker pools it, for lifts too, so BT’s lift lists <code>BT</code>. The presence check and its measures read the same aliases.</li>
+<li>
+<strong>The <code>bcfishpass</code> bundle counts as bcfishpass does.</strong> bcfishpass’s filter tests a record’s own code, so the cutthroat aliases never reach <code>bcfishpass.observations</code> (0 of 2,004 alias records in SQAM, LFRA and VICT appear in its upstream arrays); link now drops them too. Its salmon and steelhead lifts take records dated after 1990-01-01, as bcfishpass does (<a href="https://github.com/NewGraphEnvironment/link/issues/426" class="external-link">#426</a>); measured on ten groups that moves no observation lift.</li>
+<li>
+<strong><code>default</code> lifts a natural barrier on 2 salmon records</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/427" class="external-link">#427</a>): CH, CM, CO, PK, SK, ST, GR and KO need 2 records since 1990, not 5. On SQAM, LSKE and HARR that adds 4, 6 and 8 lifts per salmon species (SQAM steelhead 24), each on at least two records; 1 record would have added 55, 14 and 37, most on a single record (<code>data-raw/logs/record_rule_470/lifts_427.csv</code>).</li>
+<li>
+<strong>Each lift is published with what it rests on</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/434" class="external-link">#434</a>). <code>lnk_barrier_overrides(evidence =)</code> writes, and the pipeline persists, <code>&lt;persist&gt;.barrier_override_evidence</code>: one row per lifted barrier, species and record (its key, the code it is filed under, its date and its own group) with the rule as applied, or the habitat row behind a habitat lift. <code>study_area_verify.sql</code> holds it equal to <code>barrier_overrides</code>. A study scoring records against access can recount a lift without the record being scored.</li>
+<li>
+<strong>Measured before and after on eight <code>default</code> groups and three <code>bcfishpass</code> groups</strong> (<code>data-raw/logs/record_rule_470/</code>). Where DV no longer counts as BT, BT loses lifts and access: LSKE 61 of 61 lifts and 216 km, KLUM 119 of 123 and 168 km, SQAM 147 of 160 and 254 km. Where pre-1990 salmon records stop counting, “recorded upstream” km fall (LSKE 1,172 km across six species, KLUM 424, HOMA 366); aliases add some (FINA BT 18 km, HOMA ST 10 km). <code>bcfishpass</code> access did not move, and its SQAM segments fall where the CT alias cuts go. Every changed piece is traced to a record one rule counts and the other does not.</li>
+<li>
+<strong>The cut spec carries the record rule</strong> where observations cut, so a tracker row that moves which records cut is a new token. <a href="https://github.com/NewGraphEnvironment/link/issues/236" class="external-link">#236</a> is narrowed to several lift rules per species, which stays open.</li>
+<li>RUNBOOK §7, “The record rule”; §5 has the lift floors and the evidence table. The pre-run gate runs again before the next provincial run (<code>R/</code> changed).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.83.0" id="link-0830">link 0.83.0<a class="anchor" aria-label="anchor" href="#link-0830"></a></h2>
 <p><strong>A stalled statement leaves a record of what it was waiting on</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/487" class="external-link">#487</a>). <code>frs_near_river_walk</code> stalled on the dispatcher on four dates and each time the backend was cancelled at the statement bound before anyone read <code>pg_stat_activity</code>. No modelling output changes and no vocabulary token moves.</p>

@@ -31,20 +31,24 @@ A named character vector `c(cut = , acc = , grad = , flow = )`.
 
 - **cut:** the break sources in the order applied
   (`pipeline: break_order`, or its default), the observation breaks
-  (`all` or `top_per_species`; only when `observations` is a source) and
-  the gradient classes streams are broken at
-  (`pipeline: gradient_classes`, or bcfishpass's 15 / 20 / 25 / 30 %),
-  and which of the definite barrier, barrier control and habitat
-  classification files the bundle declares (their rows are data, which
-  the build record carries).
+  (`all` or `top_per_species`, and a digest of the record rule that
+  decides which records cut, resolved as if every species were present;
+  only when `observations` is a source) and the gradient classes streams
+  are broken at (`pipeline: gradient_classes`, or bcfishpass's 15 / 20 /
+  25 / 30 %), and which of the definite barrier, barrier control and
+  habitat classification files the bundle declares (their rows are data,
+  which the build record carries).
 
 - **acc:** a sha256 digest of the access rules, which decide where
   gradient barriers cut streams as well as what is accessible: the
   species the rules model, each species' `access_gradient_max` and
   `observation_*` lift parameters, the species presence table, which
   fish records make code 2 (`pipeline: observation_upstream`, resolved),
-  and the two access rules held in code (the gradient class each access
-  label maps to, and
+  the record rule resolved for every group in the presence table (which
+  recorded codes count as which species, with their date floors and year
+  limits: the pooling tracker, its species groups, the region lookup and
+  `pipeline: observation_record_date`, link#470), and the two access
+  rules held in code (the gradient class each access label maps to, and
   [`lnk_presence()`](https://newgraphenvironment.github.io/link/reference/lnk_presence.md)'s
   species groups). The digest is over the parsed values, so a change in
   quoting or column order is not a new rule set.
@@ -72,9 +76,11 @@ Other vocabulary:
 
 ``` r
 lnk_vocabulary_resolve(lnk_config("default"))
-#>            cut            acc           grad           flow 
-#> "cut-full-top"       "acc-v5"     "grad-seg"      "q-fwapg" 
+#>              cut              acc             grad             flow 
+#> "cut-full-top-2"         "acc-v6"       "grad-seg"        "q-fwapg" 
 lnk_vocabulary_resolve(lnk_config("bcfishpass"))
-#>                cut                acc               grad               flow 
-#> "cut-full-ssf-all"       "acc-bcfp-4"         "grad-seg"          "q-fwapg" 
+#>                  cut                  acc                 grad 
+#> "cut-full-ssf-all-2"         "acc-bcfp-5"           "grad-seg" 
+#>                 flow 
+#>            "q-fwapg" 
 ```

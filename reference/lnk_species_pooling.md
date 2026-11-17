@@ -49,20 +49,25 @@ record does not meet one. Codes are upper case.
 ## Details
 
 A tracker row is `species_code` (the model species or a group of them),
-`species_obs` (the observation species or a group), `scope_level`
-(`region`, `subregion` or `wsg`), `scope` (a name in
-`inst/extdata/wsg_regions.csv`, or a WSG code) and `pool` (`yes` /
-`no`). An optional `obs_year_max` limits a pooling row to records dated
-in or before that year, for evidence whose meaning changed over time (a
-name that was applied to another species until recording practice caught
-up). Empty means no limit. Other columns (`confidence`, `rationale`,
-`source`, `verified`, `issue`) are the record of why, and are not read
-here.
+`species_obs` (the observation species, a group, or a code records are
+filed under that is no species column, such as `SST` for summer-run
+steelhead), `scope_level` (`province`, `region`, `subregion` or `wsg`),
+`scope` (`BC` for `province`, else a name in
+`inst/extdata/wsg_regions.csv` or a WSG code) and `pool` (`yes` / `no`).
+So one table says both which species' records count as which and which
+alias codes count as a species: it is the record rule the pipeline, the
+presence check and the validator read (link#470). An optional
+`obs_year_max` limits a pooling row to records dated in or before that
+year, for evidence whose meaning changed over time (a name that was
+applied to another species until recording practice caught up). Empty
+means no limit. Other columns (`confidence`, `rationale`, `source`,
+`verified`, `issue`) are the record of why, and are not read here.
 
 For each WSG, target and observation species pair, the applicable rows
 are resolved in order:
 
-1.  the most specific scope wins (`wsg` over `subregion` over `region`);
+1.  the most specific scope wins (`wsg` over `subregion` over `region`
+    over `province`);
 
 2.  at equal scope, the row naming fewer groups wins (a
     species-to-species row beats one that names a group);
@@ -90,27 +95,51 @@ loaded <- suppressWarnings(lnk_load_overrides(cfg))
 p <- lnk_species_pooling(loaded, aoi = c("MORR", "ELKR", "COMX"),
                          species = c("BT", "CO"))
 p
-#>   watershed_group_code species_code obs_species scope_level
-#> 1                 COMX           CO          CO        self
-#> 2                 ELKR           BT          BT        self
-#> 3                 ELKR           BT          DV   subregion
-#> 4                 MORR           BT          BT        self
-#> 5                 MORR           BT          DV   subregion
-#> 6                 MORR           CO          CO        self
-#>                   scope rule obs_year_max
-#> 1                  <NA>   NA           NA
-#> 2                  <NA>   NA           NA
-#> 3              Kootenay    5           NA
-#> 4                  <NA>   NA           NA
-#> 5 Skeena above Hazelton    6           NA
-#> 6                  <NA>   NA           NA
+#>    watershed_group_code species_code obs_species scope_level
+#> 1                  COMX           CO          CO        self
+#> 2                  ELKR           BT          BT        self
+#> 3                  ELKR           BT         ABT    province
+#> 4                  ELKR           BT       BT/DV   subregion
+#> 5                  ELKR           BT          DV   subregion
+#> 6                  ELKR           BT       DV/BT   subregion
+#> 7                  MORR           BT          BT        self
+#> 8                  MORR           BT         ABT    province
+#> 9                  MORR           BT       BT/DV   subregion
+#> 10                 MORR           BT          DV   subregion
+#> 11                 MORR           BT       DV/BT   subregion
+#> 12                 MORR           CO          CO        self
+#>                    scope rule obs_year_max
+#> 1                   <NA>   NA           NA
+#> 2                   <NA>   NA           NA
+#> 3                     BC   13           NA
+#> 4               Kootenay   17           NA
+#> 5               Kootenay    5           NA
+#> 6               Kootenay   22           NA
+#> 7                   <NA>   NA           NA
+#> 8                     BC   13           NA
+#> 9  Skeena above Hazelton   18           NA
+#> 10 Skeena above Hazelton    6           NA
+#> 11 Skeena above Hazelton   23           NA
+#> 12                  <NA>   NA           NA
 
 # The pooled rows alone, with the tracker row that decided each one
 p[p$scope_level != "self", ]
-#>   watershed_group_code species_code obs_species scope_level
-#> 3                 ELKR           BT          DV   subregion
-#> 5                 MORR           BT          DV   subregion
-#>                   scope rule obs_year_max
-#> 3              Kootenay    5           NA
-#> 5 Skeena above Hazelton    6           NA
+#>    watershed_group_code species_code obs_species scope_level
+#> 3                  ELKR           BT         ABT    province
+#> 4                  ELKR           BT       BT/DV   subregion
+#> 5                  ELKR           BT          DV   subregion
+#> 6                  ELKR           BT       DV/BT   subregion
+#> 8                  MORR           BT         ABT    province
+#> 9                  MORR           BT       BT/DV   subregion
+#> 10                 MORR           BT          DV   subregion
+#> 11                 MORR           BT       DV/BT   subregion
+#>                    scope rule obs_year_max
+#> 3                     BC   13           NA
+#> 4               Kootenay   17           NA
+#> 5               Kootenay    5           NA
+#> 6               Kootenay   22           NA
+#> 8                     BC   13           NA
+#> 9  Skeena above Hazelton   18           NA
+#> 10 Skeena above Hazelton    6           NA
+#> 11 Skeena above Hazelton   23           NA
 ```

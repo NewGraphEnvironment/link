@@ -11,7 +11,7 @@ declarations, pipeline knobs, provenance — but no parsed data."><meta property
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.83.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.84.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -79,11 +79,13 @@ with <code>path</code> (resolved absolute path) and optionally <code>source</cod
 dispatch ingest via <code><a href="https://newgraphenvironment.github.io/crate/reference/crt_ingest.html" class="external-link">crate::crt_ingest()</a></code>)</p></li>
 <li><p><code>pipeline</code> — named list of pipeline knobs
 (<code>apply_habitat_overlay</code>, <code>break_order</code>, <code>observation_breaks</code>,
-<code>observation_upstream</code>, <code>cluster</code>, <code>spawn_connected</code>,
+<code>observation_upstream</code>, <code>observation_record_date</code>, <code>cluster</code>,
+<code>spawn_connected</code>,
 <code>discharge_fill</code>, <code>discharge_source</code>, <code>gradient</code>). A
 <code>discharge_source</code> other than <code>fwapg</code> or <code>wet</code>, an
 <code>observation_breaks</code> other than <code>all</code> or <code>top_per_species</code>, an
-<code>observation_upstream</code> other than <code>province</code> or <code>group_gated</code>, or a
+<code>observation_upstream</code> other than <code>province</code> or <code>group_gated</code>, an
+<code>observation_record_date</code> other than <code>any</code> or <code>lift_floor</code>, or a
 <code>gradient</code> map whose <code>source</code> is not <code>segment</code> or <code>parent</code> (or with
 an unknown key, or for <code>parent</code> without <code>minimal_config</code> and
 <code>schema_full</code>), is an error at load.</p></li>

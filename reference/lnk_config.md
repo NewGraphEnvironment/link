@@ -45,10 +45,12 @@ An `lnk_config` S3 list with these slots:
 
 - `pipeline` — named list of pipeline knobs (`apply_habitat_overlay`,
   `break_order`, `observation_breaks`, `observation_upstream`,
-  `cluster`, `spawn_connected`, `discharge_fill`, `discharge_source`,
-  `gradient`). A `discharge_source` other than `fwapg` or `wet`, an
+  `observation_record_date`, `cluster`, `spawn_connected`,
+  `discharge_fill`, `discharge_source`, `gradient`). A
+  `discharge_source` other than `fwapg` or `wet`, an
   `observation_breaks` other than `all` or `top_per_species`, an
-  `observation_upstream` other than `province` or `group_gated`, or a
+  `observation_upstream` other than `province` or `group_gated`, an
+  `observation_record_date` other than `any` or `lift_floor`, or a
   `gradient` map whose `source` is not `segment` or `parent` (or with an
   unknown key, or for `parent` without `minimal_config` and
   `schema_full`), is an error at load.

@@ -41,22 +41,26 @@ Other vocabulary:
 ``` r
 v <- lnk_vocabulary_read()
 v[, c("token", "axis", "introduced")]
-#>               token axis introduced
-#> 1      cut-full-top  cut     0.70.0
-#> 2  cut-full-ssf-all  cut     0.70.0
-#> 3          acc-bcfp  acc     0.70.0
-#> 4            acc-v1  acc     0.70.0
-#> 5          grad-seg grad     0.70.0
-#> 6           q-fwapg flow     0.70.0
-#> 7        q-wet-fill flow     0.70.0
-#> 8            acc-v2  acc     0.72.0
-#> 9        acc-bcfp-2  acc     0.72.0
-#> 10           acc-v3  acc     0.73.0
-#> 11       acc-bcfp-3  acc     0.73.0
-#> 12       acc-bcfp-4  acc     0.74.0
-#> 13           acc-v4  acc     0.75.0
-#> 14           acc-v5  acc     0.76.0
-#> 15          cut-min  cut     0.77.0
-#> 16      grad-parent grad     0.79.0
-#> 17         grad-fwa grad     0.81.0
+#>                 token axis introduced
+#> 1        cut-full-top  cut     0.70.0
+#> 2    cut-full-ssf-all  cut     0.70.0
+#> 3            acc-bcfp  acc     0.70.0
+#> 4              acc-v1  acc     0.70.0
+#> 5            grad-seg grad     0.70.0
+#> 6             q-fwapg flow     0.70.0
+#> 7          q-wet-fill flow     0.70.0
+#> 8              acc-v2  acc     0.72.0
+#> 9          acc-bcfp-2  acc     0.72.0
+#> 10             acc-v3  acc     0.73.0
+#> 11         acc-bcfp-3  acc     0.73.0
+#> 12         acc-bcfp-4  acc     0.74.0
+#> 13             acc-v4  acc     0.75.0
+#> 14             acc-v5  acc     0.76.0
+#> 15            cut-min  cut     0.77.0
+#> 16        grad-parent grad     0.79.0
+#> 17           grad-fwa grad     0.81.0
+#> 18     cut-full-top-2  cut     0.84.0
+#> 19 cut-full-ssf-all-2  cut     0.84.0
+#> 20             acc-v6  acc     0.84.0
+#> 21         acc-bcfp-5  acc     0.84.0
 ```

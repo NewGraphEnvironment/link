@@ -18,6 +18,7 @@ lnk_barrier_overrides(
   params,
   cols_index = c("blue_line_key", "wscode_ltree", "localcode_ltree"),
   to,
+  evidence = NULL,
   verbose = TRUE
 )
 ```
@@ -92,6 +93,17 @@ lnk_barrier_overrides(
 - to:
 
   Character. Schema-qualified output table name.
+
+- evidence:
+
+  Character or `NULL`. Schema-qualified table to (re)create holding what
+  each lift rests on (link#434): one row per lifted barrier, species and
+  evidence record. An observation lift lists every record that met the
+  rule (`observation_key`, the code it is filed under, its date and
+  group); a habitat lift lists each confirming habitat row. Every row
+  carries the rule as applied (`observation_threshold`,
+  `observation_date_min`, `observation_species`,
+  `observation_buffer_m`). `NULL` (default) writes none.
 
 - verbose:
 

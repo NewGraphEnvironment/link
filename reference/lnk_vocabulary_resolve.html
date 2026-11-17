@@ -9,7 +9,7 @@ actually read, and matches it against lnk_vocabulary_read():"><meta property="og
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.83.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.84.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -69,7 +69,9 @@ when <code>NULL</code>.</p></dd>
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
 
 <ul><li><p><strong>cut:</strong> the break sources in the order applied (<code>pipeline: break_order</code>, or its default), the observation breaks (<code>all</code> or
-<code>top_per_species</code>; only when <code>observations</code> is a source) and the
+<code>top_per_species</code>, and a digest of the record rule that decides which
+records cut, resolved as if every species were present; only when
+<code>observations</code> is a source) and the
 gradient classes streams are broken at (<code>pipeline: gradient_classes</code>,
 or bcfishpass's 15 / 20 / 25 / 30 %), and which of the definite
 barrier, barrier control and habitat classification files the bundle
@@ -78,7 +80,11 @@ declares (their rows are data, which the build record carries).</p></li>
 gradient barriers cut streams as well as what is accessible: the
 species the rules model, each species' <code>access_gradient_max</code> and
 <code>observation_*</code> lift parameters, the species presence table, which fish
-records make code 2 (<code>pipeline: observation_upstream</code>, resolved), and the
+records make code 2 (<code>pipeline: observation_upstream</code>, resolved), the
+record rule resolved for every group in the presence table (which
+recorded codes count as which species, with their date floors and year
+limits: the pooling tracker, its species groups, the region lookup and
+<code>pipeline: observation_record_date</code>, link#470), and the
 two access rules held in code (the gradient class each access label
 maps to, and <code><a href="lnk_presence.html">lnk_presence()</a></code>'s species groups). The
 digest is over the parsed values, so a change in quoting or column
@@ -103,11 +109,13 @@ is refused: the new output gets a name (a row in
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">lnk_vocabulary_resolve</span><span class="op">(</span><span class="fu"><a href="lnk_config.html">lnk_config</a></span><span class="op">(</span><span class="st">"default"</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>            cut            acc           grad           flow </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> "cut-full-top"       "acc-v5"     "grad-seg"      "q-fwapg" </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>              cut              acc             grad             flow </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> "cut-full-top-2"         "acc-v6"       "grad-seg"        "q-fwapg" </span>
 <span class="r-in"><span><span class="fu">lnk_vocabulary_resolve</span><span class="op">(</span><span class="fu"><a href="lnk_config.html">lnk_config</a></span><span class="op">(</span><span class="st">"bcfishpass"</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                cut                acc               grad               flow </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> "cut-full-ssf-all"       "acc-bcfp-4"         "grad-seg"          "q-fwapg" </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                  cut                  acc                 grad </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> "cut-full-ssf-all-2"         "acc-bcfp-5"           "grad-seg" </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                 flow </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>            "q-fwapg" </span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
