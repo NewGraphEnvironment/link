@@ -10,6 +10,7 @@
 - **Measured before and after on eight `default` groups and three `bcfishpass` groups** (`data-raw/logs/record_rule_470/`). Where DV no longer counts as BT, BT loses lifts and access: LSKE 61 of 61 lifts and 216 km, KLUM 119 of 123 and 168 km, SQAM 147 of 160 and 254 km. Where pre-1990 salmon records stop counting, "recorded upstream" km fall (LSKE 1,172 km across six species, KLUM 424, HOMA 366); aliases add some (FINA BT 18 km, HOMA ST 10 km). `bcfishpass` access did not move, and its SQAM segments fall where the CT alias cuts go. Every changed piece is traced to a record one rule counts and the other does not.
 - **The cut spec carries the record rule** where observations cut, so a tracker row that moves which records cut is a new token. [#236](https://github.com/NewGraphEnvironment/link/issues/236) is narrowed to several lift rules per species, which stays open.
 - RUNBOOK §7, "The record rule"; §5 has the lift floors and the evidence table. The pre-run gate runs again before the next provincial run (`R/` changed).
+- **The README's Ecosystem table renders from the shared registry** ([#492](https://github.com/NewGraphEnvironment/link/pull/492)), so the list of sibling packages stays in step with the other repos' READMEs.
 
 # link 0.83.0
 
