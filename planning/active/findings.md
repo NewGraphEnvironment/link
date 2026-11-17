@@ -36,3 +36,11 @@ Move 5 of link's backlog, [`planning/backlog.md`](../blob/main/planning/backlog.
 
 | Error | Resolution |
 |-------|------------|
+
+## #461: where the downstream check's 371 s goes (measured 2026-11-17, m4)
+
+- Full local fwapg (246 groups, 4.9 M segments), `fresh_default`: the whole check takes 0.20 s on BULK and PARS (probe 1.25 s cold / 0.14 s warm, closure 0.02 s, persisted lookup 0.03 s).
+- A scratch database `fwapg473` built as the cloud sessions build theirs (fwapg `newgraph` `db/schema.sql` + migrations, rtj's `cloud-env_load-fwa-wsg.py BULK ADMS SKGT LFRA HARR FRCN`, 4.8 min; `cabd.dams` copied from `fwapg`): whole check 0.18 s on BULK. **#461's 371 s does not reproduce** with the same loader and groups on m4. The guard's code has not changed since 2026-11-05.
+- What would produce it: the 65 m lateral KNN snap over all 2,593 CABD dams with no usable GiST index on `fwa_stream_networks_sp.geom`. On a 103,217-segment temp copy of the six groups, 100 dams took 12.2 s without the index (about 316 s for 2,593) and all 2,593 took 0.19 s with it. fwapg's `schema.sql` creates the index (`fwa_streamnetworks_geom_idx`), so a missing index is not shown to be the cloud cause; cold cache or a smaller Postgres in the container are not ruled out.
+- A dam whose `cabd_blkey_xref` `blue_line_key` is not loaded scans the whole table in KNN order (20.3 s against 4.9 M rows; one xref row per bundle, its line in LNIC), a second per-dam cost.
+- Decision: make the probe's cost independent of these. Snap only dams within 65 m of the downstream groups' polygons (identical result: a dam snapped to a path group's stream lies within 65 m of that group's polygon), with no prefilter when a path group's polygon is absent; time each step into the result, so the next cloud run names the slow step.

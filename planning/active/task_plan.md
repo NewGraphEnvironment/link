@@ -16,34 +16,41 @@ What exploration found:
 
 - Both batches in this PR (move 2 has merged).
 - #423's column is the **integer `access` code** as persisted (0, 1, 2, -9), one per segment, config and species row. The manifest records each config's `acc` token, so a reader knows which rule made code 2.
-- #466 (receipt.json) stays on the provenance track. This move adds only the `acc` token and the crate schema URL to the manifest.
+- **The contract stays `habitat/fwa/v1`, additively** (after the plan review's B1): the loader reads each tree's columns from its manifest, loads an older part with `access` NULL, and adds the column to an existing table.
+- #466 (receipt.json) stays on the provenance track. This move adds only the token summary and the crate schema URL to the manifest.
 - #334 in this PR:
   - PUBLISH refuses a part whose builds have no `run_uid`, have `link_dirty` TRUE, or logged no thresholds. An override env var takes a written reason, which is recorded in the manifest.
   - A `streams_md5` column on `log`, written at run finish. The export compares it, and a build without one reports "no digest" rather than refusing.
   - The published manifest names each part's S3 `versionId`.
   - Public read is #334's only item left open, for the operator.
 
+Settled by the session from the plan review (`review-plan.md`): #464 checks the downstream groups' **FWA** streams (B2); a closure error refuses (G1); the check computes its own closure from its `outlets` (G2); #334's "test-looking `run_label`" gate is dropped, since there is no definition of one and `run_uid` plus a clean tree cover what it was for (S1); crate's release is 0.19.0 (O1). #461 does not reproduce on m4 even on a six-group database built by the cloud loader (findings.md), so the fix makes the probe's cost independent of the cause.
+
 ## Phase 1: Batch 7, one-group runs that read downstream (#461, #464)
-- [ ] #461: time each step of `lnk_wsg_downstream_check()` (outlets, closure, dam probe, persisted lookup) into its return value (`steps_s`). Measure on one group on the local fwapg and on a partial-database case, and record which step dominates in findings.md.
-- [ ] #461: make the dominant step fast (an index-friendly rewrite, a precomputed input, or a cache keyed on what it reads), with pass / fail / override unchanged. Prove it: the same result on BULK, PARS, SLOC and BULL before and after, plus the existing tests.
+- [x] #461: measure. m4 full DB 0.20 s; m4 six-group DB from rtj's cloud loader 0.18 s; a no-index copy of the six groups costs ~316 s for the snap (findings.md). The 371 s does not reproduce here.
+- [ ] #461 baseline before any change (O2, G6): record `status`, `dams` (ids, order), `wsgs_missing`, `note` for all 246 groups under `default` on `fresh_default`, plus a fail path (a cfg whose schema has no `barriers`) and an override, on m4's full DB; and BULK on `fwapg473`.
+- [ ] #461: time each step into the result (`steps_s`: outlets forced first, closure, loaded check, probe, persisted lookup).
+- [ ] #461: compute the closure first with `frs_wsg_drainage(conn, aoi, outlets)` (species-filtered in the check), and snap only dams within 65 m of the downstream groups' `fwa_watershed_groups_poly` rows; with any of those polygons absent, snap every dam (as today). Re-run the baseline sweep: identical. Measure the probe on the six-group no-index emulation before and after.
 - [ ] #461: `wsg_run_one.R` and `wsg_recompute_one.R` print the check's own seconds beside the pipeline's.
-- [ ] #464: first a test that fails today. A database fixture lacking a downstream group passes now and must refuse.
-- [ ] #464: before matching dams, confirm each group on the focal group's downstream path (the closure's downstream members) has streams loaded. A group with none refuses and is named; `on_fail` and `override` work as now; the note lands in the run log. Make the test green.
+- [ ] #464: a mocked test first (closure holding an unloaded fake group, no dams): red today.
+- [ ] #464: before matching dams, confirm each downstream group of the closure has rows in `whse_basemapping.fwa_stream_networks_sp`. Unloaded groups go in `wsgs_unloaded`, with their own message (load the FWA streams), and fail / warn / override as today, the note naming them. A closure error refuses. Test green, and BULK refuses live on `fwapg473`, which holds none of LSKE, KLUM, KISP.
 - [ ] RUNBOOK §8c updated (the check refuses an unloaded downstream group; its timing).
 
 ## Phase 2: Batch 6, the export contract (#423, #333, #334)
-- [ ] #423: add an `access` integer column to `habitat_fwa_v1_segment.yaml` after `has_barriers_dnstr`. Select it in `.lnk_export_rows()` from `streams_access.access_<sp>` (NULL where the table or column is absent); `.lnk_export_conform()` types it. Tests: a 2 survives, -9 survives, and the absent case is NA.
-- [ ] #423: each config entry in the manifest carries the `token_acc` (and the other three tokens) of its builds, read from `log`. Mixed tokens across one config's builds are listed, not refused.
-- [ ] #333 (crate, its own branch and PR): copy the YAML to `inst/extdata/schemas/nge/habitat/fwa/v1/segment.yaml`, add the `schema_only` registry row, NEWS, release (0.18.0).
-- [ ] #333 (link): raise the `crate` floor; `.lnk_export_spec()` reads the spec from crate (`crt_registry_entry()` / the installed YAML), keeps `.lnk_export_conform()`'s type check, and drops link's copy of the YAML. The manifest's `datasets[].schema` cites crate's tagged URL. The group-part contracts (`cols_barriers`, …) stay in link.
-- [ ] #334: `streams_md5` on `<schema>.log` (`.lnk_log_specs()`, aligned by `.lnk_log_align_columns()`). It is an md5 over the group's persisted `streams` rows in a stated order, written in `.lnk_log_run_finish()`. Check that `schema_consolidate.R`'s COPY reproduces it on the dispatcher. The export recomputes it per group and reports `match` / `differs` / `no digest`; `differs` stops BUILD.
-- [ ] #334: PUBLISH (`data-raw/habitat_publish.R`) refuses a part whose groups' builds lack `run_uid`, are `link_dirty`, or have `thresholds_logged` FALSE, unless `LNK_PUBLISH_ALLOW="<reason>"`, which the manifest records. Test each refusal and the override.
-- [ ] #334: after upload, read each part's `VersionId` (`put-object` output) into the published manifest, and RUNBOOK §6d says how a consumer pins one. A keep-the-last-N lifecycle rule is noted as the bucket owner's call.
+- [ ] #423: add an `access` integer column to the contract after `has_barriers_dnstr`. Select it in `.lnk_export_rows()` from `streams_access.access_<sp>` (NULL where the table or column is absent); `.lnk_export_conform()` types it. Tests: 0/1/2 survive, the absent case is NA.
+- [ ] #423 / B1: `lnk_db_load()` takes each tree's columns from its manifest (`datasets[].schema.cols`), loads a part lacking `access` with it NULL, and adds the column to an existing table; refuses only a column it cannot reconcile. Tests on an old-contract tree, an existing table, and a root carrying a config not re-exported (G11; refuse or carry per manifest).
+- [ ] #423: each config entry in the manifest summarises its builds' four tokens (the runs already carry them, A3). Mixed tokens are listed, not refused. RUNBOOK notes a lifting recompute turns 0 into 1, not 2 (A2).
+- [ ] #333 (crate, its own branch and PR): copy the final YAML to `inst/extdata/schemas/nge/habitat/fwa/v1/segment.yaml`, add the `schema_only` registry row with `canonical_cols`, NEWS, release 0.19.0.
+- [ ] #333 (link): raise the `crate` floor; `.lnk_export_spec()` reads the YAML from the installed crate (`system.file()`, G8), keeps the type check, drops link's copy. The manifest cites crate's tagged URL at a released version (G10); `contract_md5` becomes an md5 over names and types, and `exported_by` records crate's version (G9). Group-part contracts stay in link.
+- [ ] #334: `streams_md5` on `<schema>.log`: `v1:` + md5 of per-row md5s over `cols_streams` in order, by `id_segment`, at a pinned `extra_float_digits` (G12), written in `.lnk_log_run_finish()`. Prove it survives a COPY round trip into a scratch schema. The export reports `match` / `differs` / `no digest` per group; `differs` stops BUILD.
+- [ ] #334: an R/ helper `.lnk_publish_refusals()` (G15), called in PUBLISH's pre-write block: refuses builds or recomputes without `run_uid`, `link_dirty` or `fresh_dirty` TRUE, `thresholds_logged` FALSE, or an exporter with `link_dirty`, over parts and group parts, unless `LNK_PUBLISH_ALLOW="<reason>"`, recorded in the manifest. Tests per refusal and the override.
+- [ ] #334: PUBLISH asserts versioning `Enabled`, reads each part's `VersionId` with `head-object` (skipped parts too, G13), rewrites the local manifest atomically before uploading it; `lnk_catalog()` exposes `version_id` and fetches by it (G14); RUNBOOK says the manifest is pinned through `list-object-versions`, and a keep-the-last-N rule is the bucket owner's call.
 - [ ] RUNBOOK §6d updated: the new column, tokens, crate contract, gates, digest, versionIds.
 
 ## Phase 3: Release
 - [ ] NEWS, version bump (minor: new export column and log column), CLAUDE.md status block, `research/` where a measurement settles (#461's timing).
-- [ ] BUILD an export locally from `fresh_default` (a few groups) and read it back through `lnk_catalog()` / `lnk_db_load()`; the gates pass on it.
+- [ ] BUILD an export locally from `fresh_default` (a few groups), read it back through `lnk_catalog()` / `lnk_db_load()`, check `access` against `streams_access` row for row on one group; load the published 2026-11-14 tree and into an existing table; the gates pass on it.
+- [ ] Drop the scratch database `fwapg473`.
 
 ## Owed at the end (reported, done after merge)
 - [ ] PUBLISH of the new export (operator's word); the next provincial run re-models to `acc-v6`, and its republish carries the new values and the first `streams_md5`.
