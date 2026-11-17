@@ -46,6 +46,8 @@ test_that("rows join on the full key, read FALSE for an absent species, and rati
 
   # recomputed barrier flag from streams_access, beside the classified flag
   expect_identical(adms$has_barriers_dnstr, c(FALSE, TRUE))
+  # the access code as persisted: 2 (species recorded upstream) survives (#423)
+  expect_identical(adms$access, c(2L, 0L))
 
   bulk <- link:::.lnk_export_rows(conn, schema, "BULK", "CO",
                                   export_run(conn, schema, "BULK"))
@@ -57,6 +59,7 @@ test_that("rows join on the full key, read FALSE for an absent species, and rati
   expect_identical(bulk$mad_m3s, c(40, NA))
   # no streams_access column for CO: NA, not FALSE
   expect_true(all(is.na(bulk$has_barriers_dnstr)))
+  expect_true(is.integer(bulk$access) && all(is.na(bulk$access)))
 
   # a build that logged no thresholds gives NA ratios, not a fallback
   lfra <- link:::.lnk_export_rows(conn, schema, "LFRA", "BT",
@@ -96,6 +99,10 @@ test_that("the export writes one part per drainage, md5s that match, and FALSE f
   schema <- local_export_fixture(conn)
   local_export_discharge(schema)
   root <- withr::local_tempdir()
+  # two builds carry an acc token, one predates them (#414)
+  DBI::dbExecute(conn, sprintf(
+    "UPDATE %s.log SET token_acc = 'acc-v6', token_cut = 'cut-full-top'
+      WHERE run_id IN ('r1', 'r2')", schema))
 
   p <- lnk_scenario_export(conn, c(testcfg = schema), root)
   m <- jsonlite::fromJSON(p, simplifyVector = FALSE)
@@ -125,6 +132,12 @@ test_that("the export writes one part per drainage, md5s that match, and FALSE f
   expect_identical(unlist(cf$species), c("BT", "CO"))
   expect_identical(cf$thresholds_logged[["sha256:A"]], TRUE)
   expect_identical(cf$thresholds_logged[["sha256:B"]], FALSE)
+  # the acc rule behind access code 2, summarised per config (#423)
+  expect_identical(unlist(cf$tokens$acc), "acc-v6")
+  expect_identical(unlist(cf$tokens$cut), "cut-full-top")
+  expect_length(cf$tokens$grad, 0L)
+  expect_identical(cf$tokens$untokened$acc, 1L)
+  expect_identical(cf$tokens$untokened$grad, 3L)
   expect_match(cf$bundles[[1]]$reason, "no config named")
   expect_true(all(vapply(cf$runs, function(r) is.null(r$model), logical(1))))
   # only the recompute after ADMS's build is part of it

@@ -282,3 +282,20 @@ test_that("a dependency holding barrier rows with no exported build is a gap, no
   cfg <- local_downstream_cfg(conn)
   expect_error(lnk_downstream_load(conn, f, cfg), "lacks the rows of 1 group")
 })
+
+test_that("the lister carries each part's recorded S3 version (#334)", {
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  x <- local_downstream_export(conn)
+  f <- lnk_downstream_files(x$manifest, "ADMS", "testcfg",
+                            cache_dir = withr::local_tempdir())
+  expect_true(all(is.na(f$version_id)))
+  m <- jsonlite::fromJSON(x$manifest, simplifyVector = FALSE)
+  for (i in seq_along(m$group_parts)) m$group_parts[[i]]$version_id <- paste0("v", i)
+  jsonlite::write_json(m, x$manifest, auto_unbox = TRUE, pretty = TRUE,
+                       digits = NA, null = "null", na = "null")
+  f <- lnk_downstream_files(x$manifest, "ADMS", "testcfg",
+                            cache_dir = withr::local_tempdir())
+  ex <- f[f$class == "exported", ]
+  expect_true(all(grepl("^v[0-9]+$", ex$version_id)))
+})

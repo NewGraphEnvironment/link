@@ -363,6 +363,10 @@ cols_log <- c(
   habitat_gate_km        = "double precision",
   habitat_gate_lifted    = "integer",
   habitat_gate_species   = "text[]",
+  # A digest of the group's persisted streams when the run finished
+  # (link#334, .lnk_streams_md5()), so an export can show the segments it
+  # publishes are this build's. NULL on a row from before it was logged.
+  streams_md5            = "text",
   notes                  = "text"
 )
 
@@ -1179,7 +1183,64 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
   if (ok && !is.null(habitat_gate)) {
     .lnk_log_habitat_gate(conn, cfg, "log", "run_id", run_id, habitat_gate)
   }
+  if (ok) .lnk_log_streams_md5(conn, cfg, run_id)
   invisible(ok)
+}
+
+
+#' A digest of one group's persisted streams (link#334).
+#'
+#' `v1:` then the md5 of every row's md5, in `id_segment` order, over the
+#' columns of `cols_streams` in their order. Each row is hashed as text with
+#' its doubles as IEEE 754 bytes (`float8send()`, hex) and its geometry as
+#' hex EWKB, so the digest depends on neither `extra_float_digits` nor
+#' `bytea_output`. A text `COPY`, which is how a consolidate moves the rows,
+#' keeps all of these exactly. The prefix names the column set: a change to
+#' it is `v2:`, so earlier digests are not misread as differing.
+#' @return The digest, or `NA` where the table lacks a column of the set or
+#'   holds no row of the group.
+#' @noRd
+.lnk_streams_md5 <- function(conn, schema, wsg) {
+  .lnk_validate_identifier(schema, "schema")
+  tbl <- paste0(schema, ".streams")
+  if (!.lnk_table_exists(conn, tbl)) return(NA_character_)
+  cols <- names(cols_streams)
+  if (!all(cols %in% .lnk_table_columns(conn, tbl))) return(NA_character_)
+  dbl <- names(cols_streams)[cols_streams == "double precision"]
+  expr <- vapply(cols, function(c) {
+    if (c %in% dbl) sprintf("encode(float8send(%s), 'hex')", c) else c
+  }, character(1))
+  d <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT 'v1:' || md5(string_agg(md5(ROW(%s)::text), '' ORDER BY id_segment))
+              AS d
+       FROM %s WHERE watershed_group_code = $1",
+    paste(expr, collapse = ", "), tbl), params = list(wsg))$d
+  if (length(d) == 0L || is.na(d)) NA_character_ else as.character(d)
+}
+
+
+#' Record the streams digest on a closed run-log row. Soft.
+#'
+#' Its own statement, after the row is closed, like the habitat gate's counts:
+#' a digest that fails to compute leaves the row closed and this NULL.
+#' @noRd
+.lnk_log_streams_md5 <- function(conn, cfg, run_id) {
+  tryCatch({
+    schema <- .lnk_table_names(cfg)$schema
+    wsg <- DBI::dbGetQuery(conn, sprintf(
+      "SELECT watershed_group_code FROM %s.log WHERE run_id = $1", schema),
+      params = list(run_id))$watershed_group_code
+    if (length(wsg) != 1L) return(invisible(FALSE))
+    d <- .lnk_streams_md5(conn, schema, wsg)
+    .lnk_db_execute(conn, sprintf(
+      "UPDATE %s.log SET streams_md5 = %s WHERE run_id = %s", schema,
+      if (is.na(d)) "NULL" else DBI::dbQuoteLiteral(conn, d),
+      DBI::dbQuoteLiteral(conn, run_id)))
+    invisible(TRUE)
+  }, error = function(e) {
+    warning("streams digest not logged: ", conditionMessage(e), call. = FALSE)
+    invisible(FALSE)
+  })
 }
 
 

@@ -7,6 +7,12 @@
 #' `whse_basemapping.fwa_stream_networks_sp` by `blue_line_key` and measure to
 #' cut each segment's line.
 #'
+#' The table holds the column contract this link reads. A tree exported
+#' before a column was added to v1 (`access`, link#423) loads with that column
+#' NULL, and a table loaded before it gains the column; the columns a tree
+#' holds are read from its manifest. A part that names its S3 version
+#' (`version_id`, link#334) is fetched at that version.
+#'
 #' Everything runs in one transaction: a part that fails its md5, a column
 #' mismatch, a duplicate key or a short read leaves the table as it was.
 #' Loading a config replaces that config's rows (all species), so a reload
@@ -66,11 +72,15 @@ lnk_db_load <- function(conn, catalog, configs = NULL,
     .lnk_part_fetch(catalog[i, ], cache_dir)
   }, character(1))
 
-  cols <- .lnk_export_cols()
+  # The contract this link reads, and the columns this tree's parts hold:
+  # a tree exported before a column was added to v1 (access, link#423) holds
+  # fewer, and loads with the newer ones NULL.
+  contract <- .lnk_export_cols()
+  cols <- .lnk_catalog_cols(catalog, contract)
   pg_type <- c(integer = "integer", double = "double precision",
                string = "text", logical = "boolean")
   ddl <- c(config = "text NOT NULL", species = "text NOT NULL",
-           stats::setNames(pg_type[cols], names(cols)))
+           stats::setNames(pg_type[contract], names(contract)))
   parts <- .lnk_parse_table(table)
   tq <- .lnk_quote_table(conn, table)
 
@@ -84,10 +94,19 @@ lnk_db_load <- function(conn, catalog, configs = NULL,
                                  DBI::dbQuoteIdentifier(conn, parts$schema)))
     if (.lnk_table_exists(conn, table)) {
       have <- .lnk_table_columns(conn, table)
-      if (!identical(have, names(ddl))) {
+      # A table loaded before a column was added to v1 gains it, at its end
+      # (rows go in by name, so order does not matter); one with a column
+      # this contract does not hold is another contract's.
+      if (!all(have %in% names(ddl)) ||
+          !all(c("config", "species") %in% have)) {
         stop(table, " has other columns than this export. A new column ",
              "contract belongs in a new table (a new dataset version).",
              call. = FALSE)
+      }
+      for (n in setdiff(names(ddl), have)) {
+        DBI::dbExecute(conn, sprintf(
+          "ALTER TABLE %s ADD COLUMN %s %s", tq,
+          DBI::dbQuoteIdentifier(conn, n), ddl[[n]]))
       }
     } else {
       DBI::dbExecute(conn, sprintf(
@@ -171,12 +190,51 @@ lnk_db_load <- function(conn, catalog, configs = NULL,
   if (check(dest)) return(dest)
   tmp <- paste0(dest, ".part")
   on.exit(unlink(tmp), add = TRUE)
-  .lnk_fetch_file(href, tmp)
+  vid <- if ("version_id" %in% names(part)) part$version_id[[1]] else NA
+  vid <- if (is.null(vid)) NA_character_ else as.character(vid)
+  if (is.na(vid)) {
+    .lnk_fetch_file(href, tmp)
+  } else {
+    # Naming a version needs s3:GetObjectVersion, which a reader granted only
+    # s3:GetObject (a scoped user, an anonymous public read) lacks. Where the
+    # versioned read is refused, read the current object: the md5 below
+    # decides whether it is the version the manifest names (review round 3).
+    tryCatch(.lnk_fetch_file(href, tmp, vid), error = function(e) {
+      message(part$key[[1]], ": version ", vid, " not readable (",
+              conditionMessage(e), "); reading the current object, which ",
+              "must still match the manifest's md5")
+      .lnk_fetch_file(href, tmp)
+    })
+  }
   if (!check(tmp)) {
     stop(part$key[[1]], " from ", href, " does not match the manifest's ",
          "size and md5", call. = FALSE)
   }
   if (!file.rename(tmp, dest)) stop("could not move ", tmp, call. = FALSE)
   dest
+}
+#' The columns a catalog's segment parts hold, by their manifest.
+#'
+#' A manifest names its column contract under `datasets`; v1 grows only by
+#' adding columns (link#423), so a tree's columns must be the contract's, in
+#' its order, with some left out. A catalog with no `datasets` attribute (one
+#' built by hand) is read as holding the whole contract.
+#' @noRd
+.lnk_catalog_cols <- function(catalog, contract = .lnk_export_cols()) {
+  ds <- attr(catalog, "datasets")
+  seg <- Filter(function(d) identical(d$dataset, .lnk_export_dataset()), ds)
+  if (length(seg) == 0L || is.null(seg[[1]]$schema$cols)) return(contract)
+  tree <- vapply(seg[[1]]$schema$cols, function(x) x$type, character(1))
+  names(tree) <- vapply(seg[[1]]$schema$cols, function(x) x$name, character(1))
+  known <- names(tree) %in% names(contract)
+  same_type <- known & unname(tree) == unname(contract[names(tree)])
+  in_order <- identical(names(tree), names(contract)[names(contract) %in% names(tree)])
+  if (!all(same_type) || !in_order) {
+    stop("this export's columns are not ones this link's contract holds (",
+         paste(names(tree)[!same_type], collapse = ", "),
+         "): read it with a link at least as new as the one that exported it",
+         call. = FALSE)
+  }
+  tree
 }
 # nolint end: indentation_linter

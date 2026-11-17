@@ -11,20 +11,55 @@
 #' @noRd
 .lnk_export_dataset <- function() "habitat/fwa/v1/segment"
 
-#' The column contract of the export, in crate's schema shape.
+#' Where crate keeps the export's column contract (#333).
+#' @noRd
+.lnk_export_spec_path <- function() {
+  "extdata/schemas/nge/habitat/fwa/v1/segment.yaml"
+}
+
+#' The column contract of the export, registered in crate (#333).
 #'
-#' Kept in link (`inst/extdata/schemas/habitat_fwa_v1_segment.yaml`) until it
-#' is registered in crate; the shape is crate's, so the move is a copy.
+#' `nge/habitat/fwa/v1/segment`, read from the installed crate; link kept it
+#' in its own package, in crate's shape, until link#333 moved it.
 #' @return The parsed YAML.
 #' @noRd
 .lnk_export_spec <- function() {
-  p <- system.file("extdata", "schemas", "habitat_fwa_v1_segment.yaml",
-                   package = "link")
-  if (!nzchar(p)) {
-    stop("link's inst/extdata/schemas/habitat_fwa_v1_segment.yaml is missing",
-         call. = FALSE)
+  # Asked here, not by the Imports floor: only the export and its readers
+  # need it, and a floor would stop modelling on a host with an older crate
+  # (load_all() refuses a dependency below it; review round 2).
+  p <- system.file(.lnk_export_spec_path(), package = "crate")
+  if (utils::packageVersion("crate") < "0.19.0" || !nzchar(p)) {
+    stop("crate ", as.character(utils::packageVersion("crate")),
+         " has no ", .lnk_export_spec_path(), "; install crate 0.19.0 or ",
+         "later, which registers the habitat export's columns", call. = FALSE)
   }
   yaml::read_yaml(p)
+}
+
+#' Where a manifest cites the contract: crate's file at its release tag.
+#'
+#' A crate installed from an unreleased commit (a `.9000` version) has no
+#' tag to cite, so the export refuses it rather than cite a URL that 404s.
+#' @noRd
+.lnk_export_spec_url <- function(ver = utils::packageVersion("crate")) {
+  ver <- as.character(ver)
+  if (!grepl("^[0-9]+\\.[0-9]+\\.[0-9]+$", ver)) {
+    stop("crate ", ver, " is not a released version, so the manifest could ",
+         "not cite its column contract at a tag; install a released crate",
+         call. = FALSE)
+  }
+  sprintf("https://github.com/NewGraphEnvironment/crate/blob/v%s/inst/%s",
+          ver, .lnk_export_spec_path())
+}
+
+#' An md5 over the contract's column names and types, in order.
+#'
+#' What a reader compares to know two exports hold the same columns, whatever
+#' the YAML's notes say.
+#' @noRd
+.lnk_export_contract_md5 <- function(cols = .lnk_export_cols()) {
+  digest::digest(paste(names(cols), cols, sep = ":", collapse = ","),
+                 algo = "md5", serialize = FALSE)
 }
 
 #' Column names and types of the export, in file order.
@@ -132,8 +167,14 @@
   }
   acc_tbl <- paste0(schema, ".streams_access")
   acc_col <- sprintf("has_barriers_%s_dnstr", tolower(sp))
-  has_acc <- .lnk_table_exists(conn, acc_tbl) &&
-    acc_col %in% .lnk_table_columns(conn, acc_tbl)
+  code_col <- sprintf("access_%s", tolower(sp))
+  acc_cols <- if (.lnk_table_exists(conn, acc_tbl)) {
+    .lnk_table_columns(conn, acc_tbl)
+  } else {
+    character(0)
+  }
+  has_acc <- acc_col %in% acc_cols
+  has_code <- code_col %in% acc_cols
   has_thr <- .lnk_table_exists(
     conn, paste0(schema, ".log_parameters_habitat_thresholds"))
   has_fresh <- .lnk_table_exists(conn, paste0(schema, ".log_parameters_fresh"))
@@ -187,6 +228,7 @@
             d.mad_m3s_source::text AS mad_m3s_source,
             %s, %s, %s, %s, %s,
             %s AS has_barriers_dnstr,
+            %s AS access,
             %s,
             %s, %s, %s,
             %s, %s, %s
@@ -203,6 +245,7 @@
     flag("accessible"), flag("spawning"), flag("rearing"),
     flag("lake_rearing"), flag("wetland_rearing"),
     if (has_acc) paste0("a.", acc_col) else "NULL::boolean",
+    if (has_code) sprintf("a.%s::integer", code_col) else "NULL::integer",
     ratio("s.gradient", "acc.access_gradient_max", "accessible_ratio_gradient"),
     ratio("s.channel_width", "thr.spawn_channel_width_min", "spawning_ratio_cw"),
     ratio("d.mad_m3s", "thr.spawn_mad_min", "spawning_ratio_mad"),
@@ -211,7 +254,7 @@
     ratio("d.mad_m3s", "thr.rear_mad_min", "rearing_ratio_mad"),
     ratio("s.gradient", "thr.rear_gradient_max", "rearing_ratio_gradient"),
     schema, hab,
-    if (has_acc) {
+    if (has_acc || has_code) {
       sprintf("LEFT JOIN %s a ON a.id_segment = s.id_segment
                 AND a.watershed_group_code = s.watershed_group_code", acc_tbl)
     } else {
@@ -619,6 +662,68 @@
   list(bundles = bundles, files = do.call(rbind, files))
 }
 
+#' Each build's streams digest against the rows the export reads (#334).
+#'
+#' The digest a run logged at its finish (`log.streams_md5`) is recomputed
+#' over the persisted rows the export is about to publish. A difference means
+#' the rows are not that build's (another build or a consolidate replaced
+#' them after the log row): the export stops. A build logged before the
+#' digest existed reads "no digest", which is reported, not refused.
+#' @return Per run row, "match" or "no digest".
+#' @noRd
+.lnk_export_streams_digest <- function(conn, runs) {
+  logged <- if ("streams_md5" %in% names(runs)) {
+    as.character(runs$streams_md5)
+  } else {
+    rep(NA_character_, nrow(runs))
+  }
+  out <- character(nrow(runs))
+  for (i in seq_len(nrow(runs))) {
+    if (is.na(logged[i])) {
+      out[i] <- "no digest"
+      next
+    }
+    now <- .lnk_streams_md5(conn, runs$schema_export[[i]],
+                            runs$watershed_group_code[[i]])
+    if (!identical(now, logged[i])) {
+      stop(sprintf(paste0(
+        "%s %s: the persisted streams are not the ones run %s logged ",
+        "(streams_md5 %s now, %s at the run's finish); re-model the group ",
+        "or export the build that wrote them"),
+        runs$schema_export[[i]], runs$watershed_group_code[[i]],
+        runs$run_id[[i]], now, logged[i]), call. = FALSE)
+    }
+    out[i] <- "match"
+  }
+  out
+}
+
+#' A config's builds summarised by the output vocabulary's four axes.
+#'
+#' Each run row already carries its own tokens; this names the set, per axis,
+#' so a reader of `access` knows which `acc` rule made code 2 without reading
+#' every run. Builds logged before #414 carry none and are counted, not
+#' guessed.
+#' @param runs The config's exported `log` rows.
+#' @return A list: `cut`, `acc`, `grad`, `flow` (sorted distinct tokens) and
+#'   `untokened` (builds with no token on an axis).
+#' @noRd
+.lnk_export_tokens <- function(runs) {
+  axes <- c(cut = "token_cut", acc = "token_acc", grad = "token_grad",
+            flow = "token_flow")
+  out <- lapply(axes, function(col) {
+    v <- if (col %in% names(runs)) as.character(runs[[col]]) else
+      rep(NA_character_, nrow(runs))
+    I(sort(unique(v[!is.na(v) & nzchar(v)]), method = "radix"))
+  })
+  untok <- vapply(axes, function(col) {
+    v <- if (col %in% names(runs)) as.character(runs[[col]]) else
+      rep(NA_character_, nrow(runs))
+    sum(is.na(v) | !nzchar(v))
+  }, numeric(1))
+  c(out, list(untokened = as.list(untok)))
+}
+
 #' Timestamps as ISO 8601 UTC strings, for JSON.
 #' @noRd
 .lnk_json_rows <- function(df) {
@@ -647,8 +752,10 @@
     ),
     datasets = c(list(list(
       dataset = .lnk_export_dataset(),
-      schema = list(package = "link",
-                    file = "inst/extdata/schemas/habitat_fwa_v1_segment.yaml",
+      schema = list(package = "crate",
+                    version = as.character(utils::packageVersion("crate")),
+                    entry = "nge/habitat/fwa/v1/segment",
+                    url = .lnk_export_spec_url(),
                     cols = .lnk_export_spec()$canonical$cols)
     )), lapply(names(.lnk_export_group_tables()), function(t) {
       # one part per group: the persisted rows other groups' walks read (#465)
@@ -871,8 +978,9 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     link_version = as.character(utils::packageVersion("link")),
     link_sha = .lnk_pkg_git_sha("link"),
     link_dirty = .lnk_pkg_git_dirty("link"),
-    contract_md5 = unname(tools::md5sum(system.file(
-      "extdata", "schemas", "habitat_fwa_v1_segment.yaml", package = "link"))))
+    crate_version = as.character(utils::packageVersion("crate")),
+    # names and types in order (#333); before 0.85.0, the md5 of link's YAML
+    contract_md5 = .lnk_export_contract_md5())
   dir.create(root, recursive = TRUE, showWarnings = FALSE)
   prev <- .lnk_manifest_previous(root, unique(names(configs)))
   # New parts are written to a staging tree and swapped in only once every
@@ -968,12 +1076,15 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
     d_wet <- if (any(d_src == "wet")) {
       .lnk_export_wet_load(conn, r_cf[d_src == "wet", , drop = FALSE])
     }
+    # the segments exported are the ones the build persisted (#334)
+    dig <- .lnk_export_streams_digest(conn, r_cf)
     keep <- setdiff(names(r_cf), c("schema_export", "config_export"))
     run_rows <- .lnk_json_rows(r_cf[, keep, drop = FALSE])
     run_rows$species <- lapply(r_cf$species, function(x) I(.lnk_pg_array(x)))
     run_rows$wsg_upstream <- lapply(r_cf$wsg_upstream,
                                     function(x) I(.lnk_pg_array(x)))
     run_rows$model <- .lnk_export_model(cf, r_cf)
+    run_rows$streams_digest <- dig
     run_rows$provenance_key <- vapply(seq_len(nrow(r_cf)), function(i) {
       paste0("provenance/", .lnk_run_key(r_cf[i, ]))
     }, character(1))
@@ -1007,6 +1118,13 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
       skipped = skipped,
       run_uids = I(sort(unique(as.character(stats::na.omit(r_cf$run_uid))))),
       config_hashes = I(unname(hashes)),
+      # what the builds are, by the output vocabulary (#414): one token per
+      # axis when every build agrees, several listed when they do not.
+      # acc names which records made access code 2 (#423).
+      tokens = .lnk_export_tokens(r_cf),
+      # how many builds' streams digests match the rows exported, and how
+      # many logged none (built before #334); a mismatch stops the export
+      streams_digest = as.list(table(factor(dig, c("match", "no digest")))),
       thresholds_logged = as.list(thr_logged),
       discharge = list(
         # one table when every build read one source; several otherwise
@@ -1331,6 +1449,25 @@ lnk_scenario_export <- function(conn, configs, root, wsgs = NULL,
   if (!file.exists(path)) return(empty)
   m <- jsonlite::fromJSON(path, simplifyVector = FALSE)
   keep_parts <- Filter(function(p) !p$config %in% configs, m$parts)
+  # One tree, one column contract: parts written under an earlier one (before
+  # access, #423) cannot sit beside new parts under a manifest naming the new.
+  if (length(keep_parts) > 0L) {
+    seg <- Filter(function(d) identical(d$dataset, .lnk_export_dataset()),
+                  m$datasets)
+    was <- if (length(seg)) {
+      vapply(seg[[1]]$schema$cols, function(x) paste(x$name, x$type),
+             character(1))
+    }
+    now <- paste(names(.lnk_export_cols()), .lnk_export_cols())
+    if (!identical(was, now)) {
+      stop("the manifest in ", root, " holds parts of ",
+           paste(sort(unique(vapply(keep_parts, function(p) p$config,
+                                    character(1)))), collapse = ", "),
+           " under an earlier column contract; export ",
+           "those configs too, so every part holds the same columns",
+           call. = FALSE)
+    }
+  }
   parts <- if (length(keep_parts) > 0L) {
     do.call(rbind, lapply(keep_parts, function(p) {
       f <- file.path(root, p$key)

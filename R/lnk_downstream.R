@@ -38,8 +38,9 @@
 #' @param cache_dir Where the downloaded dependency map is kept.
 #' @return A data frame, one row per dependency and table (one row for a
 #'   dependency with nothing to fetch): `target`, `config`, `wsg`, `class`,
-#'   `reason`, `table`, `key`, `href`, `rows`, `bytes`, `md5`, `run_id`,
-#'   `config_hash`, `link_version`, `link_sha`, `fwa_url`.
+#'   `reason`, `table`, `key`, `href`, `rows`, `bytes`, `md5`, `version_id`
+#'   (the S3 version a publish recorded, fetched as named; NA before it),
+#'   `run_id`, `config_hash`, `link_version`, `link_sha`, `fwa_url`.
 #' @family export
 #' @export
 #' @examples
@@ -80,7 +81,8 @@ lnk_downstream_files <- function(manifest, wsg, config,
 
   map_file <- .lnk_part_fetch(data.frame(
     key = d$key, href = paste0(base, "/", d$key), bytes = d$bytes,
-    md5 = d$md5, stringsAsFactors = FALSE), cache_dir)
+    md5 = d$md5, version_id = as.character(d$version_id %||% NA_character_),
+    stringsAsFactors = FALSE), cache_dir)
   duck <- DBI::dbConnect(duckdb::duckdb())
   on.exit(DBI::dbDisconnect(duck, shutdown = TRUE), add = TRUE)
   deps <- DBI::dbGetQuery(duck, sprintf(
@@ -107,7 +109,7 @@ lnk_downstream_files <- function(manifest, wsg, config,
       target = wsg, config = config, wsg = w, class = NA_character_,
       reason = NA_character_, table = NA_character_, key = NA_character_,
       href = NA_character_, rows = NA_real_, bytes = NA_real_,
-      md5 = NA_character_, run_id = NA_character_,
+      md5 = NA_character_, version_id = NA_character_, run_id = NA_character_,
       config_hash = NA_character_, link_version = NA_character_,
       link_sha = NA_character_, fwa_url = gsub("{wsg}", w, fwa_tmpl,
                                                 fixed = TRUE),
@@ -131,6 +133,8 @@ lnk_downstream_files <- function(manifest, wsg, config,
         b$rows <- as.numeric(x$rows)
         b$bytes <- as.numeric(x$bytes)
         b$md5 <- x$md5
+        # the S3 version PUBLISH recorded (#334), fetched as named
+        b$version_id <- as.character(x$version_id %||% NA_character_)
         b$run_id <- x$run_id
         b$config_hash <- r$config_hash %||% NA_character_
         b$link_version <- r$link_version %||% NA_character_
@@ -165,7 +169,8 @@ lnk_downstream_files <- function(manifest, wsg, config,
                wsg = character(0), class = character(0),
                reason = character(0), table = character(0), key = character(0),
                href = character(0), rows = numeric(0), bytes = numeric(0),
-               md5 = character(0), run_id = character(0),
+               md5 = character(0), version_id = character(0),
+               run_id = character(0),
                config_hash = character(0), link_version = character(0),
                link_sha = character(0), fwa_url = character(0),
                stringsAsFactors = FALSE)

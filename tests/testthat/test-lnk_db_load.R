@@ -134,3 +134,102 @@ test_that("a table with another column contract is refused", {
   cat <- lnk_catalog(file.path(root, "manifest.json"))
   expect_error(lnk_db_load(conn, cat, table = tbl), "other columns")
 })
+
+test_that("a tree exported before access was added loads with it NULL", {
+  # v1 grows only by adding columns (#423): a tree published before `access`
+  # holds no such column, and a table loaded from it gains the column.
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  old <- local_export_tree(drop = "access", config = "cfgold")
+  tbl <- local_load_table(conn)
+  lnk_db_load(conn, lnk_catalog(file.path(old, "manifest.json")), table = tbl)
+  got <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT count(*)::integer AS n, count(access)::integer AS a FROM %s", tbl))
+  expect_identical(got$n, 3L)
+  expect_identical(got$a, 0L)
+
+  # a table created before the column existed gains it, keeping its rows
+  DBI::dbExecute(conn, sprintf("ALTER TABLE %s DROP COLUMN access", tbl))
+  new <- local_export_tree(config = "cfgnew")
+  lnk_db_load(conn, lnk_catalog(file.path(new, "manifest.json")), table = tbl)
+  got <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT config, count(*)::integer AS n, count(access)::integer AS a
+       FROM %s GROUP BY 1 ORDER BY 1", tbl))
+  expect_identical(got$config, c("cfgnew", "cfgold"))
+  expect_identical(got$n, c(3L, 3L))
+  expect_identical(got$a, c(3L, 0L))
+
+  # the table now holds access at its end, out of contract order; every later
+  # load still goes in (review round 1)
+  lnk_db_load(conn, lnk_catalog(file.path(old, "manifest.json")), table = tbl)
+  lnk_db_load(conn, lnk_catalog(file.path(new, "manifest.json")), table = tbl)
+  got <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT count(*)::integer AS n, count(access)::integer AS a FROM %s", tbl))
+  expect_identical(got$n, 6L)
+  expect_identical(got$a, 3L)
+})
+
+test_that("a tree whose columns this link's contract does not hold is refused", {
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  root <- local_export_tree()
+  tbl <- local_load_table(conn)
+  mp <- file.path(root, "manifest.json")
+  m <- jsonlite::fromJSON(mp, simplifyVector = FALSE)
+  m$datasets[[1]]$schema$cols[[1]]$type <- "string"
+  jsonlite::write_json(m, mp, auto_unbox = TRUE, pretty = TRUE, digits = NA,
+                       null = "null", na = "null")
+  expect_error(lnk_db_load(conn, lnk_catalog(mp), table = tbl),
+               "at least as new")
+})
+
+test_that("a part with a recorded version is fetched at that version", {
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  root <- local_export_tree()
+  tbl <- local_load_table(conn)
+  cat <- lnk_catalog(file.path(root, "manifest.json"))
+  expect_true(all(is.na(cat$version_id)))
+  cat$href <- paste0("s3://fresh-bc/habitat/fwa/v1/", cat$key)
+  cat$version_id <- "v.123"
+  seen <- NULL
+  local_mocked_bindings(.lnk_aws = function(args) {
+    seen <<- args
+    file.copy(file.path(root, cat$key[1]), gsub("^'|'$", "", args[9]),
+              overwrite = TRUE)
+    "v.123"
+  })
+  lnk_db_load(conn, cat, table = tbl, cache_dir = withr::local_tempdir())
+  expect_identical(seen[1:2], c("s3api", "get-object"))
+  expect_true(all(c("--version-id", "'v.123'") %in% seen))
+  expect_true("'habitat/fwa/v1/segment/config=cfgx/species=BT/part-100.parquet'" %in% seen)
+})
+
+test_that("a refused versioned read falls back to the current object, held to its md5", {
+  # s3:GetObjectVersion is a permission of its own; a reader with only
+  # s3:GetObject is refused a named version (review round 3)
+  skip_if_not_installed("duckdb")
+  conn <- skip_if_no_db()
+  root <- local_export_tree()
+  tbl <- local_load_table(conn)
+  cat <- lnk_catalog(file.path(root, "manifest.json"))
+  cat$href <- paste0("s3://fresh-bc/habitat/fwa/v1/", cat$key)
+  cat$version_id <- "v.123"
+  calls <- character(0)
+  local_mocked_bindings(.lnk_aws = function(args) {
+    calls <<- c(calls, args[2])
+    if (identical(args[2], "get-object")) {
+      return(structure("An error occurred (AccessDenied)", status = 255L))
+    }
+    file.copy(file.path(root, cat$key[1]), gsub("^'|'$", "", args[4]),
+              overwrite = TRUE)
+    character(0)
+  })
+  expect_message(lnk_db_load(conn, cat, table = tbl,
+                             cache_dir = withr::local_tempdir()),
+                 "not readable")
+  expect_identical(calls, c("get-object", "cp"))
+  n <- DBI::dbGetQuery(conn, sprintf("SELECT count(*)::integer AS n FROM %s",
+                                     tbl))$n
+  expect_identical(n, 3L)
+})

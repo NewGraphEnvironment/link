@@ -184,6 +184,12 @@ guard <- tryCatch(
     message(conditionMessage(e))
     quit(status = 1)
   })
+# The check's own seconds, beside the pipeline's below (link#461): the run's
+# "done in" clock starts after it.
+cat(sprintf("[wsg_run_one] %s downstream check %s in %.1f s (%s)\n",
+            wsg, guard$status, guard$elapsed_s,
+            paste(sprintf("%s %.1f", names(guard$steps_s), guard$steps_s),
+                  collapse = ", ")))
 
 t0 <- Sys.time()
 # LNK_HABITAT_GATE=0 leaves fresh's classify-time habitat flags unsettled,

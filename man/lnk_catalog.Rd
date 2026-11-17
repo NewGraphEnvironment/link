@@ -11,10 +11,15 @@ lnk_catalog(manifest)
 }
 \value{
 A data frame, one row per part: \code{dataset}, \code{config}, \code{species},
-\code{code}, \code{drainage}, \code{wsgs}, \code{key}, \code{href}, \code{rows}, \code{bytes}, \code{md5}.
+\code{code}, \code{drainage}, \code{wsgs}, \code{key}, \code{href}, \code{rows}, \code{bytes}, \code{md5}, and
+\code{version_id} (the S3 object version a publish recorded, NA in a tree
+built locally or published before link#334; \code{\link[=lnk_db_load]{lnk_db_load()}} fetches that
+version, so a reader pinned to a manifest reads the parts it lists).
 Attributes: \code{manifest} (where it was read), \code{id}, \code{built}, \code{provenance},
-\code{configs} (per config: the log rows of each build, config hashes,
-discharge, bundles) and \code{files} (the provenance and bundle files).
+\code{datasets} (each dataset's column contract as the export wrote it),
+\code{configs} (per config: the log rows of each build, config hashes, the
+builds' tokens, discharge, bundles) and \code{files} (the provenance and
+bundle files).
 }
 \description{
 The manifest written by \code{\link[=lnk_scenario_export]{lnk_scenario_export()}} is the only index of a

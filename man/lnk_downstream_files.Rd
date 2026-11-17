@@ -24,8 +24,9 @@ lnk_downstream_files(
 \value{
 A data frame, one row per dependency and table (one row for a
 dependency with nothing to fetch): \code{target}, \code{config}, \code{wsg}, \code{class},
-\code{reason}, \code{table}, \code{key}, \code{href}, \code{rows}, \code{bytes}, \code{md5}, \code{run_id},
-\code{config_hash}, \code{link_version}, \code{link_sha}, \code{fwa_url}.
+\code{reason}, \code{table}, \code{key}, \code{href}, \code{rows}, \code{bytes}, \code{md5}, \code{version_id}
+(the S3 version a publish recorded, fetched as named; NA before it),
+\code{run_id}, \code{config_hash}, \code{link_version}, \code{link_sha}, \code{fwa_url}.
 }
 \description{
 A group's access is classified by walking downstream through the barriers

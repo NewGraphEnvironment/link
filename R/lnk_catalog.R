@@ -13,10 +13,15 @@
 #'
 #' @param manifest Path or URL of `manifest.json`.
 #' @return A data frame, one row per part: `dataset`, `config`, `species`,
-#'   `code`, `drainage`, `wsgs`, `key`, `href`, `rows`, `bytes`, `md5`.
+#'   `code`, `drainage`, `wsgs`, `key`, `href`, `rows`, `bytes`, `md5`, and
+#'   `version_id` (the S3 object version a publish recorded, NA in a tree
+#'   built locally or published before link#334; [lnk_db_load()] fetches that
+#'   version, so a reader pinned to a manifest reads the parts it lists).
 #'   Attributes: `manifest` (where it was read), `id`, `built`, `provenance`,
-#'   `configs` (per config: the log rows of each build, config hashes,
-#'   discharge, bundles) and `files` (the provenance and bundle files).
+#'   `datasets` (each dataset's column contract as the export wrote it),
+#'   `configs` (per config: the log rows of each build, config hashes, the
+#'   builds' tokens, discharge, bundles) and `files` (the provenance and
+#'   bundle files).
 #' @family export
 #' @export
 #' @examples
@@ -56,12 +61,14 @@ lnk_catalog <- function(manifest) {
       wsgs = as.character(p$wsgs %||% NA_character_),
       key = p$key, href = paste0(base, "/", p$key),
       rows = as.numeric(p$rows), bytes = as.numeric(p$bytes), md5 = md5,
+      version_id = as.character(p$version_id %||% NA_character_),
       stringsAsFactors = FALSE)
   }))
   attr(out, "manifest") <- manifest
   attr(out, "id") <- m$id
   attr(out, "built") <- m$built
   attr(out, "provenance") <- m$provenance
+  attr(out, "datasets") <- m$datasets
   attr(out, "configs") <- m$configs
   attr(out, "files") <- m$files
   out
@@ -94,15 +101,28 @@ lnk_catalog <- function(manifest) {
 #' The caller's credentials and profile apply, which is the point: the prefix
 #' is private. A failed copy stops with aws's own message.
 #' @noRd
-.lnk_s3_cp <- function(src, dest) {
-  out <- .lnk_aws(c("s3", "cp", shQuote(src), shQuote(dest),
-                    "--only-show-errors"))
+.lnk_s3_cp <- function(src, dest, version_id = NA_character_) {
+  out <- if (is.na(version_id)) {
+    .lnk_aws(c("s3", "cp", shQuote(src), shQuote(dest), "--only-show-errors"))
+  } else {
+    bk <- .lnk_s3_split(src)
+    .lnk_aws(c("s3api", "get-object", "--bucket", shQuote(bk$bucket),
+               "--key", shQuote(bk$key), "--version-id", shQuote(version_id),
+               shQuote(dest), "--output", "text", "--query", "VersionId"))
+  }
   st <- attr(out, "status")
   if (!is.null(st) && st != 0L) {
     stop("aws s3 cp ", src, " failed (exit ", st, "): ",
          paste(out, collapse = " "), call. = FALSE)
   }
   invisible(dest)
+}
+
+#' Bucket and key of an `s3://` URL.
+#' @noRd
+.lnk_s3_split <- function(url) {
+  rest <- sub("^s3://", "", url)
+  list(bucket = sub("/.*$", "", rest), key = sub("^[^/]*/", "", rest))
 }
 
 #' Run the `aws` command line; output and exit status as `system2()` gives
@@ -116,13 +136,19 @@ lnk_catalog <- function(manifest) {
 }
 
 #' Download `src` (https:// or s3://) to `dest`, or copy a local file.
+#'
+#' `version_id`, where given, names the S3 object version to read (link#334).
 #' @noRd
-.lnk_fetch_file <- function(src, dest) {
+.lnk_fetch_file <- function(src, dest, version_id = NA_character_) {
   dir.create(dirname(dest), recursive = TRUE, showWarnings = FALSE)
   if (startsWith(src, "s3://")) {
-    return(.lnk_s3_cp(src, dest))
+    return(.lnk_s3_cp(src, dest, version_id))
   }
   if (grepl("^https?://", src)) {
+    if (!is.na(version_id)) {
+      src <- paste0(src, "?versionId=", utils::URLencode(version_id,
+                                                          reserved = TRUE))
+    }
     resp <- httr::GET(src, httr::write_disk(dest, overwrite = TRUE))
     if (httr::status_code(resp) >= 400L) {
       unlink(dest)
