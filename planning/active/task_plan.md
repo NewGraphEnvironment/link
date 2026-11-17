@@ -48,9 +48,9 @@ Settled by the session from the plan review (`review-plan.md`): #464 checks the 
 - [x] RUNBOOK §6d updated: the new column, tokens, crate contract, gates, digest, versionIds.
 
 ## Phase 3: Release
-- [ ] NEWS, version bump (minor: new export column and log column), CLAUDE.md status block, `research/` where a measurement settles (#461's timing).
-- [ ] BUILD an export locally from `fresh_default` (a few groups), read it back through `lnk_catalog()` / `lnk_db_load()`, check `access` against `streams_access` row for row on one group; load the published 2026-11-14 tree and into an existing table; the gates pass on it.
-- [ ] Drop the scratch database `fwapg473`.
+- [x] NEWS, version bump (minor: new export column and log column), CLAUDE.md status block, `research/` where a measurement settles (#461's timing).
+- [x] BUILD an export locally from `fresh_default` (a few groups), read it back through `lnk_catalog()` / `lnk_db_load()`, check `access` against `streams_access` row for row on one group; load the published 2026-11-14 tree and into an existing table; the gates pass on it.
+- [x] Drop the scratch database `fwapg473`.
 
 ## Owed at the end (reported, done after merge)
 - [ ] PUBLISH of the new export (operator's word); the next provincial run re-models to `acc-v6`, and its republish carries the new values and the first `streams_md5`.

@@ -31,6 +31,39 @@ Experimental package — breaking all the time and loving the learning curve. St
 - **`observation_date` is a `date`,** so `>= 1990-01-02` is exactly bcfishpass's `> 1990-01-01`. An undated record never counts toward a lift (NA floor reads 1900-01-01); under `lift_floor` a species with no floor counts undated records for code 2 and cuts (WCT's floor emptied for that).
 - **7 records carry codes nothing reads** (`DVxBT` 6, `" RB"` 1).
 
+## Status (2026-11-17) — the export carries the access code from crate's contract; PUBLISH takes only nameable builds; the downstream check refuses an unloaded group (#473, 0.85.0)
+
+**Backlog move 5 (#473) lands as one release.**
+- The habitat export carries `access` (0, 1, 2, -9) added to v1 as an optional column (#423).
+- The column contract is crate's `nge/habitat/fwa/v1/segment` (crate 0.19.0), cited at its tag (#333).
+- PUBLISH refuses a build with no `run_uid`, a dirty tree or no logged thresholds unless `LNK_PUBLISH_ALLOW` gives a reason, and records each part's S3 `VersionId`. Each run logs `log.streams_md5`, which an export checks (#334).
+- `lnk_wsg_downstream_check()` refuses a downstream group with no FWA streams (#464), and snaps only dams within 65 m of the downstream groups' polygons (#461).
+
+Proved on m4:
+- a 246-group sweep is identical before and after;
+- a six-group database built by the cloud loader (`fwapg473`, dropped after) refuses BULK, ADMS and UFRA;
+- with no stream geometry index, the old check takes 273 s on HARR and the new one 8 s;
+- an export of ADMS and BULK round-trips, with `access` equal to `streams_access`;
+- a published 2026-11-14 part loads with `access` NULL.
+
+Mechanics: RUNBOOK §6d (`access`, contract, gates, digest, versions) and §8c ("A downstream group with no FWA streams refuses", "What the guard costs").
+
+**Owed:**
+- PUBLISH of a new export (the operator's word). Until then the bucket's manifest is 0.82.0's: no `access`, no version ids.
+- The next provincial run re-models to `acc-v6`, and is the first whose builds carry `streams_md5`.
+- #334's public read (an infrastructure change after budget and anomaly alerts).
+- The pre-run gate runs again before the next provincial run (`R/` changed, and the gate's map).
+- The cloud sessions' cause of #461's 371 s is not identified. The check's `steps_s` and the drivers' printed seconds name the slow step next time.
+
+**Facts not worth re-deriving:**
+- **#461 does not reproduce on m4 with the cloud loader** (rtj `cloud-env/cloud-env_load-fwa-wsg.py`, the same six groups): the check takes 0.18 s. fwapg's `schema.sql` creates `fwa_streamnetworks_geom_idx`. Dropping it reproduces the magnitude: 2,593 lateral KNN snaps, each a sequential scan of 103,217 segments.
+- **A dam whose `cabd_blkey_xref` blue line is not loaded** walks the whole stream table in KNN order (20 s on 4.9 M rows). One xref row per bundle (LNIC); the narrowing skips it unless LNIC is downstream.
+- **The narrowing is sound because a group's streams lie inside its polygon.** A dam the probe can report snapped within 65 m of a downstream group's stream, so it lies within 65 m of that polygon. Where a downstream group's polygon is absent, the check snaps every dam, as before.
+- **The closure over-approximates where groups split a main stem** (NECR's holds both TWAC and NARC), so a refusal can ask for a group the path only touches at a bank.
+- **v1 grows only by adding columns.** A tree's columns are its manifest's `datasets[].schema.cols`, and an export refuses to carry a config's parts across a contract change.
+- **The manifest cannot name its own version:** pin it with `list-object-versions`.
+- **`streams_md5` hashes doubles as `float8send()` hex and geometry as hex EWKB.** So neither `extra_float_digits` nor a text COPY moves it. Nothing rewrites `streams` after a run finishes.
+
 ## Status (2026-11-15) — a stalled statement leaves samples (#487, 0.83.0)
 
 **`wsg_run_one.R` starts `data-raw/wsg_stall_sample.R` beside each group. While the group's backend has been on one statement longer than `--stall-sample-after` minutes (both legs as `LNK_STALL_AFTER_MIN`; unset, `wsg_run_one.R` takes 10 or half its bound), every 60 s or more often it writes `[wsg_stall] <WSG>` lines into the group's log: the statement, its parallel workers and each session `pg_blocking_pids()` names, with wait events, the host's load and the active backends. `run_stalls` splits them into `<TS>_stall_<WSG>.tsv`, the summary lists each file, and the INCOMPLETE block prints it under the statement (0.83.0).** Proved on m1 (run `20261115_001427-474338b7`: EUCH stalled, four `PgSleep` rows, file named three ways; a re-model through a pipe released it 1.2 s after its group exited). Mechanics: RUNBOOK §8d, "A stalled statement leaves samples". Evidence: `data-raw/logs/stall_sample_487/`.
