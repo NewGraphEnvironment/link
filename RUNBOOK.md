@@ -1491,7 +1491,9 @@ is not yet tested.
 
 **The column contract lives in crate (#333)** as `nge/habitat/fwa/v1/segment`
 (`inst/extdata/schemas/nge/habitat/fwa/v1/segment.yaml`, crate 0.19.0 on).
-link reads it from the installed crate and keeps its own type check
+link reads it from the installed crate (asking for 0.19.0 when the export or
+a reader runs, not through its `Imports:` floor, so modelling on a host with
+an older crate is not stopped) and keeps its own type check
 (`.lnk_export_conform()`); the manifest's `datasets[].schema` cites crate's
 file at its release tag (`url`), and the export refuses a crate installed from
 an unreleased commit, which has no tag. `exported_by.contract_md5` is an md5
@@ -1525,7 +1527,8 @@ asserts it). After the parts go up, PUBLISH reads each part's, per-group part's
 and the dependency map's `VersionId` (`head-object`, so a per-group part left
 in place is named too), writes them into the local manifest atomically and
 then uploads it, so the copy read back is the one written. `lnk_catalog()`
-returns `version_id`, and `lnk_db_load()` fetches that version
+returns `version_id`, and `lnk_db_load()` and `lnk_downstream_load()` (through
+`lnk_downstream_files()`'s `version_id`) fetch that version
 (`s3api get-object --version-id`, `?versionId=` over https), so a reader pinned
 to a manifest reads exactly the parts it lists even after a republish. The
 manifest cannot name its own version: pin it with

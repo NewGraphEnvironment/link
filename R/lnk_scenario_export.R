@@ -24,8 +24,11 @@
 #' @return The parsed YAML.
 #' @noRd
 .lnk_export_spec <- function() {
+  # Asked here, not by the Imports floor: only the export and its readers
+  # need it, and a floor would stop modelling on a host with an older crate
+  # (load_all() refuses a dependency below it; review round 2).
   p <- system.file(.lnk_export_spec_path(), package = "crate")
-  if (!nzchar(p)) {
+  if (utils::packageVersion("crate") < "0.19.0" || !nzchar(p)) {
     stop("crate ", as.character(utils::packageVersion("crate")),
          " has no ", .lnk_export_spec_path(), "; install crate 0.19.0 or ",
          "later, which registers the habitat export's columns", call. = FALSE)

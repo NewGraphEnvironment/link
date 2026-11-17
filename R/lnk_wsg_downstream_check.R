@@ -618,12 +618,15 @@ lnk_wsg_downstream_check <- function(conn, aoi, cfg, loaded,
 #' group's streams lie inside its polygon, so only dams within 65 m of those
 #' polygons can matter. The narrowing leaves the result as it was and makes
 #' the snap's cost follow the path, not the province's 2,600 dams. Where any
-#' of the polygons is absent (an fwapg without them, or a group code missing
-#' from them), `NULL` asks the probe to snap every dam, as it always did.
+#' of the polygons is absent (an fwapg without the table, or a group code
+#' missing from it), `NULL` asks the probe to snap every dam, as it always did.
 #' @return the group codes, `character(0)` when there are none, or `NULL`.
 #' @noRd
 .lnk_dams_near_groups <- function(conn, wsgs) {
   if (length(wsgs) == 0L) return(character(0))
+  if (!.lnk_table_exists(conn, "whse_basemapping.fwa_watershed_groups_poly")) {
+    return(NULL)
+  }
   n <- DBI::dbGetQuery(conn, sprintf(
     "SELECT count(DISTINCT watershed_group_code)::integer AS n
        FROM whse_basemapping.fwa_watershed_groups_poly

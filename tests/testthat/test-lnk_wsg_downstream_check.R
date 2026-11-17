@@ -367,3 +367,9 @@ test_that("the narrowed probe finds the dams the full probe finds", {
   expect_identical(nrow(.lnk_dams_blocking_downstream(
     conn, "PARS", loaded, o, near_groups = character(0))), 0L)
 })
+
+test_that(".lnk_dams_near_groups snaps every dam where the polygon table is absent", {
+  conn <- skip_if_no_db()
+  local_mocked_bindings(.lnk_table_exists = function(conn, tbl) FALSE)
+  expect_null(.lnk_dams_near_groups(conn, c("PCEA", "UPCE")))
+})

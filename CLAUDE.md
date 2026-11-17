@@ -49,6 +49,7 @@ Proved on m4:
 Mechanics: RUNBOOK §6d (`access`, contract, gates, digest, versions) and §8c ("A downstream group with no FWA streams refuses", "What the guard costs").
 
 **Owed:**
+- crate PR #72 (0.19.0) merges and is tagged `v0.19.0` before this PR merges: link's CI installs crate's main, the export tests read the contract from it, and a manifest cites the tag. Every host that exports or reads the export then needs crate 0.19.0; modelling does not (the floor stays 0.0.2).
 - PUBLISH of a new export (the operator's word). Until then the bucket's manifest is 0.82.0's: no `access`, no version ids.
 - The next provincial run re-models to `acc-v6`, and is the first whose builds carry `streams_md5`.
 - #334's public read (an infrastructure change after budget and anomaly alerts).
