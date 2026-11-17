@@ -290,13 +290,32 @@
 #'   `passability_status_code`.
 #' @noRd
 .lnk_dams_blocking_downstream <- function(conn, aoi, loaded, outlets,
-                                          additions = FALSE) {
+                                          additions = FALSE,
+                                          near_groups = NULL) {
   o <- outlets[outlets$watershed_group_code == aoi, , drop = FALSE]
   if (nrow(o) == 0L) {
     stop("no outlet for watershed group '", aoi,
          "' in fresh::frs_wsg_outlets()", call. = FALSE)
   }
+  empty <- data.frame(dam_id = character(0), dam_name_en = character(0),
+                      watershed_group_code = character(0),
+                      passability_status_code = integer(0))
+  # No downstream group can hold a candidate: the outlet reaches the sea.
+  if (!is.null(near_groups) && length(near_groups) == 0L) return(empty)
   v <- .lnk_dams_edit_values_sql(conn, loaded)
+  # Snap only the dams within 65 m of the downstream groups' polygons
+  # (`.lnk_dams_near_groups()`); NULL snaps every dam.
+  near <- if (is.null(near_groups)) {
+    ""
+  } else {
+    sprintf(
+      "WHERE EXISTS (
+         SELECT 1 FROM whse_basemapping.fwa_watershed_groups_poly p
+          WHERE p.watershed_group_code = ANY (%s::text[])
+            AND ST_DWithin(p.geom, ST_Transform(d0.geom, 3005), 65))",
+      DBI::dbQuoteLiteral(
+        conn, paste0("{", paste(near_groups, collapse = ","), "}")))
+  }
 
   sql <- sprintf(
     "WITH cabd AS (
@@ -334,10 +353,11 @@
               m.wscode_ltree, m.localcode_ltree)
       ORDER BY m.watershed_group_code, m.dam_name_en",
     .lnk_dams_cabd_sql(
-      dams_expr = "(SELECT cabd_id, passability_status_code, dam_name_en,
-                           height_m, owner, dam_use, operating_status,
-                           ST_Transform(geom, 3005) AS geom
-                      FROM cabd.dams)",
+      dams_expr = sprintf(
+        "(SELECT cabd_id, passability_status_code, dam_name_en,
+                 height_m, owner, dam_use, operating_status,
+                 ST_Transform(geom, 3005) AS geom
+            FROM cabd.dams d0 %s)", near),
       excl_ref = v$excl, xref_ref = v$xref, upd_ref = v$upd),
     .lnk_dams_matched_sql(),
     DBI::dbQuoteLiteral(conn, aoi),
@@ -432,8 +452,16 @@
 #'   justification *is* the mechanism, and an override without one is the hole
 #'   this is meant to close.
 #' @param outlets Per-group outlet points; defaults to `fresh::frs_wsg_outlets()`.
-#' @return Invisibly, a list with `aoi`, `status`, `dams`, `wsgs_missing`,
-#'   `note` and `elapsed_s`.
+#' A downstream group whose FWA streams this database does not hold hides
+#' every dam on it, so the check refuses it as it refuses an unmodelled dam
+#' and names it in `wsgs_unloaded` (link#464). Only dams within 65 m of the
+#' downstream groups' polygons are snapped, which leaves the answer as it was
+#' and keeps the check's cost to the path (link#461).
+#'
+#' @return Invisibly, a list with `aoi`, `status`, `dams`, `wsgs_missing`
+#'   (groups holding unmodelled dams), `wsgs_unloaded` (downstream groups with
+#'   no FWA streams), `note`, `elapsed_s` and `steps_s` (seconds per step:
+#'   outlets, fwa_downstream, closure, loaded, near, probe, persisted).
 #' @family wsg
 #' @export
 #' @examples
@@ -480,72 +508,179 @@ lnk_wsg_downstream_check <- function(conn, aoi, cfg, loaded,
 
   if (identical(on_fail, "ignore")) {
     return(invisible(list(aoi = aoi, status = "pass", dams = NULL,
-                          wsgs_missing = character(0), note = NA_character_,
-                          elapsed_s = 0)))
+                          wsgs_missing = character(0),
+                          wsgs_unloaded = character(0), note = NA_character_,
+                          elapsed_s = 0, steps_s = numeric(0))))
   }
 
-  .lnk_require_fwa_downstream(conn)
+  # Each step's seconds go in the result (link#461), so a slow run names its
+  # slow step. `outlets` is a lazy default: force it in its own step.
+  steps <- numeric(0)
+  step <- function(name, expr) {
+    s <- proc.time()[["elapsed"]]
+    v <- expr
+    steps[[name]] <<- proc.time()[["elapsed"]] - s
+    v
+  }
+  outlets <- step("outlets", outlets)
+  step("fwa_downstream", .lnk_require_fwa_downstream(conn))
 
-  dams <- .lnk_dams_blocking_downstream(
-    conn, aoi, loaded, outlets,
-    additions = .lnk_cabd_additions_barriers(cfg))
-
+  # The groups the focal group drains through, from the outlets this check
+  # was given (link#464). An error here refuses: an empty path would pass.
+  path <- step("closure", fresh::frs_wsg_drainage(conn, aoi, outlets))
+  down <- setdiff(path, aoi)
   # A dam in a species-less WSG is never persisted as a barrier, so demanding
-  # it would be an unfixable false alarm. lnk_wsg_resolve() species-filters.
-  closure <- tryCatch(
-    lnk_wsg_resolve(cfg, loaded, wsgs = aoi, expand = TRUE, conn = conn),
-    error = function(e) character(0))
-  if (nrow(dams) > 0L && length(closure) > 0L) {
+  # it would be an unfixable false alarm.
+  closure <- suppressMessages(
+    lnk_wsg_resolve(cfg, loaded, wsgs = path, expand = FALSE))
+
+  # A downstream group with no FWA streams loaded hides every dam on it: none
+  # can snap, so the probe would pass (link#464).
+  unloaded <- step("loaded", .lnk_wsg_fwa_unloaded(conn, down))
+  near <- step("near", .lnk_dams_near_groups(conn, setdiff(down, unloaded)))
+
+  dams <- step("probe", .lnk_dams_blocking_downstream(
+    conn, aoi, loaded, outlets,
+    additions = .lnk_cabd_additions_barriers(cfg), near_groups = near))
+  if (nrow(dams) > 0L) {
     dams <- dams[dams$watershed_group_code %in% closure, , drop = FALSE]
   }
 
   missing_dams <- dams
   if (nrow(dams) > 0L) {
-    have <- .lnk_barriers_cabd_persisted(conn, cfg, dams$dam_id)
+    have <- step("persisted",
+                 .lnk_barriers_cabd_persisted(conn, cfg, dams$dam_id))
     missing_dams <- dams[!(dams$dam_id %in% have), , drop = FALSE]
   }
 
   elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
   wsgs_missing <- sort(unique(missing_dams$watershed_group_code))
 
-  if (nrow(missing_dams) == 0L) {
+  if (nrow(missing_dams) == 0L && length(unloaded) == 0L) {
     return(invisible(list(aoi = aoi, status = "pass", dams = dams,
-                          wsgs_missing = character(0), note = NA_character_,
-                          elapsed_s = elapsed)))
+                          wsgs_missing = character(0),
+                          wsgs_unloaded = character(0), note = NA_character_,
+                          elapsed_s = elapsed, steps_s = steps)))
   }
 
-  brief <- paste(sprintf("%s(%d)", wsgs_missing,
-                         as.integer(table(missing_dams$watershed_group_code)[wsgs_missing])),
-                 collapse = ", ")
-  msg <- .lnk_guard_message(aoi, missing_dams, wsgs_missing, cfg, closure)
+  brief <- function(at_dams, at_groups) {
+    .lnk_guard_brief(missing_dams, wsgs_missing, unloaded, at_dams, at_groups)
+  }
+  msg <- .lnk_guard_message(aoi, missing_dams, wsgs_missing, cfg, closure,
+                            unloaded = unloaded)
+  out <- function(status, note) {
+    invisible(list(aoi = aoi, status = status, dams = missing_dams,
+                   wsgs_missing = wsgs_missing, wsgs_unloaded = unloaded,
+                   note = note, elapsed_s = elapsed, steps_s = steps))
+  }
 
   if (!is.na(override)) {
-    note <- sprintf("link#227 guard(override): %d unmodelled downstream dam(s) — %s — %s",
-                    nrow(missing_dams), brief, trimws(override))
+    note <- sprintf("%s guard(override): %s — %s",
+                    .lnk_guard_tag(unloaded), brief("", ""), trimws(override))
     message(msg)
     message("[guard] OVERRIDE accepted, recorded in the run log: ", trimws(override))
-    return(invisible(list(aoi = aoi, status = "override", dams = missing_dams,
-                          wsgs_missing = wsgs_missing, note = note,
-                          elapsed_s = elapsed)))
+    return(out("override", note))
   }
 
-  note <- sprintf("link#227 guard(%s): %d unmodelled downstream dam(s) at open — %s",
-                  on_fail, nrow(missing_dams), brief)
+  note <- sprintf("%s guard(%s): %s",
+                  .lnk_guard_tag(unloaded), on_fail, brief(" at open", " at open"))
 
   if (identical(on_fail, "warn")) {
     message(msg)
-    return(invisible(list(aoi = aoi, status = "warn", dams = missing_dams,
-                          wsgs_missing = wsgs_missing, note = note,
-                          elapsed_s = elapsed)))
+    return(out("warn", note))
   }
 
   stop(msg, call. = FALSE)
 }
 
 
+#' Downstream groups with no FWA streams loaded (link#464).
+#'
+#' One index probe per group on `fwa_stream_networks_sp.watershed_group_code`.
+#' FWA, not the persist schema: the dam snap reads FWA lines, and a group
+#' downstream need not be modelled yet for the check to pass.
+#' @return character vector of the codes in `wsgs` with no stream row.
+#' @noRd
+.lnk_wsg_fwa_unloaded <- function(conn, wsgs) {
+  if (length(wsgs) == 0L) return(character(0))
+  have <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT g.wsg FROM unnest(%s::text[]) AS g(wsg)
+      WHERE EXISTS (SELECT 1 FROM whse_basemapping.fwa_stream_networks_sp s
+                     WHERE s.watershed_group_code = g.wsg)",
+    DBI::dbQuoteLiteral(conn, paste0("{", paste(wsgs, collapse = ","), "}"))))
+  setdiff(wsgs, have$wsg)
+}
+
+
+#' The groups whose polygons may narrow the dam snap (link#461).
+#'
+#' A dam the probe can report snapped to a stream of a downstream group, and a
+#' group's streams lie inside its polygon, so only dams within 65 m of those
+#' polygons can matter. The narrowing leaves the result as it was and makes
+#' the snap's cost follow the path, not the province's 2,600 dams. Where any
+#' of the polygons is absent (an fwapg without them, or a group code missing
+#' from them), `NULL` asks the probe to snap every dam, as it always did.
+#' @return the group codes, `character(0)` when there are none, or `NULL`.
+#' @noRd
+.lnk_dams_near_groups <- function(conn, wsgs) {
+  if (length(wsgs) == 0L) return(character(0))
+  n <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT count(DISTINCT watershed_group_code)::integer AS n
+       FROM whse_basemapping.fwa_watershed_groups_poly
+      WHERE watershed_group_code = ANY (%s::text[]) AND geom IS NOT NULL",
+    DBI::dbQuoteLiteral(conn, paste0("{", paste(wsgs, collapse = ","), "}"))))$n
+  if (identical(as.integer(n), length(unique(wsgs)))) wsgs else NULL
+}
+
+
+#' The tag a guard note opens with: the issue whose condition it records.
+#' @noRd
+.lnk_guard_tag <- function(unloaded) {
+  if (length(unloaded)) "link#464" else "link#227"
+}
+
+
+#' One line naming what the guard found, for the run log's note.
+#'
+#' The dam part keeps the wording link#227's notes have always had
+#' (`<n> unmodelled downstream dam(s) at open — <WSG>(<n>), ...`), so readers
+#' of earlier run logs read new ones the same way.
+#' @noRd
+.lnk_guard_brief <- function(dams, wsgs_missing, unloaded,
+                             at_dams = "", at_groups = "") {
+  parts <- character(0)
+  if (length(unloaded)) {
+    parts <- c(parts, sprintf("%d downstream group(s) with no FWA streams loaded%s — %s",
+                              length(unloaded), at_groups,
+                              paste(unloaded, collapse = ", ")))
+  }
+  if (nrow(dams) > 0L) {
+    parts <- c(parts, sprintf(
+      "%d unmodelled downstream dam(s)%s — %s", nrow(dams), at_dams,
+      paste(sprintf("%s(%d)", wsgs_missing,
+                    as.integer(table(dams$watershed_group_code)[wsgs_missing])),
+            collapse = ", ")))
+  }
+  paste(parts, collapse = "; ")
+}
+
+
 #' Build the operator-facing guard message.
 #' @noRd
-.lnk_guard_message <- function(aoi, dams, wsgs_missing, cfg, closure) {
+.lnk_guard_message <- function(aoi, dams, wsgs_missing, cfg, closure,
+                               unloaded = character(0)) {
+  if (length(unloaded)) {
+    load <- paste0(
+      sprintf("%s BLOCKED (link#464) — %d watershed group(s) on %s's downstream flow path have no FWA streams in this database: %s.\n\n",
+              aoi, length(unloaded), aoi, paste(unloaded, collapse = ", ")),
+      "No dam on them can be found, so the check cannot say whether one blocks.\n",
+      "Load their FWA streams (whse_basemapping.fwa_stream_networks_sp), then their\n",
+      "persisted barriers (lnk_downstream_files() / lnk_downstream_load()), and run again.\n",
+      "Or override with a written reason (LNK_GUARD_DOWNSTREAM_NOTE=\"...\").\n")
+    if (nrow(dams) == 0L) return(load)
+    return(paste0(load, "\nAlso:\n",
+                  .lnk_guard_message(aoi, dams, wsgs_missing, cfg, closure)))
+  }
   schema <- tryCatch(.lnk_table_names(cfg)$schema, error = function(e) "<persist>")
   first <- setdiff(closure, aoi)
   rows <- paste(sprintf("    %-5s %-38s %s (psc %s)",

@@ -44,3 +44,12 @@ Move 5 of link's backlog, [`planning/backlog.md`](../blob/main/planning/backlog.
 - What would produce it: the 65 m lateral KNN snap over all 2,593 CABD dams with no usable GiST index on `fwa_stream_networks_sp.geom`. On a 103,217-segment temp copy of the six groups, 100 dams took 12.2 s without the index (about 316 s for 2,593) and all 2,593 took 0.19 s with it. fwapg's `schema.sql` creates the index (`fwa_streamnetworks_geom_idx`), so a missing index is not shown to be the cloud cause; cold cache or a smaller Postgres in the container are not ruled out.
 - A dam whose `cabd_blkey_xref` `blue_line_key` is not loaded scans the whole table in KNN order (20.3 s against 4.9 M rows; one xref row per bundle, its line in LNIC), a second per-dam cost.
 - Decision: make the probe's cost independent of these. Snap only dams within 65 m of the downstream groups' polygons (identical result: a dam snapped to a path group's stream lies within 65 m of that group's polygon), with no prefilter when a path group's polygon is absent; time each step into the result, so the next cloud run names the slow step.
+
+### #461 reproduced and fixed (2026-11-17, `fwapg473` with the GiST index dropped)
+
+| group | before | after (dams narrowed to the downstream groups' polygons) |
+|---|---:|---:|
+| HARR | 272.8 s | 8.1 s |
+| FRCN | 270.9 s | 9.6 s |
+
+Same status and dams before and after. With the index in place both take 0.2 s. On m4's full database the sweep of all 246 groups (both `fresh_default` and a schema with no barriers, plus three overrides) gives identical status, dams, `wsgs_missing` and note before and after (`sweep_before.rds` / `sweep_after.rds`, scratch). On `fwapg473` BULK, ADMS and UFRA now refuse with their unloaded downstream groups named (#464); before, all seven tried passed.

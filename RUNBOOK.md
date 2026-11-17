@@ -2058,7 +2058,7 @@ A membership guard cries wolf on BULK, operators learn to reach for the override
 and the guard stops meaning anything. **Do not "simplify" it back.** The path form
 is complete, not merely cheaper: access walks downstream from every segment, and
 every focal segment exits through the focal outlet, so the out-of-WSG barriers
-reachable from *any* focal segment are exactly those below the outlet. ~0.5 s.
+reachable from *any* focal segment are exactly those below the outlet. ~0.2 s.
 
 **What counts as blocking** — three filters that live downstream of
 `.lnk_pipeline_prep_dams`, all mirrored by the guard:
@@ -2100,9 +2100,37 @@ one-group run reads from the export"): `lnk_downstream_files()` then
 `lnk_downstream_load()` before `wsg_run_one.R`. The guard checks per dam that a
 blocking dam is persisted, so the loaded `CABD` rows satisfy it, but it finds
 the dams by matching them to streams, so the dependencies' FWA streams must be
-loaded too (#464 makes a missing downstream group refuse instead of pass). The
-groups to load are the line rule's, not the outlet closure's: the walk reads
-every group's rows by position.
+loaded too. The groups to load are the line rule's, not the outlet closure's:
+the walk reads every group's rows by position.
+
+**A downstream group with no FWA streams refuses (link#464).** The guard takes
+the groups below the outlet from `frs_wsg_drainage(conn, aoi, outlets)` (focal
+plus every group whose outlet is downstream; outlets only, so it answers on a
+partial database) and asks `fwa_stream_networks_sp` for a row of each. One with
+none is named in `wsgs_unloaded`, and fails, warns or is overridden as an
+unmodelled dam is; its note opens `link#464 guard(...)`. It is FWA that is
+checked, not the persist schema: a downstream group need not be modelled for
+the check to pass. The closure over-approximates where groups split a main
+stem (NECR's holds both TWAC and NARC), so the refusal can ask for a group the
+path only touches at a bank. A closure that errors refuses; before #464 it
+read as an empty set and passed.
+
+**What the guard costs (link#461).** On the full province (m4, 2026-11-17) it
+takes 0.2 s a group, and the same on a six-group database built by the cloud
+sessions' loader. #461's 371 s, in a cloud session's six-group Postgres, did
+not reproduce on m4. What reproduces it is the 65 m nearest-stream snap of all
+2,593 CABD dams with no usable GiST index on `fwa_stream_networks_sp.geom`:
+273 s for HARR on that six-group database with the index dropped. So the
+guard snaps only the dams within 65 m
+of the downstream groups' `fwa_watershed_groups_poly` rows: a dam it can
+report snapped to a stream of one of them, and a group's streams lie inside its
+polygon, so the answer is unchanged (246 groups, both a populated and an empty
+persist schema, identical before and after), and HARR's 273 s becomes 8 s
+with no index. Where a downstream group's
+polygon is absent it snaps every dam, as before. Its result carries `steps_s`
+(outlets, fwa_downstream, closure, loaded, near, probe, persisted), and
+`wsg_run_one.R` and `wsg_recompute_one.R` print the check's seconds, so a slow
+run names its slow step.
 
 ---
 

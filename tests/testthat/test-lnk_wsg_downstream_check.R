@@ -243,8 +243,11 @@ test_that("lnk_wsg_downstream_check passes the bundle's knob to the probe", {
   seen <- logical()
   local_mocked_bindings(
     .lnk_require_fwa_downstream = function(conn) invisible(TRUE),
+    .lnk_wsg_fwa_unloaded = function(conn, wsgs) character(0),
+    .lnk_dams_near_groups = function(conn, wsgs) NULL,
     .lnk_dams_blocking_downstream = function(conn, aoi, loaded, outlets,
-                                             additions = FALSE) {
+                                             additions = FALSE,
+                                             near_groups = NULL) {
       seen <<- c(seen, additions)
       data.frame(dam_id = character(0), dam_name_en = character(0),
                  watershed_group_code = character(0),
@@ -252,10 +255,115 @@ test_that("lnk_wsg_downstream_check passes the bundle's knob to the probe", {
     },
     lnk_wsg_resolve = function(...) "KOTL"
   )
+  local_mocked_bindings(frs_wsg_drainage = function(conn, wsg, outlets) "KOTL",
+                        .package = "fresh")
   for (nm in c("default", "bcfishpass")) {
     r <- lnk_wsg_downstream_check(fake_conn(), "KOTL", lnk_config(nm), list(),
                                   outlets = stub_outlets())
     expect_identical(r$status, "pass")
   }
   expect_identical(seen, c(TRUE, FALSE))
+})
+
+
+# --- downstream groups not loaded (link#464) ---------------------------------
+
+# The test database holds every group, so an unloaded downstream group is a
+# code no FWA row carries. The closure is mocked both ways the check has ever
+# asked for it, so the test fails on the code before link#464 (it passed).
+unloaded_mocks <- function(env = parent.frame()) {
+  no_dams <- function(...) {
+    data.frame(dam_id = character(0), dam_name_en = character(0),
+               watershed_group_code = character(0),
+               passability_status_code = integer(0))
+  }
+  local_mocked_bindings(
+    .lnk_dams_blocking_downstream = no_dams,
+    lnk_wsg_resolve = function(cfg, loaded, wsgs, ...) wsgs,
+    .env = env)
+  local_mocked_bindings(
+    frs_wsg_drainage = function(conn, wsg, outlets) c("ZZZZ", "PARS"),
+    .package = "fresh", .env = env)
+}
+
+test_that("a downstream group with no FWA streams refuses, named", {
+  conn <- skip_if_no_db()
+  cfg <- lnk_config("bcfishpass")
+  loaded <- lnk_load_overrides(cfg)
+  unloaded_mocks()
+  expect_error(lnk_wsg_downstream_check(conn, "PARS", cfg, loaded),
+               "link#464")
+  expect_error(lnk_wsg_downstream_check(conn, "PARS", cfg, loaded), "ZZZZ")
+})
+
+test_that("an unloaded downstream group warns and overrides as dams do", {
+  conn <- skip_if_no_db()
+  cfg <- lnk_config("bcfishpass")
+  loaded <- lnk_load_overrides(cfg)
+  unloaded_mocks()
+  suppressMessages(
+    r <- lnk_wsg_downstream_check(conn, "PARS", cfg, loaded, on_fail = "warn"))
+  expect_identical(r$status, "warn")
+  expect_identical(r$wsgs_unloaded, "ZZZZ")
+  expect_identical(r$wsgs_missing, character(0))
+  expect_match(r$note, "link#464 guard(warn)", fixed = TRUE)
+  expect_match(r$note, "no FWA streams loaded at open — ZZZZ", fixed = TRUE)
+
+  suppressMessages(
+    r <- lnk_wsg_downstream_check(conn, "PARS", cfg, loaded,
+                                  override = "loading ZZZZ later, ref doc-9"))
+  expect_identical(r$status, "override")
+  expect_match(r$note, "doc-9", fixed = TRUE)
+})
+
+test_that("a closure that errors refuses rather than passing", {
+  conn <- skip_if_no_db()
+  cfg <- lnk_config("bcfishpass")
+  loaded <- lnk_load_overrides(cfg)
+  local_mocked_bindings(
+    frs_wsg_drainage = function(conn, wsg, outlets) stop("outlet table broken"),
+    .package = "fresh")
+  expect_error(lnk_wsg_downstream_check(conn, "PARS", cfg, loaded),
+               "outlet table broken")
+})
+
+test_that("the check times its steps and names them", {
+  conn <- skip_if_no_db()
+  cfg <- lnk_config("bcfishpass")
+  loaded <- lnk_load_overrides(cfg)
+  r <- lnk_wsg_downstream_check(conn, "PARS", cfg, loaded, on_fail = "warn")
+  expect_true(all(c("outlets", "closure", "loaded", "near", "probe") %in%
+                    names(r$steps_s)))
+  expect_true(all(r$steps_s >= 0))
+})
+
+test_that(".lnk_wsg_fwa_unloaded names only the groups with no streams", {
+  conn <- skip_if_no_db()
+  expect_identical(.lnk_wsg_fwa_unloaded(conn, c("PARS", "ZZZZ")), "ZZZZ")
+  expect_identical(.lnk_wsg_fwa_unloaded(conn, character(0)), character(0))
+})
+
+test_that(".lnk_dams_near_groups gives up the narrowing on a missing polygon", {
+  conn <- skip_if_no_db()
+  expect_identical(.lnk_dams_near_groups(conn, c("PCEA", "UPCE")),
+                   c("PCEA", "UPCE"))
+  expect_null(.lnk_dams_near_groups(conn, c("PCEA", "ZZZZ")))
+  expect_identical(.lnk_dams_near_groups(conn, character(0)), character(0))
+})
+
+test_that("the narrowed probe finds the dams the full probe finds", {
+  # The narrowing is only sound if no dam the probe reports lies more than
+  # 65 m from its group's polygon; PARS has three, in PCEA and UPCE.
+  conn <- skip_if_no_db()
+  cfg <- lnk_config("bcfishpass")
+  loaded <- lnk_load_overrides(cfg)
+  o <- fresh::frs_wsg_outlets()
+  full <- .lnk_dams_blocking_downstream(conn, "PARS", loaded, o)
+  narrow <- .lnk_dams_blocking_downstream(conn, "PARS", loaded, o,
+                                          near_groups = c("PCEA", "UPCE",
+                                                          "LPCE", "PARA"))
+  expect_gt(nrow(full), 0)
+  expect_identical(narrow, full)
+  expect_identical(nrow(.lnk_dams_blocking_downstream(
+    conn, "PARS", loaded, o, near_groups = character(0))), 0L)
 })

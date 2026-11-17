@@ -32,11 +32,18 @@ and records the reason. A bare \code{TRUE} is rejected on purpose: the
 justification \emph{is} the mechanism, and an override without one is the hole
 this is meant to close.}
 
-\item{outlets}{Per-group outlet points; defaults to \code{fresh::frs_wsg_outlets()}.}
+\item{outlets}{Per-group outlet points; defaults to \code{fresh::frs_wsg_outlets()}.
+A downstream group whose FWA streams this database does not hold hides
+every dam on it, so the check refuses it as it refuses an unmodelled dam
+and names it in \code{wsgs_unloaded} (link#464). Only dams within 65 m of the
+downstream groups' polygons are snapped, which leaves the answer as it was
+and keeps the check's cost to the path (link#461).}
 }
 \value{
-Invisibly, a list with \code{aoi}, \code{status}, \code{dams}, \code{wsgs_missing},
-\code{note} and \code{elapsed_s}.
+Invisibly, a list with \code{aoi}, \code{status}, \code{dams}, \code{wsgs_missing}
+(groups holding unmodelled dams), \code{wsgs_unloaded} (downstream groups with
+no FWA streams), \code{note}, \code{elapsed_s} and \code{steps_s} (seconds per step:
+outlets, fwa_downstream, closure, loaded, near, probe, persisted).
 }
 \description{
 link computes accessibility by reading the \strong{already-persisted} barriers of

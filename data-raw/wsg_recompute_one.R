@@ -209,8 +209,11 @@ if (length(active) > 0L) {
 # modelled and consolidated, so the guard MUST pass; a failure here means the
 # consolidate genuinely dropped a downstream group and this WSG's access is
 # built on barriers that never landed.
-  lnk_wsg_downstream_check(conn, aoi = wsg, cfg = cfg, loaded = loaded,
-                           on_fail = "error")
+  g <- lnk_wsg_downstream_check(conn, aoi = wsg, cfg = cfg, loaded = loaded,
+                                on_fail = "error")
+  # The check's own seconds, beside the recompute's (link#461).
+  cat(sprintf("[wsg_recompute_one] %s downstream check %s in %.1f s\n",
+              wsg, g$status, g$elapsed_s))
 }
 
 # The post-condition is part of the work, so a failure marks the row the same

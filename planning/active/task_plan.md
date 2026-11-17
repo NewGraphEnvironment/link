@@ -28,13 +28,13 @@ Settled by the session from the plan review (`review-plan.md`): #464 checks the 
 
 ## Phase 1: Batch 7, one-group runs that read downstream (#461, #464)
 - [x] #461: measure. m4 full DB 0.20 s; m4 six-group DB from rtj's cloud loader 0.18 s; a no-index copy of the six groups costs ~316 s for the snap (findings.md). The 371 s does not reproduce here.
-- [ ] #461 baseline before any change (O2, G6): record `status`, `dams` (ids, order), `wsgs_missing`, `note` for all 246 groups under `default` on `fresh_default`, plus a fail path (a cfg whose schema has no `barriers`) and an override, on m4's full DB; and BULK on `fwapg473`.
-- [ ] #461: time each step into the result (`steps_s`: outlets forced first, closure, loaded check, probe, persisted lookup).
-- [ ] #461: compute the closure first with `frs_wsg_drainage(conn, aoi, outlets)` (species-filtered in the check), and snap only dams within 65 m of the downstream groups' `fwa_watershed_groups_poly` rows; with any of those polygons absent, snap every dam (as today). Re-run the baseline sweep: identical. Measure the probe on the six-group no-index emulation before and after.
-- [ ] #461: `wsg_run_one.R` and `wsg_recompute_one.R` print the check's own seconds beside the pipeline's.
-- [ ] #464: a mocked test first (closure holding an unloaded fake group, no dams): red today.
-- [ ] #464: before matching dams, confirm each downstream group of the closure has rows in `whse_basemapping.fwa_stream_networks_sp`. Unloaded groups go in `wsgs_unloaded`, with their own message (load the FWA streams), and fail / warn / override as today, the note naming them. A closure error refuses. Test green, and BULK refuses live on `fwapg473`, which holds none of LSKE, KLUM, KISP.
-- [ ] RUNBOOK §8c updated (the check refuses an unloaded downstream group; its timing).
+- [x] #461 baseline before any change (O2, G6): record `status`, `dams` (ids, order), `wsgs_missing`, `note` for all 246 groups under `default` on `fresh_default`, plus a fail path (a cfg whose schema has no `barriers`) and an override, on m4's full DB; and BULK on `fwapg473`.
+- [x] #461: time each step into the result (`steps_s`: outlets forced first, closure, loaded check, probe, persisted lookup).
+- [x] #461: compute the closure first with `frs_wsg_drainage(conn, aoi, outlets)` (species-filtered in the check), and snap only dams within 65 m of the downstream groups' `fwa_watershed_groups_poly` rows; with any of those polygons absent, snap every dam (as today). Re-run the baseline sweep: identical. Measure the probe on the six-group no-index emulation before and after.
+- [x] #461: `wsg_run_one.R` and `wsg_recompute_one.R` print the check's own seconds beside the pipeline's.
+- [x] #464: a mocked test first (closure holding an unloaded fake group, no dams): red today.
+- [x] #464: before matching dams, confirm each downstream group of the closure has rows in `whse_basemapping.fwa_stream_networks_sp`. Unloaded groups go in `wsgs_unloaded`, with their own message (load the FWA streams), and fail / warn / override as today, the note naming them. A closure error refuses. Test green, and BULK refuses live on `fwapg473`, which holds none of LSKE, KLUM, KISP.
+- [x] RUNBOOK §8c updated (the check refuses an unloaded downstream group; its timing).
 
 ## Phase 2: Batch 6, the export contract (#423, #333, #334)
 - [ ] #423: add an `access` integer column to the contract after `has_barriers_dnstr`. Select it in `.lnk_export_rows()` from `streams_access.access_<sp>` (NULL where the table or column is absent); `.lnk_export_conform()` types it. Tests: 0/1/2 survive, the absent case is NA.
