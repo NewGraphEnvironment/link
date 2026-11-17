@@ -1342,6 +1342,19 @@ regressions judgement below reads.
   segment link calls accessible: at most ~1,000 segments per species
   province-wide). A build from before #349, or one whose recompute has not
   re-run since, holds the old disagreement (`research/access_columns.md`).
+- **`access` is the species' access code** from `streams_access.access_<sp>`
+  (#423): 0 blocked below, 1 accessible, 2 accessible with a fish record of
+  the species upstream, -9 not present (a part carries only modelled species,
+  so -9 is not expected). Which records make 2 is the build's `acc` token,
+  summarised per config in the manifest (`configs[].tokens`: each axis's
+  tokens, and how many builds predate tokens). A cross-group recompute that
+  lifts a blocked segment writes 1, not 2 (`R/lnk_access.R`), until the group
+  is re-modelled. The column was added to v1 after its first publish:
+  `required: false` in the contract, NA in a part exported before it, and
+  `lnk_db_load()` reads each tree's columns from its manifest, loads an older
+  tree's parts with `access` NULL and adds the column to a table loaded before
+  it. An export refuses to carry a config's parts forward across that change
+  (re-export every config in the root).
 - **The near-river pair is not exported** (#364): a consumer sees the flags
   it produced, not the walked distances in `streams_near_river`. Carrying them
   would change the export's contract.
@@ -1380,7 +1393,7 @@ code);
 `replace = TRUE` (`--replace`) allows it. PUBLISH runs the same judgement,
 `.lnk_manifest_regressions()`, against the live manifest
 (`LNK_PUBLISH_REPLACE=1`). Each config entry records the link that exported it
-(`exported_by`: version, sha, dirty, contract md5), because carried-forward
+(`exported_by`: version, sha, dirty, contract md5, crate version), because carried-forward
 configs keep the link that computed them. Named `wsgs` and
 `wsgs = NULL` both take each group from whichever of the config's schemas holds
 a finished build of it, and stop only when a named group, or the config as a
@@ -1476,11 +1489,52 @@ check (§8c) matches dams to streams. The round trip is proved on one host
 (`data-raw/logs/downstream_export_465/`); a database holding only some groups
 is not yet tested.
 
-**Not yet:** public read, versioning and PUBLISH gates on `run_uid` /
-`link_dirty` (#334); discharge from wet's `discharge.fwa_v1_segment_monthly`
-(#331); the desktop GeoPackage (#332); registering the column contract in crate
-(#333; until then it is `inst/extdata/schemas/habitat_fwa_v1_segment.yaml`, in
-crate's shape); the webmap (#335).
+**The column contract lives in crate (#333)** as `nge/habitat/fwa/v1/segment`
+(`inst/extdata/schemas/nge/habitat/fwa/v1/segment.yaml`, crate 0.19.0 on).
+link reads it from the installed crate and keeps its own type check
+(`.lnk_export_conform()`); the manifest's `datasets[].schema` cites crate's
+file at its release tag (`url`), and the export refuses a crate installed from
+an unreleased commit, which has no tag. `exported_by.contract_md5` is an md5
+over the columns' names and types in order (before 0.85.0, of link's YAML
+file), beside `crate_version`. A change to the columns is a crate release
+before link raises its floor. The per-group parts' contracts stay in link.
+
+**A published build must be one a consumer can name and rebuild (#334).**
+PUBLISH (`.lnk_publish_refusals()`, `R/lnk_publish.R`) refuses a tree with a
+build that has no `run_uid`, a dirty link or fresh tree, or no thresholds
+logged at its `config_hash`; a recompute behind it with no `run_uid` or a dirty
+tree; or a config exported from a dirty link tree. `LNK_PUBLISH_ALLOW="<reason>"`
+publishes past them, and the manifest records the reason and every refusal
+(`publish_allowed`). A test-looking `run_label` is not a gate: nothing defines
+one, and `run_uid` with a clean tree covers what it was for.
+
+**Each run logs a digest of its persisted streams** (`log.streams_md5`,
+`.lnk_streams_md5()`, written when the run finishes): `v1:` and the md5 of each
+row's md5 in `id_segment` order, over `cols_streams` in order, doubles as IEEE
+754 bytes and geometry as hex EWKB, so neither `extra_float_digits` nor the
+row order moves it and a consolidate's text `COPY` keeps it. Nothing rewrites
+`streams` after the run finishes (the habitat gate and the recompute write
+access, habitat and mapping code). An export recomputes it for every group and
+stops on a difference (the rows are not that build's); a build from before it
+reads `no digest`, counted per config (`configs[].streams_digest`) and on each
+run.
+
+**Versions (#334).** fresh-bc's versioning is Enabled (bucket-wide; PUBLISH
+asserts it). After the parts go up, PUBLISH reads each part's, per-group part's
+and the dependency map's `VersionId` (`head-object`, so a per-group part left
+in place is named too), writes them into the local manifest atomically and
+then uploads it, so the copy read back is the one written. `lnk_catalog()`
+returns `version_id`, and `lnk_db_load()` fetches that version
+(`s3api get-object --version-id`, `?versionId=` over https), so a reader pinned
+to a manifest reads exactly the parts it lists even after a republish. The
+manifest cannot name its own version: pin it with
+`aws s3api list-object-versions --bucket fresh-bc --prefix habitat/fwa/v1/manifest.json`
+and read the one you want with `get-object --version-id`. How many versions to
+keep (a lifecycle rule) is the bucket owner's call.
+
+**Not yet:** public read (#334, an infrastructure change after budget and
+anomaly alerts); discharge from wet's `discharge.fwa_v1_segment_monthly`
+(#331); the desktop GeoPackage (#332); the webmap (#335).
 
 ## 7. Where every rule lives
 

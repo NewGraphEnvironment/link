@@ -40,6 +40,15 @@
 #   7. The published manifest is read back and must list the same parts,
 #      per-group parts and md5s.
 #
+# Before step 3 (link#334): a build in the tree with no run_uid, a dirty
+# link or fresh tree, or no logged thresholds, a recompute with no run_uid or
+# a dirty tree, or a config exported from a dirty tree, refuses the publish
+# (.lnk_publish_refusals()). LNK_PUBLISH_ALLOW="<reason>" publishes past it,
+# and the manifest records the reason and the refusals (publish_allowed). The
+# bucket's versioning must be Enabled: after the parts go up, each part's
+# and per-group part's S3 VersionId is written into the manifest (atomically,
+# locally) before the manifest goes up, so a reader can pin the exact bytes.
+#
 # The prefix is private (link#308, "Staged private first"): every call uses
 # the caller's aws credentials, and readers need theirs too.
 #
@@ -142,6 +151,32 @@ if (identical(Sys.getenv("LNK_PUBLISH"), "1")) {
          call. = FALSE)
   }
 
+  # The builds a floodplain item can name and rebuild (link#334), and the
+  # bucket keeping every version a manifest will name.
+  allowed <- .lnk_publish_gate(.lnk_publish_refusals(m, root),
+                               Sys.getenv("LNK_PUBLISH_ALLOW", ""))
+  if (!is.null(allowed)) {
+    stamp("PUBLISH past ", length(allowed$refusals), " refusal(s): ",
+          allowed$reason)
+  }
+  vs <- aws_ok("s3api", "get-bucket-versioning", "--bucket", bucket,
+               "--query", "Status", "--output", "text")
+  if (!identical(trimws(vs[length(vs)]), "Enabled")) {
+    stop("bucket ", bucket, " versioning is '", vs[length(vs)], "', not ",
+         "Enabled: the manifest's version ids would not pin anything",
+         call. = FALSE)
+  }
+  # VersionId of a key just written or confirmed; it must exist.
+  version <- function(key) {
+    x <- aws_ok("s3api", "head-object", "--bucket", bucket, "--key", key,
+                "--query", "VersionId", "--output", "text")
+    v <- trimws(x[length(x)])
+    if (!nzchar(v) || identical(v, "None") || identical(v, "null")) {
+      stop(key, " has no VersionId", call. = FALSE)
+    }
+    v
+  }
+
   # Every check before the first write, so a refusal leaves the bucket as it
   # was. (a) The root must not lose anything live (.lnk_manifest_regressions:
   # a config, a pair, a newer build or recompute, a newer export); the root is
@@ -209,7 +244,33 @@ if (identical(Sys.getenv("LNK_PUBLISH"), "1")) {
     stamp("put ", d$key)
   }
 
+  # Name each part's version in the manifest before it goes up (link#334).
+  # Rewritten locally first, atomically, so the local copy is what is read
+  # back; the manifest cannot name its own version (list-object-versions).
+  for (i in seq_along(m$parts)) {
+    m$parts[[i]]$version_id <- version(paste(prefix, m$parts[[i]]$key,
+                                             sep = "/"))
+  }
+  for (i in seq_along(m$group_parts)) {
+    m$group_parts[[i]]$version_id <- version(paste(prefix,
+                                                   m$group_parts[[i]]$key,
+                                                   sep = "/"))
+  }
+  if (!is.null(m$dependencies)) {
+    m$dependencies$version_id <- version(paste(prefix, m$dependencies$key,
+                                               sep = "/"))
+  }
+  m$publish_allowed <- allowed
   f_man <- file.path(root, "manifest.json")
+  tmp_man <- tempfile(tmpdir = root, fileext = ".json")
+  jsonlite::write_json(m, tmp_man, auto_unbox = TRUE, pretty = TRUE,
+                       digits = NA, null = "null", na = "null")
+  if (!file.rename(tmp_man, f_man)) {
+    unlink(tmp_man)
+    stop("could not write the versioned manifest", call. = FALSE)
+  }
+  stamp("versions recorded for ", length(m$parts), " parts and ",
+        length(m$group_parts), " per-group parts")
   put(f_man, paste(prefix, "manifest.json", sep = "/"), "application/json",
       unname(tools::md5sum(f_man)), "--cache-control", "no-cache")
   stamp("put manifest.json")

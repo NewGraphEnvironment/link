@@ -72,7 +72,7 @@ local_export_fixture <- function(conn, env = parent.frame()) {
        PRIMARY KEY (id_segment, watershed_group_code))", schema))
   DBI::dbExecute(conn, sprintf(
     "INSERT INTO %s.streams_access VALUES
-       (1, 'ADMS', false, 1), (2, 'ADMS', true, 0)", schema))
+       (1, 'ADMS', false, 2), (2, 'ADMS', true, 0)", schema))
 
   # The rows other groups' downstream walks read (#465): ADMS holds a gradient
   # barrier (no linear feature) and a dam, with an override at the gradient
@@ -173,9 +173,11 @@ read_parquet_duck <- function(path, sql = "SELECT * FROM read_parquet(%s, hive_p
 # A one-part export tree written without a database: synthetic rows in the
 # column contract, a manifest from the export's own writer.
 local_export_tree <- function(env = parent.frame(), n = 3L, config = "cfgx",
-                              species = "BT", root = NULL) {
+                              species = "BT", root = NULL, drop = NULL) {
   if (is.null(root)) root <- withr::local_tempdir(.local_envir = env)
+  # `drop`: columns a tree exported before they were added to v1 lacks
   cols <- link:::.lnk_export_cols()
+  cols <- cols[!names(cols) %in% drop]
   rows <- as.data.frame(lapply(cols, function(t) {
     switch(t, integer = seq_len(n), double = as.double(seq_len(n)) * 10,
            string = rep("ADMS", n), logical = rep(c(TRUE, FALSE), length.out = n))
@@ -190,5 +192,13 @@ local_export_tree <- function(env = parent.frame(), n = 3L, config = "cfgx",
                       bytes = e$bytes, md5 = e$md5, stringsAsFactors = FALSE)
   link:::.lnk_manifest_write(root, parts, NULL,
                              list(list(config = config, runs = list())))
+  if (length(drop)) {
+    mp <- file.path(root, "manifest.json")
+    m <- jsonlite::fromJSON(mp, simplifyVector = FALSE)
+    m$datasets[[1]]$schema$cols <- Filter(function(x) !x$name %in% drop,
+                                          m$datasets[[1]]$schema$cols)
+    jsonlite::write_json(m, mp, auto_unbox = TRUE, pretty = TRUE, digits = NA,
+                         null = "null", na = "null")
+  }
   root
 }
