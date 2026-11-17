@@ -1,5 +1,68 @@
 # Changelog
 
+## link 0.85.0
+
+**The habitat export carries the access code, its contract is crate’s,
+PUBLISH takes only builds a consumer can name, and a one-group run
+refuses a downstream group it cannot see**
+([\#473](https://github.com/NewGraphEnvironment/link/issues/473),
+backlog move 5).
+
+- **The export carries `access`**
+  ([\#423](https://github.com/NewGraphEnvironment/link/issues/423)): the
+  species’ access code from `streams_access` per segment, config and
+  species (0 blocked below, 1 accessible, 2 accessible with the species
+  recorded upstream), so a reader can map known against suspected fish.
+  It is added to v1 as an optional column.
+  [`lnk_db_load()`](https://newgraphenvironment.github.io/link/reference/lnk_db_load.md)
+  reads each tree’s columns from its manifest, so the tree published on
+  2026-11-14 still loads (with `access` NULL), and a table loaded before
+  gains the column. Each config in the manifest summarises its builds’
+  tokens (`configs[].tokens`), so a reader knows which `acc` rule made
+  code 2.
+- **The column contract is crate’s `nge/habitat/fwa/v1/segment`**
+  ([\#333](https://github.com/NewGraphEnvironment/link/issues/333)),
+  moved byte for byte. The export and its readers need crate 0.19.0
+  (they ask for it when called, so modelling on a host with an older
+  crate is not stopped), and the manifest cites the file at its release
+  tag. `exported_by` adds `crate_version`, and its `contract_md5` is now
+  an md5 over the columns’ names and types.
+- **PUBLISH refuses builds a floodplain item could not name or rebuild**
+  ([\#334](https://github.com/NewGraphEnvironment/link/issues/334)): a
+  build with no `run_uid`, from a dirty link or fresh tree, or with no
+  thresholds logged, a recompute with no `run_uid` or from a dirty tree,
+  or a config exported from a dirty tree. `LNK_PUBLISH_ALLOW="<reason>"`
+  publishes past them, and the manifest records the reason. PUBLISH also
+  checks that the bucket’s versioning is on and writes each part’s S3
+  `VersionId` into the manifest.
+  [`lnk_catalog()`](https://newgraphenvironment.github.io/link/reference/lnk_catalog.md)
+  returns `version_id`, and
+  [`lnk_db_load()`](https://newgraphenvironment.github.io/link/reference/lnk_db_load.md)
+  fetches that version. Each run now logs a digest of its persisted
+  streams (`log.streams_md5`), and an export stops where the rows it
+  reads are not that build’s. Public read is
+  [\#334](https://github.com/NewGraphEnvironment/link/issues/334)’s one
+  open item.
+- **[`lnk_wsg_downstream_check()`](https://newgraphenvironment.github.io/link/reference/lnk_wsg_downstream_check.md)
+  refuses a downstream group with no FWA streams**
+  ([\#464](https://github.com/NewGraphEnvironment/link/issues/464)).
+  Before, a database without the groups below the outlet found no dams
+  there and passed. It now names those groups (`wsgs_unloaded`), and
+  fails, warns or records an override as for an unmodelled dam. A
+  closure that errors refuses rather than passing.
+- **The check snaps only the dams near the downstream path**
+  ([\#461](https://github.com/NewGraphEnvironment/link/issues/461)):
+  CABD dams within 65 m of the downstream groups’ polygons.
+  [\#461](https://github.com/NewGraphEnvironment/link/issues/461)’s 371
+  s did not reproduce on m4, even on a six-group database built by the
+  cloud sessions’ loader, where the check takes 0.2 s. Without a stream
+  geometry index, though, the old check takes 273 s on HARR and the new
+  one 8 s. On all 246 groups the results are identical before and after.
+  Its result carries each step’s seconds (`steps_s`), and
+  `wsg_run_one.R` and `wsg_recompute_one.R` print them.
+- RUNBOOK §6d and §8c. The pre-run gate runs again before the next
+  provincial run (`R/` changed); the next PUBLISH is the operator’s.
+
 ## link 0.84.0
 
 **One rule says which fish records count, and each lift is published

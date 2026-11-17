@@ -15,7 +15,7 @@ cut each segment's line."><meta property="og:image" content="https://newgraphenv
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.84.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.85.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -97,7 +97,12 @@ while its md5 still matches the manifest. Local parts are read in place.</p></dd
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>Everything runs in one transaction: a part that fails its md5, a column
+    <p>The table holds the column contract this link reads. A tree exported
+before a column was added to v1 (<code>access</code>, link#423) loads with that column
+NULL, and a table loaded before it gains the column; the columns a tree
+holds are read from its manifest. A part that names its S3 version
+(<code>version_id</code>, link#334) is fetched at that version.</p>
+<p>Everything runs in one transaction: a part that fails its md5, a column
 mismatch, a duplicate key or a short read leaves the table as it was.
 Loading a config replaces that config's rows (all species), so a reload
 never mixes two builds of one config. Other configs' rows are untouched.</p>

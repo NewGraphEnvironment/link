@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.84.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.85.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,21 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.85.0" id="link-0850">link 0.85.0<a class="anchor" aria-label="anchor" href="#link-0850"></a></h2>
+<p><strong>The habitat export carries the access code, its contract is crate’s, PUBLISH takes only builds a consumer can name, and a one-group run refuses a downstream group it cannot see</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/473" class="external-link">#473</a>, backlog move 5).</p>
+<ul><li>
+<strong>The export carries <code>access</code></strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/423" class="external-link">#423</a>): the species’ access code from <code>streams_access</code> per segment, config and species (0 blocked below, 1 accessible, 2 accessible with the species recorded upstream), so a reader can map known against suspected fish. It is added to v1 as an optional column. <code><a href="../reference/lnk_db_load.html">lnk_db_load()</a></code> reads each tree’s columns from its manifest, so the tree published on 2026-11-14 still loads (with <code>access</code> NULL), and a table loaded before gains the column. Each config in the manifest summarises its builds’ tokens (<code>configs[].tokens</code>), so a reader knows which <code>acc</code> rule made code 2.</li>
+<li>
+<strong>The column contract is crate’s <code>nge/habitat/fwa/v1/segment</code></strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/333" class="external-link">#333</a>), moved byte for byte. The export and its readers need crate 0.19.0 (they ask for it when called, so modelling on a host with an older crate is not stopped), and the manifest cites the file at its release tag. <code>exported_by</code> adds <code>crate_version</code>, and its <code>contract_md5</code> is now an md5 over the columns’ names and types.</li>
+<li>
+<strong>PUBLISH refuses builds a floodplain item could not name or rebuild</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/334" class="external-link">#334</a>): a build with no <code>run_uid</code>, from a dirty link or fresh tree, or with no thresholds logged, a recompute with no <code>run_uid</code> or from a dirty tree, or a config exported from a dirty tree. <code>LNK_PUBLISH_ALLOW="&lt;reason&gt;"</code> publishes past them, and the manifest records the reason. PUBLISH also checks that the bucket’s versioning is on and writes each part’s S3 <code>VersionId</code> into the manifest. <code><a href="../reference/lnk_catalog.html">lnk_catalog()</a></code> returns <code>version_id</code>, and <code><a href="../reference/lnk_db_load.html">lnk_db_load()</a></code> fetches that version. Each run now logs a digest of its persisted streams (<code>log.streams_md5</code>), and an export stops where the rows it reads are not that build’s. Public read is <a href="https://github.com/NewGraphEnvironment/link/issues/334" class="external-link">#334</a>’s one open item.</li>
+<li>
+<strong><code><a href="../reference/lnk_wsg_downstream_check.html">lnk_wsg_downstream_check()</a></code> refuses a downstream group with no FWA streams</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/464" class="external-link">#464</a>). Before, a database without the groups below the outlet found no dams there and passed. It now names those groups (<code>wsgs_unloaded</code>), and fails, warns or records an override as for an unmodelled dam. A closure that errors refuses rather than passing.</li>
+<li>
+<strong>The check snaps only the dams near the downstream path</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/461" class="external-link">#461</a>): CABD dams within 65 m of the downstream groups’ polygons. <a href="https://github.com/NewGraphEnvironment/link/issues/461" class="external-link">#461</a>’s 371 s did not reproduce on m4, even on a six-group database built by the cloud sessions’ loader, where the check takes 0.2 s. Without a stream geometry index, though, the old check takes 273 s on HARR and the new one 8 s. On all 246 groups the results are identical before and after. Its result carries each step’s seconds (<code>steps_s</code>), and <code>wsg_run_one.R</code> and <code>wsg_recompute_one.R</code> print them.</li>
+<li>RUNBOOK §6d and §8c. The pre-run gate runs again before the next provincial run (<code>R/</code> changed); the next PUBLISH is the operator’s.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.84.0" id="link-0840">link 0.84.0<a class="anchor" aria-label="anchor" href="#link-0840"></a></h2>
 <p><strong>One rule says which fish records count, and each lift is published with the records behind it</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/470" class="external-link">#470</a>, backlog move 2). Records now count the same way for the observation cuts, code 2 (“accessible, the species recorded upstream”) and the barrier lifts, and the rule is data in the bundle. <code>default</code> is <code>cut-full-top-2 acc-v6</code>, <code>bcfishpass</code> is <code>cut-full-ssf-all-2 acc-bcfp-5</code>; their predecessors retire at this release, and every group re-models at the next provincial run.</p>

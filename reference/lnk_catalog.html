@@ -13,7 +13,7 @@ place they are written, and its href resolves relative to the manifest."><meta p
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.84.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.85.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -65,10 +65,15 @@ place they are written, and its <code>href</code> resolves relative to the manif
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A data frame, one row per part: <code>dataset</code>, <code>config</code>, <code>species</code>,
-<code>code</code>, <code>drainage</code>, <code>wsgs</code>, <code>key</code>, <code>href</code>, <code>rows</code>, <code>bytes</code>, <code>md5</code>.
+<code>code</code>, <code>drainage</code>, <code>wsgs</code>, <code>key</code>, <code>href</code>, <code>rows</code>, <code>bytes</code>, <code>md5</code>, and
+<code>version_id</code> (the S3 object version a publish recorded, NA in a tree
+built locally or published before link#334; <code><a href="lnk_db_load.html">lnk_db_load()</a></code> fetches that
+version, so a reader pinned to a manifest reads the parts it lists).
 Attributes: <code>manifest</code> (where it was read), <code>id</code>, <code>built</code>, <code>provenance</code>,
-<code>configs</code> (per config: the log rows of each build, config hashes,
-discharge, bundles) and <code>files</code> (the provenance and bundle files).</p>
+<code>datasets</code> (each dataset's column contract as the export wrote it),
+<code>configs</code> (per config: the log rows of each build, config hashes, the
+builds' tokens, discharge, bundles) and <code>files</code> (the provenance and
+bundle files).</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

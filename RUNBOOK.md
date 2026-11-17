@@ -1603,6 +1603,22 @@ like:**
   species province-wide). A build from before \#349, or one whose
   recompute has not re-run since, holds the old disagreement
   (`research/access_columns.md`).
+- **`access` is the species’ access code** from
+  `streams_access.access_<sp>` (#423): 0 blocked below, 1 accessible, 2
+  accessible with a fish record of the species upstream, -9 not present
+  (a part carries only modelled species, so -9 is not expected). Which
+  records make 2 is the build’s `acc` token, summarised per config in
+  the manifest (`configs[].tokens`: each axis’s tokens, and how many
+  builds predate tokens). A cross-group recompute that lifts a blocked
+  segment writes 1, not 2 (`R/lnk_access.R`), until the group is
+  re-modelled. The column was added to v1 after its first publish:
+  `required: false` in the contract, NA in a part exported before it,
+  and
+  [`lnk_db_load()`](https://newgraphenvironment.github.io/link/reference/lnk_db_load.md)
+  reads each tree’s columns from its manifest, loads an older tree’s
+  parts with `access` NULL and adds the column to a table loaded before
+  it. An export refuses to carry a config’s parts forward across that
+  change (re-export every config in the root).
 - **The near-river pair is not exported** (#364): a consumer sees the
   flags it produced, not the walked distances in `streams_near_river`.
   Carrying them would change the export’s contract.
@@ -1644,11 +1660,11 @@ the discharge table, or the export code); `replace = TRUE` (`--replace`)
 allows it. PUBLISH runs the same judgement,
 `.lnk_manifest_regressions()`, against the live manifest
 (`LNK_PUBLISH_REPLACE=1`). Each config entry records the link that
-exported it (`exported_by`: version, sha, dirty, contract md5), because
-carried-forward configs keep the link that computed them. Named `wsgs`
-and `wsgs = NULL` both take each group from whichever of the config’s
-schemas holds a finished build of it, and stop only when a named group,
-or the config as a whole, has none.
+exported it (`exported_by`: version, sha, dirty, contract md5, crate
+version), because carried-forward configs keep the link that computed
+them. Named `wsgs` and `wsgs = NULL` both take each group from whichever
+of the config’s schemas holds a finished build of it, and stop only when
+a named group, or the config as a whole, has none.
 
 `provenance.source_artifact` is upserted as primitives reload, so the
 export stores it as a content-addressed snapshot of this database’s
@@ -1753,12 +1769,71 @@ round trip is proved on one host
 (`data-raw/logs/downstream_export_465/`); a database holding only some
 groups is not yet tested.
 
-**Not yet:** public read, versioning and PUBLISH gates on `run_uid` /
-`link_dirty` (#334); discharge from wet’s
+**The column contract lives in crate (#333)** as
+`nge/habitat/fwa/v1/segment`
+(`inst/extdata/schemas/nge/habitat/fwa/v1/segment.yaml`, crate 0.19.0
+on). link reads it from the installed crate (asking for 0.19.0 when the
+export or a reader runs, not through its `Imports:` floor, so modelling
+on a host with an older crate is not stopped) and keeps its own type
+check (`.lnk_export_conform()`); the manifest’s `datasets[].schema`
+cites crate’s file at its release tag (`url`), and the export refuses a
+crate installed from an unreleased commit, which has no tag.
+`exported_by.contract_md5` is an md5 over the columns’ names and types
+in order (before 0.85.0, of link’s YAML file), beside `crate_version`. A
+change to the columns is a crate release before link raises its floor.
+The per-group parts’ contracts stay in link.
+
+**A published build must be one a consumer can name and rebuild
+(#334).** PUBLISH (`.lnk_publish_refusals()`, `R/lnk_publish.R`) refuses
+a tree with a build that has no `run_uid`, a dirty link or fresh tree
+(or one whose state was not recorded), or no thresholds logged at its
+`config_hash`; a recompute behind it with no `run_uid` or a dirty tree;
+or a config exported from a dirty link tree.
+`LNK_PUBLISH_ALLOW="<reason>"` publishes past them, and the manifest
+records the reason and every refusal (`publish_allowed`). A test-looking
+`run_label` is not a gate: nothing defines one, and `run_uid` with a
+clean tree covers what it was for.
+
+**Each run logs a digest of its persisted streams** (`log.streams_md5`,
+`.lnk_streams_md5()`, written when the run finishes): `v1:` and the md5
+of each row’s md5 in `id_segment` order, over `cols_streams` in order,
+doubles as IEEE 754 bytes and geometry as hex EWKB, so neither
+`extra_float_digits` nor the row order moves it and a consolidate’s text
+`COPY` keeps it. Nothing rewrites `streams` after the run finishes (the
+habitat gate and the recompute write access, habitat and mapping code).
+An export recomputes it for every group and stops on a difference (the
+rows are not that build’s); a build from before it reads `no digest`,
+counted per config (`configs[].streams_digest`) and on each run.
+
+**Versions (#334).** fresh-bc’s versioning is Enabled (bucket-wide;
+PUBLISH asserts it). After the parts go up, PUBLISH reads each part’s,
+per-group part’s and the dependency map’s `VersionId` (`head-object`, so
+a per-group part left in place is named too), writes them into the local
+manifest atomically and then uploads it, so the copy read back is the
+one written.
+[`lnk_catalog()`](https://newgraphenvironment.github.io/link/reference/lnk_catalog.md)
+returns `version_id`, and
+[`lnk_db_load()`](https://newgraphenvironment.github.io/link/reference/lnk_db_load.md)
+and
+[`lnk_downstream_load()`](https://newgraphenvironment.github.io/link/reference/lnk_downstream_load.md)
+(through
+[`lnk_downstream_files()`](https://newgraphenvironment.github.io/link/reference/lnk_downstream_files.md)’s
+`version_id`) fetch that version (`s3api get-object --version-id`,
+`?versionId=` over https), so a reader pinned to a manifest reads
+exactly the parts it lists even after a republish. Naming a version
+needs `s3:GetObjectVersion`, which a reader granted only `s3:GetObject`
+(a scoped user, and the public-read statement \#334 will add, unless it
+grants both) lacks; such a reader falls back to the current object, and
+the md5 check then refuses it once a republish has replaced it. The
+manifest cannot name its own version: pin it with
+`aws s3api list-object-versions --bucket fresh-bc --prefix habitat/fwa/v1/manifest.json`
+and read the one you want with `get-object --version-id`. How many
+versions to keep (a lifecycle rule) is the bucket owner’s call.
+
+**Not yet:** public read (#334, an infrastructure change after budget
+and anomaly alerts); discharge from wet’s
 `discharge.fwa_v1_segment_monthly` (#331); the desktop GeoPackage
-(#332); registering the column contract in crate (#333; until then it is
-`inst/extdata/schemas/habitat_fwa_v1_segment.yaml`, in crate’s shape);
-the webmap (#335).
+(#332); the webmap (#335).
 
 ## 7. Where every rule lives
 
@@ -2469,7 +2544,7 @@ override, and the guard stops meaning anything. **Do not “simplify” it
 back.** The path form is complete, not merely cheaper: access walks
 downstream from every segment, and every focal segment exits through the
 focal outlet, so the out-of-WSG barriers reachable from *any* focal
-segment are exactly those below the outlet. ~0.5 s.
+segment are exactly those below the outlet. ~0.2 s.
 
 **What counts as blocking** — three filters that live downstream of
 `.lnk_pipeline_prep_dams`, all mirrored by the guard:
@@ -2518,9 +2593,38 @@ then
 before `wsg_run_one.R`. The guard checks per dam that a blocking dam is
 persisted, so the loaded `CABD` rows satisfy it, but it finds the dams
 by matching them to streams, so the dependencies’ FWA streams must be
-loaded too (#464 makes a missing downstream group refuse instead of
-pass). The groups to load are the line rule’s, not the outlet closure’s:
-the walk reads every group’s rows by position.
+loaded too. The groups to load are the line rule’s, not the outlet
+closure’s: the walk reads every group’s rows by position.
+
+**A downstream group with no FWA streams refuses (link#464).** The guard
+takes the groups below the outlet from
+`frs_wsg_drainage(conn, aoi, outlets)` (focal plus every group whose
+outlet is downstream; outlets only, so it answers on a partial database)
+and asks `fwa_stream_networks_sp` for a row of each. One with none is
+named in `wsgs_unloaded`, and fails, warns or is overridden as an
+unmodelled dam is; its note opens `link#464 guard(...)`. It is FWA that
+is checked, not the persist schema: a downstream group need not be
+modelled for the check to pass. The closure over-approximates where
+groups split a main stem (NECR’s holds both TWAC and NARC), so the
+refusal can ask for a group the path only touches at a bank. A closure
+that errors refuses; before \#464 it read as an empty set and passed.
+
+**What the guard costs (link#461).** On the full province (m4,
+2026-11-17) it takes 0.2 s a group, and the same on a six-group database
+built by the cloud sessions’ loader. \#461’s 371 s, in a cloud session’s
+six-group Postgres, did not reproduce on m4. What reproduces it is the
+65 m nearest-stream snap of all 2,593 CABD dams with no usable GiST
+index on `fwa_stream_networks_sp.geom`: 273 s for HARR on that six-group
+database with the index dropped. So the guard snaps only the dams within
+65 m of the downstream groups’ `fwa_watershed_groups_poly` rows: a dam
+it can report snapped to a stream of one of them, and a group’s streams
+lie inside its polygon, so the answer is unchanged (246 groups, both a
+populated and an empty persist schema, identical before and after), and
+HARR’s 273 s becomes 8 s with no index. Where a downstream group’s
+polygon is absent it snaps every dam, as before. Its result carries
+`steps_s` (outlets, fwa_downstream, closure, loaded, near, probe,
+persisted), and `wsg_run_one.R` and `wsg_recompute_one.R` print the
+check’s seconds, so a slow run names its slow step.
 
 ------------------------------------------------------------------------
 

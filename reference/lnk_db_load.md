@@ -53,6 +53,12 @@ Invisibly, a data frame of `key` and `rows` loaded.
 
 ## Details
 
+The table holds the column contract this link reads. A tree exported
+before a column was added to v1 (`access`, link#423) loads with that
+column NULL, and a table loaded before it gains the column; the columns
+a tree holds are read from its manifest. A part that names its S3
+version (`version_id`, link#334) is fetched at that version.
+
 Everything runs in one transaction: a part that fails its md5, a column
 mismatch, a duplicate key or a short read leaves the table as it was.
 Loading a config replaces that config's rows (all species), so a reload

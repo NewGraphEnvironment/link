@@ -59,11 +59,18 @@ lnk_wsg_downstream_check(
 
   Per-group outlet points; defaults to
   [`fresh::frs_wsg_outlets()`](https://newgraphenvironment.github.io/fresh/reference/frs_wsg_outlets.html).
+  A downstream group whose FWA streams this database does not hold hides
+  every dam on it, so the check refuses it as it refuses an unmodelled
+  dam and names it in `wsgs_unloaded` (link#464). Only dams within 65 m
+  of the downstream groups' polygons are snapped, which leaves the
+  answer as it was and keeps the check's cost to the path (link#461).
 
 ## Value
 
-Invisibly, a list with `aoi`, `status`, `dams`, `wsgs_missing`, `note`
-and `elapsed_s`.
+Invisibly, a list with `aoi`, `status`, `dams`, `wsgs_missing` (groups
+holding unmodelled dams), `wsgs_unloaded` (downstream groups with no FWA
+streams), `note`, `elapsed_s` and `steps_s` (seconds per step: outlets,
+fwa_downstream, closure, loaded, near, probe, persisted).
 
 ## Details
 

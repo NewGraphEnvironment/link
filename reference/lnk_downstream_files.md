@@ -40,8 +40,9 @@ lnk_downstream_files(
 
 A data frame, one row per dependency and table (one row for a dependency
 with nothing to fetch): `target`, `config`, `wsg`, `class`, `reason`,
-`table`, `key`, `href`, `rows`, `bytes`, `md5`, `run_id`, `config_hash`,
-`link_version`, `link_sha`, `fwa_url`.
+`table`, `key`, `href`, `rows`, `bytes`, `md5`, `version_id` (the S3
+version a publish recorded, fetched as named; NA before it), `run_id`,
+`config_hash`, `link_version`, `link_sha`, `fwa_url`.
 
 ## Details
 

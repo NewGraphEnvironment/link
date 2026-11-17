@@ -22,10 +22,16 @@ lnk_catalog(manifest)
 ## Value
 
 A data frame, one row per part: `dataset`, `config`, `species`, `code`,
-`drainage`, `wsgs`, `key`, `href`, `rows`, `bytes`, `md5`. Attributes:
-`manifest` (where it was read), `id`, `built`, `provenance`, `configs`
-(per config: the log rows of each build, config hashes, discharge,
-bundles) and `files` (the provenance and bundle files).
+`drainage`, `wsgs`, `key`, `href`, `rows`, `bytes`, `md5`, and
+`version_id` (the S3 object version a publish recorded, NA in a tree
+built locally or published before link#334;
+[`lnk_db_load()`](https://newgraphenvironment.github.io/link/reference/lnk_db_load.md)
+fetches that version, so a reader pinned to a manifest reads the parts
+it lists). Attributes: `manifest` (where it was read), `id`, `built`,
+`provenance`, `datasets` (each dataset's column contract as the export
+wrote it), `configs` (per config: the log rows of each build, config
+hashes, the builds' tokens, discharge, bundles) and `files` (the
+provenance and bundle files).
 
 ## Details
 
