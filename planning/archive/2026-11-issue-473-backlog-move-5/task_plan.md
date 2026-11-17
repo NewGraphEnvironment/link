@@ -62,7 +62,7 @@ Settled by the session from the plan review (`review-plan.md`): #464 checks the 
 - [x] Tests pass (`devtools::test()`, `devtools::check()`, `lintr` per file against main): three tests fail identically on main
 - [x] `/code-check` clean (once over the branch, three-round floor)
 - [x] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] `/planning-archive` on completion
 
 Verification: #461's before/after equality on four groups, with the timing table; #464's red-then-green fixture test; export round trip (BUILD → `lnk_catalog()` → `lnk_db_load()`), checking the `access` column against `streams_access` row for row on one group; each PUBLISH refusal driven by a test with a stubbed `aws`; the digest equal on a group before and after a consolidate copy.
 
