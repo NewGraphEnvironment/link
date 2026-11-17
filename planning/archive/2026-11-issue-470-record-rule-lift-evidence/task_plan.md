@@ -163,7 +163,7 @@ LSKE or KLUM (`lifts_426.csv`). #427: operator chose 2 records (2026-11-16) from
 - [x] Tests pass (all but #493 and the two tunnel-bound errors, which fail on main too)
 - [x] `/code-check branch`: four rounds, ten findings fixed, ended on round 4's 27-place enumeration (`review-round*.md`)
 - [x] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] `/planning-archive` on completion
 
 Verification: the fixture tests above go red with the old rule restored; Phase 3's
 before/after builds move only where a counted or dropped record sits; the verify
