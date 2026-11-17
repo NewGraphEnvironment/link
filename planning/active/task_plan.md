@@ -157,12 +157,12 @@ LSKE or KLUM (`lifts_426.csv`). #427: operator chose 2 records (2026-11-16) from
 - [ ] Provincial re-model of `fresh_default` and `fresh` at `acc-v6` / `acc-bcfp-5`
       (operator's word), after the pre-run gate runs again (`R/` changed)
 - [ ] The export carrying `barrier_override_evidence` for knowledge#178 (move 5, #473)
-- [ ] #236 open with its narrowed body
+- [x] #236 open with its narrowed body (done 2026-11-16)
 
 ## Validation
 - [x] Tests pass (all but #493 and the two tunnel-bound errors, which fail on main too)
-- [ ] `/code-check` clean (once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
+- [x] `/code-check branch`: four rounds, ten findings fixed, ended on round 4's 27-place enumeration (`review-round*.md`)
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
 Verification: the fixture tests above go red with the old rule restored; Phase 3's
