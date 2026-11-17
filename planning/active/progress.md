@@ -16,3 +16,16 @@
   (back-compat); its driver passes the tracker.
 - Phase 2 landed (this commit)
 - Next: Phase 3's after builds once the before leg finishes
+- Phases 3-5 landed: before/after builds and diff (`f802313e`), head builds and the evidence check
+  (`bcc7c716`), NEWS, status block, 0.84.0
+- `/code-check branch`:
+  - Round 1 (`d6d1ba06`): information_schema lookup by literal table name in the lift's evidence;
+    the negative script judged pre-0.84 runs. Both fixed.
+  - Round 2 (`d62c9340`): the presence check chained aliases through pooled rows. Fixed.
+  - Round 3 (`75f575e7`): mechanism named (the record rule re-derived per consumer); five findings,
+    one inside round 1's fix (negative script's judged groups). Fixed; the harness's missing control
+    table moved #427's HARR row (+8, not +9), reported to the operator.
+  - Round 4: enumeration of 27 places (`review-round4.md`); two findings, one inside round 3's fix
+    (the harness also left out habitat lifts, so #427's "added" counts were high: SQAM 4, not 22);
+    the dictionary refs for the presence check drifted with round 2's fix. Fixing: the harness now
+    calls prepare's own steps.

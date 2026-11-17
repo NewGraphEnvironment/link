@@ -75,29 +75,31 @@ records as CT, so the script's record sets cannot see a merged top; the trace is
 
 ## #426 and #427 (`lifts_426_427.R`)
 
-The lift harness runs `lnk_barrier_overrides()` at HEAD's code over each group's persisted natural
-barriers and the province's records under the record rule, with the group's
-`barriers_definite_control` rows as the control table, as prepare passes them (observation lifts
-only). Its first run left control out, which lifted the HARR control falls at 356354346 @ 8,876 m
-at threshold 2 and read HARR as +9 (≤ 282 km); the operator chose 2 on that table, and the
-corrected HARR row is +8 (≤ 36 km). Code-check round 3 found it.
+The lift harness makes the lift through prepare's own steps at HEAD's code
+(`.lnk_pipeline_prep_load_aux()` for the group's control and habitat tables,
+`.lnk_pipeline_prep_overrides()` for the call itself), over each group's persisted natural barriers
+and the province's records under the record rule, once per variant. Two earlier runs rebuilt that
+call by hand and each left out an argument prepare passes: first the control table (a HARR control
+falls at 356354346 @ 8,876 m read as lifted at threshold 2; code-check round 3), then the habitat
+table (a barrier a habitat row already lifts read as added by the threshold; round 4). The operator
+chose 2 on the first run's table (SQAM +22, LSKE +7, HARR +9); the corrected numbers are below.
 
 - **#426** (`lifts_426.csv`): the `bcfishpass` bundle's lifts with salmon and steelhead floors at
   `>= 1990-01-01` and `> 1990-01-01` are identical in BULK, PARS, ADMS, BABL, ELKR, CHWK, HARR, LFRA,
-  LSKE and KLUM. The change is parity with bcfishpass's SQL; it moves no observation lift there.
+  LSKE and KLUM. The change is parity with bcfishpass's SQL; it moves no lift there.
 - **#427** (`lifts_427.csv`): `default` with CH, CM, CO, PK, SK, ST, GR and KO at 5, 2 and 1 records.
-  Lifts added per salmon species over 5, with an upper bound on blocked km above them
-  (`fresh_default` 0.78.2's `access_<sp>` = 0):
+  Lifts added over 5 per salmon species (ST in brackets where it differs), and an upper bound on the
+  blocked km above them (`fresh_default` 0.78.2's `access_<sp>` = 0):
 
   | group | at 2 | at 1 (on a single record) |
   |---|---|---|
-  | SQAM | +22 (≤ 468 km) | +75 (53) (≤ 1,483 km) |
-  | LSKE | +7 (≤ 579 km) | +15 (8) (≤ 625 km) |
-  | HARR | +8 (≤ 36 km) | +41 (33) (≤ 359 km) |
+  | SQAM | +4 (ST +24) (≤ 152 km; ST ≤ 1,536) | +55 (51) (≤ 1,037 km) |
+  | LSKE | +6 (≤ 25 km) | +14 (8) (≤ 72 km) |
+  | HARR | +8 (≤ 36 km) | +37 (29) (≤ 306 km) |
   | MORR | +0 (ST +8) | +7 (7) |
   | BULK | +0 | +2 (2) |
 
-  The operator chose 2 (2026-11-16).
+  No lift threshold 2 adds rests on a single record. The operator chose 2 (2026-11-16).
 
 ## What each lift rests on (`verify_evidence.sh`)
 
