@@ -24,4 +24,4 @@ What was learned: the plan review and code-check round 1 found the same mechanis
 - `config_hash` moved for `default`, `default_tuned`, `default_minimal`, `default_parent` and `bcfishpass`: earlier builds read as another bundle in `recompute_readers_check.R` and the export until re-modelled (already owed: the current builds are `acc-v5`)
 - The upstream offer of the three exclusions, if you give the word
 
-Closed by: PR (to be opened from branch `472-backlog-move-4-default-s-presence-table`)
+Closed by: PR #498
