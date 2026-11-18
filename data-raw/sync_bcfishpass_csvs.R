@@ -269,6 +269,23 @@ for (bundle in BUNDLES) {
         paste(red[[1]], red$column, sep = "/", collapse = ", ")))
     }
   }
+  # The bundle's own exclusions (#436) that the (new) exclusions copy lists.
+  own <- files$observation_exclusions_link$path
+  if (!is.null(own) && !is.null(files$observation_exclusions)) {
+    rel <- files$observation_exclusions$path
+    ch <- changes[[paste(bundle, rel)]]
+    base <- file.path(bundle, rel)
+    if (!is.null(ch)) {
+      base <- tempfile(fileext = ".csv")
+      writeBin(ch$bytes, base)
+    }
+    red <- link:::.lnk_sync_exclusions_redundant(base, file.path(bundle, own))
+    if (length(red) > 0L) {
+      redundant <- c(redundant, sprintf(
+        "`%s` %s: %s now listed upstream; retire the row",
+        basename(bundle), own, paste(red, collapse = ", ")))
+    }
+  }
 }
 
 drift_kind <- link:::.lnk_sync_drift_kind(

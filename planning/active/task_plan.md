@@ -37,7 +37,7 @@ in-code by the tests below, not assumed.
 
 ## Phase 2: default's presence table as the copy plus an overlay (#431)
 
-- [x] `data-raw/logs/presence_overlay_431/build_overlay.R` (run once, kept as the record): copy `bcfishpass/overrides/wsg_species_presence.csv` byte for byte into `default/overrides/`; write `default/overrides/wsg_species_presence_overlay.csv` from the tracker's decided rows that differ from the copy (`reason` = the story's opening sentence, which states the decision's reason; `issue` = the tracker's), the four `ko` rows (#106, as the `bcfishpass` overlay words them), and LARL GR's reason from `322389a3`; stop unless the overlaid species cells equal today's table for all 246 groups
+- [x] `data-raw/logs/presence_overlay_431/build_overlay.R` (run once, kept as the record): copy `bcfishpass/overrides/wsg_species_presence.csv` byte for byte into `default/overrides/`; write `default/overrides/wsg_species_presence_overlay.csv` from the tracker's decided rows that differ from the copy (`reason` = the story's opening sentence, which states the decision's reason; `issue` = the tracker's), the four `ko` rows (#106, as the `bcfishpass` overlay words them), and LARL GR's tracker reason merged with `322389a3`'s into one row; stop unless the overlaid species cells equal today's table for all 246 groups
 - [x] `default/config.yaml`: `overlay:` on `wsg_species_presence`; the copy's provenance becomes `source: https://github.com/smnorris/bcfishpass`, `path: data/wsg_species_presence.csv`, `upstream_sha: 3bd2824`; an overlay provenance entry; checksums regenerated (`data-raw/regen_provenance.R`, whose file list is updated)
 - [x] Tests: `test-lnk_csv_sync.R` flips (default's presence is now a sync target); loaded `default` and `default_tuned` presence species cells identical to the pre-conversion table (digest pinned in the test); every overlay row carries an issue
 - [x] Sync dry run clean (`data-raw/sync_bcfishpass_csvs.R`), and no overlay row redundant (`.lnk_sync_overlay_redundant()`)
@@ -45,10 +45,14 @@ in-code by the tests below, not assumed.
 
 ## Phase 3: a record bcfishpass has not listed can be excluded (#436)
 
-- [ ] `default/overrides/observation_exclusions_link.csv`, the copy's columns, the three rows (`091612fd01` GUIC CH, `284b315bd7` MESI SK, `ef68279063` KOTL ST) with `data_error = t`, reviewer, date, the evidence path in `source_1` and the reason in `notes`; declared under `files:` as `observation_exclusions_link`, provenance `link (hand-authored; link#436)`
-- [ ] `.lnk_observation_exclusion_keys()` (`R/lnk_pipeline_prepare.R:362`) takes the union of both tables, refusing a link row whose columns differ from the copy's
-- [ ] Tests: a key in the link rows is excluded by prep, the validator (`R/lnk_habitat_validate.R:792`) and the presence check (`R/lnk_presence_check.R:128`) alike; `cut` and `acc` specs unchanged
+- [x] `default/overrides/observation_exclusions_link.csv`, the copy's columns, the three rows (`091612fd01` GUIC CH, `284b315bd7` MESI SK, `ef68279063` KOTL ST) with `data_error = t`, reviewer, date, the evidence path in `source_1` and the reason in `notes`; declared under `files:` as `observation_exclusions_link`, provenance `link (hand-authored; link#436)`
+- [x] `.lnk_observation_exclusion_keys()` (`R/lnk_pipeline_prepare.R:362`) takes the union of both tables, requiring `observation_key`, `data_error` and `release_exclude` in the link rows and binding both as text (review A4, G4)
+- [x] Tests: a key in the link rows is excluded by prep, the validator (`R/lnk_habitat_validate.R:792`) and the presence check (`R/lnk_presence_check.R:128`) alike; `cut` and `acc` specs unchanged
 - [ ] Draft the upstream offer of the three rows (shown here, nothing posted)
+
+## Review folds (Plan review, `review-plan.md`)
+
+- [x] Pre-run gate map rows for the new files (B2); presence read through the loader in three scripts (G1); shared exclusion-row and release-include helpers (G2); sync reports a link exclusion upstream adopts (G3); docs (G5); the review's rule in every overlay reason (AC2)
 
 ## Phase 4: measure, record, release
 
@@ -61,7 +65,8 @@ in-code by the tests below, not assumed.
 ## Owed at the end (reported, done after merge)
 
 - [ ] The pre-run gate runs again before the next provincial run (`R/` and `inst/extdata/` changed)
-- [ ] GUIC, MESI and KOTL, and the groups whose code 2 or lifts read their records, re-model at the next provincial run (the three exclusions; no token moves)
+- [ ] GUIC, and the groups whose code 2 or lifts read its records, re-model at the next provincial run (its CH exclusion; MESI SK and KOTL ST are absent cells, so their exclusions move no model output; no token moves)
+- [ ] `config_hash` moved for `default`, `default_tuned`, `default_minimal`, `default_parent` and `bcfishpass`: earlier builds read as another bundle in `recompute_readers_check.R` and the export until re-modelled (already owed: the current builds are `acc-v5`)
 - [ ] The upstream offer of the three exclusions, if you give the word
 - [ ] Filing the rainbow-trout issue, if not approved during the run
 

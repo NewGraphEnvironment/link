@@ -407,3 +407,13 @@ test_that("prep's observation SQL excludes the keys the check excludes", {
       "AND o.observation_key NOT IN ('k1', 'k2')", joined, fixed = TRUE))),
     2L)
 })
+
+test_that("a record only the bundle's own exclusions list does not count (#436)", {
+  ld <- loaded_pc()
+  ld$observation_exclusions_link <- data.frame(
+    observation_key = "k1", data_error = "t", release_exclude = "",
+    release_include = "", stringsAsFactors = FALSE)
+  res <- check(rec("k1", "W2", "CO"), loaded = ld)
+  expect_identical(cell(res, "W2", "CO")$n_kept, 0L)
+  expect_true(is.na(cell(res, "W2", "CO")$flag))
+})

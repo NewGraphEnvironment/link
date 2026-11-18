@@ -4,7 +4,8 @@
 # 2. provenance:checksum + shape_checksum in the bcfishpass, default and
 #    default_tuned config.yaml for the files that can drift (rules.yaml,
 #    dimensions.csv, parameters_fresh.csv, parameters_habitat_thresholds.csv,
-#    overrides/wsg_species_presence.csv, its overlay, presence_groups.csv).
+#    overrides/wsg_species_presence.csv, its overlay, presence_groups.csv,
+#    overrides/observation_exclusions_link.csv).
 #    default_tuned is thin
 #    (extends: default) and holds only its own thresholds CSV; a key a
 #    bundle does not hold is reported and skipped.
@@ -108,7 +109,8 @@ drifted_files <- c(
   "parameters_habitat_thresholds.csv",
   "overrides/wsg_species_presence.csv",
   "overrides/wsg_species_presence_overlay.csv",
-  "presence_groups.csv"
+  "presence_groups.csv",
+  "overrides/observation_exclusions_link.csv"
 )
 
 for (b in c("bcfishpass", "default", "default_tuned")) {

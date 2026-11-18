@@ -120,11 +120,7 @@
     stats::aggregate(list(n = rep(1L, nrow(other))), other, length)
   }
   r <- r[r$species_code %in% sp_all, , drop = FALSE]
-  excl <- loaded$observation_exclusions
-  keys_incl <- character(0)
-  if (!is.null(excl) && nrow(excl) > 0L) {
-    keys_incl <- excl$observation_key[excl$release_include %in% c(TRUE, "t")]
-  }
+  keys_incl <- .lnk_observation_release_include_keys(loaded)
   r$excluded <- r$observation_key %in% .lnk_observation_exclusion_keys(loaded)
   src_head <- ifelse(is.na(r$source), NA_character_,
                      sub(":.*$", ":", r$source))

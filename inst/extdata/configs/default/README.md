@@ -31,15 +31,16 @@ Not in this config:
 | `parameters_habitat_method.csv` | Per-watershed-group habitat size model, `cw` (channel width) or `mad` (mean annual discharge), handed to fresh by classify. All `cw`; a frozen copy of bcfishpass `parameters/example_newgraph`, not csv-synced, so moving a group to `mad` is a reviewed edit (update its `checksum` in `config.yaml`). Columns in `configs/dictionary_parameters_habitat_method.csv`. |
 | `species_pooling.csv` | Which observation species count as evidence for which model species, and where: one dated, sourced row per decision, scoped to a region, sub-region (`inst/extdata/wsg_regions.csv`) or WSG. Either side can be a group from `species_groups.csv`. Read by `lnk_species_pooling()`; columns in `configs/dictionary_species_pooling.csv`. Anything unlisted is not pooled. After an edit, update its `checksum` in `config.yaml` (`lnk_config_verify()` reports the drift until you do). |
 | `species_groups.csv` | Named sets of species (`SALMON`, `CHAR`) usable on either side of a pooling row. |
+| `presence_groups.csv` | The species that share presence (`salmon`: CH, CM, CO, PK, SK; `ct_dv_rb`: CT, DV, RB): where one member is present in a group, `lnk_presence()` makes every member present, which decides only where streams break. bcfishpass's `wsg_salmon` and `wsg_ct_dv_rb`. Not the pooling groups above. Columns in `configs/dictionary_presence_groups.csv` (link#292). |
 | `species_modelled.csv` | Which rules species the bundle models: one row per species in `rules.yaml`, `t` or `f`. A paused species (`f`, with its reason, date and issue) keeps its rules and thresholds but is not classified, adds no gradient breaks, and gets no access, habitat or mapping code; `cfg$species` leaves it out. Turning it back on is a one-cell edit. Columns in `configs/dictionary_species_modelled.csv`. After an edit, update its `checksum` in `config.yaml`. |
-| `overrides/` | Shared jurisdiction data — same barrier corrections, PSCIS status overrides, observation exclusions, habitat confirmations as the bcfishpass variant. These are BC-specific facts, not method choices. Redistributed under `LICENSE-bcfishpass` at the repo root. |
+| `overrides/` | Shared jurisdiction data — same barrier corrections, PSCIS status overrides, observation exclusions, habitat confirmations and species presence as the bcfishpass variant, each a byte-for-byte copy of bcfishpass's file that the weekly sync keeps. These are BC-specific facts, not method choices. Redistributed under `LICENSE-bcfishpass` at the repo root. Two files there are link's own: `wsg_species_presence_overlay.csv`, link's cells on the presence copy (the #402 review's decisions and the `ko` column, one row each with its reason; link#431), and `observation_exclusions_link.csv`, fish records link finds wrong that bcfishpass does not list, in the copy's columns (link#436). |
 
 The bundle is consumed via `lnk_config("default")` + `lnk_load_overrides(cfg)`. Project-experimental configs can declare `extends: default` to inherit this bundle and override specific entries (e.g. point a project's `user_barriers_definite` at a project-local CSV).
 
 ## What NOT to do here
 
 - Do not hand-edit `rules.yaml` — edit `dimensions.csv` and run `lnk_rules_build()`.
-- Do not hand-edit files under `overrides/` — shared with bcfishpass variant; file corrections in the upstream source.
+- Do not hand-edit the copies under `overrides/` — they are bcfishpass's files; write link's change as a row in the overlay or link's exclusions file, and offer it upstream.
 
 ## Regenerating rules.yaml
 

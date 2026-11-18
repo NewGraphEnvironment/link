@@ -382,8 +382,9 @@ hazelton <- sf::st_read(conn, query = "
   FROM whse_basemapping.fwa_stream_networks_sp
   WHERE localcode_ltree = '400.431358'::ltree AND wscode_ltree = '400.431358'::ltree
   ORDER BY downstream_route_measure LIMIT 1", quiet = TRUE)
-presence <- utils::read.csv(lnk_config("default")$files$wsg_species_presence$path,
-                            stringsAsFactors = FALSE)
+# Through the loader, so the presence overlay applies (#431).
+presence <- as.data.frame(suppressWarnings(
+  lnk_load_overrides(lnk_config("default")))$wsg_species_presence)
 bt_present <- toupper(presence$watershed_group_code[presence$bt %in% "t"])
 
 share_map <- wsg |>

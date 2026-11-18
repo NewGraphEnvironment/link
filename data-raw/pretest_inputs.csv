@@ -113,11 +113,13 @@ link,^inst/extdata/configs/{config}/(species_groups|species_pooling)\.csv$,gradi
 link,^inst/extdata/configs/{config}/(species_groups|species_pooling)\.csv$,obs_upstream,"which records count as which species, for the cuts, code 2 and the lifts (#470)"
 link,^inst/extdata/configs/{config}/species_modelled\.csv$,segments,"which rules species run: a paused species adds no gradient breaks and is not classified (#432)"
 link,^inst/extdata/configs/{config}/species_modelled\.csv$,gradient,"which rules species run: a paused species adds no gradient breaks and is not classified (#432)"
+link,^inst/extdata/configs/{config}/presence_groups\.csv$,segments,"which present species make another present: a promoted species the bundle models breaks the streams at its barriers (#292)"
+link,^inst/extdata/configs/{config}/presence_groups\.csv$,gradient,"which present species make another present: a promoted species the bundle models breaks the streams at its barriers (#292)"
 link,^inst/extdata/configs/{config}/wsg_species_presence_review\.csv$,none,"the presence review tracker (#402): not declared under files:, so no run reads it"
 link,^inst/extdata/configs/{config}/overrides/(user_modelled_crossing_fixes[_0-9]*|user_pscis_barrier_status|pscis_modelledcrossings_streams_xref|user_crossings_misc)\.csv$,crossings,crossing corrections
 link,^inst/extdata/configs/{config}/overrides/(cabd_[a-z_]+)\.csv$,dams,"dam additions, exclusions and passability"
-link,^inst/extdata/configs/{config}/overrides/(user_barriers_definite|user_barriers_definite_control|observation_exclusions)\.csv$,observations,barrier controls and observation exclusions
-link,^inst/extdata/configs/{config}/overrides/(user_barriers_definite|user_barriers_definite_control|observation_exclusions)\.csv$,gradient,barrier controls and observation exclusions
+link,^inst/extdata/configs/{config}/overrides/(user_barriers_definite|user_barriers_definite_control|observation_exclusions|observation_exclusions_link)\.csv$,observations,barrier controls and observation exclusions
+link,^inst/extdata/configs/{config}/overrides/(user_barriers_definite|user_barriers_definite_control|observation_exclusions|observation_exclusions_link)\.csv$,gradient,barrier controls and observation exclusions
 link,^inst/extdata/configs/{config}/overrides/(user_habitat_classification|dfo_known_sockeye_lakes|wsg_species_presence|wsg_species_presence_overlay|wcrp_watersheds)\.csv$,segments,habitat overlays and species presence
 link,^inst/extdata/configs/{config}/(.*/)?README\.md$,none,documentation
 fresh,^R/frs_near_river\.R$,near_river_conn,the near-river walk; its prefilter is distance_max plus the longest connector run

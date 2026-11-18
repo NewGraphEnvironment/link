@@ -100,3 +100,15 @@
   }, logical(1))
   ovl[same, , drop = FALSE]
 }
+
+# The bundle's own exclusion keys (`observation_exclusions_link`, #436) that
+# the copy of bcfishpass's observation_exclusions.csv now lists too: upstream
+# has adopted them, so the link rows can be retired. Returns those keys.
+.lnk_sync_exclusions_redundant <- function(base_path, own_path) {
+  rd <- function(p) {
+    utils::read.csv(p, colClasses = "character", stringsAsFactors = FALSE,
+                    na.strings = character(0), fileEncoding = "UTF-8-BOM")
+  }
+  own <- rd(own_path)$observation_key
+  intersect(own, rd(base_path)$observation_key)
+}

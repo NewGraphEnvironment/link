@@ -1359,3 +1359,97 @@ test_that(".lnk_pipeline_prep_minimal builds no set for a paused species (#432)"
   expect_length(grep("barriers_rb", sql), 0L)
   expect_identical(vapply(.pm_min(log), `[[`, "", "from"), "w.barriers_ch")
 })
+
+# -- a bundle's own exclusions (#436) ----------------------------------------
+
+excl_rows <- function(key, data_error = "t", release_exclude = "",
+                      release_include = "") {
+  data.frame(observation_key = key, data_error = data_error,
+             release_exclude = release_exclude,
+             release_include = release_include, stringsAsFactors = FALSE)
+}
+
+test_that("exclusion keys are the union of the copy and the bundle's own rows", {
+  loaded <- list(
+    observation_exclusions = excl_rows(c("aaa", "bbb"), c("t", "")),
+    observation_exclusions_link = excl_rows(c("ccc", "aaa")))
+  expect_identical(.lnk_observation_exclusion_keys(loaded), c("aaa", "ccc"))
+  # Own rows alone, or the copy alone, still work.
+  expect_identical(.lnk_observation_exclusion_keys(
+    list(observation_exclusions_link = excl_rows("ccc"))), "ccc")
+  expect_identical(.lnk_observation_exclusion_keys(
+    list(observation_exclusions = excl_rows("aaa"))), "aaa")
+  expect_identical(.lnk_observation_exclusion_keys(list()), character(0))
+  # release_include keys come from both tables too.
+  inc <- list(observation_exclusions = excl_rows("aaa", "", "", "t"),
+              observation_exclusions_link = excl_rows("ccc", "", "", "t"))
+  expect_identical(.lnk_observation_release_include_keys(inc),
+                   c("aaa", "ccc"))
+})
+
+test_that("a bundle's own exclusions need the key and both flags, read as text", {
+  own <- excl_rows("ccc")
+  own$data_error <- NULL
+  expect_error(.lnk_observation_exclusion_keys(list(
+    observation_exclusions = excl_rows("aaa"),
+    observation_exclusions_link = own)), "lacks column\\(s\\): data_error")
+  # A short table reads empty columns as logical and a numeric-looking key
+  # as a number; the union still holds both, as text.
+  odd <- data.frame(observation_key = 12345, data_error = "t",
+                    release_exclude = NA, release_include = NA,
+                    extra = "kept out")
+  loaded <- list(observation_exclusions = excl_rows("aaa"),
+                 observation_exclusions_link = odd)
+  expect_identical(.lnk_observation_exclusion_keys(loaded), c("aaa", "12345"))
+  rows <- .lnk_observation_exclusion_rows(loaded)
+  expect_true(all(vapply(rows, is.character, logical(1))))
+  expect_identical(names(rows), c("observation_key", "data_error",
+                                  "release_exclude", "release_include", "notes"))
+})
+
+test_that("prep drops a key only the bundle's own rows list (#436)", {
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql); invisible(NULL)
+    }
+  )
+  loaded <- list(
+    wsg_species_presence = data.frame(
+      watershed_group_code = "BULK",
+      bt = "t", ch = "f", cm = "f", co = "f", ct = "f", dv = "f",
+      pk = "f", rb = "f", sk = "f", st = "f", wct = "f",
+      stringsAsFactors = FALSE),
+    observation_exclusions = excl_rows("aaa"),
+    observation_exclusions_link = excl_rows("zzz"))
+  .lnk_pipeline_prep_observations("mock", cfg = list(), aoi = "BULK",
+    loaded = loaded, schema = "w_bulk", observations = "bcfishobs.observations")
+  joined <- paste(captured, collapse = "\n")
+  expect_match(joined, "NOT IN \\([^)]*'zzz'")
+  expect_match(joined, "NOT IN \\([^)]*'aaa'")
+})
+
+test_that("default excludes the three #402 records; bcfishpass does not", {
+  three <- c("091612fd01", "284b315bd7", "ef68279063")
+  kd <- .lnk_observation_exclusion_keys(lnk_load_overrides(lnk_config("default")))
+  kb <- .lnk_observation_exclusion_keys(
+    lnk_load_overrides(lnk_config("bcfishpass")))
+  expect_true(all(three %in% kd))
+  expect_false(any(three %in% kb))
+  expect_identical(setdiff(kd, kb), three)
+})
+
+test_that("every reader of the exclusions goes through the one rule", {
+  # Source-tree only: an installed package has no R/.
+  src <- testthat::test_path("..", "..", "R")
+  skip_if_not(dir.exists(src), "R/ source not available")
+  for (f in c("lnk_pipeline_prepare.R", "lnk_habitat_validate.R",
+              "lnk_presence_check.R")) {
+    txt <- readLines(file.path(src, f), warn = FALSE)
+    expect_true(any(grepl(".lnk_observation_exclusion_keys(loaded)", txt,
+                          fixed = TRUE)), info = f)
+    # No reader takes keys from the copy's rows directly.
+    expect_false(any(grepl("observation_exclusions\\$|excl\\$observation_key",
+                           txt)), info = f)
+  }
+})

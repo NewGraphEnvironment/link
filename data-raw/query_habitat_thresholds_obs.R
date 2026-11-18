@@ -60,12 +60,13 @@ pf <- readr::read_csv(cfg$files$parameters_fresh$path, show_col_types = FALSE) |
   distinct(species_code, .keep_all = TRUE)
 
 # -- inputs pushed as temp tables -------------------------------------------
-excl <- readr::read_csv(cfg$files$observation_exclusions$path,
-                        show_col_types = FALSE, col_types = readr::cols(.default = "c")) |>
-  filter(data_error %in% "t" | release_exclude %in% "t") |>
-  distinct(observation_key)
-presence <- readr::read_csv(cfg$files$wsg_species_presence$path,
-                            show_col_types = FALSE, col_types = readr::cols(.default = "c")) |>
+# Through the loader, so the presence overlay (#431) and the bundle's own
+# exclusions (#436) apply as they do in a run.
+loaded_cfg <- suppressWarnings(lnk_load_overrides(cfg))
+excl <- tibble::tibble(
+  observation_key = .lnk_observation_exclusion_keys(loaded_cfg))
+presence <- loaded_cfg$wsg_species_presence |>
+  mutate(across(everything(), as.character)) |>
   transmute(watershed_group_code,
             bt = bt %in% "t", ch = ch %in% "t", dv = dv %in% "t")
 dbWriteTable(conn, "t_excl", excl, temporary = TRUE, overwrite = TRUE)
@@ -117,9 +118,7 @@ presence_flags <- function(p, w) {
   p <- p[match(w, toupper(p$watershed_group_code)), tolower(species), drop = FALSE]
   vapply(p, function(x) as.character(x) %in% "t", logical(length(w)))
 }
-presence_cfg <- readr::read_csv(cfg$files$wsg_species_presence$path,
-                                show_col_types = FALSE,
-                                col_types = readr::cols(.default = "c"))
+presence_cfg <- loaded_cfg$wsg_species_presence
 w_cfg <- toupper(presence_cfg$watershed_group_code)
 if (!identical(presence_flags(loaded$wsg_species_presence, w_cfg),
                presence_flags(presence_cfg, w_cfg))) {

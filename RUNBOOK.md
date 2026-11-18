@@ -966,7 +966,7 @@ to its `log` row (`token_cut`, `token_acc`, `token_grad`, `token_flow`).
 | Axis | Prefix | What it names | Spec matched |
 |---|---|---|---|
 | cut | `cut-` | break sources in order, `observation_breaks` (when observations cut), gradient classes, and which of the definite-barrier, control and habitat-classification files the bundle declares | canonical string |
-| acc | `acc-` | the modelled species, each species' `access_gradient_max` and `observation_*` lifts, the presence table, `pipeline: observation_upstream` (resolved; #401), and the two access rules held in code (`.lnk_classes_bcfp`, `lnk_presence()`'s groups) | sha256 of the parsed values |
+| acc | `acc-` | the modelled species, each species' `access_gradient_max` and `observation_*` lifts, the presence table, `pipeline: observation_upstream` (resolved; #401), the gradient class each access label maps to (`.lnk_classes_bcfp`, held in code), and the presence groups (the bundle's `presence_groups.csv` since #292, else `lnk_presence()`'s default) | sha256 of the parsed values |
 | grad | `grad-` | how segment gradient is measured | `gradient=segment` (`grad-seg`, every bundle but one); `gradient=parent;parent_cut=cut-min` (`grad-parent`, `default_parent`, below); `gradient=fwa_segment` (`grad-fwa`, which no build writes: a consumer's name for reading the Freshwater Atlas segment's gradient) |
 | flow | `q-` | `discharge_source` and `discharge_fill` | canonical string |
 
@@ -1000,7 +1000,8 @@ much as the break sources do. Two outputs with the same `cut` token and differen
 
 **What gets no token.** Habitat thresholds and rules, and width against flow: they
 change flags, not segments, and a tuning chooses them. Data vintage: observation records,
-the bcfishpass correction CSVs, `observation_exclusions.csv`, FWA and the discharge
+the bcfishpass correction CSVs, `observation_exclusions.csv` and a bundle's own
+`observation_exclusions_link.csv` (#436), FWA and the discharge
 loads. `config_hash` and `log_input` carry those. Same tokens means made the same way,
 not necessarily from the same data.
 
@@ -1697,7 +1698,10 @@ that the fourteen known copies and the presence table are targets in both bundle
 review's decisions, LARL GR) and the `ko` column are overlay rows, made by
 `data-raw/logs/presence_overlay_431/build_overlay.R`, and the loaded table's species cells
 did not move (`default` stayed `acc-v6`). Only `notes` moved to the copy's: link's notes
-there had pointed at the tracker, and each overlay row carries its own reason.
+there had pointed at the tracker, and each overlay row carries its own reason. A decision that
+leaves a cell as the copy has it (74 `keep` rows, QUES ST's `add`) has no overlay row, so
+if upstream later flips such a cell the sync reports only the `acc` review: read the tracker
+for link's decision before taking it.
 The parameters files are frozen derived copies (`derived_from`), not synced.
 `default_extrabreaks` and `default_rearbreaks` hold older copies of their own and
 are not synced.

@@ -356,15 +356,58 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
 #' Observation keys `observation_exclusions` removes from every count
 #'
 #' Rows with `data_error` or `release_exclude` set (`TRUE` or `"t"`). One rule
-#' for the pipeline's observation tables and the presence check
-#' (`.lnk_presence_check()`), so the two cannot count different records.
+#' for the pipeline's observation tables, the validator and the presence check
+#' (`.lnk_presence_check()`), so they cannot count different records.
 #' @noRd
 .lnk_observation_exclusion_keys <- function(loaded) {
-  excl_df <- loaded$observation_exclusions
+  excl_df <- .lnk_observation_exclusion_rows(loaded)
   if (is.null(excl_df) || nrow(excl_df) == 0) return(character(0))
   is_excl <- excl_df$data_error %in% c(TRUE, "t") |
              excl_df$release_exclude %in% c(TRUE, "t")
-  excl_df$observation_key[is_excl]
+  unique(excl_df$observation_key[is_excl])
+}
+
+#' Observation keys `observation_exclusions` marks as releases to keep
+#'
+#' Rows with `release_include` set, from the same rows as
+#' `.lnk_observation_exclusion_keys()`.
+#' @noRd
+.lnk_observation_release_include_keys <- function(loaded) {
+  excl_df <- .lnk_observation_exclusion_rows(loaded)
+  if (is.null(excl_df) || nrow(excl_df) == 0) return(character(0))
+  unique(excl_df$observation_key[excl_df$release_include %in% c(TRUE, "t")])
+}
+
+#' Every exclusion row a bundle declares
+#'
+#' bcfishpass's copy (`observation_exclusions`) and the bundle's own rows
+#' (`observation_exclusions_link`: records the copy does not list, #436), as
+#' text in the columns the readers use (`observation_key`, `data_error`,
+#' `release_exclude`, `release_include`, `notes`). The bundle's own table
+#' must carry the first three; a column either table lacks reads as `NA`.
+#' `NULL` when the bundle has neither. Text, because a short table reads its
+#' empty columns as logical and a key that looks like a number as one.
+#' @noRd
+.lnk_observation_exclusion_rows <- function(loaded) {
+  cols <- c("observation_key", "data_error", "release_exclude",
+            "release_include", "notes")
+  own <- loaded$observation_exclusions_link
+  if (!is.null(own)) {
+    miss <- setdiff(cols[1:3], names(own))
+    if (length(miss) > 0L) {
+      stop("observation_exclusions_link lacks column(s): ",
+           paste(miss, collapse = ", "), call. = FALSE)
+    }
+  }
+  tabs <- Filter(Negate(is.null), list(loaded$observation_exclusions, own))
+  if (length(tabs) == 0L) return(NULL)
+  as_text <- function(t) {
+    out <- lapply(cols, function(c) {
+      if (c %in% names(t)) as.character(t[[c]]) else rep(NA_character_, nrow(t))
+    })
+    as.data.frame(stats::setNames(out, cols), stringsAsFactors = FALSE)
+  }
+  do.call(rbind, lapply(tabs, as_text))
 }
 
 

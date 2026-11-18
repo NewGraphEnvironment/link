@@ -38,8 +38,9 @@ record rule resolved for every group in the presence table (which
 recorded codes count as which species, with their date floors and year
 limits: the pooling tracker, its species groups, the region lookup and
 \code{pipeline: observation_record_date}, link#470), and the
-two access rules held in code (the gradient class each access label
-maps to, and \code{\link[=lnk_presence]{lnk_presence()}}'s species groups). The
+access rules held elsewhere: the gradient class each access label maps
+to (in code) and the presence groups (\code{\link[=lnk_presence]{lnk_presence()}}'s groups as the
+bundle's \code{presence_groups.csv} gives them, link#292). The
 digest is over the parsed values, so a change in quoting or column
 order is not a new rule set.
 \item \strong{grad:} how a segment's gradient is read (\verb{pipeline: gradient:}):

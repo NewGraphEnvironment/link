@@ -48,7 +48,8 @@ and (when present) \code{user_habitat_classification}.}
 \code{species_code}, \code{watershed_group_code}, \code{blue_line_key},
 \code{downstream_route_measure}, and for a table \code{observation_key}. A data
 frame without \code{observation_key} gets its own row numbers as keys, and
-then \code{loaded$observation_exclusions} must be \code{NULL} (the exclusions are
+then \code{loaded$observation_exclusions} and
+\code{loaded$observation_exclusions_link} must be \code{NULL} (the exclusions are
 matched on that key). Species and WSG codes are compared upper-cased
 and trimmed. Optional: \code{match_type}, \code{source}, \code{is_spawn}, \code{is_rear}
 (logical, 0/1 or t/true/yes), \code{activity_code}, \code{activity},
@@ -138,7 +139,8 @@ bundles can be diffed on the same observations.
 your own. From it, keeping:
 \itemize{
 \item records not flagged \code{data_error} or \code{release_exclude} in
-\code{loaded$observation_exclusions} (matched on \code{observation_key}), and not
+\code{loaded$observation_exclusions} or the bundle's own
+\code{loaded$observation_exclusions_link} (matched on \code{observation_key}), and not
 from a \code{source} starting with any of \code{source_exclude} (by default the
 \verb{Releases Database}: stocked fish are not evidence of habitat use);
 \item observation species admitted for the model species by \code{species_obs},

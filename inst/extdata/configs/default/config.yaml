@@ -41,6 +41,10 @@ files:
     canonical_schema: bcfp/user_habitat_classification
   observation_exclusions:
     path: overrides/observation_exclusions.csv
+  # link's own exclusions: records bcfishpass's copy above does not list,
+  # same columns; .lnk_observation_exclusion_keys() reads both (#436).
+  observation_exclusions_link:
+    path: overrides/observation_exclusions_link.csv
   wsg_species_presence:
     path: overrides/wsg_species_presence.csv
     # bcfishpass's table byte for byte; link's cells (the #402 review's
@@ -243,6 +247,11 @@ provenance:
     synced: '2026-10-31'
     checksum: sha256:ad901c57ca42e71e4affffd6e583045a2ce423f15088c211c9c2f72976f5d36a
     shape_checksum: sha256:c0c0c5a6e478bae9d98c0251870fb73ef12ec5033de08589bad08ed03be02a31
+  overrides/observation_exclusions_link.csv:
+    source: link (hand-authored; link#436). Fish records link finds wrong that bcfishpass's observation_exclusions.csv does not list
+    synced: '2026-11-18'
+    checksum: sha256:452232f1d2d8735d988f22a46ab4363eeec07a9ea46edff5571eba9b4fa7c6b4
+    shape_checksum: sha256:c0c0c5a6e478bae9d98c0251870fb73ef12ec5033de08589bad08ed03be02a31
   overrides/wsg_species_presence.csv:
     source: https://github.com/smnorris/bcfishpass
     path: data/wsg_species_presence.csv
@@ -253,7 +262,7 @@ provenance:
   overrides/wsg_species_presence_overlay.csv:
     source: link (hand-authored; link#431). Link's cells on the presence copy, one row each with its reason; #402's decisions land here
     synced: '2026-11-18'
-    checksum: sha256:4cd3c968c0f673d8e3f556f80e70209e6596a973eda70d86fdca7d570c476132
+    checksum: sha256:aacbc88a1fdbf7b0ea332f4c6355a0d65f5cefc3bdb7b2031c9f788422e51715
     shape_checksum: sha256:eb72f24aa4e2850578d9ce3feadf0125eb8bd1c95a16215705e8c57dc8aee324
   overrides/user_modelled_crossing_fixes.csv:
     source: https://github.com/smnorris/bcfishpass

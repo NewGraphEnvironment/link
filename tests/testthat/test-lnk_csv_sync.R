@@ -39,7 +39,7 @@ test_that("the copies the sync must cover are all targets in both bundles", {
              "user_barriers_definite", "user_barriers_definite_control",
              "user_crossings_misc", "user_habitat_classification",
              "user_modelled_crossing_fixes", "user_pscis_barrier_status",
-             "wcrp_watersheds")
+             "wcrp_watersheds", "wsg_species_presence")
   copies <- paste0("overrides/", stems, ".csv")
   for (b in c("bcfishpass", "default")) {
     prov <- yaml::read_yaml(file.path(bundle_dir(b), "config.yaml"))$provenance
@@ -147,6 +147,22 @@ test_that("an overlay row upstream now agrees with is reported redundant", {
   red <- link:::.lnk_sync_overlay_redundant(base, ovl)
   expect_identical(red$watershed_group_code, "ADMS")
   expect_identical(red$column, "ko")
+})
+
+test_that("a link exclusion upstream now lists is reported redundant (#436)", {
+  tmp <- withr::local_tempdir()
+  base <- file.path(tmp, "e.csv")
+  own <- file.path(tmp, "e_link.csv")
+  # The copy starts with a byte-order mark, as bcfishpass's does.
+  writeBin(c(as.raw(c(0xef, 0xbb, 0xbf)), charToRaw(
+    "observation_key,data_error\naaa,t\nbbb,t\n")), base)
+  writeLines(c("observation_key,data_error", "bbb,t", "ccc,t"), own)
+  expect_identical(link:::.lnk_sync_exclusions_redundant(base, own), "bbb")
+  # default's own rows are not in its copy today.
+  d <- bundle_dir("default")
+  expect_identical(link:::.lnk_sync_exclusions_redundant(
+    file.path(d, "overrides/observation_exclusions.csv"),
+    file.path(d, "overrides/observation_exclusions_link.csv")), character(0))
 })
 
 test_that("a trial write that loads only with a warning is reported", {

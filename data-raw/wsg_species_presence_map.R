@@ -66,7 +66,8 @@ class_above_max <- 2L
 
 cfg <- lnk_config("default")
 loaded <- lnk_load_overrides(cfg)
-excl <- loaded$observation_exclusions
+# The copy's rows and the bundle's own (#436).
+excl <- .lnk_observation_exclusion_rows(loaded)
 dir_log <- "data-raw/logs/presence_check_402"
 nz <- function(x) ifelse(is.na(x), "", x)
 
@@ -90,7 +91,7 @@ if (nzchar(cache) && file.exists(cache)) {
   meas <- .lnk_presence_measures(
     conn, zones, sp_barrier, pools, sockeye,
     excl_keys = .lnk_observation_exclusion_keys(loaded),
-    incl_keys = excl$observation_key[excl$release_include %in% c(TRUE, "t")],
+    incl_keys = .lnk_observation_release_include_keys(loaded),
     aliases = .lnk_record_aliases(
       loaded, loaded$wsg_species_presence$watershed_group_code),
     year_min = 1950L)

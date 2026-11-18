@@ -73,9 +73,9 @@ cfg <- lnk_config("default")
 th <- readr::read_csv(cfg$files$parameters_habitat_thresholds$path,
                       show_col_types = FALSE) |>
   filter(species_code %in% species)
-presence <- readr::read_csv(cfg$files$wsg_species_presence$path,
-                            show_col_types = FALSE,
-                            col_types = readr::cols(.default = "c"))
+# Through the loader, so the presence overlay applies (#431).
+presence <- suppressWarnings(lnk_load_overrides(cfg))$wsg_species_presence |>
+  mutate(across(everything(), as.character))
 
 num <- function(x) suppressWarnings(as.numeric(x))
 sites <- bind_rows(lapply(wsgs, function(w) {

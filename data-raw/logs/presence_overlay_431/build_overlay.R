@@ -9,8 +9,9 @@
 #    over it.
 # 3. Writes one overlay row for every species cell where the fork differs from
 #    the copy, each from its decided row in wsg_species_presence_review.csv
-#    (#402): the reason is the decision and the story's opening sentence, which
-#    states the reason; the full story stays in the tracker. Plus the four ko
+#    (#402): the reason is the decision, the review's rule and the story's
+#    opening sentence, which states the reason; the full story stays in the
+#    tracker. Plus the four ko
 #    cells, worded as the bcfishpass bundle's overlay words them (#106).
 # 4. Stops unless copy + overlay gives the fork's species cells and column
 #    order exactly. Only `notes` moves: the fork's notes were pointers to the
@@ -77,8 +78,9 @@ prefix <- "Provisional (2026-11-01 decision session): "
 opening <- sub("^(.*?\\.)( |$).*", "\\1", tr$story, perl = TRUE)
 stopifnot(all(startsWith(opening, prefix)))
 verb <- c(add = "added", remove = "removed", keep = "kept absent")[tr$decision]
-reason <- sprintf("%s in the #402 review (2026-11-01, provisional): %s",
-                  verb, substring(opening, nchar(prefix) + 1L))
+# The review's rule sentence too (#402 acceptance: a changed cell names it).
+reason <- sprintf("%s in the #402 review (2026-11-01, provisional; rule: %s): %s",
+                  verb, tr$rule, substring(opening, nchar(prefix) + 1L))
 # LARL GR: the review kept the cell link had already dropped (322389a3), whose
 # reason says why the copy's cell is not taken.
 larl <- diffs$watershed_group_code == "LARL" & diffs$column == "gr"
