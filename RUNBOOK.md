@@ -678,8 +678,10 @@ judges `default`'s table cell by cell (`.lnk_presence_check()`: at least one rec
 releases tagged as bcfishpass tags them and `observation_exclusions.csv` out, the tracker's
 alias codes read as their species, `species_pooling.csv` applied) and merges each disagreement into
 `configs/default/wsg_species_presence_review.csv` as `pending`. The operator decides each row;
-an `add` or `remove` is an edit to the presence table, whose `notes` cell names the rule, and it
-moves the `acc` token (§6b). The tracker is **not** declared under `files:`: a declared file
+an `add`, a `remove`, or a `keep` that leaves a cell where bcfishpass's copy differs, is a row in
+`overrides/wsg_species_presence_overlay.csv` (the table is bcfishpass's copy since link#431; see
+"Copies and overlays", §7), whose `reason` opens with the decision and the story's first
+sentence. A changed cell moves the `acc` token (§6b). The tracker is **not** declared under `files:`: a declared file
 enters `config_hash`, so after a review edit link reads every earlier build as another bundle:
 `recompute_readers_check.R` refuses to recompute the groups outside a partial run that read it
 (`config_changed_since_run`; the run's own groups still recompute), and an export of an earlier
@@ -1687,11 +1689,15 @@ PARS,ko,t,link models kokanee; bcfishpass's presence table has no KO column,#106
   with its reason already written.
 
 **Which files are copies.** In `bcfishpass` and `default`: every CSV under
-`overrides/` except link's own (`default`'s presence table, the overlay).
-`test-lnk_csv_sync.R` checks that every CSV there has a provenance entry, that every
-`files:` entry with `source: bcfp` is a sync target, and that the fourteen known
-copies are targets in both bundles. `default`'s presence table is link's, under
-#402's review.
+`overrides/` except link's own (the presence overlays, `default`'s
+`observation_exclusions_link.csv`). `test-lnk_csv_sync.R` checks that every CSV there has
+a provenance entry, that every `files:` entry with `source: bcfp` is a sync target, and
+that the fourteen known copies and the presence table are targets in both bundles.
+`default`'s presence table became the copy at link#431: its 122 departures (the #402
+review's decisions, LARL GR) and the `ko` column are overlay rows, made by
+`data-raw/logs/presence_overlay_431/build_overlay.R`, and the loaded table's species cells
+did not move (`default` stayed `acc-v6`). Only `notes` moved to the copy's: link's notes
+there had pointed at the tracker, and each overlay row carries its own reason.
 The parameters files are frozen derived copies (`derived_from`), not synced.
 `default_extrabreaks` and `default_rearbreaks` hold older copies of their own and
 are not synced.

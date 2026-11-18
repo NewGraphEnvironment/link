@@ -37,11 +37,11 @@ in-code by the tests below, not assumed.
 
 ## Phase 2: default's presence table as the copy plus an overlay (#431)
 
-- [ ] `data-raw/logs/presence_overlay_431/build_overlay.R` (run once, kept as the record): copy `bcfishpass/overrides/wsg_species_presence.csv` byte for byte into `default/overrides/`; write `default/overrides/wsg_species_presence_overlay.csv` from the tracker's decided rows that differ from the copy (`reason` = the story's opening sentence, which states the decision's reason; `issue` = the tracker's), the four `ko` rows (#106, as the `bcfishpass` overlay words them), and LARL GR's reason from `322389a3`; stop unless the overlaid species cells equal today's table for all 246 groups
-- [ ] `default/config.yaml`: `overlay:` on `wsg_species_presence`; the copy's provenance becomes `source: https://github.com/smnorris/bcfishpass`, `path: data/wsg_species_presence.csv`, `upstream_sha: 3bd2824`; an overlay provenance entry; checksums regenerated (`data-raw/regen_provenance.R`, whose file list is updated)
-- [ ] Tests: `test-lnk_csv_sync.R` flips (default's presence is now a sync target); loaded `default` and `default_tuned` presence species cells identical to the pre-conversion table (digest pinned in the test); every overlay row carries an issue
-- [ ] Sync dry run clean (`data-raw/sync_bcfishpass_csvs.R`), and no overlay row redundant (`.lnk_sync_overlay_redundant()`)
-- [ ] RUNBOOK §7 "Copies and overlays" and "The presence table is checked against the records": default's table is a copy, decisions land as overlay rows
+- [x] `data-raw/logs/presence_overlay_431/build_overlay.R` (run once, kept as the record): copy `bcfishpass/overrides/wsg_species_presence.csv` byte for byte into `default/overrides/`; write `default/overrides/wsg_species_presence_overlay.csv` from the tracker's decided rows that differ from the copy (`reason` = the story's opening sentence, which states the decision's reason; `issue` = the tracker's), the four `ko` rows (#106, as the `bcfishpass` overlay words them), and LARL GR's reason from `322389a3`; stop unless the overlaid species cells equal today's table for all 246 groups
+- [x] `default/config.yaml`: `overlay:` on `wsg_species_presence`; the copy's provenance becomes `source: https://github.com/smnorris/bcfishpass`, `path: data/wsg_species_presence.csv`, `upstream_sha: 3bd2824`; an overlay provenance entry; checksums regenerated (`data-raw/regen_provenance.R`, whose file list is updated)
+- [x] Tests: `test-lnk_csv_sync.R` flips (default's presence is now a sync target); loaded `default` and `default_tuned` presence species cells identical to the pre-conversion table (digest pinned in the test); every overlay row carries an issue
+- [x] Sync dry run clean (`data-raw/sync_bcfishpass_csvs.R`), and no overlay row redundant (`.lnk_sync_overlay_redundant()`)
+- [x] RUNBOOK §7 "Copies and overlays" and "The presence table is checked against the records": default's table is a copy, decisions land as overlay rows
 
 ## Phase 3: a record bcfishpass has not listed can be excluded (#436)
 

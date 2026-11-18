@@ -1,0 +1,127 @@
+watershed_group_code,column,value,reason,issue
+ADMS,pk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites; flagged to recheck (unusual this far inland, or records above a modelled barrier).",#402
+ALBN,pk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+BABL,pk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+BABR,pk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+BARR,co,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+BARR,pk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+BBAR,st,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+BLAR,co,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+BLAR,sk,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+BULK,cm,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+BULL,gr,,"removed in the #402 review (2026-11-01, provisional): stocked fish are the only records, outside the species' usual range.",#402
+CARP,ko,t,link models kokanee; bcfishpass's presence table has no KO column,#106
+CHIR,ch,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+CHIR,co,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+CLAY,pk,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+DOGC,pk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites; flagged to recheck (unusual this far inland, or records above a modelled barrier).",#402
+GOLD,pk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+HOLB,ch,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+HOLB,sk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+HOMA,pk,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+HOMA,sk,t,"added in the #402 review (2026-11-01, provisional): one site with a record since 1990.",#402
+HORS,st,t,"added in the #402 review (2026-11-01, provisional): one site with a record since 1990.",#402
+INKR,cm,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+INKR,pk,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+ISKR,sk,t,"added in the #402 review (2026-11-01, provisional): one site with a record since 1990.",#402
+ISKR,st,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+JERV,sk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+KAKC,co,t,"added in the #402 review (2026-11-01, provisional): one site with a record since 1990.",#402
+KAKC,sk,t,"added in the #402 review (2026-11-01, provisional): one site with a record since 1990.",#402
+KEEC,cm,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+KEEC,pk,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+KEEC,sk,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+KINR,pk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+KINR,st,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+KLIN,pk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+KOTL,ko,t,link models kokanee; bcfishpass's presence table has no KO column,#106
+KSHR,sk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+KTSU,cm,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+KUMR,ch,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+KUMR,st,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+LARL,gr,,"kept absent in the #402 review (2026-11-01, provisional): outside the species' native range; left unmarked. Dropped in 322389a3: four records from 1954 to 1995 in a Columbia group, likely stocking that did not establish; asked upstream as NewGraphEnvironment/bcfishpass#14.",#402
+LBIR,sk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+LCHL,pk,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+LCHL,sk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+LCHR,co,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+LCHR,sk,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+LDEN,cm,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+LDEN,pk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+LILL,pk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+LISR,pk,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+LKEL,sk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+LNAR,sk,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+LNTH,ct,,"removed in the #402 review (2026-11-01, provisional): stocked fish are the only records, outside the species' usual range.",#402
+LNTH,st,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+LRDO,ch,t,"added in the #402 review (2026-11-01, provisional): one site with a record since 1990.",#402
+LSTR,cm,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+LSTR,pk,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+MBNK,cm,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+MBNK,pk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+MBNK,sk,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+MCGR,sk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites; flagged to recheck (unusual this far inland, or records above a modelled barrier).",#402
+MESC,st,t,"added in the #402 review (2026-11-01, provisional): one site with a record since 1990.",#402
+MFRA,co,t,"added in the #402 review (2026-11-01, provisional): one site with a record since 1990.",#402
+MORI,ch,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+MORK,sk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites; flagged to recheck (unusual this far inland, or records above a modelled barrier).",#402
+MSKE,pk,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+MUSK,ch,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites; flagged to recheck (unusual this far inland, or records above a modelled barrier).",#402
+NAHR,co,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+NAHR,pk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+NAHR,sk,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+NAHR,st,t,"added in the #402 review (2026-11-01, provisional): one site with a record since 1990.",#402
+NAKR,pk,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+NARC,co,t,"added in the #402 review (2026-11-01, provisional): one site with a record since 1990.",#402
+NASC,ch,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+NASR,pk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+NATR,ko,t,link models kokanee; bcfishpass's presence table has no KO column,#106
+NBNK,cm,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+NBNK,pk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+NECL,ch,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+PARK,sk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+PARS,ko,t,link models kokanee; bcfishpass's presence table has no KO column,#106
+PORI,ch,t,"added in the #402 review (2026-11-01, provisional): one site with a record since 1990.",#402
+SALM,sk,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+SEYM,sk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+SHER,sk,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+SHUL,st,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+STHM,st,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+STIR,pk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+STIR,st,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+SUST,pk,t,"added in the #402 review (2026-11-01, provisional): one site with a record since 1990.",#402
+TAHR,ch,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+TAHR,co,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+TAHR,pk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+TASR,co,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+TASR,st,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+TATR,co,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+TATR,st,t,"added in the #402 review (2026-11-01, provisional): one site with a record since 1990.",#402
+THOM,ct,,"removed in the #402 review (2026-11-01, provisional): stocked fish are the only records, outside the species' usual range.",#402
+TSAY,sk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+TSIT,sk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+TUYR,ch,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+TUYR,co,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+TUYR,sk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+TWAC,co,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+UBIR,st,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+UDEN,ch,,"removed in the #402 review (2026-11-01, provisional): added as a test for Ulkatcho with no record; the test is finished.",#402
+UDEN,cm,,"removed in the #402 review (2026-11-01, provisional): added as a test for Ulkatcho with no record; the test is finished.",#402
+UDEN,co,,"removed in the #402 review (2026-11-01, provisional): added as a test for Ulkatcho with no record; the test is finished.",#402
+UDEN,pk,,"removed in the #402 review (2026-11-01, provisional): added as a test for Ulkatcho with no record; the test is finished.",#402
+UDEN,sk,,"removed in the #402 review (2026-11-01, provisional): added as a test for Ulkatcho with no record; the test is finished.",#402
+UDEN,st,,"removed in the #402 review (2026-11-01, provisional): added as a test for Ulkatcho with no record; the test is finished.",#402
+UFRA,sk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites; flagged to recheck (unusual this far inland, or records above a modelled barrier).",#402
+UNAR,co,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+UNAR,sk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+UNTH,sk,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+UNUR,ch,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+UNUR,cm,t,"added in the #402 review (2026-11-01, provisional): one site with a record since 1990.",#402
+UNUR,pk,t,"added in the #402 review (2026-11-01, provisional): one site with a record since 1990.",#402
+UNUR,sk,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+USTK,sk,t,"added in the #402 review (2026-11-01, provisional): one site with a record since 1990.",#402
+UTRE,ch,,"kept absent in the #402 review (2026-11-01, provisional): one site and nothing since 1990; left unmarked.",#402
+VICT,dv,,"removed in the #402 review (2026-11-01, provisional): stocked fish are the only records, outside the species' usual range.",#402
+VICT,pk,t,"added in the #402 review (2026-11-01, provisional): one site with a record since 1990.",#402
+WORC,sk,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402
+ZYMO,pk,t,"added in the #402 review (2026-11-01, provisional): records at 2 or more sites.",#402
+ZYMO,sk,t,"added in the #402 review (2026-11-01, provisional): records at 3 or more sites on 2 or more waterbodies, one since 1990, none above a modelled barrier.",#402

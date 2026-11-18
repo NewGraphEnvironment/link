@@ -46,15 +46,47 @@ test_that("the copies the sync must cover are all targets in both bundles", {
     expect_identical(setdiff(copies, link:::.lnk_sync_targets(prov)),
                      character(0), info = b)
   }
-  # bcfishpass's presence table is a copy there; default's is link's own.
-  prov_b <- yaml::read_yaml(file.path(bundle_dir("bcfishpass"),
-                                      "config.yaml"))$provenance
-  prov_d <- yaml::read_yaml(file.path(bundle_dir("default"),
-                                      "config.yaml"))$provenance
-  expect_true("overrides/wsg_species_presence.csv" %in%
-                link:::.lnk_sync_targets(prov_b))
-  expect_false("overrides/wsg_species_presence.csv" %in%
-                 link:::.lnk_sync_targets(prov_d))
+  # The presence table is a copy in both bundles (#429, #431); link's cells
+  # are each bundle's overlay, which the sync never writes.
+  for (b in c("bcfishpass", "default")) {
+    prov <- yaml::read_yaml(file.path(bundle_dir(b), "config.yaml"))$provenance
+    targets <- link:::.lnk_sync_targets(prov)
+    expect_true("overrides/wsg_species_presence.csv" %in% targets, info = b)
+    expect_false("overrides/wsg_species_presence_overlay.csv" %in% targets,
+                 info = b)
+  }
+  expect_identical(
+    unname(tools::md5sum(file.path(bundle_dir("default"),
+                                   "overrides/wsg_species_presence.csv"))),
+    unname(tools::md5sum(file.path(bundle_dir("bcfishpass"),
+                                   "overrides/wsg_species_presence.csv"))))
+})
+
+test_that("default's presence overlay keeps every species cell (#431)", {
+  # The pre-conversion table (link's hand-edited fork at 0.85.0), read as the
+  # loader reads it: the same cells, column order and types.
+  for (b in c("default", "default_tuned")) {
+    p <- lnk_load_overrides(lnk_config(b))$wsg_species_presence
+    cols <- c("watershed_group_code", link:::.lnk_presence_species_cols(p))
+    expect_identical(
+      digest::digest(as.data.frame(p)[, cols], algo = "sha256"),
+      "2d9f385654cd3bbf7a46a9ee3216f4095777019306209cf1c7369f8114578c8f",
+      info = b)
+  }
+})
+
+test_that("every row of default's presence overlay names its issue (#431)", {
+  ovl <- utils::read.csv(file.path(bundle_dir("default"),
+                                   "overrides/wsg_species_presence_overlay.csv"),
+                         colClasses = "character", na.strings = character(0))
+  expect_gt(nrow(ovl), 0L)
+  expect_true(all(grepl("^#[0-9]+$", ovl$issue)))
+  expect_true(all(nzchar(trimws(ovl$reason))))
+  # A row upstream already agrees with is not a departure.
+  expect_identical(nrow(link:::.lnk_sync_overlay_redundant(
+    file.path(bundle_dir("default"), "overrides/wsg_species_presence.csv"),
+    file.path(bundle_dir("default"),
+              "overrides/wsg_species_presence_overlay.csv"))), 0L)
 })
 
 test_that("drift kind ranks shape over review over byte over none", {

@@ -4,9 +4,9 @@
 # `inst/extdata/configs/{bcfishpass,default}/overrides/` directories.
 # Each bundle syncs the files its own `provenance:` block names as copies
 # (`source: https://github.com/smnorris/bcfishpass`), and only into itself:
-# `default`'s presence table is link's own, the `bcfishpass` bundle's is a
-# copy (#429). A copy is kept byte for byte; link's changes to it live in
-# an overlay beside it (`files: <key>: overlay:`, R/lnk_overlay.R).
+# the presence table is a copy in both bundles (#429, #431). A copy is kept
+# byte for byte; link's changes to it live in an overlay beside it
+# (`files: <key>: overlay:`, R/lnk_overlay.R).
 # Updates the `provenance:` entry (synced date, upstream_sha, checksum)
 # of any copy whose upstream content differs from the recorded checksum.
 #

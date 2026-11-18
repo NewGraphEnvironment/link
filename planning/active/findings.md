@@ -38,3 +38,8 @@ Gate in the issue: #436's option; UTRE CH and QUES ST; whether rainbow trout's r
 | Error | Resolution |
 |-------|------------|
 | A mutation check restored its file with `git checkout`, which also discarded the uncommitted Phase 1 edit to that file | Restored from the copy taken before the mutation; further mutation checks run in a `git worktree` (CLAUDE.md, "Make a reviewer's copy with `git worktree`") |
+
+## Phase 2
+
+- Every one of the 80 notes that moved was a pointer to the tracker ("added PK (#402 review …)"); none carried link-original text. UDEN now shows the copy's note "salmon/steelhead added as test for Ulkatcho" while the overlay removes those cells, each overlay row saying why.
+- The overlay's reason is the decision plus the story's opening sentence (four distinct openings for the 110 adds).
