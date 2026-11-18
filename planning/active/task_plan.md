@@ -57,7 +57,7 @@ in-code by the tests below, not assumed.
 ## Phase 4: measure, record, release
 
 - [x] Re-run `data-raw/wsg_species_presence_check.R` (DB): the decided rows drop out of its flags and the three records count nowhere; commit its log (#402 plan step 3)
-- [ ] Model ADMS and BULK under `default` at `main` and at the branch head into scratch schemas on local fwapg: `streams`, `streams_access`, `streams_mapping_code` identical (#292's acceptance). Model GUIC the same way and report what excluding its CH record moves (code 2, lifts)
+- [x] Model ADMS and BULK under `default` at `main` and at the branch head into scratch schemas on local fwapg: `streams`, `streams_access`, `streams_mapping_code` identical (#292's acceptance). Model GUIC the same way and report what excluding its CH record moves (code 2, lifts)
 - [x] Draft the rainbow-trout issue for your review; on approval file it and point the 3 RB tracker rows at it (filed as #497 on the operator's word, 2026-11-18)
 - [x] Edit #402's body: what this move did and what is left
 - [ ] NEWS, DESCRIPTION 0.86.0, `CLAUDE.md` status block, RUNBOOK touched sections; evidence under `data-raw/logs/presence_overlay_431/` with its README
