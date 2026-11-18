@@ -43,3 +43,4 @@ Gate in the issue: #436's option; UTRE CH and QUES ST; whether rainbow trout's r
 
 - Every one of the 80 notes that moved was a pointer to the tracker ("added PK (#402 review …)"); none carried link-original text. UDEN now shows the copy's note "salmon/steelhead added as test for Ulkatcho" while the overlay removes those cells, each overlay row saying why.
 - The overlay's reason is the decision plus the story's opening sentence (four distinct openings for the 110 adds).
+| test-dictionaries.R refs into R/lnk_presence.R went stale when roxygen lines were added above them in Phase 1, and the Phase 2 commit went in before the failing result was read | Refs corrected in a follow-up commit; read each test result before committing |
