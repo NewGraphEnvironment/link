@@ -213,7 +213,7 @@ lnk_vocabulary_resolve <- function(cfg, loaded = NULL) {
   # Two rules held in code also decide access: the gradient classes a
   # species' access label maps to, and which present species make another
   # present (lnk_presence()'s groups). A change to either is a new rule set.
-  groups <- eval(formals(lnk_presence)$groups)
+  groups <- .lnk_presence_groups(loaded)
   # The record rule as the pipeline resolves it, so a tracker row, a species
   # group, a region boundary or a date floor that moves which records count
   # is a new rule set (link#470).

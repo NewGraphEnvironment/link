@@ -629,7 +629,8 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
   # Presence decides which sets break. The SQL keeps the parameters_fresh
   # code (`'BT'`), which is what barrier_overrides.species_code holds;
   # lnk_presence() reports lowercase.
-  pres <- lnk_presence(loaded$wsg_species_presence, aoi)
+  pres <- lnk_presence(loaded$wsg_species_presence, aoi,
+                       groups = .lnk_presence_groups(loaded))
   models <- list()
   for (sp in species) {
     if (!tolower(sp) %in% pres$present) next

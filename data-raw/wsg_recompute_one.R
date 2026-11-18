@@ -61,7 +61,11 @@ if (length(lnk_pipeline_species(cfg, loaded, wsg, paused = TRUE)) == 0L) {
   cat(sprintf("[wsg_recompute_one] %s SKIP - no modeled species\n", wsg))
   quit(status = 0)
 }
-pres <- lnk_presence(loaded$wsg_species_presence, wsg)
+# The bundle's presence groups (#292), through getFromNamespace for the reason
+# given at .rc_start below.
+pres <- lnk_presence(loaded$wsg_species_presence, wsg,
+                     groups = utils::getFromNamespace(".lnk_presence_groups",
+                                                      "link")(loaded))
 sch  <- cfg$pipeline$schema
 t0   <- Sys.time()
 # The prologue above (R startup, load, connect, config, overrides) is outside

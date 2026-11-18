@@ -1,0 +1,3 @@
+column,type,group,owner,consumed_by,default_when_absent,description,related
+group_code,character,key,link,R/lnk_presence.R:148,"lnk_presence()'s default groups (salmon: ch cm co pk sk; ct_dv_rb: ct dv rb)","Name of a set of species that share presence: where any member is present in a watershed group, every member is (lnk_presence()). Rows of one group keep their file order, which reaches the acc spec. Not the species_groups.csv groups, which pool fish records (#290).",species_code
+species_code,character,key,link,R/lnk_presence.R:149,"lnk_presence()'s default groups","One member species, one row each, as a wsg_species_presence column (matched lower case). A species may belong to one group only.",group_code

@@ -812,7 +812,8 @@ run_base <- function() {
                  table_barriers = paste0(sch, ".barriers"),
                  table_to = paste0(sch, ".streams_access"),
                  merge = TRUE,
-                 presence = lnk_presence(loaded$wsg_species_presence, w),
+                 presence = lnk_presence(loaded$wsg_species_presence, w,
+                                         groups = .lnk_presence_groups(loaded)),
                  species = active)
       # Settle the persisted habitat on the recomputed access (link#349).
       # A focal group with only paused species (#432) has none to settle.

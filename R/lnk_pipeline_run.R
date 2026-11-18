@@ -295,7 +295,8 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
   # from <schema>.barriers's `blocks_species` predicate via lnk_barriers_views)
   # instead of bcfp's barriers tables staged via the tunnel. See NEWS v0.40.0.
   # Only the mapping_code token assembly (step 4) stays gated by `mapping_code`.
-  pres <- lnk_presence(loaded$wsg_species_presence, aoi) # nolint: object_usage_linter
+  pres <- lnk_presence(loaded$wsg_species_presence, aoi, # nolint: object_usage_linter
+                       groups = .lnk_presence_groups(loaded))
 
   # 0. Pre-persist current WSG's barriers + streams + habitat into
   # <persist_schema> BEFORE building views. lnk_barriers_views defaults

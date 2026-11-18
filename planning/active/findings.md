@@ -37,3 +37,4 @@ Gate in the issue: #436's option; UTRE CH and QUES ST; whether rainbow trout's r
 
 | Error | Resolution |
 |-------|------------|
+| A mutation check restored its file with `git checkout`, which also discarded the uncommitted Phase 1 edit to that file | Restored from the copy taken before the mutation; further mutation checks run in a `git worktree` (CLAUDE.md, "Make a reviewer's copy with `git worktree`") |

@@ -30,10 +30,10 @@ in-code by the tests below, not assumed.
 
 ## Phase 1: presence groups in the bundle (#292)
 
-- [ ] `presence_groups.csv` (`group_code,species_code`; `salmon`: ch cm co pk sk; `ct_dv_rb`: ct dv rb) in `bcfishpass` and `default`, declared under `files:` (enters `config_hash`), provenance entries, a `dictionary_presence_groups.csv` covered by `tests/testthat/test-dictionaries.R`
-- [ ] `.lnk_presence_groups(loaded)` in `R/lnk_presence.R`: the bundle's groups as the named list `lnk_presence()` takes, else its formals default (bundles with no file: `default_extrabreaks`, `default_rearbreaks`, custom); refuses an empty or malformed file
-- [ ] Every caller passes it: `R/lnk_pipeline_run.R:298`, `R/lnk_pipeline_prepare.R:632`, `R/lnk_presence_check.R:221`, `R/lnk_vocabulary.R:216` (the `presence_groups=` payload), `data-raw/wsg_recompute_one.R:64`, `data-raw/habitat_variants_build.R:815`
-- [ ] Tests: each live bundle's `acc` spec is unchanged (`lnk_vocabulary_resolve()` still matches `acc-v6` / `acc-bcfp-5`); a changed group file changes the spec; a caller grep test that no pipeline path calls `lnk_presence()` without `groups =`
+- [x] `presence_groups.csv` (`group_code,species_code`; `salmon`: ch cm co pk sk; `ct_dv_rb`: ct dv rb) in `bcfishpass` and `default`, declared under `files:` (enters `config_hash`), provenance entries, a `dictionary_presence_groups.csv` covered by `tests/testthat/test-dictionaries.R`
+- [x] `.lnk_presence_groups(loaded)` in `R/lnk_presence.R`: the bundle's groups as the named list `lnk_presence()` takes, else its formals default (bundles with no file: `default_extrabreaks`, `default_rearbreaks`, custom); refuses an empty or malformed file
+- [x] Every caller passes it: `R/lnk_pipeline_run.R:298`, `R/lnk_pipeline_prepare.R:632`, `R/lnk_presence_check.R:221`, `R/lnk_vocabulary.R:216` (the `presence_groups=` payload), `data-raw/wsg_recompute_one.R:64`, `data-raw/habitat_variants_build.R:815`
+- [x] Tests: each live bundle's `acc` spec is unchanged (`lnk_vocabulary_resolve()` still matches `acc-v6` / `acc-bcfp-5`); a changed group file changes the spec; a caller grep test that no pipeline path calls `lnk_presence()` without `groups =`
 
 ## Phase 2: default's presence table as the copy plus an overlay (#431)
 

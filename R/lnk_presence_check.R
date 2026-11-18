@@ -210,7 +210,7 @@
   cells$sources <- per_cell(ev$source_name, kept, tabled)
 
   # -- presence as written and as promoted ----------------------------------
-  grp_default <- eval(formals(lnk_presence)$groups)
+  grp_default <- .lnk_presence_groups(loaded)
   raw <- lapply(seq_len(nrow(pres)), function(i) {
     .lnk_wsg_species_present(pres[i, , drop = FALSE])
   })
@@ -218,7 +218,9 @@
   cells$present_raw <- mapply(function(w, s) s %in% raw[[w]],
                               cells$watershed_group_code, cells$species_code,
                               USE.NAMES = FALSE)
-  prom <- lapply(wsgs, function(w) toupper(lnk_presence(pres, w)$present))
+  prom <- lapply(wsgs, function(w) {
+    toupper(lnk_presence(pres, w, groups = grp_default)$present)
+  })
   names(prom) <- wsgs
   cells$present_promoted <- mapply(function(w, s) s %in% prom[[w]],
                                    cells$watershed_group_code,
