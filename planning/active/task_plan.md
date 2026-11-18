@@ -56,10 +56,10 @@ in-code by the tests below, not assumed.
 
 ## Phase 4: measure, record, release
 
-- [ ] Re-run `data-raw/wsg_species_presence_check.R` (DB): the decided rows drop out of its flags and the three records count nowhere; commit its log (#402 plan step 3)
+- [x] Re-run `data-raw/wsg_species_presence_check.R` (DB): the decided rows drop out of its flags and the three records count nowhere; commit its log (#402 plan step 3)
 - [ ] Model ADMS and BULK under `default` at `main` and at the branch head into scratch schemas on local fwapg: `streams`, `streams_access`, `streams_mapping_code` identical (#292's acceptance). Model GUIC the same way and report what excluding its CH record moves (code 2, lifts)
-- [ ] Draft the rainbow-trout issue for your review; on approval file it and point the 3 RB tracker rows at it
-- [ ] Edit #402's body: what this move did and what is left
+- [x] Draft the rainbow-trout issue for your review; on approval file it and point the 3 RB tracker rows at it (filed as #497 on the operator's word, 2026-11-18)
+- [x] Edit #402's body: what this move did and what is left
 - [ ] NEWS, DESCRIPTION 0.86.0, `CLAUDE.md` status block, RUNBOOK touched sections; evidence under `data-raw/logs/presence_overlay_431/` with its README
 
 ## Owed at the end (reported, done after merge)
@@ -68,7 +68,6 @@ in-code by the tests below, not assumed.
 - [ ] GUIC, and the groups whose code 2 or lifts read its records, re-model at the next provincial run (its CH exclusion; MESI SK and KOTL ST are absent cells, so their exclusions move no model output; no token moves)
 - [ ] `config_hash` moved for `default`, `default_tuned`, `default_minimal`, `default_parent` and `bcfishpass`: earlier builds read as another bundle in `recompute_readers_check.R` and the export until re-modelled (already owed: the current builds are `acc-v5`)
 - [ ] The upstream offer of the three exclusions, if you give the word
-- [ ] Filing the rainbow-trout issue, if not approved during the run
 
 ## Validation
 
