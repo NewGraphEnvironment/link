@@ -48,7 +48,7 @@ in-code by the tests below, not assumed.
 - [x] `default/overrides/observation_exclusions_link.csv`, the copy's columns, the three rows (`091612fd01` GUIC CH, `284b315bd7` MESI SK, `ef68279063` KOTL ST) with `data_error = t`, reviewer, date, the evidence path in `source_1` and the reason in `notes`; declared under `files:` as `observation_exclusions_link`, provenance `link (hand-authored; link#436)`
 - [x] `.lnk_observation_exclusion_keys()` (`R/lnk_pipeline_prepare.R:362`) takes the union of both tables, requiring `observation_key`, `data_error` and `release_exclude` in the link rows and binding both as text (review A4, G4)
 - [x] Tests: a key in the link rows is excluded by prep, the validator (`R/lnk_habitat_validate.R:792`) and the presence check (`R/lnk_presence_check.R:128`) alike; `cut` and `acc` specs unchanged
-- [ ] Draft the upstream offer of the three rows (shown here, nothing posted)
+- [x] Draft the upstream offer of the three rows (shown here, nothing posted)
 
 ## Review folds (Plan review, `review-plan.md`)
 
@@ -60,7 +60,7 @@ in-code by the tests below, not assumed.
 - [x] Model ADMS and BULK under `default` at `main` and at the branch head into scratch schemas on local fwapg: `streams`, `streams_access`, `streams_mapping_code` identical (#292's acceptance). Model GUIC the same way and report what excluding its CH record moves (code 2, lifts)
 - [x] Draft the rainbow-trout issue for your review; on approval file it and point the 3 RB tracker rows at it (filed as #497 on the operator's word, 2026-11-18)
 - [x] Edit #402's body: what this move did and what is left
-- [ ] NEWS, DESCRIPTION 0.86.0, `CLAUDE.md` status block, RUNBOOK touched sections; evidence under `data-raw/logs/presence_overlay_431/` with its README
+- [x] NEWS, DESCRIPTION 0.86.0, `CLAUDE.md` status block, RUNBOOK touched sections; evidence under `data-raw/logs/presence_overlay_431/` with its README
 
 ## Owed at the end (reported, done after merge)
 
@@ -71,9 +71,9 @@ in-code by the tests below, not assumed.
 
 ## Validation
 
-- [ ] Tests pass
-- [ ] `/code-check` clean (once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
+- [x] Tests pass (6,156 pass; 3 fail, all failing on main too: #493's test and two lnk_wsg_resolve closure tests)
+- [x] `/code-check` clean (once over the branch with `/code-check branch`): 3 rounds, 4 findings fixed, ended on an enumeration of the 15 exclusion readers (review-round1..3.md)
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
 How each change is proved: the `acc` spec match per bundle (no token moves); the pinned digest of the loaded presence species cells (conversion changes no cell); the build script's own stop on any cell mismatch; the sync dry run; the exclusion-key test across its three readers; ADMS and BULK model digests before and after; the presence check re-run.

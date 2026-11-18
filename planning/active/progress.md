@@ -13,3 +13,5 @@
 - Presence check re-run at ab5020e9 (`data-raw/logs/presence_overlay_431/presence_check/`, tracker not seeded): 233 flags from 351; 111 adds and 9 removes dropped out, MESI SK too (its record excluded); KOTL ST 3 -> 2 records; VICT DV, FINA ST, MFRA BT, UFRT ST read differently since #470's alias codes
 - #497 filed (rainbow trout's return) on the operator's word; CRYL, LPRO, UPET RB tracker rows point at it; #402's body edited with what is left
 - Models at main vs head (ADMS, BULK, GUIC; zz472_* scratch, dropped after): 53 of 54 table x group pairs identical; GUIC access_ch 2 -> 1 on 227 segments, 52.3 km (the excluded CH record). First main try stalled in ADMS frs_near_river_walk 34 min (no bound): recorded for #487 (TSV, README, body reading)
+- Full suite, /code-check (3 rounds: round 1 three fixes, round 2 clean, round 3 one fix, ended on an enumeration), lint compared per file/linter/line (only style lints matching surrounding code, object_usage on new internals, two name lengths following .lnk_observation_exclusion_keys), R CMD check without tests (0 errors; 3 warnings and 3 notes, none from this branch)
+- Release commit: NEWS 0.86.0, DESCRIPTION 0.86.0
