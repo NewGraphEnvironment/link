@@ -66,8 +66,10 @@ class_above_max <- 2L
 
 cfg <- lnk_config("default")
 loaded <- lnk_load_overrides(cfg)
-# The copy's rows and the bundle's own (#436).
-excl <- .lnk_observation_exclusion_rows(loaded)
+# The known-error rings are bcfishpass's list only, as recall.csv is: link's
+# own rows (#436) were found with these measures. Counting records still
+# excludes both (excl_keys below).
+excl <- loaded[["observation_exclusions"]]
 dir_log <- "data-raw/logs/presence_check_402"
 nz <- function(x) ifelse(is.na(x), "", x)
 
