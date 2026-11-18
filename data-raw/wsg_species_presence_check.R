@@ -302,7 +302,9 @@ cm_out <- merge(cm_out, res[, c("watershed_group_code", "species_code", "flag",
                 by = c("watershed_group_code", "species_code"), all.x = TRUE)
 utils::write.csv(ord(cm_out), file.path(dir_out, "measures.csv"),
                  row.names = FALSE, na = "")
-excl_all <- .lnk_observation_exclusion_rows(loaded)
+# The recall set is bcfishpass's known errors only: link's own rows were
+# found with these measures, so scoring them would be circular.
+excl_all <- loaded[["observation_exclusions"]]
 errs <- excl_all[excl_all$data_error %in% c(TRUE, "t"),
                  c("observation_key", "notes")]
 recall <- merge(errs, meas, by = "observation_key", all.x = TRUE)

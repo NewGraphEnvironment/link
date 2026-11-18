@@ -45,3 +45,7 @@ Gate in the issue: #436's option; UTRE CH and QUES ST; whether rainbow trout's r
 - The overlay's reason is the decision plus the story's opening sentence (four distinct openings for the 110 adds).
 | test-dictionaries.R refs into R/lnk_presence.R went stale when roxygen lines were added above them in Phase 1, and the Phase 2 commit went in before the failing result was read | Refs corrected in a follow-up commit; read each test result before committing |
 | Phase 3 removed lines from R/lnk_presence_check.R and shifted the tracker dictionary refs again; the commit went in without re-running test-dictionaries.R | Refs re-anchored on the line content; the full suite runs before the PR |
+
+## Full suite (branch head 4efeca24 + uncommitted 0.86.0 NEWS/DESCRIPTION, 2026-11-18)
+
+6,156 pass, 3 fail, 1 skip. All three fail on main too: test-lnk_pipeline_prepare.R "study_area_run.sh models with the gate off on both legs (#349)" (#493), and test-lnk_wsg_resolve.R's two closure tests (run at db4a7710 in a worktree: same two fail).

@@ -270,9 +270,10 @@ for (bundle in BUNDLES) {
     }
   }
   # The bundle's own exclusions (#436) that the (new) exclusions copy lists.
-  own <- files$observation_exclusions_link$path
-  if (!is.null(own) && !is.null(files$observation_exclusions)) {
-    rel <- files$observation_exclusions$path
+  # [[ ]]: `files$observation_exclusions` would partial-match the link entry.
+  own <- files[["observation_exclusions_link"]][["path"]]
+  if (!is.null(own) && !is.null(files[["observation_exclusions"]])) {
+    rel <- files[["observation_exclusions"]][["path"]]
     ch <- changes[[paste(bundle, rel)]]
     base <- file.path(bundle, rel)
     if (!is.null(ch)) {

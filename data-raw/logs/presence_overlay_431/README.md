@@ -25,7 +25,7 @@ out, and MESI SK with them: its one counting record is now excluded. KOTL ST kee
 records after its exclusion and stays flagged (decided keep). Four cells read differently since
 #470 counted the alias codes: VICT DV (removed; now absent with 1 counting record), and FINA ST,
 MFRA BT and UFRT ST, flagged for the first time with 1 record each and given no tracker row,
-because the tracker was not seeded. `recall.csv` holds 70 known errors: the copy's 67 and link's 3.
+because the tracker was not seeded. `recall.csv` holds bcfishpass's 67 known errors (link's 3 were found with the same measures, so they stay out of it).
 
 ## ADMS, BULK and GUIC built before and after
 

@@ -384,22 +384,34 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
 #' (`observation_exclusions_link`: records the copy does not list, #436), as
 #' text in the columns the readers use (`observation_key`, `data_error`,
 #' `release_exclude`, `release_include`, `notes`). The bundle's own table
-#' must carry the first three; a column either table lacks reads as `NA`.
-#' `NULL` when the bundle has neither. Text, because a short table reads its
-#' empty columns as logical and a key that looks like a number as one.
+#' must carry the first three, with its keys loaded as text (`read_as: text`
+#' on its entry; a key typed as a number has already lost digits, so a
+#' non-text key refuses); a column either table lacks reads as `NA`. `NULL`
+#' when the bundle has neither. Bound as text because the copy's empty columns
+#' read as logical.
 #' @noRd
 .lnk_observation_exclusion_rows <- function(loaded) {
   cols <- c("observation_key", "data_error", "release_exclude",
             "release_include", "notes")
-  own <- loaded$observation_exclusions_link
+  # [[ ]], not $: `$observation_exclusions` would partial-match the link
+  # table when a bundle declares only that one.
+  own <- loaded[["observation_exclusions_link"]]
   if (!is.null(own)) {
     miss <- setdiff(cols[1:3], names(own))
     if (length(miss) > 0L) {
       stop("observation_exclusions_link lacks column(s): ",
            paste(miss, collapse = ", "), call. = FALSE)
     }
+    # A key typed as a number has already lost leading zeros or digits; the
+    # entry must say `read_as: text`.
+    if (!is.character(own$observation_key)) {
+      stop("observation_exclusions_link's observation_key was read as ",
+           class(own$observation_key)[1], ", which can drop a key's leading ",
+           "zeros or digits; declare the files: entry with `read_as: text`",
+           call. = FALSE)
+    }
   }
-  tabs <- Filter(Negate(is.null), list(loaded$observation_exclusions, own))
+  tabs <- Filter(Negate(is.null), list(loaded[["observation_exclusions"]], own))
   if (length(tabs) == 0L) return(NULL)
   as_text <- function(t) {
     out <- lapply(cols, function(c) {

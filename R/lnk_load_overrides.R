@@ -61,7 +61,8 @@ lnk_load_overrides <- function(cfg) {
       path = entry$path
     ))
   }
-  .lnk_load_local(key, entry$path, overlay = entry$overlay)
+  .lnk_load_local(key, entry$path, overlay = entry$overlay,
+                  text = identical(entry[["read_as"]], "text"))
 }
 
 # Local-read fallback. Dispatch on extension. Add cases here as new
@@ -76,7 +77,11 @@ lnk_load_overrides <- function(cfg) {
 # the file is read as text, changed, and then typed column by column as
 # read.csv() types it, so a table with an empty overlay reads exactly as it
 # does without one.
-.lnk_load_local <- function(key, path, overlay = NULL) {
+#
+# `read_as: text` on the entry (`text = TRUE`) keeps every column as text: a
+# short table whose keys all look like numbers would otherwise lose leading
+# zeros or digits to read.csv()'s typing (#436).
+.lnk_load_local <- function(key, path, overlay = NULL, text = FALSE) {
   ext <- tolower(tools::file_ext(path))
   if (ext == "csv") {
     muffle_final_line <- function(w) {
@@ -89,7 +94,15 @@ lnk_load_overrides <- function(cfg) {
                           warning = muffle_final_line)
     }
     if (is.null(overlay)) {
+      if (text) {
+        return(tibble::as_tibble(read(colClasses = "character",
+                                      na.strings = character(0))))
+      }
       return(tibble::as_tibble(read()))
+    }
+    if (text) {
+      stop("`files$", key, "$read_as: text` and an overlay together are not ",
+           "supported", call. = FALSE)
     }
     df <- .lnk_overlay_apply(read(colClasses = "character"), overlay, key)
     df[] <- lapply(df, utils::type.convert, as.is = TRUE, na.strings = "NA")

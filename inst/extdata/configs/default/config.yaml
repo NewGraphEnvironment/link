@@ -45,6 +45,7 @@ files:
   # same columns; .lnk_observation_exclusion_keys() reads both (#436).
   observation_exclusions_link:
     path: overrides/observation_exclusions_link.csv
+    read_as: text
   wsg_species_presence:
     path: overrides/wsg_species_presence.csv
     # bcfishpass's table byte for byte; link's cells (the #402 review's

@@ -1,0 +1,34 @@
+# Code-check round 1: link#472 (backlog move 4), db4a7710...4efeca24 plus the uncommitted 0.86.0 NEWS/DESCRIPTION
+
+## Checklist read
+
+- **code-check.md**: the prose of all 14 H3s under `## Mechanisms` (table rows skipped). Not read: 24 of the 38 H3s (the stand-alone rules, Security, Spreadsheets/PDFs; none matches what this diff does).
+- **code-check-r.md**: read "`$` on a list partial-matches, so a longer sibling key answers for a missing one", "CSV whitespace: `trim_ws` and `strip.white` do not do what the name suggests", "Under `R CMD check`, tests run from a temp dir against the INSTALLED package", "`nzchar(NA)` is TRUE — non-empty checks silently pass NA", "Cross-function consistency for label/string normalization", "A `data-raw/` script must load the source tree, not the installed package", "`sort()` and `order()` collate by `LC_COLLATE`, so a canonical form is locale-dependent", "A `pkg::` call in a test passes `devtools::test()` and fails `R CMD check` if `pkg` is undeclared". Not read: 114 of 122.
+- **code-check-shell.md**: none read (the diff changes no shell). Not read: 72 of 72.
+- **code-check-spatial.md**: none read (no spatial code). Not read: 94 of 94.
+
+## What I ran (worktree only, no database)
+
+- `test-lnk_presence.R`, `test-lnk_csv_sync.R`, `test-dictionaries.R`, `test-lnk_presence_check.R`, `test-lnk_vocabulary.R` with `NOT_CRAN=true`: 0 failed, 0 errors in each.
+- At the merge-base (a detached worktree at db4a7710, removed after): the loaded `default` and `default_tuned` presence tables digest `2d9f3856…`, the literal the new test pins, so the "every species cell kept" test does bind to the pre-conversion fork. Tokens at the base: `cut-full-top-2 acc-v6` / `acc-bcfp-5`, as the branch claims; exclusion keys 211, all unique.
+- Overlay: 126 rows = 110 added + 10 removed + 2 kept absent (LARL gr, UTRE ch) + 4 ko, matching NEWS.
+
+## Findings
+
+- **[severity: fragile]** R/lnk_pipeline_prepare.R:391-418 (`.lnk_observation_exclusion_rows()`) with R/lnk_load_overrides.R:91-92 — the bundle's own `observation_exclusions_link.csv` goes through `.lnk_load_local()`, which reads it with `read.csv()`'s default type guessing (it has no overlay, so no `colClasses = "character"`). In a short hand-authored table, a key column whose every value looks numeric is typed as a number before `as_text()` sees it, and `as.character()` cannot restore it. Measured in the worktree: a one-row file with key `0012345678` yields the key `"12345678"`; keys `12345e6789` and `1234567890` yield `"Inf"` and `"1234567890"`. The record is then silently not excluded, from the pipeline's `NOT IN` filter, the validator and the presence check alike. bcfishobs keys are 10 hex characters, so roughly 1 in 100 keys is all digits and some are `<digits>e<digits>`. The three current rows all contain letters, so nothing is wrong today. The roxygen ("Text, because a short table reads … a key that looks like a number as one") and the test `a bundle's own exclusions need the key and both flags, read as text` (key `12345`, no leading zero, no exponent) say the conversion handles it, but the information is lost at load. `.lnk_sync_exclusions_redundant()` reads the same file with `colClasses = "character"`, so the sync and the pipeline would disagree about that key. Fix where the file is read: give it a typed read, e.g. a canonical schema or a character read for this key, not a cast afterwards.
+  - **Rule:** code-check.md "Serialization loses meaning silently" ; code-check.md "A fixture that cannot reach the failure mode"
+
+- **[severity: fragile]** R/lnk_pipeline_prepare.R:410 (`loaded$observation_exclusions`) and data-raw/sync_bcfishpass_csvs.R:274-275 (`files$observation_exclusions`, `files$observation_exclusions$path`) — this branch adds `observation_exclusions_link`, a sibling key that extends `observation_exclusions`, so `$` on a list now partial-matches. In a bundle that declares the link table and not the copy, `loaded$observation_exclusions` returns the link table: `.lnk_observation_exclusion_rows()` binds it twice. Keys survive only because of the `unique()` added here, but `.lnk_observation_exclusion_rows()` callers get every row twice; `wsg_species_presence_check.R`'s recall and `wsg_species_presence_map.R` read it. In the sync, `files$observation_exclusions$path` resolves to the link file, so the redundancy check intersects the link table with itself and reports every link row as "now listed upstream; retire the row". The same happens if a caller follows the old advice and sets only `loaded$observation_exclusions <- NULL`: the guard in `lnk_habitat_validate()` then reads the link rows as the copy. It refuses loudly there, but for the wrong table. No live bundle declares the link table without the copy (default and its extends all hold both), so this is latent. The test `Own rows alone … still work` (`list(observation_exclusions_link = …)`) passes only because `unique()` hides the double read. Use `loaded[["observation_exclusions"]]` and `files[["observation_exclusions"]]`.
+  - **Rule:** code-check-r.md "`$` on a list partial-matches, so a longer sibling key answers for a missing one"
+
+- **[severity: fragile]** data-raw/wsg_species_presence_check.R:305-308 and :415 (committed output `data-raw/logs/presence_overlay_431/presence_check/recall.csv`) — the recall set is meant to be "the data_error rows of observation_exclusions.csv with their measures: what each measure sees of known errors" (header, :32). It now reads `.lnk_observation_exclusion_rows(loaded)`, so it also takes the three link rows. Those were found in the #402 review by these same measures (GUIC by elevation at 1,581 m, the other two from barrier and drainage evidence). recall.csv now has 70 records (3 of them the link keys) where bcfishpass's independent list has 67. A recall computed over errors chosen by the measures being scored is partly circular, and CLAUDE.md already warns that "thresholds picked from the known errors are circular". The stamp line still says "%d data_error records in observation_exclusions.csv", which mislabels the set. Keep the recall on the copy's rows (`loaded[["observation_exclusions"]]`), or report the link rows apart.
+  - **Rule:** code-check.md "Verification that reads its own output"
+
+No other defects found. Checked and clean:
+- `.lnk_presence_groups()`: equal to the formals default for all three bundles, file order kept, and the refusals tested.
+- Every live `lnk_presence()` caller passes `groups` (the parse-tree test counts 5).
+- The acc payload is unchanged in form, and the tokens still resolve.
+- pretest_inputs rows cover `presence_groups.csv`, `observation_exclusions_link.csv` and the dictionary (the existing `dictionary_` row).
+- The sync's new block keys `changes` the same way the overlay block does.
+- `build_overlay.R` refuses a rerun.
+- `digest` and `withr` are declared in DESCRIPTION.

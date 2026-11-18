@@ -9,5 +9,5 @@ records under codes the table has no column for and the tracker counts as no spe
 SQL cross-check: PARS, ADMS, ALBN, 39 cells, 5426 records, all counts agree
 measures: 375962 records; 6037 cells with a counting record (measures.csv), each counting the records the check counts (1576 cells compared); SQL recount of PARS, ADMS, ALBN, 104 cells, all agree on: n_counting, n_sites, n_waterbodies, n_years, n_code_other_group, n_above_barrier, n_hist_zone
 evidence: retrieved: 2026-10-31T15:42:07Z; hist_zones: b665c14f-3d29-414b-b232-cba2a9c3cc55 (BC Historical Fish Distribution - Zones (50,000)); hist_zones_wfs_rows: 19094
-recall set: 70 data_error records in observation_exclusions.csv (recall.csv), 70 of them in bcfishobs
+recall set: 67 data_error records in observation_exclusions.csv (recall.csv), 67 of them in bcfishobs (the run counted link's 3 too; they were taken out of recall.csv after code-check round 1 kept the recall on bcfishpass's list)
 tracker: not seeded

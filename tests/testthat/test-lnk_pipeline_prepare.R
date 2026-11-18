@@ -1393,18 +1393,41 @@ test_that("a bundle's own exclusions need the key and both flags, read as text",
   expect_error(.lnk_observation_exclusion_keys(list(
     observation_exclusions = excl_rows("aaa"),
     observation_exclusions_link = own)), "lacks column\\(s\\): data_error")
-  # A short table reads empty columns as logical and a numeric-looking key
-  # as a number; the union still holds both, as text.
-  odd <- data.frame(observation_key = 12345, data_error = "t",
+  # Empty columns read as logical still bind with the copy's text.
+  odd <- data.frame(observation_key = "0012345678", data_error = "t",
                     release_exclude = NA, release_include = NA,
                     extra = "kept out")
   loaded <- list(observation_exclusions = excl_rows("aaa"),
                  observation_exclusions_link = odd)
-  expect_identical(.lnk_observation_exclusion_keys(loaded), c("aaa", "12345"))
+  expect_identical(.lnk_observation_exclusion_keys(loaded),
+                   c("aaa", "0012345678"))
   rows <- .lnk_observation_exclusion_rows(loaded)
   expect_true(all(vapply(rows, is.character, logical(1))))
   expect_identical(names(rows), c("observation_key", "data_error",
                                   "release_exclude", "release_include", "notes"))
+  # A key typed as a number has lost its digits: refused, not matched.
+  loaded$observation_exclusions_link$observation_key <- 12345678
+  expect_error(.lnk_observation_exclusion_keys(loaded), "read_as: text")
+})
+
+test_that("read_as: text keeps a key that looks like a number (#436)", {
+  tmp <- withr::local_tempfile(fileext = ".csv")
+  writeLines(c("observation_key,data_error,release_exclude",
+               "0012345678,t,", "12345e6789,t,"), tmp)
+  typed <- .lnk_load_local("x", tmp)
+  expect_false(is.character(typed$observation_key))
+  kept <- .lnk_load_local("x", tmp, text = TRUE)
+  expect_identical(kept$observation_key, c("0012345678", "12345e6789"))
+  expect_identical(kept$release_exclude, c("", ""))
+  # default declares it, so its loaded keys are text.
+  own <- lnk_load_overrides(lnk_config("default"))$observation_exclusions_link
+  expect_type(own$observation_key, "character")
+})
+
+test_that("a bundle declaring only its own exclusions is not read twice", {
+  # `$observation_exclusions` would partial-match the link table.
+  loaded <- list(observation_exclusions_link = excl_rows("ccc"))
+  expect_identical(nrow(.lnk_observation_exclusion_rows(loaded)), 1L)
 })
 
 test_that("prep drops a key only the bundle's own rows list (#436)", {
