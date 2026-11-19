@@ -49,6 +49,11 @@ lnk_presence(
   present in the AOI row. Pass
   [`list()`](https://rdrr.io/r/base/list.html) to disable expansion.
 
+  The pipeline passes the bundle's groups, the rows of its
+  `presence_groups.csv` (`group_code`, `species_code`), so they are
+  bundle data under `config_hash`; a bundle that declares none gets this
+  default.
+
 ## Value
 
 A list with:

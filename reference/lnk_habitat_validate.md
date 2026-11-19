@@ -77,7 +77,8 @@ lnk_habitat_validate(
   `species_code`, `watershed_group_code`, `blue_line_key`,
   `downstream_route_measure`, and for a table `observation_key`. A data
   frame without `observation_key` gets its own row numbers as keys, and
-  then `loaded$observation_exclusions` must be `NULL` (the exclusions
+  then `loaded$observation_exclusions` and
+  `loaded$observation_exclusions_link` must be `NULL` (the exclusions
   are matched on that key). Species and WSG codes are compared
   upper-cased and trimmed. Optional: `match_type`, `source`, `is_spawn`,
   `is_rear` (logical, 0/1 or t/true/yes), `activity_code`, `activity`,
@@ -168,10 +169,11 @@ bundles can be diffed on the same observations.
 of your own. From it, keeping:
 
 - records not flagged `data_error` or `release_exclude` in
-  `loaded$observation_exclusions` (matched on `observation_key`), and
-  not from a `source` starting with any of `source_exclude` (by default
-  the `Releases Database`: stocked fish are not evidence of habitat
-  use);
+  `loaded$observation_exclusions` or the bundle's own
+  `loaded$observation_exclusions_link` (matched on `observation_key`),
+  and not from a `source` starting with any of `source_exclude` (by
+  default the `Releases Database`: stocked fish are not evidence of
+  habitat use);
 
 - observation species admitted for the model species by `species_obs`,
   and only in WSGs where `loaded$wsg_species_presence` marks the model

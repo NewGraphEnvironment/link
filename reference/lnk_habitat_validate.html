@@ -23,7 +23,7 @@ false-positive check."><meta property="og:image" content="https://newgraphenviro
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.85.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.86.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -127,7 +127,8 @@ and (when present) <code>user_habitat_classification</code>.</p></dd>
 <code>species_code</code>, <code>watershed_group_code</code>, <code>blue_line_key</code>,
 <code>downstream_route_measure</code>, and for a table <code>observation_key</code>. A data
 frame without <code>observation_key</code> gets its own row numbers as keys, and
-then <code>loaded$observation_exclusions</code> must be <code>NULL</code> (the exclusions are
+then <code>loaded$observation_exclusions</code> and
+<code>loaded$observation_exclusions_link</code> must be <code>NULL</code> (the exclusions are
 matched on that key). Species and WSG codes are compared upper-cased
 and trimmed. Optional: <code>match_type</code>, <code>source</code>, <code>is_spawn</code>, <code>is_rear</code>
 (logical, 0/1 or t/true/yes), <code>activity_code</code>, <code>activity</code>,
@@ -216,7 +217,8 @@ bundles can be diffed on the same observations.</p>
 <p><code>observations</code> is any source of fish records located on the FWA network:
 <code>bcfishobs.observations</code> by default, or another table, or a data frame of
 your own. From it, keeping:</p><ul><li><p>records not flagged <code>data_error</code> or <code>release_exclude</code> in
-<code>loaded$observation_exclusions</code> (matched on <code>observation_key</code>), and not
+<code>loaded$observation_exclusions</code> or the bundle's own
+<code>loaded$observation_exclusions_link</code> (matched on <code>observation_key</code>), and not
 from a <code>source</code> starting with any of <code>source_exclude</code> (by default the
 <code>Releases Database</code>: stocked fish are not evidence of habitat use);</p></li>
 <li><p>observation species admitted for the model species by <code>species_obs</code>,

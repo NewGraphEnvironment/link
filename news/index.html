@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.85.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.86.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,20 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.86.0" id="link-0860">link 0.86.0<a class="anchor" aria-label="anchor" href="#link-0860"></a></h2>
+<p><strong><code>default</code>’s presence table is bcfishpass’s copy plus an overlay, a bundle can exclude a record bcfishpass has not listed, and the presence groups are bundle data</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/472" class="external-link">#472</a>, backlog move 4). No species cell moves, so no output token moves: <code>default</code> stays <code>acc-v6</code> and <code>bcfishpass</code> <code>acc-bcfp-5</code>. The issues expected a new <code>acc</code> row; none is needed, because the loaded presence cells, the groups and the record rule are the same values.</p>
+<ul><li>
+<strong>The presence table is a synced copy</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/431" class="external-link">#431</a>). <code>default</code>’s <code>overrides/wsg_species_presence.csv</code> is now bcfishpass’s own (<code>smnorris/bcfishpass@3bd2824</code>), which the weekly sync checks as it does the <code>bcfishpass</code> bundle’s. Its 122 departures are rows of <code>overrides/wsg_species_presence_overlay.csv</code>, each with its reason: the <a href="https://github.com/NewGraphEnvironment/link/issues/402" class="external-link">#402</a> review’s 110 added and 10 removed cells, UTRE CH and LARL GR kept absent, plus the four <code>ko</code> cells. A reason carries the review’s decision, its rule and the opening of the tracker’s story. <code>data-raw/logs/presence_overlay_431/build_overlay.R</code> made them and stops unless the species cells come back exactly; the loaded <code>default</code> and <code>default_tuned</code> tables digest identical before and after in every species column, order and type. Only <code>notes</code> moves to the copy’s text: link’s notes there had pointed at the tracker.</li>
+<li>
+<strong>A record bcfishpass has not listed can be excluded</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/436" class="external-link">#436</a>). <code>default</code>’s <code>overrides/observation_exclusions_link.csv</code> holds the three records the review found wrong (GUIC CH and MESI SK misplaced, KOTL ST above Bonnington Falls), in the copy’s columns. <code>.lnk_observation_exclusion_keys()</code> reads both tables, so the pipeline, the validator and the presence check exclude them alike, and the sync names a row once upstream lists it. Only GUIC’s moves a model (MESI SK and KOTL ST are absent cells there): built before and after, GUIC’s chinook turns from 2 to 1 on 227 segments (52.3 km), and nothing else moves. ADMS and BULK are identical in every persisted table (<code>data-raw/logs/presence_overlay_431/</code>).</li>
+<li>
+<strong>The presence groups are bundle data</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/292" class="external-link">#292</a>). <code>presence_groups.csv</code> in <code>default</code> and <code>bcfishpass</code> holds <code><a href="../reference/lnk_presence.html">lnk_presence()</a></code>’s two groups (salmon; CT, DV, RB), under <code>config_hash</code>, and every pipeline caller and the <code>acc</code> spec read it. A bundle with none, <code>default_extrabreaks</code> and <code>default_rearbreaks</code> among them, keeps <code><a href="../reference/lnk_presence.html">lnk_presence()</a></code>’s default.</li>
+<li>
+<strong>The presence check after the overlay</strong> flags 233 cells, down from 351 (<code>data-raw/logs/presence_overlay_431/presence_check/</code>). Rainbow trout’s return to <code>default</code>, which its three pending rows wait on, is <a href="https://github.com/NewGraphEnvironment/link/issues/497" class="external-link">#497</a>.</li>
+<li>
+<code>config_hash</code> moves for <code>default</code>, <code>default_tuned</code>, <code>default_minimal</code>, <code>default_parent</code> and <code>bcfishpass</code>, so earlier builds read as another bundle in <code>recompute_readers_check.R</code> and the export until re-modelled; every group already owes one. RUNBOOK §5 and §7. The pre-run gate runs again before the next provincial run (<code>R/</code> and <code>inst/extdata/</code> changed).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.85.0" id="link-0850">link 0.85.0<a class="anchor" aria-label="anchor" href="#link-0850"></a></h2>
 <p><strong>The habitat export carries the access code, its contract is crate’s, PUBLISH takes only builds a consumer can name, and a one-group run refuses a downstream group it cannot see</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/473" class="external-link">#473</a>, backlog move 5).</p>

@@ -19,7 +19,7 @@ loops that should skip absent species."><meta property="og:image" content="https
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.85.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.86.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -91,7 +91,11 @@ tag (e.g. <code>"salmon"</code>); each value lists species codes that share
 group-presence semantics. Default mirrors bcfp:</p><ul><li><p><code>salmon = c("ch", "cm", "co", "pk", "sk")</code></p></li>
 <li><p><code>ct_dv_rb = c("ct", "dv", "rb")</code></p></li>
 </ul><p>A species in a group is reported present iff <strong>any</strong> group member
-is present in the AOI row. Pass <code><a href="https://rdrr.io/r/base/list.html" class="external-link">list()</a></code> to disable expansion.</p></dd>
+is present in the AOI row. Pass <code><a href="https://rdrr.io/r/base/list.html" class="external-link">list()</a></code> to disable expansion.</p>
+<p>The pipeline passes the bundle's groups, the rows of its
+<code>presence_groups.csv</code> (<code>group_code</code>, <code>species_code</code>), so they are
+bundle data under <code>config_hash</code>; a bundle that declares none gets this
+default.</p></dd>
 
 </dl></div>
     <div class="section level2">

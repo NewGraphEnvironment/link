@@ -47,11 +47,13 @@ A named character vector `c(cut = , acc = , grad = , flow = )`.
   the record rule resolved for every group in the presence table (which
   recorded codes count as which species, with their date floors and year
   limits: the pooling tracker, its species groups, the region lookup and
-  `pipeline: observation_record_date`, link#470), and the two access
-  rules held in code (the gradient class each access label maps to, and
-  [`lnk_presence()`](https://newgraphenvironment.github.io/link/reference/lnk_presence.md)'s
-  species groups). The digest is over the parsed values, so a change in
-  quoting or column order is not a new rule set.
+  `pipeline: observation_record_date`, link#470), and the access rules
+  held elsewhere: the gradient class each access label maps to (in code)
+  and the presence groups
+  ([`lnk_presence()`](https://newgraphenvironment.github.io/link/reference/lnk_presence.md)'s
+  groups as the bundle's `presence_groups.csv` gives them, link#292).
+  The digest is over the parsed values, so a change in quoting or column
+  order is not a new rule set.
 
 - **grad:** how a segment's gradient is read (`pipeline: gradient:`):
   `gradient=segment`, the segment's own (the value when absent), or for
