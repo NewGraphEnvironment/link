@@ -4,9 +4,9 @@
 # `inst/extdata/configs/{bcfishpass,default}/overrides/` directories.
 # Each bundle syncs the files its own `provenance:` block names as copies
 # (`source: https://github.com/smnorris/bcfishpass`), and only into itself:
-# `default`'s presence table is link's own, the `bcfishpass` bundle's is a
-# copy (#429). A copy is kept byte for byte; link's changes to it live in
-# an overlay beside it (`files: <key>: overlay:`, R/lnk_overlay.R).
+# the presence table is a copy in both bundles (#429, #431). A copy is kept
+# byte for byte; link's changes to it live in an overlay beside it
+# (`files: <key>: overlay:`, R/lnk_overlay.R).
 # Updates the `provenance:` entry (synced date, upstream_sha, checksum)
 # of any copy whose upstream content differs from the recorded checksum.
 #
@@ -267,6 +267,24 @@ for (bundle in BUNDLES) {
         "`%s` %s: %s now matches upstream; retire the row",
         basename(bundle), ovl,
         paste(red[[1]], red$column, sep = "/", collapse = ", ")))
+    }
+  }
+  # The bundle's own exclusions (#436) that the (new) exclusions copy lists.
+  # [[ ]]: `files$observation_exclusions` would partial-match the link entry.
+  own <- files[["observation_exclusions_link"]][["path"]]
+  if (!is.null(own) && !is.null(files[["observation_exclusions"]])) {
+    rel <- files[["observation_exclusions"]][["path"]]
+    ch <- changes[[paste(bundle, rel)]]
+    base <- file.path(bundle, rel)
+    if (!is.null(ch)) {
+      base <- tempfile(fileext = ".csv")
+      writeBin(ch$bytes, base)
+    }
+    red <- link:::.lnk_sync_exclusions_redundant(base, file.path(bundle, own))
+    if (length(red) > 0L) {
+      redundant <- c(redundant, sprintf(
+        "`%s` %s: %s now listed upstream; retire the row",
+        basename(bundle), own, paste(red, collapse = ", ")))
     }
   }
 }

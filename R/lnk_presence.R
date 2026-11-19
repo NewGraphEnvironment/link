@@ -29,6 +29,11 @@
 #'   A species in a group is reported present iff **any** group member
 #'   is present in the AOI row. Pass `list()` to disable expansion.
 #'
+#'   The pipeline passes the bundle's groups, the rows of its
+#'   `presence_groups.csv` (`group_code`, `species_code`), so they are
+#'   bundle data under `config_hash`; a bundle that declares none gets this
+#'   default.
+#'
 #' @return A list with:
 #'   - `aoi`: echo of input.
 #'   - `row`: the raw 1-row tibble for `aoi`.
@@ -128,4 +133,42 @@ lnk_presence <- function(
     return(!is.na(x) && tolower(x) %in% c("t", "true", "yes", "1"))
   }
   FALSE
+}
+
+# The species groups a bundle promotes presence by (#292): the rows of its
+# `presence_groups.csv` (`group_code, species_code`) as the named list
+# lnk_presence() takes, in file order (the order reaches the acc spec), else
+# lnk_presence()'s own default for a bundle that declares none. Species are
+# matched lower case, as lnk_presence() reports them. A species in two groups
+# would make promotion depend on group order, and a species the presence
+# table lacks is a typo lnk_presence() would ignore, so both refuse.
+.lnk_presence_groups <- function(loaded) {
+  g <- loaded$presence_groups
+  if (is.null(g)) return(eval(formals(lnk_presence)$groups))
+  miss <- setdiff(c("group_code", "species_code"), names(g))
+  if (length(miss) > 0L) {
+    stop("presence_groups lacks column(s): ", paste(miss, collapse = ", "),
+         call. = FALSE)
+  }
+  grp <- trimws(as.character(g$group_code))
+  sp <- tolower(trimws(as.character(g$species_code)))
+  if (length(grp) == 0L || any(is.na(grp) | !nzchar(grp)) ||
+        any(is.na(sp) | !nzchar(sp))) {
+    stop("presence_groups is empty or has an empty group_code or ",
+         "species_code", call. = FALSE)
+  }
+  twice <- unique(sp[duplicated(sp)])
+  if (length(twice) > 0L) {
+    stop("presence_groups names a species more than once: ",
+         paste(twice, collapse = ", "), call. = FALSE)
+  }
+  if (!is.null(loaded$wsg_species_presence)) {
+    unknown <- setdiff(sp, .lnk_presence_species_cols(
+      loaded$wsg_species_presence))
+    if (length(unknown) > 0L) {
+      stop("presence_groups names species the presence table lacks: ",
+           paste(unknown, collapse = ", "), call. = FALSE)
+    }
+  }
+  lapply(split(sp, factor(grp, levels = unique(grp))), unname)
 }

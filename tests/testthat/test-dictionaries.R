@@ -245,7 +245,8 @@ declaring <- function(stem) {
   Filter(function(b) !is.null(lnk_config(b)$files[[stem]]), bundle_names())
 }
 
-for (stem in c("species_pooling", "species_groups", "species_modelled")) {
+for (stem in c("species_pooling", "species_groups", "species_modelled",
+              "presence_groups")) {
   test_that(sprintf("dictionary_%s has the expected shape", stem), {
     d <- dict_read(stem)
     expect_true(all(c("column", "type", "group", "owner", "consumed_by",
@@ -276,7 +277,7 @@ test_that("species_pooling / species_groups consumed_by refs land on their colum
   skip_if_not(dir.exists(src), "R/ source not available")
   n_refs <- 0L
   for (stem in c("species_pooling", "species_groups", "species_modelled",
-                "wsg_species_presence_review")) {
+                "wsg_species_presence_review", "presence_groups")) {
     d <- dict_read(stem)
     for (i in seq_len(nrow(d))) {
       refs <- regmatches(d$consumed_by[i],

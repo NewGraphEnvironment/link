@@ -120,11 +120,7 @@
     stats::aggregate(list(n = rep(1L, nrow(other))), other, length)
   }
   r <- r[r$species_code %in% sp_all, , drop = FALSE]
-  excl <- loaded$observation_exclusions
-  keys_incl <- character(0)
-  if (!is.null(excl) && nrow(excl) > 0L) {
-    keys_incl <- excl$observation_key[excl$release_include %in% c(TRUE, "t")]
-  }
+  keys_incl <- .lnk_observation_release_include_keys(loaded)
   r$excluded <- r$observation_key %in% .lnk_observation_exclusion_keys(loaded)
   src_head <- ifelse(is.na(r$source), NA_character_,
                      sub(":.*$", ":", r$source))
@@ -210,7 +206,7 @@
   cells$sources <- per_cell(ev$source_name, kept, tabled)
 
   # -- presence as written and as promoted ----------------------------------
-  grp_default <- eval(formals(lnk_presence)$groups)
+  grp_default <- .lnk_presence_groups(loaded)
   raw <- lapply(seq_len(nrow(pres)), function(i) {
     .lnk_wsg_species_present(pres[i, , drop = FALSE])
   })
@@ -218,7 +214,9 @@
   cells$present_raw <- mapply(function(w, s) s %in% raw[[w]],
                               cells$watershed_group_code, cells$species_code,
                               USE.NAMES = FALSE)
-  prom <- lapply(wsgs, function(w) toupper(lnk_presence(pres, w)$present))
+  prom <- lapply(wsgs, function(w) {
+    toupper(lnk_presence(pres, w, groups = grp_default)$present)
+  })
   names(prom) <- wsgs
   cells$present_promoted <- mapply(function(w, s) s %in% prom[[w]],
                                    cells$watershed_group_code,

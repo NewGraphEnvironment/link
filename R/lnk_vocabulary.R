@@ -91,8 +91,9 @@ lnk_vocabulary_read <- function() {
 #'   recorded codes count as which species, with their date floors and year
 #'   limits: the pooling tracker, its species groups, the region lookup and
 #'   `pipeline: observation_record_date`, link#470), and the
-#'   two access rules held in code (the gradient class each access label
-#'   maps to, and [lnk_presence()]'s species groups). The
+#'   access rules held elsewhere: the gradient class each access label maps
+#'   to (in code) and the presence groups ([lnk_presence()]'s groups as the
+#'   bundle's `presence_groups.csv` gives them, link#292). The
 #'   digest is over the parsed values, so a change in quoting or column
 #'   order is not a new rule set.
 #' - **grad:** how a segment's gradient is read (`pipeline: gradient:`):
@@ -210,10 +211,11 @@ lnk_vocabulary_resolve <- function(cfg, loaded = NULL) {
            paste(dup, collapse = ", "), call. = FALSE)
     }
   }
-  # Two rules held in code also decide access: the gradient classes a
-  # species' access label maps to, and which present species make another
-  # present (lnk_presence()'s groups). A change to either is a new rule set.
-  groups <- eval(formals(lnk_presence)$groups)
+  # Two more rules decide access: the gradient classes a species' access
+  # label maps to (in code), and which present species make another present
+  # (the bundle's presence_groups.csv, #292). A change to either is a new
+  # rule set.
+  groups <- .lnk_presence_groups(loaded)
   # The record rule as the pipeline resolves it, so a tracker row, a species
   # group, a region boundary or a date floor that moves which records count
   # is a new rule set (link#470).

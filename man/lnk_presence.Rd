@@ -30,7 +30,12 @@ group-presence semantics. Default mirrors bcfp:
 }
 
 A species in a group is reported present iff \strong{any} group member
-is present in the AOI row. Pass \code{list()} to disable expansion.}
+is present in the AOI row. Pass \code{list()} to disable expansion.
+
+The pipeline passes the bundle's groups, the rows of its
+\code{presence_groups.csv} (\code{group_code}, \code{species_code}), so they are
+bundle data under \code{config_hash}; a bundle that declares none gets this
+default.}
 }
 \value{
 A list with:

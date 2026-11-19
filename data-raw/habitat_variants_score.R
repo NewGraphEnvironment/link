@@ -552,6 +552,7 @@ if (!is.null(absences) && nrow(absences) > 0L) {
   if (nrow(a) > 0L) {
     loaded_abs <- loaded
     loaded_abs$observation_exclusions <- NULL
+    loaded_abs$observation_exclusions_link <- NULL
     abs_obs <- lnk_habitat_validate(
       conn, aoi = focal, cfg = cfgs[[base_variant]], loaded = loaded_abs,
       species = species, schema = schema_of(base_variant), observations = a,

@@ -116,11 +116,10 @@ pools <- stats::setNames(lapply(sp_barrier, function(s) {
   if (length(v) != 1L || is.na(v)) stop("no observation_species for ", s)
   trimws(strsplit(v, ";")[[1]])
 }), sp_barrier)
-excl_all <- loaded$observation_exclusions
 meas <- .lnk_presence_measures(
   conn, zones, sp_barrier, pools, sockeye,
   excl_keys = .lnk_observation_exclusion_keys(loaded),
-  incl_keys = excl_all$observation_key[excl_all$release_include %in% c(TRUE, "t")],
+  incl_keys = .lnk_observation_release_include_keys(loaded),
   aliases = .lnk_record_aliases(loaded,
                                 loaded$wsg_species_presence$watershed_group_code),
   year_min = year_min, year_now = year_now)
@@ -140,13 +139,12 @@ fl$story <- ifelse(nzchar(ms), paste(fl$story, ms), fl$story)
 
 # -- independent count in SQL for three groups -------------------------------
 check_wsgs <- c("PARS", "ADMS", "ALBN")
-excl <- loaded$observation_exclusions
 dbWriteTable(conn, "pc_excl",
              data.frame(observation_key = .lnk_observation_exclusion_keys(loaded)),
              temporary = TRUE, overwrite = TRUE)
 dbWriteTable(conn, "pc_incl",
-             data.frame(observation_key = excl$observation_key[
-               excl$release_include %in% c(TRUE, "t")]),
+             data.frame(observation_key =
+                          .lnk_observation_release_include_keys(loaded)),
              temporary = TRUE, overwrite = TRUE)
 # The alias codes the tracker counts as a species (link#470), as the check
 # and the measures read them; the zones carry no group, so only the aliases
@@ -304,6 +302,9 @@ cm_out <- merge(cm_out, res[, c("watershed_group_code", "species_code", "flag",
                 by = c("watershed_group_code", "species_code"), all.x = TRUE)
 utils::write.csv(ord(cm_out), file.path(dir_out, "measures.csv"),
                  row.names = FALSE, na = "")
+# The recall set is bcfishpass's known errors only: link's own rows were
+# found with these measures, so scoring them would be circular.
+excl_all <- loaded[["observation_exclusions"]]
 errs <- excl_all[excl_all$data_error %in% c(TRUE, "t"),
                  c("observation_key", "notes")]
 recall <- merge(errs, meas, by = "observation_key", all.x = TRUE)

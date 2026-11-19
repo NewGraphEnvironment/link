@@ -1,0 +1,4 @@
+observation_key,data_error,release_exclude,release_include,reviewer_name,review_date,source_1,source_2,notes
+091612fd01,t,,,almac2022,2026-11-01,data-raw/logs/presence_check_402/decision_session/guic_ch_misplaced.md,http://a100.gov.bc.ca/pub/acat/public/viewReport.do?reportId=42693,"misplaced: the permit's own coordinates put a lower Guichon Creek riprap salvage (FDIS fshclctn_id 146376, 2012) in the headwaters at 1,581 m (#402, #436)"
+284b315bd7,t,,,almac2022,2026-11-01,data-raw/logs/presence_check_402/decision_session/decisions.md,,"misplaced: a Johanson Lake / Skeena synoptic survey (FISS survey_id 66276, 1995) on a Sustut waterbody that FWA places in MESI across the divide (#402, #436)"
+ef68279063,t,,,almac2022,2026-11-01,data-raw/logs/presence_check_402/decision_session/decisions.md,,"misidentified: steelhead could not pass Bonnington Falls; likely a rainbow trout recorded as steelhead (BC Lakes survey_id 2005, 1974) (#402, #436)"

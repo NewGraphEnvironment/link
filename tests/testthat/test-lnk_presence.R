@@ -118,3 +118,86 @@ test_that("logical-typed columns work (PostgreSQL load shape)", {
   expect_false(pres$is_present("st"))
   expect_false(pres$is_present("wct"))
 })
+
+# -- presence groups from the bundle (#292) ----------------------------------
+
+test_that("each declaring bundle's presence groups equal lnk_presence()'s default", {
+  for (b in c("default", "default_tuned", "bcfishpass")) {
+    loaded <- lnk_load_overrides(lnk_config(b))
+    expect_false(is.null(loaded$presence_groups), info = b)
+    expect_identical(.lnk_presence_groups(loaded),
+                     eval(formals(lnk_presence)$groups), info = b)
+  }
+})
+
+test_that("a bundle with no presence_groups falls back to the default", {
+  expect_identical(.lnk_presence_groups(list()),
+                   eval(formals(lnk_presence)$groups))
+})
+
+test_that("presence groups keep file order and lower-case species", {
+  loaded <- list(
+    presence_groups = data.frame(group_code = c("b", "a", "b"),
+                                 species_code = c("CH", "BT", "CO")),
+    wsg_species_presence = mock_presence())
+  expect_identical(.lnk_presence_groups(loaded),
+                   list(b = c("ch", "co"), a = "bt"))
+})
+
+test_that("a malformed presence_groups table is refused", {
+  pres <- mock_presence()
+  pg <- function(g, s) {
+    list(presence_groups = data.frame(group_code = g, species_code = s),
+         wsg_species_presence = pres)
+  }
+  expect_error(.lnk_presence_groups(list(presence_groups = data.frame(
+    group = "salmon", species_code = "ch"))), "lacks column")
+  expect_error(.lnk_presence_groups(pg(character(0), character(0))), "empty")
+  expect_error(.lnk_presence_groups(pg(c("salmon", ""), c("ch", "co"))),
+               "empty group_code")
+  expect_error(.lnk_presence_groups(pg(c("a", "b"), c("ch", "ch"))),
+               "more than once: ch")
+  expect_error(.lnk_presence_groups(pg("salmon", "chx")),
+               "presence table lacks: chx")
+})
+
+test_that("the bundle's groups decide promotion and the acc spec (#292)", {
+  cfg <- lnk_config("default")
+  loaded <- lnk_load_overrides(cfg)
+  base <- .lnk_vocabulary_spec_acc(cfg, loaded)
+  narrow <- loaded
+  narrow$presence_groups <- narrow$presence_groups[
+    narrow$presence_groups$species_code != "pk", , drop = FALSE]
+  expect_false(identical(base, .lnk_vocabulary_spec_acc(cfg, narrow)))
+  expect_error(lnk_vocabulary_resolve(cfg, narrow), "no acc token")
+})
+
+test_that("no pipeline path calls lnk_presence() without the bundle's groups", {
+  # Source-tree only: an installed package has no R/ or data-raw/.
+  root <- testthat::test_path("..", "..")
+  skip_if_not(dir.exists(file.path(root, "R")), "source tree not available")
+  files <- c(list.files(file.path(root, "R"), "\\.R$", full.names = TRUE),
+             file.path(root, "data-raw",
+                       c("wsg_recompute_one.R", "habitat_variants_build.R")))
+  n <- 0L
+  for (f in files) {
+    exprs <- tryCatch(parse(f, keep.source = FALSE), error = function(e) NULL)
+    expect_false(is.null(exprs), info = f)
+    calls <- list()
+    walk <- function(e) {
+      if (is.call(e)) {
+        if (identical(e[[1]], as.name("lnk_presence"))) {
+          calls[[length(calls) + 1L]] <<- e
+        }
+        for (a in as.list(e)[-1]) if (!missing(a)) walk(a)
+      }
+    }
+    for (e in exprs) walk(e)
+    for (cl in calls) {
+      n <- n + 1L
+      expect_true("groups" %in% names(cl),
+                  info = paste(basename(f), deparse(cl)[1]))
+    }
+  }
+  expect_gte(n, 5L)
+})

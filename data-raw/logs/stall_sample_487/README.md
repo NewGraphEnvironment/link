@@ -30,3 +30,27 @@ Not run here:
   on a table that the stalled statement reads gives a `Lock` leader and a `blocker` row naming
   that session's pid and its `LOCK TABLE` query.
 - **A real stall.** That is #487's second acceptance line, owed to the next one.
+
+## The first real stall (2026-11-18, link#472's measurement)
+
+`wsg_run_one.R ADMS default` at link `db4a7710` (0.85.0, fresh 0.52.0) on m1's local docker fwapg,
+run directly (no driver, so no statement bound: `statement_timeout=0`) from a worktree into scratch
+schema `zz472_main` with `LNK_GUARD_DOWNSTREAM=warn`, for #472's before/after comparison.
+`CREATE TEMP TABLE pg_temp.frs_near_river_walk` started 17:58:46Z and was still running at
+18:32:28Z, when it was cancelled by hand (`pg_cancel_backend`). ADMS takes minutes elsewhere.
+
+`20261118_wsg_run_one_stall_ADMS.tsv` holds the sampler's 24 rows (18:09:26Z to 18:32:28Z, every
+60 s once past the 10 min threshold), split from the group's log as the driver would:
+
+- every row is the `leader` alone, `active` with **no wait event**: no lock, no I/O wait, no
+  parallel workers, so the backend was computing, not waiting;
+- `n_active` 1: no other client statement was running in the database during the samples;
+- the host's load averages ran 7 to 27 over the window, with the colima VM that holds Postgres at
+  about 100 % CPU and other sessions' R and Claude processes on the host;
+- the statement began while another session of ours (the #402 presence check, 17:57 to 17:59Z)
+  was reading the same database, the shape the earlier OKAN and EUCH stalls had.
+
+Re-run under a 20 min bound with nothing else reading the database, the same group finished in
+2.5 min (`data-raw/logs/presence_overlay_431/`).
+What makes the walk take its slow path is still not known: the samples show where the time went,
+not the plan.
