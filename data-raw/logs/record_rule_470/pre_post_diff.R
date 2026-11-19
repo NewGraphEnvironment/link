@@ -165,3 +165,4 @@ cat("\n== access km that moved\n"); print(trans[trans$pre != trans$post | is.na(
 cat("\n== records counted under one rule only (province-wide)\n"); print(recs)
 cat("\n== unexplained\n"); print(unexpl)
 cat(sprintf("\nunexplained pieces: %d\n", sum(unexpl$pieces)))
+# nolint end
