@@ -20,7 +20,7 @@ ticked and not **waiting**; `/planning-init <umbrella>` plans it, one phase per 
 | - [x] 1 | #469 | 1: the parent gradient and the grad tokens (4 issues) | done: https://github.com/NewGraphEnvironment/link/pull/486 |
 | - [x] 2 | #470 | 2, 3: which records count, what each lift rests on (7 issues) | done: https://github.com/NewGraphEnvironment/link/pull/495 |
 | - [ ] 3 | #471 | 4: docs, and a check that fails on warnings (4 issues) | open |
-| - [ ] 4 | #472 | 5: `default`'s presence table as a copy plus an overlay (4 issues) | open: after move 2, whose record rule the presence check reads; one provincial re-model covers both moves' `acc` rows |
+| - [x] 4 | #472 | 5: `default`'s presence table as a copy plus an overlay (4 issues) | done: https://github.com/NewGraphEnvironment/link/pull/498 |
 | - [x] 5 | #473 | 6, 7: the export contract, one-group runs that read downstream (6 issues) | done: https://github.com/NewGraphEnvironment/link/pull/496 |
 | - [ ] 6 | #474 | 8, 9: what a run stamps and checks before launch, how primitives load (10 issues) | open |
 | - [ ] 7 | #475 | 10: drivers (6 issues) | open |
@@ -131,7 +131,7 @@ undocumented `presence` arguments; then drop `error-on`). Touches `README.md`, `
 
 ### 5. `default`'s presence table as a copy plus an overlay
 
-- [ ] Carried by move 4, #472
+- [x] Carried by move 4, #472 (merged in https://github.com/NewGraphEnvironment/link/pull/498)
 
 #402 (the presence check and its tracker: 154 rows pending, 141 of them KO and RB held since #432 paused
 those species), #431 (`default`'s `wsg_species_presence.csv` as bcfishpass's synced copy, with link's
