@@ -11,7 +11,7 @@ Move 3 of `planning/backlog.md`. One PR for five small issues: #456 (README word
 - Version and NEWS: docs, CI, `man/` and error-string changes only, so a patch. `/gh-pr-merge` infers the bump; state in the PR body that no behaviour changes.
 
 ## Phase 1: #493, fix the failing test
-- [ ] `tests/testthat/test-lnk_pipeline_prepare.R` (~l.1185): drop comment lines first (`grep("^\\s*#", remote, invert = TRUE, value = TRUE)`), then `grep("wsg_run_one.R", ...)`, so only the command at `data-raw/study_area_remote.sh:115` matches; keep the `export LNK_HABITAT_GATE=0 &&` check.
+- [x] `tests/testthat/test-lnk_pipeline_prepare.R` (~l.1185): drop comment lines first (`grep("^\\s*#", remote, invert = TRUE, value = TRUE)`), then `grep("wsg_run_one.R", ...)`, so only the command at `data-raw/study_area_remote.sh:115` matches; keep the `export LNK_HABITAT_GATE=0 &&` check.
 - [ ] Fails on `main` first, passes after; restoring a comment match fails it.
 
 ## Phase 2: #385, clear the warnings, then gate
