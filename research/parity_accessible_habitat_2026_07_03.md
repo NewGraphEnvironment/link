@@ -1,5 +1,7 @@
 # Provincial parity — accessible + spawning + rearing (2026-07-03)
 
+**Date opened:** 2026-07-03 · **Status:** HISTORICAL, a dated record kept for its evidence; it is not revised. What is known now is in [`bcfishpass_parity.md`](bcfishpass_parity.md).
+
 Cross-section parity proof for the combined **#221** (per-WSG accessible_km roll-up)
 + **#223** (access-segmentation-frontier fix). Extends the historical spawn/rear
 parity harness with the **accessible_km** column and re-runs a species/region

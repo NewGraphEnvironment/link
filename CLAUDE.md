@@ -4,6 +4,8 @@ Experimental package — breaking all the time and loving the learning curve. St
 
 > **Read [`RUNBOOK.md`](RUNBOOK.md) first.** It is the durable mental model of the barrier → access → mapping_code machinery (what feeds what, where each rule lives, the gotchas). This `CLAUDE.md` carries conventions + status; the RUNBOOK carries the *mechanics*. Don't re-derive the system from source each session — read the runbook, and update it in-commit when the mechanics change.
 
+The settled findings behind the methods (what is known, with provenance and the files that index it) are in [`research/README.md`](research/README.md); cite an individual research file only where a rule depends on it.
+
 ## Repository Context
 
 **Repository:** NewGraphEnvironment/link

@@ -1,5 +1,7 @@
 # bcfishpass Comparison
 
+**Verification:** none yet. Written before this header existed and not checked against the code since; read its claims as of when it was written.
+
 fresh 0.14.0 + link 0.4.0 vs bcfishpass (reference `habitat_linear_*` tables on tunnel, bcfishpass ea3c5d8, fwapg 20240830).
 
 ## 2026-04-29 — parity claim retracted
