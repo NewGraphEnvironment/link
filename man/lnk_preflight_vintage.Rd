@@ -36,6 +36,10 @@ load stamps. Defaults to reading \code{conn}; \code{NULL} (the default when \cod
 is \code{NULL}) means "not consulted" and leaves the statistics to decide.
 A data frame with no row for a table makes that table \code{unstamped}.}
 
+\item{heads}{A data frame with \code{table_name} and \code{live_etag}: the live
+ETag of each stamped table's source object. Defaults to a HEAD request
+per stamped table; \code{NULL} means "not consulted". Tests pass it directly.}
+
 \item{quiet}{Suppress the human-readable report.}
 }
 \value{

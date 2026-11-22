@@ -16,13 +16,13 @@ Move 3 of `planning/backlog.md`. One PR for five small issues: #456 (README word
 
 ## Phase 2: #385, clear the warnings, then gate
 Review changed this phase: run `devtools::check()` first and fix what it names.
-- [ ] Non-ASCII in code lines: 12 files (`R/lnk_access.R`, `lnk_barrier_overrides.R`, `lnk_compare_mapping_code.R`, `lnk_compare_rollup.R`, `lnk_crossings_union.R`, `lnk_pipeline_load.R`, `lnk_pipeline_prepare.R`, `lnk_pipeline_pscis_build.R`, `lnk_stamp.R`, `lnk_wsg_downstream_check.R`, `lnk_wsg_resolve.R`, `lnk_rules_build.R`). Em dashes in `stop()`/`paste0()` strings become `—` escapes (message text unchanged); in code comments, ASCII. Roxygen-only non-ASCII does not warn: leave it. `grep -rn "—" tests` first, since a test may match a message.
-- [ ] Rd links: `[cols_barriers]` (`R/lnk_barriers_unify.R:6`, internal object) to backticks; `lnk_override_validate`, `lnk_override_apply` (`R/lnk_load.R:5,29`) and `lnk_score_severity` (`R/lnk_source.R:11,15`) name functions with no `R/` file: rewrite the sentences or use backticks. Check `R/lnk_source.R:41,108` and `R/lnk_load.R:73-75` (examples and a runtime message that call them).
-- [ ] Undocumented `presence`: add `@param presence` to `R/lnk_pipeline_access.R` (l.134; beside `wsg_presence`, l.76; an `lnk_presence` object that overrides it, l.164-171) and `R/lnk_pipeline_mapping_code.R` (l.97). `lnk_preflight_vintage` has no such argument: not in scope.
-- [ ] `devtools::document()`: if the installed roxygen differs from `RoxygenNote`, revert unrelated `man/` and `DESCRIPTION` churn (`git diff --stat`).
-- [ ] `devtools::check()` 0 warnings, 0 errors; notes listed in the PR. Non-ASCII check prints nothing: `for f in R/*.R; do grep -nP '[^\x00-\x7F]' "$f" | grep -vP '^\d+:\s*#'; done`.
-- [ ] `devtools::test()` after the string edits.
-- [ ] Last, same commit as the clean check: delete `error-on` and its comment from `.github/workflows/R-CMD-check.yaml`. The PR's CI run is the final evidence (it uses the shared workflow at `flows@v1`).
+- [x] Non-ASCII in code lines: 12 files (`R/lnk_access.R`, `lnk_barrier_overrides.R`, `lnk_compare_mapping_code.R`, `lnk_compare_rollup.R`, `lnk_crossings_union.R`, `lnk_pipeline_load.R`, `lnk_pipeline_prepare.R`, `lnk_pipeline_pscis_build.R`, `lnk_stamp.R`, `lnk_wsg_downstream_check.R`, `lnk_wsg_resolve.R`, `lnk_rules_build.R`). Em dashes in `stop()`/`paste0()` strings become `—` escapes (message text unchanged); in code comments, ASCII. Roxygen-only non-ASCII does not warn: leave it. `grep -rn "—" tests` first, since a test may match a message.
+- [x] Rd links: `[cols_barriers]` (`R/lnk_barriers_unify.R:6`, internal object) to backticks; `lnk_override_validate`, `lnk_override_apply` (`R/lnk_load.R:5,29`) and `lnk_score_severity` (`R/lnk_source.R:11,15`) name functions with no `R/` file: rewrite the sentences or use backticks. Check `R/lnk_source.R:41,108` and `R/lnk_load.R:73-75` (examples and a runtime message that call them).
+- [x] Undocumented `presence`: add `@param presence` to `R/lnk_pipeline_access.R` (l.134; beside `wsg_presence`, l.76; an `lnk_presence` object that overrides it, l.164-171) and `R/lnk_pipeline_mapping_code.R` (l.97). `lnk_preflight_vintage` has no such argument: not in scope.
+- [x] `devtools::document()`: if the installed roxygen differs from `RoxygenNote`, revert unrelated `man/` and `DESCRIPTION` churn (`git diff --stat`).
+- [x] `devtools::check()` 0 warnings, 0 errors; notes listed in the PR. Non-ASCII check prints nothing: `for f in R/*.R; do grep -nP '[^\x00-\x7F]' "$f" | grep -vP '^\d+:\s*#'; done`.
+- [x] `devtools::test()` after the string edits.
+- [x] Last, same commit as the clean check: delete `error-on` and its comment from `.github/workflows/R-CMD-check.yaml`. The PR's CI run is the final evidence (it uses the shared workflow at `flows@v1`).
 
 ## Phase 3: #456, README wording
 - [ ] `README.md` l.9 ("rule and threshold", "the rules that produced it") and l.27 ("its rules are tables"): "fish habitat definitions" at first mention, "habitat definitions" after, never "definitions" alone. Keep l.93's bcfishpass "rules".

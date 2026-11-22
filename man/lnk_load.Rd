@@ -40,12 +40,12 @@ table. If \code{FALSE}, append to an existing table.}
 }
 \value{
 The destination table name (invisibly), for piping into
-\code{\link[=lnk_override_validate]{lnk_override_validate()}} or \code{\link[=lnk_override_apply]{lnk_override_apply()}}.
+\code{\link[=lnk_override]{lnk_override()}}.
 }
 \description{
 Read one or more correction CSVs, validate their structure, and write
 them to a PostgreSQL table. This is step one of the override pipeline:
-\strong{load} -> \code{\link[=lnk_override_validate]{lnk_override_validate()}} -> \code{\link[=lnk_override_apply]{lnk_override_apply()}}.
+\strong{load} -> \code{\link[=lnk_override]{lnk_override()}}.
 }
 \details{
 Override CSVs represent hand-reviewed crossing corrections accumulated
@@ -92,10 +92,8 @@ lnk_load(conn,
            "data/overrides/2025_field.csv"),
   to   = "working.overrides_modelled")
 
-# Then validate and apply:
-lnk_override_validate(conn, "working.overrides_modelled",
-  "working.crossings")
-lnk_override_apply(conn, "working.crossings",
+# Then find orphans and duplicates:
+lnk_override(conn, "working.crossings",
   "working.overrides_modelled")
 }
 

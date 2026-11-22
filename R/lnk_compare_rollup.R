@@ -107,7 +107,7 @@ lnk_compare_rollup <- function(conn, aoi, cfg,
   if (length(active_species) == 0L) {
     stop("no persisted species found for ", aoi, " in ",
          cfg$pipeline$schema,
-         " — run lnk_pipeline_run() first.",
+         " \u2014 run lnk_pipeline_run() first.",
          call. = FALSE)
   }
   if (!is.null(species)) {

@@ -238,7 +238,7 @@ lnk_access <- function(conn, cfg, aoi, table_streams, table_barriers,
 
   set_clause <- paste(c(set_flags, set_access), collapse = ",\n    ")
   if (!nzchar(set_clause)) {
-    stop("lnk_access(merge=TRUE): nothing to update — scratch produced no ",
+    stop("lnk_access(merge=TRUE): nothing to update \u2014 scratch produced no ",
          "recomputable columns for ", aoi, call. = FALSE)
   }
 

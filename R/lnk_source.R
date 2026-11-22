@@ -8,11 +8,11 @@
 #' @param conn A [DBI::DBIConnection-class] object (used only for
 #'   table validation).
 #' @param crossings Character. Schema-qualified scored crossings table
-#'   (output of [lnk_score_severity()]).
+#'   (output of [lnk_score()]).
 #' @param label Character. Static label for all rows (mutually exclusive
 #'   with `label_col`).
 #' @param label_col Character. Column to read labels from (default:
-#'   `"severity"` — the column [lnk_score_severity()] creates).
+#'   `"severity"` — the column [lnk_score()] creates).
 #' @param label_map Named character vector. Keys are link severity levels,
 #'   values are fresh break labels. Default maps high -> blocked,
 #'   moderate -> potential.
@@ -38,7 +38,7 @@
 #' conn <- lnk_db_conn()
 #'
 #' # Step 1: Score crossings with link
-#' lnk_score_severity(conn, "working.crossings")
+#' lnk_score(conn, "working.crossings")
 #'
 #' # Step 2: Produce break source
 #' src <- lnk_source(conn, "working.crossings")
@@ -105,7 +105,7 @@ lnk_source <- function(conn,
     cols <- .lnk_table_columns(conn, crossings)
     if (!label_col %in% cols) {
       stop("Column '", label_col, "' not found in '", crossings,
-           "'. Did you run lnk_score_severity() first?", call. = FALSE)
+           "'. Did you run lnk_score() first?", call. = FALSE)
     }
     spec$label_col <- label_col
     if (!is.null(label_map) && length(label_map) > 0) {

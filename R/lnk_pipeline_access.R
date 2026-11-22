@@ -77,6 +77,9 @@
 #'   `barriers_per_sp` keys), `TRUE` when the species is present in
 #'   `aoi`. Sets `access_<sp> = -9` for species marked `FALSE`. Default
 #'   empty list assumes all species present (no -9 codes emitted).
+#' @param presence `NULL` (the default) or an `lnk_presence` object. When
+#'   given, it overrides `wsg_presence`: absent species get `access_<sp> =
+#'   -9` and their SQL is skipped.
 #' @param barrier_sources Named list. Each name is an arbitrary source
 #'   tag (e.g. `"anthropogenic"`, `"pscis"`, `"dams"`,
 #'   `"remediations"`); each value is a schema-qualified barriers table
