@@ -35,10 +35,10 @@ Review changed this phase: run `devtools::check()` first and fix what it names.
 - [x] `grep -rn study_areas.md` returns only the allowed hits: pointers, `RUNBOOK.md:3276`, `research/README.md:49`, the generator header (l.45, 81, 109, 628), NEWS history.
 
 ## Phase 5: #279, research index (this PR's share)
-- [ ] `CLAUDE.md`: add one line linking `research/README.md` (none exists; l.4374 is floodplains'); keep individual citations only where a rule depends on the file.
-- [ ] `research/README.md`: every file has a row; cutover line and "Related work" present.
-- [ ] Mark the 9 dated records historical (header line: dated record, naming the topic file that carries the finding).
-- [ ] `**Verified:**` on the 10 living files only where the file was actually checked against the code; otherwise a header line saying it is unverified. Never date an unchecked file.
+- [x] `CLAUDE.md`: add one line linking `research/README.md` (none exists; l.4374 is floodplains'); keep individual citations only where a rule depends on the file.
+- [x] `research/README.md`: every file has a row; cutover line and "Related work" present.
+- [x] Mark the 9 dated records historical (header line: dated record, naming the topic file that carries the finding).
+- [x] `**Verified:**` on the 10 living files only where the file was actually checked against the code; otherwise a header line saying it is unverified. Never date an unchecked file.
 - [ ] Consolidation issue for the six grown files filed and linked from #279's body and the backlog move text.
 
 ## Open decisions
