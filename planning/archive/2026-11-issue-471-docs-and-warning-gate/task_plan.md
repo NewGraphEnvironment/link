@@ -43,7 +43,6 @@ Review changed this phase: run `devtools::check()` first and fix what it names.
 
 ## Open decisions
 
-(none: the Plan review raised no owner forks)
 
 ## Owed at the end (reported, done after merge)
 
@@ -51,9 +50,9 @@ Review changed this phase: run `devtools::check()` first and fix what it names.
 
 ## Validation
 
-- [ ] Tests pass
+- [x] Tests pass
 - [ ] `/code-check` clean (once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
 Verification: `devtools::test()` (grep FAIL/ERROR), `lintr::lint_package()`, `devtools::check()` 0 warnings, `/Users/airvine/Projects/repo/soul/skills/_shared/research_check.sh` flags only the six consolidation files, the grep checks in phases 2 to 4.
