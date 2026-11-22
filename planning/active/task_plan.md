@@ -25,8 +25,8 @@ Review changed this phase: run `devtools::check()` first and fix what it names.
 - [x] Last, same commit as the clean check: delete `error-on` and its comment from `.github/workflows/R-CMD-check.yaml`. The PR's CI run is the final evidence (it uses the shared workflow at `flows@v1`).
 
 ## Phase 3: #456, README wording
-- [ ] `README.md` l.9 ("rule and threshold", "the rules that produced it") and l.27 ("its rules are tables"): "fish habitat definitions" at first mention, "habitat definitions" after, never "definitions" alone. Keep l.93's bcfishpass "rules".
-- [ ] `grep -n -i rule README.md` leaves only l.93; also check `DESCRIPTION`'s Description and the pkgdown home (built from the README).
+- [x] `README.md` l.9 ("rule and threshold", "the rules that produced it") and l.27 ("its rules are tables"): "fish habitat definitions" at first mention, "habitat definitions" after, never "definitions" alone. Keep l.93's bcfishpass "rules".
+- [x] `grep -n -i rule README.md` leaves only l.93; also check `DESCRIPTION`'s Description and the pkgdown home (built from the README).
 
 ## Phase 4: #275, one study-area scope document
 - [ ] `study_area_scope_and_funders.md` stays canonical for scope. In `data-raw/study_area_buckets.R` (l.635-672) replace only the funder table and prose (l.641-661) with a pointer; keep the computed "focal set is all N groups; M modelable" paragraph (l.662-670).
