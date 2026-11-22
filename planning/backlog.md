@@ -7,37 +7,58 @@ the `CLAUDE.md` status sections and `git log`; the open-issue reference graph (#
 fresh, fwapg, crate, floodplains, and the infrastructure repository) · the pass's own issue, #468, whose
 `planning/archive/` holds the read (one digest per issue)
 
+**Verified:** 2026-11-22 against 85 open issues · **Produced by:** a read of the seven open issues the file
+did not place (#487, #488, #490, #491, #493, #494, #497) and their comments; the open members of finished
+moves (#402, #236, #334, #270) against `origin/main` (16242faf); move 6's merge (PR #485, 2026-11-13, merged
+before this file and so never ticked); fresh's releases (0.54.0 on 2026-11-20, 0.55.1 the latest) and
+knowledge#139 (still open); crate's snapshot contract issue (crate#66, open); soul's `research_check.sh` (25
+files flagged, folded into #279) · four umbrellas filed: #499, #500, #501, #502; #474 closed
+
 How to use this file: `/backlog-sweep` writes it. Take the first move in **Moves** that is not
 ticked and not **waiting**; `/planning-init <umbrella>` plans it, one phase per batch, one PR.
-`/gh-pr-merge` step 9c ticks the move on merge; `/compact-prep` names the next. A `NONE` from
-`backlog_moves.sh next` that names batch sections means those batches have no move yet: run
-`/backlog-sweep` again, the backlog is not finished.
+A move that waits only on other moves is `open`, with them in `waits on`; `**waiting**` is for
+a blocker outside this file (the owner, another repo, a PR, a count).
+When the plan finds that a batch, or one of its members, is more than one PR's work, it carries the first piece and files each other piece as its own issue, naming the move it was split from, and leaves it out of this file: the next `/backlog-sweep` reads an issue the file does not name as unplaced, and folds it into a move other than the one it was split from.
+`/gh-pr-merge` step 9c ticks the move on merge, and opens a move `**waiting** on PR #N` (this
+repo's PR, and no other condition) when that PR merges; `/compact-prep` names the next, skipping a
+move whose `waits on` names a move not yet ticked. A plan that defers one of its batches sets that
+section's first line to `- [ ] Not yet in a move`: the tick leaves it open and says so, and `next`
+names it once the move is done, for the next pass to place. A `NONE` from
+`backlog_moves.sh next` that names batch sections means those batches have no move yet, and a
+plain `NONE` is not the end either while an open issue is named nowhere here (`/compact-prep`
+counts them): run `/backlog-sweep` again, the backlog is not finished.
 
 ## Moves
 
-| move | umbrella | batches | state |
-|---|---|---|---|
-| - [x] 1 | #469 | 1: the parent gradient and the grad tokens (4 issues) | done: https://github.com/NewGraphEnvironment/link/pull/486 |
-| - [x] 2 | #470 | 2, 3: which records count, what each lift rests on (7 issues) | done: https://github.com/NewGraphEnvironment/link/pull/495 |
-| - [ ] 3 | #471 | 4: docs, and a check that fails on warnings (4 issues) | open |
-| - [x] 4 | #472 | 5: `default`'s presence table as a copy plus an overlay (4 issues) | done: https://github.com/NewGraphEnvironment/link/pull/498 |
-| - [x] 5 | #473 | 6, 7: the export contract, one-group runs that read downstream (6 issues) | done: https://github.com/NewGraphEnvironment/link/pull/496 |
-| - [ ] 6 | #474 | 8, 9: what a run stamps and checks before launch, how primitives load (10 issues) | open |
-| - [ ] 7 | #475 | 10: drivers (6 issues) | open |
-| - [ ] 8 | #476 | 11: the rules builder and `dimensions.csv` (7 issues) | open |
-| - [ ] 9 | #477 | 12, 13: mapping codes as rules, the persist and run API (8 issues) | open: after move 7, whose legacy-path decision sets what #176's rename is worth, and move 8, whose residence columns the mapping-code rules read |
-| - [ ] 10 | #478 | 14, 15: snapping, habitat upstream of each crossing (6 issues) | open |
-| - [ ] 11 | #479 | 16: what blocks access at a barrier (4 issues) | open: after move 10, whose per-crossing totals the barrier scenarios are compared on |
-| - [ ] 12 | #480 | 17, 18, 19: thresholds from knowledge's table, MAD everywhere, the PARS vignette (7 issues) | **waiting** on knowledge#139's decision of which method sets link's flow numbers |
-| - [ ] 13 | #481 | 20: the next fresh pin (3 issues) | **waiting** on fresh 0.54.0's release; once it ships, take this move next |
+| move | umbrella | batches | state | lane | waits on | model |
+|---|---|---|---|---|---|---|
+| - [x] 1 | #469 | 1: the parent gradient and the grad tokens (4 issues) | done: https://github.com/NewGraphEnvironment/link/pull/486 | — | — | — |
+| - [x] 2 | #470 | 2, 3: which records count, what each lift rests on (7 issues) | done: https://github.com/NewGraphEnvironment/link/pull/495 | — | — | — |
+| - [ ] 13 | #481 | 20: the next fresh pin (3 issues) | open: start here (fresh 0.54.0 shipped 2026-11-20) | A | — | opus |
+| - [ ] 14 | #499 | 21, 22: primitive tables in one shape, a parallel publish (3 issues) | open | B | — | opus |
+| - [ ] 3 | #471 | 4: docs, research files, and a check that fails on warnings (5 issues) | open | C | — | sonnet |
+| - [x] 4 | #472 | 5: `default`'s presence table as a copy plus an overlay (4 issues) | done: https://github.com/NewGraphEnvironment/link/pull/498 | — | — | — |
+| - [x] 5 | #473 | 6, 7: the export contract, one-group runs that read downstream (6 issues) | done: https://github.com/NewGraphEnvironment/link/pull/496 | — | — | — |
+| - [x] 6 | #474 | 8, 9: what a run stamps and checks before launch, how primitives load (10 issues) | done: https://github.com/NewGraphEnvironment/link/pull/485 | — | — | — |
+| - [ ] 7 | #475 | 10: drivers (6 issues) | open | B | 14 | opus then sonnet |
+| - [ ] 8 | #476 | 11: the rules builder and `dimensions.csv` (7 issues) | open | C | 3 | opus |
+| - [ ] 9 | #477 | 12, 13: mapping codes as rules, the persist and run API (8 issues) | open | A | 3, 7, 8, 13 | opus |
+| - [ ] 10 | #478 | 14, 15: snapping, habitat upstream of each crossing (6 issues) | open | C | 3 | opus |
+| - [ ] 11 | #479 | 16: what blocks access at a barrier (5 issues) | open | C | 3, 10, 16 | fable then opus |
+| - [ ] 12 | #480 | 17, 18, 19: thresholds from knowledge's table, MAD everywhere, the PARS vignette (7 issues) | **waiting** on knowledge#139's decision of which method sets link's flow numbers | C | 3, 11, 16 | opus |
+| - [ ] 15 | #500 | 23: load an export's input snapshots (1 issue) | **waiting** on crate's self-describing table snapshot contract (crate#66) | B | 14 | opus |
+| - [ ] 16 | #501 | 24: rainbow trout back in `default`, the presence review's last rows (2 issues) | open | D | — | opus |
+| - [ ] 17 | #502 | 25: province-wide builds at the new tokens (1 issue) | **waiting** on the operator's word for the provincial runs | C | 3, 13, 14, 16 | opus |
+
+Rows are in the order to take them (moves 13 and 14 first since 2026-11-22); a move's number is its name.
 
 Tracks are separate efforts, not moves: speed (`track:speed`; its umbrella is in the skills repository: #377,
-#410, #411, #418, next #418; a follow-on from #369, hosts finished one at a time so a cloud host's consolidate waited 10.0 min at run 20261103, is for this track), provenance (`track:provenance`; umbrella likewise: #466) and minimal-run
+#410, #411, #418, #487 (its sampler shipped in 0.83.0; the fix waits on a captured plan), next #418; a follow-on from #369, hosts finished one at a time so a cloud host's consolidate waited 10.0 min at run 20261103, is for this track), provenance (`track:provenance`; umbrella likewise: #466) and minimal-run
 (knowledge#120, a task issue labelled `track:minimal-run`: #418). Track members are placed by this line,
 not by a batch.
 
 What knowledge waits on, placed (#468's table): #460, #462 and #463 in batch 1; #400 in batch 2; #434 in
-batch 3; #402 and rainbow trout's return in batch 5; #346 and #343 in batch 17. #444 is closed: its table is
+batch 3; #402 and rainbow trout's return in batch 5; #346 and #343 in batch 17; rainbow trout's return (#497, knowledge#148) in batch 24; the province-wide `default_parent` build (#490, knowledge#220's member 2) in batch 25. #444 is closed: its table is
 built and knowledge#120 reads it.
 
 ## Order
@@ -47,7 +68,7 @@ built and knowledge#120 reads it.
 | 1 | #469 | parent gradient and grad tokens: #460, #420, #462, #463 | 4 | #462's option; #420 cut to the older builds' tokens | one vocabulary edit and one full-network build under `grad-parent` |
 | 2 | #470 | which records count: #400, #398, #425 | 3 | #400's date and pooling rule; #425's two-way codes | one species-code rule read by the filter, the walk and the checks; one `acc` row |
 | 3 | #470 | what each lift rests on: #434, #426, #427, #236 | 4 | `>=` or `>` at 1990-01-01; #427's threshold; #236 cut or closed | all edit `R/lnk_barrier_overrides.R`; the same `acc` row as batch 2 |
-| 4 | #471 | docs and a check that fails on warnings: #456, #279, #275, #385 | 4 | none | cheap, and every later move is checked on warnings |
+| 4 | #471 | docs, research files and a check that fails on warnings: #456, #279, #275, #385, #493 | 5 | none | cheap, and every later move is checked on warnings and a green suite |
 | 5 | #472 | presence table as a copy plus an overlay: #402, #431, #436, #292 | 4 | #436's option; UTRE CH and QUES ST; rainbow trout's return | one presence file, one overlay mechanism, one `acc` row |
 | 6 | #473 | the export contract: #423, #333, #334, #465 | 4 | #423's column shape; #334's refusals and the bucket; #466 first or inside | all edit `R/lnk_scenario_export.R`; one crate release and one republish |
 | 7 | #473 | one-group runs that read downstream: #464, #461 | 2 | none | both edit `R/lnk_wsg_downstream_check.R` |
@@ -59,11 +80,16 @@ built and knowledge#120 reads it.
 | 13 | #477 | the persist and run API: #177, #176, #159, #204 | 4 | shims or hard renames; #204 against #169 | one release carries the deprecations |
 | 14 | #478 | snapping: #313, #314, #383 | 3 | wrap or retire; the tie rule | one re-snap, then a re-model of both configs |
 | 15 | #478 | habitat upstream of each crossing: #321, #232, #356 | 3 | none | one live parity against bcfishpass's crossings |
-| 16 | #479 | what blocks access at a barrier: #201, #83, #341, #386 | 4 | a deliberate departure from bcfishpass; #386's rule | one `acc` row and one provincial re-model |
+| 16 | #479 | what blocks access at a barrier: #201, #83, #341, #386, #236 | 5 | a deliberate departure from bcfishpass; #386's rule | one `acc` row and one provincial re-model |
 | 17 | #480 | thresholds from knowledge's table: #346, #343, #322 | 3 | knowledge#139's flow method; the table version | `default_tuned`'s thresholds file, read from one published table |
 | 18 | #480 | MAD everywhere on wet's flows: #387, #389 | 2 | the same flow decision | one five-group build |
 | 19 | #480 | the PARS vignette: #390, #342 | 2 | none | #342 shows batch 17's values |
 | 20 | #481 | the next fresh pin: #452, #288, #222 | 3 | which variables both connection helpers read | one pin bump and one host re-prep |
+| 21 | #499 | primitive tables in one shape: #494 | 1 | which `cabd.dams` layout is the standard | a run with a new cloud host is refused until it lands |
+| 22 | #499 | publish in parallel, and the public read: #488, #334 | 2 | worker pool or the CLI's parallel copy; whether the public read is ready | both are `habitat_publish.R`'s publish step; one full publish measures it |
+| 23 | #500 | load an export's input snapshots: #491 | 1 | crate#66's contract; the crate release pinned | after batch 21 settles the table layout the loader writes into |
+| 24 | #501 | rainbow trout back in `default`: #497, #402 | 2 | how a rainbow trout record is told from steelhead; the pending rows | one record rule, one overlay, one `acc` row, before the provincial runs |
+| 25 | #502 | province-wide builds at the new tokens: #490 | 1 | the run decisions; whether move 11's `acc` row goes first | the parent-gradient build needs `default` and `default_minimal` at one `acc` |
 
 ### 1. The parent gradient and the grad tokens
 
@@ -117,15 +143,20 @@ remains is multi-rule and group-scoped overrides; the dictionary and region-scop
 knowledge waits on it: #434 is what knowledge#178 (move 9) reads so that knowledge#131's leave-one-out gates
 on link's own lifts rather than re-implementing `lnk_barrier_overrides()`.
 
-### 4. Docs, and a check that fails on warnings
+### 4. Docs, research files, and a check that fails on warnings
 
 - [ ] Carried by move 3, #471
+
+**Touches:** `README.md`, `CLAUDE.md`, `data-raw/study_area_buckets.R`, `.github/workflows/R-CMD-check.yaml`, `tests/testthat/test-lnk_pipeline_prepare.R`; the 12 files whose code lines R CMD check flags as non-ASCII and the 3 with undocumented arguments (measured 2026-11-22): `R/lnk_access.R`, `R/lnk_barrier_overrides.R`, `R/lnk_compare_mapping_code.R`, `R/lnk_compare_rollup.R`, `R/lnk_crossings_union.R`, `R/lnk_pipeline_load.R`, `R/lnk_pipeline_prepare.R`, `R/lnk_pipeline_pscis_build.R`, `R/lnk_rules_build.R`, `R/lnk_stamp.R`, `R/lnk_wsg_downstream_check.R`, `R/lnk_wsg_resolve.R`, `R/lnk_pipeline_access.R`, `R/lnk_pipeline_mapping_code.R`, `R/lnk_preflight_vintage.R`; the research index and the 25 flagged files (the 9 dated run records are named in #279's body, and no other move touches them): `research/README.md`, `research/habitat_thresholds.md`, `research/study_area_run.md`, `research/bcfp_segmentation_parity.md`, `research/bcfishpass_parity.md`, `research/bcfishpass_comparison.md`, `research/bcfp_compare_mapping_code.md`, `research/accessible_km_divergence.md`, `research/bcfishpass_methodology.md`, `research/bcfp_table_map.md`, `research/bcfp_view_column_coding.md`, `research/default_vs_bcfishpass.md`, `research/dimensions_audit.md`, `research/provincial_run_runbook.md`, `research/rule_flexibility.md`, `research/study_area_scope_and_funders.md`, `research/study_areas.md`, `research/post_compact_provincial_handoff.md`
 
 #456 (the README says fish habitat definitions, not rules, as the website and the registry do), #279 (link
 `research/README.md` from `CLAUDE.md` once; the index and cutover line already exist), #275 (two study-area
 scope documents: the generated one still carries a scope section and `research/study_area_run.md` points at
 it) and #385 (clear the `R CMD check` warnings: non-ASCII characters in five `R/` files, missing Rd links, the
-undocumented `presence` arguments; then drop `error-on`). Touches `README.md`, `CLAUDE.md`,
+undocumented `presence` arguments; then drop `error-on`), and #493 (the habitat-gate test of the remote leg
+fails on `main` because its grep matches a comment; joined 2026-11-22). Since 2026-11-22 #279 also carries the
+25 files soul's research check flags (6 to consolidate, 10 to re-verify and date, 9 dated records to mark
+historical), listed in its body. Touches `README.md`, `CLAUDE.md`,
 `research/study_area_run.md`, `data-raw/study_area_buckets.R`, the five `R/` files' roxygen,
 `.github/workflows/R-CMD-check.yaml`. No gate.
 
@@ -172,7 +203,7 @@ without changing pass, fail or override). Touches `R/lnk_wsg_downstream_check.R`
 
 ### 8. What a run stamps and checks before launch
 
-- [ ] Carried by move 6, #474
+- [x] Carried by move 6, #474 (merged in https://github.com/NewGraphEnvironment/link/pull/485)
 
 #451 (the run stamps a local bcfishobs checkout's commit that no run reads, and refuses to launch when it is
 dirty), #446 (the bcfishpass reference pin reads a CSV-sync ledger row as the loaded view), #266 (link and
@@ -188,7 +219,7 @@ range rule; tag pins or an `Imports:` floor for fresh. One release before the ne
 
 ### 9. How primitives load
 
-- [ ] Carried by move 6, #474
+- [x] Carried by move 6, #474 (merged in https://github.com/NewGraphEnvironment/link/pull/485)
 
 #459 (`snapshot_bcfp.sh`: the two-argument `--config` form for GDAL 3.8, and fallbacks for the Parquet and
 bcdata paths), #276 (the snapshot skip guard keys on a code SHA and is scoped per host; hosts should reach
@@ -203,6 +234,8 @@ on a host proves it.
 
 - [ ] Carried by move 7, #475
 
+**Touches:** `data-raw/README.md`, `data-raw/state_clean.sh`, `data-raw/wsgs_dispatch.sh`, `data-raw/wsgs_run_host.R`, `data-raw/wsg_run_one.R`, `data-raw/study_area_run.sh`, `RUNBOOK.md`, and the argument handling of about 15 other drivers under data-raw
+
 #278 (drivers default `--config` to `bcfishpass`: make it required and print the resolved decision set),
 #281 (a standalone `wsg_run_one.R` writes NULL `run_uid` and `run_label`; decided with #278), #166 (the
 data-raw scripts still not noun-first, and `data-raw/README.md`'s convention), #181 (table-level drops in
@@ -214,6 +247,8 @@ RUNBOOK. Gate: retire the legacy `wsgs_*` path, which closes #179 and #110 and s
 ### 11. The rules builder and `dimensions.csv`
 
 - [ ] Carried by move 8, #476
+
+**Touches:** `R/lnk_rules_build.R`, `data-raw/build_rules.R`, `inst/extdata/configs/default/dimensions.csv`, `inst/extdata/configs/bcfishpass/dimensions.csv`, `inst/extdata/configs/dictionary_dimensions.csv`, `R/lnk_config_verify.R`, and a new workflow that copies the rules to fresh
 
 #75 (the column dictionary documents and validates: a generated README, and `lnk_rules_build()` warns on an
 unknown column), #86 (config audit: row counts are what remains), #129 (sync `parameters_habitat_rules.yaml`
@@ -229,6 +264,8 @@ row counts or closed. One rules regeneration and diff; a `default` re-model if #
 
 - [ ] Carried by move 9, #477
 
+**Touches:** `R/lnk_pipeline_mapping_code.R`, `R/lnk_mapping_code.R`, `R/lnk_access.R`, and new tests
+
 #197 (mapping-code second tokens from a rules CSV, not hard-coded chains), #153 (presence definitions for
 mapping codes: absent species read `""`), #191 (tests for `lnk_mapping_code()`, `lnk_pipeline_mapping_code()`
 and the deprecation shims) and #351 (`lnk_access(merge = TRUE)` turns an absent species' -9 into 1, and
@@ -239,6 +276,8 @@ shows the output unchanged.
 ### 13. The persist and run API
 
 - [ ] Carried by move 9, #477
+
+**Touches:** `R/lnk_pipeline_persist.R`, `R/lnk_pipeline_run.R`, `R/lnk_compare_wsg.R`, `R/lnk_persist_init.R`, `NAMESPACE`
 
 #177 (`lnk_persist_{init, write}`: rename `lnk_pipeline_persist`), #176 (`lnk_compare_wsg()` to
 `lnk_compare_run()`), #159 (`lnk_pipeline_run()` drops its working schema only on success; clean up on error)
@@ -251,6 +290,8 @@ would remove, so decide which. One release carries the deprecations.
 
 - [ ] Carried by move 10, #478
 
+**Touches:** `R/lnk_points_snap.R`, `R/lnk_pipeline_pscis_build.R`, `R/lnk_barriers_unify.R`, `data-raw/query_habitat_thresholds_obs.R`
+
 #313 (`lnk_points_snap()` can snap to placeholder `999` segments: `<@` rather than `!=`), #314 (wrap or retire
 it in favour of `fresh::frs_point_snap()`) and #383 (fwapg's tie rule and stream-head fix across the
 `FWA_LocateAlong` callers, with a sweep and live tests). Touches `R/lnk_points_snap.R`,
@@ -262,6 +303,8 @@ re-model of both configs.
 
 - [ ] Carried by move 10, #478
 
+**Touches:** `R/lnk_aggregate.R`, `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_mad.R`, `research/bcfishpass_parity.md`, and a new crossings parity script
+
 #321 (per-crossing upstream habitat per species on `fresh::frs_aggregate()`, checked against bcfishpass),
 #232 (link-built crossings against bcfishpass's complete crossings table) and #356 (float length sums depend
 on row order in the threshold scripts and `lnk_aggregate()`). Touches `R/lnk_aggregate.R`,
@@ -272,10 +315,13 @@ script, `research/bcfishpass_parity.md`. No gate. One live parity against bcfish
 
 - [ ] Carried by move 11, #479
 
+**Touches:** `R/lnk_barriers_unify.R`, `R/lnk_barriers_views.R`, `R/lnk_barriers_emit.R`, `R/lnk_pipeline_access.R`, `R/lnk_pipeline_prepare.R`, `R/lnk_barrier_overrides.R`, `inst/extdata/configs/default/parameters_fresh.csv`, `data-raw/study_area_verify.sql`, `inst/extdata/vocabulary.csv`, and a new barrier rules table
+
 #201 (carry barrier ingredients and classify access late, per species, with an evidence-based dam
 override), #83 (species-dependent dam handling), #341 (barrier rules as config, compared as scenarios on
 #321's per-crossing totals) and #386 (copies of one barrier held by several groups can disagree under
-group-filtered controls). Touches `R/lnk_barriers_unify.R`, `R/lnk_barriers_views.R`,
+group-filtered controls), and #236 (several observation-lift rules per species, each with its own evidence,
+count and date; joined 2026-11-22, it shares this batch's `acc` row). Touches `R/lnk_barriers_unify.R`, `R/lnk_barriers_views.R`,
 `R/lnk_barriers_emit.R`, `R/lnk_pipeline_access.R`, `R/lnk_pipeline_prepare.R`, a new
 `parameters_barrier_rules.csv`, `data-raw/study_area_verify.sql`. Gate: a deliberate departure from
 bcfishpass (dams per species, evidence over dams); #386 owner-only persistence or province-wide controls. One
@@ -284,6 +330,8 @@ bcfishpass (dams per species, evidence over dams); #386 owner-only persistence o
 ### 17. Thresholds from knowledge's published table
 
 - [ ] Carried by move 12, #480
+
+**Touches:** `inst/extdata/configs/default_tuned/parameters_habitat_thresholds.csv`, `data-raw/habitat_variants_build.R`, `data-raw/habitat_variants_score.R`, `data-raw/habitat_validate.R`, `research/habitat_thresholds.md`
 
 #346 (`default_tuned` takes its thresholds from knowledge's published, versioned table and link retires its
 per-threshold ladders), #343 (GR, RB and KO MAD minima on wet's discharge) and #322 (WCT thresholds from
@@ -300,6 +348,8 @@ proposed `default` beside #343.
 
 - [ ] Carried by move 12, #480
 
+**Touches:** `R/lnk_preflight_discharge.R`, `R/lnk_log.R`, `inst/extdata/vocabulary.csv`, and a new default_mad bundle
+
 #387 (report the stream lines whose model reads a flow the bundle's discharge source does not have) and #389
 (a `default_mad` bundle: MAD in every group on wet's flows, proven on five groups). Touches
 `R/lnk_preflight_discharge.R`, `R/lnk_log.R` (a log column), a new `inst/extdata/configs/default_mad/`,
@@ -310,6 +360,8 @@ dispatcher.
 
 - [ ] Carried by move 12, #480
 
+**Touches:** `data-raw/wsg_vignette_data.R`, `vignettes/`, `inst/vignette-data/`, `data-raw/readme_figure.R`
+
 #390 (the vignette's data cannot be rebuilt once the two configs segment differently: take geometry from one
 schema and join the other by measure overlap) and #342 (`default` against `default_tuned` for bull trout in
 the Parsnip, side by side). Touches `data-raw/wsg_vignette_data.R`, `vignettes/`, `inst/vignette-data/`,
@@ -319,13 +371,80 @@ the Parsnip, side by side). Touches `data-raw/wsg_vignette_data.R`, `vignettes/`
 
 - [ ] Carried by move 13, #481
 
+**Touches:** `R/lnk_persist_init.R`, `R/lnk_pipeline_persist.R`, `R/lnk_habitat_validate.R`, `DESCRIPTION`, `R/lnk_db_conn.R`, `tests/testthat/test-lnk_wsg_resolve.R`
+
 #452 (`cols_streams_near_river` gains `linear_feature_id` with fresh 0.54.0, and the validator passes
 `near_river_lfid`), #288
 (`lnk_db_conn()` reads `PG_*_SHARE` first, fresh reads `PG*` first) and #222 (the live `lnk_wsg_resolve`
 tests route to another database than their skip gate; the failure is gone, the mismatch is not). Touches
 `R/lnk_persist_init.R`, `R/lnk_pipeline_persist.R`, `R/lnk_habitat_validate.R`, `DESCRIPTION`,
 `R/lnk_db_conn.R`, `tests/testthat/test-lnk_wsg_resolve.R`. Gate: which variables both connection helpers read.
-Only #452 waits on fresh 0.54.0; #288 and #222 ride its pin bump and host re-prep.
+Only #452 waits on fresh 0.54.0; #288 and #222 ride its pin bump and host re-prep. fresh 0.54.0 shipped on
+2026-11-20 and 0.55.1 is the latest release (2026-11-22), so the plan reads fresh's NEWS from 0.52.0 to the
+tag it pins.
+
+### 21. Primitive tables in one shape
+
+- [ ] Carried by move 14, #499
+
+**Touches:** `data-raw/snapshot_bcfp.sh`, `R/lnk_artifact.R`, `RUNBOOK.md`
+
+#494 (`ogr2ogr -overwrite` gives `cabd.dams` one column layout on a database that never held it and another
+on one that did, so the content md5 differs on identical rows and the host-parity pre-flight refuses a run
+with a newly built cloud host). The owner decided on 2026-11-17 to fix it here, by making every load take one
+path (option 1). Gate: which layout becomes the standard (the reload layout keeps recorded md5s valid;
+dropping before each load reads `cabd.dams` as changed once against published records); whether the PSCIS
+tables differ the same way. A cloud image swap in the infrastructure repository waits on it.
+
+### 22. Publish in parallel, and the public read
+
+- [ ] Carried by move 14, #499
+
+**Touches:** `data-raw/habitat_publish.R`, `R/lnk_scenario_export.R`, `RUNBOOK.md`
+
+#488 (PUBLISH puts 1,345 objects one at a time, about 2.4 s each, 53.5 min for a province; the version-id
+reads since 0.85.0 add about 590 more requests) and #334 (what remains after move 5 is the public read: one
+entry in the bucket's public prefixes after the account's budget and anomaly alerts, and `s3:GetObjectVersion`
+for readers of versioned parts). Gate: a worker pool or the AWS CLI's parallel copy, manifest still last;
+whether the public read is ready or #334 stays open on it. One full publish measures it.
+
+### 23. Load an export's input snapshots
+
+- [ ] Carried by move 15, #500
+
+**Touches:** `R/lnk_export_inputs.R`, `R/lnk_artifact.R`, `R/lnk_preflight_vintage.R`, `data-raw/snapshot_bcfp.sh`, and a new snapshot loader
+
+#491 (write self-describing CABD and PSCIS snapshots through crate's table snapshot contract, load a
+published snapshot back into its table and refuse a content md5 that differs from its key, record it as
+`recorded_by = 'export'`, and load observations and modelled crossings by version id). Its decisions are in
+its body. Waits on crate#66 (open) and on batch 21, which settles the layout the loader writes into.
+
+### 24. Rainbow trout back in `default`, and the presence review's last rows
+
+- [ ] Carried by move 16, #501
+
+**Touches:** `inst/extdata/configs/default/species_modelled.csv`, `inst/extdata/configs/default/species_pooling.csv`, `inst/extdata/configs/default/overrides/wsg_species_presence_overlay.csv`, `inst/extdata/configs/default/wsg_species_presence_review.csv`, `inst/extdata/vocabulary.csv`, `research/species_presence.md`
+
+#497 (settle how a rainbow trout record is told from a steelhead one, decide CRYL, LPRO and UPET RB, set RB
+modelled again: a new `acc` row) and #402 (the presence review's remaining rows: 13 pending outside KO and RB,
+138 KO rows held for KO's own return, 3 RB rows on #497, and four cells the check reads differently since
+#470: VICT DV, FINA ST, MFRA BT, UFRT ST). Gate: the rainbow trout record rule and its evidence; each changed
+cell as an overlay row with its reason; whether KO's rows wait. knowledge waits on it: knowledge#148 brings
+rainbow trout rearing back once link models it. It lands before move 17, so its `acc` row does not make the
+provincial builds stale.
+
+### 25. Province-wide builds at the new tokens
+
+- [ ] Carried by move 17, #502
+
+**Touches:** `research/study_area_run.md`, `data-raw/logs/`, `CLAUDE.md`
+
+#490 (a provincial `default` run and a provincial `default_minimal` run at one `acc`, one link commit and
+one fresh, `streams_parent` rebuilt, then a province-wide `default_parent` build into
+`fresh_default_parent`). Every re-model owed since 0.82.0 rides the `default` run; the pre-run gate runs on
+each bundle first, and every host's primitives are re-snapshotted. Gate: the operator's word, and the run
+decisions stated per run; whether move 11's `acc` row goes in first. knowledge waits on it: knowledge#220
+lists this build as member 2 of its publish umbrella.
 
 ## Singles
 
@@ -344,9 +463,11 @@ Only #452 waits on fresh 0.54.0; #288 and #222 ride its pin bump and host re-pre
 - #21: growing-season degree days as an intrinsic variable; research, its temperature input is outside link.
 - #20: literature and observation evidence for each departure from bcfishpass; knowledge now holds the literature evidence table.
 - #2: a fish passage literature store; knowledge now holds the literature stores.
+- #270: fwapg's load trace as `loader` rows; move 6 (PR #485) shipped the wrapper, which can be checked only at the next Freshwater Atlas reload.
 
 ## Closed and transferred
 
+- #474: superseded by PR #485 (0.82.0), move 6's release, which fixed every member but #270 (now a single); closed 2026-11-22.
 - #444: superseded by PR #457 (0.79.0), which built `streams_parent` on all 241 groups, every acceptance line ticked (knowledge#120 ticked the first on 2026-11-05). Follow-ups #462, #463.
 - #439: no consequence now; the minimal run and the `default` run it readied hosts for ran on fresh 0.52.0 with both verifiers passing. The worker's refused token moves to #269 (batch 8).
 - #376: superseded by PR #380 (persistent workers): acceptance 2 met at run 20261103 (longest leg 9.8 % under its estimate).
