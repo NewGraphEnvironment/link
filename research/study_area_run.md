@@ -13,7 +13,7 @@ Lean alternative to the 5-host `provincial_run_runbook.md` for running
 > `rtj/scripts/gis/projects/<name>/project.yml`) is not its **model scope** (the
 > WSGs its report analyses, `wsg_code` in the reporting repo) — Peace is 8 field
 > vs 16 model. Conflating the two cost an hour. Full table in
-> `research/study_areas.md`. Reuses the
+> `research/study_area_scope_and_funders.md`. Reuses the
 proven per-WSG build + cypher lifecycle but is **tunnel-free** (compare =
 local bcfp snapshot, no `:63333`) and **M1-as-dispatcher** (no M4). Built for
 link#175. Companion: `provincial_run_runbook.md` (shared mechanics),
@@ -31,7 +31,7 @@ bash data-raw/study_area_run.sh \
   --focal=<Skeena focal csv>      # -> cy2 (job2)
 ```
 
-Focal lists + study-area definitions: [`research/study_areas.md`](study_areas.md).
+Scope and funders: [`study_area_scope_and_funders.md`](study_area_scope_and_funders.md). Host buckets and components (generated): [`study_areas.md`](study_areas.md).
 `--focal` count MUST equal `1 + N(--cy-workspaces)`; first = dispatcher, rest =
 cyphers in order. Dispatcher-only (no cyphers): omit `--cy-workspaces`, pass one
 `--focal`. Pre-req: dispatcher has `fresh.streams_vw_bcfp`

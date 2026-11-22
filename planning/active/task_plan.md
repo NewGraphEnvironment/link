@@ -29,10 +29,10 @@ Review changed this phase: run `devtools::check()` first and fix what it names.
 - [x] `grep -n -i rule README.md` leaves only l.93; also check `DESCRIPTION`'s Description and the pkgdown home (built from the README).
 
 ## Phase 4: #275, one study-area scope document
-- [ ] `study_area_scope_and_funders.md` stays canonical for scope. In `data-raw/study_area_buckets.R` (l.635-672) replace only the funder table and prose (l.641-661) with a pointer; keep the computed "focal set is all N groups; M modelable" paragraph (l.662-670).
-- [ ] Regeneration needs `fresh::frs_wsg_outlets()`, `frs_wsg_drainage()` and a database: hand-edit `research/study_areas.md`'s section to match the generator, and say so in its header. Keep `study_area_scope_and_funders.md:8` consistent.
-- [ ] `research/study_area_run.md` l.16 and l.34: the scope file for scope, the generated file for buckets.
-- [ ] `grep -rn study_areas.md` returns only the allowed hits: pointers, `RUNBOOK.md:3276`, `research/README.md:49`, the generator header (l.45, 81, 109, 628), NEWS history.
+- [x] `study_area_scope_and_funders.md` stays canonical for scope. In `data-raw/study_area_buckets.R` (l.635-672) replace only the funder table and prose (l.641-661) with a pointer; keep the computed "focal set is all N groups; M modelable" paragraph (l.662-670).
+- [x] Regeneration needs `fresh::frs_wsg_outlets()`, `frs_wsg_drainage()` and a database: hand-edit `research/study_areas.md`'s section to match the generator, and say so in its header. Keep `study_area_scope_and_funders.md:8` consistent.
+- [x] `research/study_area_run.md` l.16 and l.34: the scope file for scope, the generated file for buckets.
+- [x] `grep -rn study_areas.md` returns only the allowed hits: pointers, `RUNBOOK.md:3276`, `research/README.md:49`, the generator header (l.45, 81, 109, 628), NEWS history.
 
 ## Phase 5: #279, research index (this PR's share)
 - [ ] `CLAUDE.md`: add one line linking `research/README.md` (none exists; l.4374 is floodplains'); keep individual citations only where a rule depends on the file.
