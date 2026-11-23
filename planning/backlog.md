@@ -40,7 +40,7 @@ counts them): run `/backlog-sweep` again, the backlog is not finished.
 |---|---|---|---|---|---|---|
 | - [x] 1 | #469 | 1: the parent gradient and the grad tokens (4 issues) | done: https://github.com/NewGraphEnvironment/link/pull/486 | — | — | — |
 | - [x] 2 | #470 | 2, 3: which records count, what each lift rests on (7 issues) | done: https://github.com/NewGraphEnvironment/link/pull/495 | — | — | — |
-| - [ ] 13 | #481 | 20: the next fresh pin (3 issues) | open: start here (fresh 0.54.0 shipped 2026-11-20) | A | — | opus |
+| - [x] 13 | #481 | 20: the next fresh pin (3 issues) | done: https://github.com/NewGraphEnvironment/link/pull/505 | A | — | opus |
 | - [ ] 14 | #499 | 21, 22: primitive tables in one shape, a parallel publish (3 issues) | open | B | — | opus |
 | - [x] 3 | #471 | 4: docs, research files, and a check that fails on warnings (5 issues) | done: https://github.com/NewGraphEnvironment/link/pull/503 | C | — | sonnet |
 | - [x] 4 | #472 | 5: `default`'s presence table as a copy plus an overlay (4 issues) | done: https://github.com/NewGraphEnvironment/link/pull/498 | — | — | — |
@@ -377,7 +377,7 @@ the Parsnip, side by side). Touches `data-raw/wsg_vignette_data.R`, `vignettes/`
 
 ### 20. The next fresh pin
 
-- [ ] Carried by move 13, #481
+- [x] Carried by move 13, #481 (merged in https://github.com/NewGraphEnvironment/link/pull/505)
 
 **Touches:** `R/lnk_persist_init.R`, `R/lnk_pipeline_persist.R`, `R/lnk_habitat_validate.R`, `DESCRIPTION`, `R/lnk_db_conn.R`, `tests/testthat/test-lnk_wsg_resolve.R`
 
