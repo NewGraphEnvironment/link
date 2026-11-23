@@ -77,8 +77,8 @@ None open.
 ## Validation
 
 - [x] Tests pass (but #493's two, on main too)
-- [ ] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
+- [x] `/code-check` clean (`/code-check branch`: 3 rounds, ended clean with no inside-a-fix finding; round 1's three findings fixed and proven, `review-verdict.md`)
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
 Verification: Phase 6's digest comparison proves the pin changes no output but the new column; the column check and the backfill-on-a-copy check prove the stored data; the TRUE/FALSE validator run proves the re-test; Phase 4's mocked tests and Phase 5's redirected run prove the connection order and the gated tests.
