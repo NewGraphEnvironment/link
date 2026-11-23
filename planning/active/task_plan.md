@@ -60,12 +60,12 @@ None open.
 - [x] Under Open decision 2 (a): the branch's `lnk_persist_init()` on a copy of `fresh_pin481_before` backfills the column equal to what fresh wrote in `fresh_pin481_after`.
 - [x] `lnk_habitat_validate()` on `fresh_pin481_after` (ADMS, `default`) gives identical results with `near_river_lfid` TRUE and FALSE, with non-zero near-river hits.
 - [x] The variants harness: a working schema left by a 0.52.0 build is refused by fresh 0.55.1 (`.frs_habitat_target` adds the column, `.frs_null_key_guard` refuses its NULL rows), and `working_habitat_digest` hashes `t::text` (`data-raw/habitat_variants_build.R:666-669`), so a base recorded before the pin cannot match. Say both in RUNBOOK §7 and the harness header (rebuild with `--step=base`); no probe on a kept schema.
-- [ ] Under `R_LIBS`: `devtools::test()`, `devtools::check()`, `lintr::lint_package()` per file and linter against `origin/main`, `pkgdown::check_pkgdown()`.
+- [x] Under `R_LIBS`: `devtools::test()` (6,170 passed, 8 skipped, 2 failed: #493, the same on main), `devtools::check()` (0 errors; 3 warnings and 3 notes, none in a changed file), `lintr::lint_package()` per file and linter against `origin/main` (25 new, the indented-SQL style; new-code lints fixed), `pkgdown::check_pkgdown()` (no problems).
 - [x] Drop the four scratch schemas (and the backfill copy); evidence README in `data-raw/logs/fresh_pin_481/`.
 
 ## Phase 7: Release
 
-- [ ] NEWS 0.87.0 and the version bump as the branch's last code commit; CLAUDE.md status block.
+- [x] NEWS 0.87.0 and the version bump as the branch's last code commit; CLAUDE.md status block.
 
 ## Owed at the end (reported, done after merge)
 
@@ -76,7 +76,7 @@ None open.
 
 ## Validation
 
-- [ ] Tests pass
+- [x] Tests pass (but #493's two, on main too)
 - [ ] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion

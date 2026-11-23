@@ -15,6 +15,19 @@ Experimental package — breaking all the time and loving the learning curve. St
 
 **Take the next move from `planning/backlog.md`** (`bash <soul>/skills/_shared/backlog_moves.sh next planning/backlog.md`; `/compact-prep` names it): 13 moves, umbrellas #469–#481, each planned with one `/planning-init <umbrella>` and landed in one PR, ticked by `/gh-pr-merge`. Moves 12 and 13 wait on knowledge#139's flow-method decision and fresh 0.54.0. A link issue knowledge waits on says so in its batch section. A new issue joins the open move whose batches touch its files; run `/backlog-sweep` again when one fits none. Record: `planning/archive/2026-11-issue-468-backlog-pass/`.
 
+## Status (2026-11-23) — fresh 0.55.1; the near-river table keeps fresh's key; one connection resolver (#481, 0.87.0)
+
+**Backlog move 13 (#481) lands as one release: the fresh pin v0.52.0 → v0.55.1, #452, #288 and #222.** `streams_near_river` carries `linear_feature_id` (fresh 0.54.0, fresh#293), which `lnk_persist_init()` adds and fills from `streams` once; the validator passes `near_river_lfid = TRUE` and refuses a missing column or NULL. `lnk_db_conn()` delegates to `fresh::frs_db_conn()` (arguments, `PG*`, then `PG_*_SHARE`). The live resolve tests use the gated connection. No output or token moves (36 table-group digests, `data-raw/logs/fresh_pin_481/`). Mechanics: RUNBOOK §7, "Keyed on the parent line too".
+
+**Owed:** fresh 0.55.1 into each host's shared library (m1's holds 0.53.0, installed 2026-11-16) and a re-prep; `lnk_persist_init()` once per host on `fresh_default`, `fresh`, `fresh_default_minimal` at a quiet time (an ACCESS EXCLUSIVE rewrite); the pre-run gate before the next provincial run; the variants bases rebuilt with `--step=base`. A fresh issue (its deprecation message fires with every argument explicit) is drafted, not filed. #493 still fails two assertions on `main`.
+
+**Facts not worth re-deriving:**
+- **m1's colima VM can lose its guest network while still "Running"** (2026-11-21 ~20:46 PDT: ssh and 5432 refused, the guest agent still syncing time). `colima stop && colima start` fixes it; `LIMA_HOME=~/.colima/_lima limactl list` sees the VM.
+- **On m1 `~/.Renviron` sets `PGHOST`, and wins over an exported one,** so redirect `PG*` from inside R (`Sys.setenv()`) to test a connection path.
+- **fresh's reach from `wsg_run_one.R` is 19 files at v0.55.1** (`frs_db_conn.R` joined through `lnk_db_conn()`).
+- **`public.wsg_outlet` is retired** (fresh 0.33.0); closure mode reads only `whse_basemapping.fwa_downstream()`. The parked plan's gate on the table would have skipped everywhere.
+- **Measure before and after a pin from scratch libraries** (`R CMD INSTALL -l <lib> <tag worktree>`, `R_LIBS=<lib>`, `FRESH_GIT_SHA` for the stamp): the shared library stays put for other sessions.
+
 ## Status (2026-11-18) — default's presence table is bcfishpass's copy plus an overlay; link's own exclusions; presence groups in the bundle (#472, 0.86.0)
 
 **Backlog move 4 (#472) lands as one release: #431, #436, #292, and #402's decisions as overlay rows.** `default`'s `overrides/wsg_species_presence.csv` is bcfishpass's file (3bd2824), synced weekly; its 122 departures (#402's 110 added and 10 removed cells, UTRE CH and LARL GR kept absent) and the four `ko` cells are rows of `wsg_species_presence_overlay.csv`, each reason carrying the decision, the review's rule and the story's opening. `overrides/observation_exclusions_link.csv` excludes three records bcfishpass does not list (GUIC CH, MESI SK, KOTL ST), read with the copy by `.lnk_observation_exclusion_keys()`. `presence_groups.csv` holds `lnk_presence()`'s groups in `default` and `bcfishpass`. No token moves (`acc-v6`, `acc-bcfp-5`). Mechanics: RUNBOOK §7, "Copies and overlays"; §5, "The presence table is checked against the records". Evidence: `data-raw/logs/presence_overlay_431/` (its README).
