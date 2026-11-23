@@ -1,5 +1,54 @@
 # Changelog
 
+## link 0.90.0
+
+**link pins fresh 0.56.0, and its pre-flight pins the four fresh
+internals it calls by their ordered arguments**
+([\#507](https://github.com/NewGraphEnvironment/link/issues/507),
+backlog move 18;
+[\#504](https://github.com/NewGraphEnvironment/link/issues/504)). No
+persisted output and no output token moves: ADMS and BULK under
+`default` and ADMS under `bcfishpass`, built at 0.89.0 on fresh 0.55.1
+and at this release on fresh 0.56.0, digest identical in every persisted
+table and group (**DIGESTS**; `data-raw/logs/fresh_pin_507/`).
+
+- **The internals are pinned by signature.** link reaches
+  `.frs_run_connectivity`, `.frs_habitat_models`,
+  `.frs_near_river_specs` and `.frs_sql_num` through
+  [`getFromNamespace()`](https://rdrr.io/r/utils/getFromNamespace.html),
+  the last three positionally, so a reordered signature would bind their
+  arguments to the wrong formals without an error.
+  [`lnk_preflight_fresh()`](https://newgraphenvironment.github.io/link/reference/lnk_preflight_fresh.md)
+  gains `required_internal_formals` (default
+  `.lnk_fresh_required_internal_formals()`) and the result field
+  `mismatched_internal_formals`: an internal passes when the declared
+  formals are its leading formals in order and any later formal has a
+  default, so a fresh adding a trailing optional argument still passes a
+  launch. The test compares the installed fresh’s formals exactly. The
+  drivers’ failure lines name a changed signature as well as a missing
+  symbol.
+- **The drift guard reads
+  [`getFromNamespace()`](https://rdrr.io/r/utils/getFromNamespace.html).**
+  `.lnk_fresh_internal_callsites()` finds every such call on fresh in
+  link’s namespace (bare, `utils::` or `utils:::`, positional or named)
+  and its test requires the set to equal the pinned list; a call whose
+  `x` or `ns` is not a literal is refused, not skipped.
+- **fresh 0.56.0** keeps each watershed group’s gradient barriers in a
+  shared `to_barriers` table (`frs_habitat()`, which link does not call)
+  and refuses a streams table with a NULL watershed group in
+  `frs_habitat_classify()`, `frs_near_river()`, `frs_cluster()`,
+  `frs_order_child()` and `frs_habitat_overlay(bridge =)`, which link’s
+  working `streams` never has. The pre-run gate’s reach at v0.56.0 is
+  the same 19 fresh files, all of whose changes `pretest_inputs.csv`
+  already maps; its pick takes 11 groups (QUES, BULK, SETN, LFRA, TOAD,
+  OKAN, HARR, TAKL, UPCE, HORS, SAJR).
+- Owed: fresh 0.56.0 into each host’s shared library and a re-prep
+  (`load_all()` refuses fresh 0.55.1 at this floor); then the full
+  pre-run gate at main before the next provincial run
+  (`data-raw/pretest_run.sh --config=default --schema=fresh_default`).
+  fresh’s contract test of the same internals is
+  NewGraphEnvironment/fresh#329.
+
 ## link 0.89.0
 
 **Every driver needs an explicit config, a standalone run needs a label,

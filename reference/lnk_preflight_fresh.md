@@ -16,6 +16,7 @@ lnk_preflight_fresh(
   required = .lnk_fresh_required(),
   required_internal = .lnk_fresh_required_internal(),
   required_formals = .lnk_fresh_required_formals(),
+  required_internal_formals = .lnk_fresh_required_internal_formals(),
   min_version = .lnk_fresh_floor(),
   quiet = FALSE
 )
@@ -40,6 +41,19 @@ lnk_preflight_fresh(
   the call: `frs_habitat_classify()` existed long before it took
   `params_method`. Defaults to `.lnk_fresh_required_formals()`.
 
+- required_internal_formals:
+
+  Named list mapping each non-exported `fresh` function link calls to
+  its formal arguments, in order. Defaults to
+  `.lnk_fresh_required_internal_formals()`. Order is checked here and
+  not for exports because link calls three of the four internals
+  positionally, so a reordered signature would bind its arguments to the
+  wrong formals without an error, and because fresh promises nothing
+  about an internal's arguments between releases. The installed function
+  passes when the listed formals are its leading formals, in order, and
+  every formal after them has a default: a later fresh that adds a
+  trailing optional argument still passes.
+
 - min_version:
 
   Minimum acceptable `fresh` version. Defaults to the floor declared in
@@ -53,8 +67,9 @@ lnk_preflight_fresh(
 ## Value
 
 Invisibly, a list with `ok`, `version`, `version_ok`, `missing`,
-`missing_internal`, `missing_formals` (`"fn(arg)"` strings) and
-`message`.
+`missing_internal`, `missing_formals` (`"fn(arg)"` strings),
+`mismatched_internal_formals` (`"fn(want: a, b; have: a, c)"` strings)
+and `message`.
 
 ## Details
 
@@ -89,7 +104,7 @@ res <- lnk_preflight_fresh(quiet = TRUE)
 res$ok
 #> [1] TRUE
 res$version
-#> [1] "0.55.1"
+#> [1] "0.56.0"
 
 # A symbol fresh does not export fails, and is named in the report:
 bad <- lnk_preflight_fresh(required = "frs_not_a_real_export", quiet = TRUE)
