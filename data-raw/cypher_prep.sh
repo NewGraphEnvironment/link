@@ -236,7 +236,7 @@ echo "=== provenance: link_sha=${LINK_SHA:0:12} dirty=$LINK_DIRTY fresh_sha=${FR
 TMP_FRS_LOG=$(mktemp)
 if ! Rscript -e 'q(status = if (isTRUE(link::lnk_preflight_fresh()$ok)) 0L else 1L)' \
      > "$TMP_FRS_LOG" 2>&1; then
-  echo "FATAL: fresh export assertion failed; full log:" >&2
+  echo "FATAL: fresh pre-flight failed (a missing symbol or a changed signature); full log:" >&2
   cat "$TMP_FRS_LOG" >&2
   rm -f "$TMP_FRS_LOG"
   exit 1
