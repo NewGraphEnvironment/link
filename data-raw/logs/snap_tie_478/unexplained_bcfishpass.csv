@@ -1,0 +1,17 @@
+"table","side","wsg","k1","k2","explained"
+"barriers","after_only","LILL",356248078,64.1431351707179,FALSE
+"streams","before_only","LILL",356248078,59,FALSE
+"streams","after_only","LILL",356248078,59,FALSE
+"streams","after_only","LILL",356248078,64,FALSE
+"streams_access","before_only","LILL",356248078,113,FALSE
+"streams_access","after_only","LILL",356248078,64,FALSE
+"streams_access","after_only","LILL",356248078,113,FALSE
+"streams_habitat_bt","after_only","LILL",356248078,64,FALSE
+"streams_habitat_ch","after_only","LILL",356248078,64,FALSE
+"streams_habitat_cm","after_only","LILL",356248078,64,FALSE
+"streams_habitat_co","after_only","LILL",356248078,64,FALSE
+"streams_habitat_sk","after_only","LILL",356248078,64,FALSE
+"streams_habitat_st","after_only","LILL",356248078,64,FALSE
+"streams_mapping_code","before_only","LILL",356248078,113,FALSE
+"streams_mapping_code","after_only","LILL",356248078,64,FALSE
+"streams_mapping_code","after_only","LILL",356248078,113,FALSE

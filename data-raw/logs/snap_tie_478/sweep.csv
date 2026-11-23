@@ -1,0 +1,7 @@
+"pass","input","positions","no_point","error","no_point_at_top","locatealong_md5","migrations","migrations_md5"
+"before","pscis",17369,0,0,NA,"a1e4e47e","202610131654__watershedatmeasure_drop_exbc.sql 202610240132__indexpoint_tiebreak.sql","a048f8e2 98d84a33"
+"before","barriers",20006,22,0,6,"a1e4e47e","202610131654__watershedatmeasure_drop_exbc.sql 202610240132__indexpoint_tiebreak.sql","a048f8e2 98d84a33"
+"before","obs_top",581,581,0,NA,"a1e4e47e","202610131654__watershedatmeasure_drop_exbc.sql 202610240132__indexpoint_tiebreak.sql","a048f8e2 98d84a33"
+"after","pscis",17369,0,0,NA,"a6abdb3c","202610131654__watershedatmeasure_drop_exbc.sql 202610240132__indexpoint_tiebreak.sql","a048f8e2 98d84a33"
+"after","barriers",20006,14,0,0,"a6abdb3c","202610131654__watershedatmeasure_drop_exbc.sql 202610240132__indexpoint_tiebreak.sql","a048f8e2 98d84a33"
+"after","obs_top",581,21,0,NA,"a6abdb3c","202610131654__watershedatmeasure_drop_exbc.sql 202610240132__indexpoint_tiebreak.sql","a048f8e2 98d84a33"

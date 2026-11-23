@@ -1,0 +1,174 @@
+[wsg_run_one] NASR statement_timeout=0
+[wsg_run_one] NASR downstream check pass in 0.0 s ()
+NOTICE:  schema "zz478_build_before_default" already exists, skipping
+
+NOTICE:  relation "log" already exists, skipping
+
+NOTICE:  relation "log_recompute" already exists, skipping
+
+NOTICE:  relation "log_input" already exists, skipping
+
+NOTICE:  relation "log_parameters_fresh" already exists, skipping
+
+NOTICE:  relation "log_parameters_habitat_thresholds" already exists, skipping
+
+NOTICE:  relation "log_dimensions" already exists, skipping
+
+NOTICE:  table "streams" does not exist, skipping
+
+NOTICE:  table "streams_habitat" does not exist, skipping
+
+NOTICE:  table "streams_breaks" does not exist, skipping
+
+NOTICE:  drop cascades to 6 other objects
+DETAIL:  drop cascades to table working_nasr.crossings
+drop cascades to table working_nasr.crossing_fixes
+drop cascades to table working_nasr.falls
+drop cascades to table working_nasr.barriers_definite
+drop cascades to table working_nasr.barriers_definite_control
+drop cascades to table working_nasr.user_habitat_classification
+
+NOTICE:  schema "fresh" already exists, skipping
+
+NOTICE:  table "barriers_definite" does not exist, skipping
+
+NOTICE:  table "barriers_definite_control" does not exist, skipping
+
+NOTICE:  table "observations_province" does not exist, skipping
+
+NOTICE:  table "observations" does not exist, skipping
+
+NOTICE:  table "streams_blk" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_raw" does not exist, skipping
+
+NOTICE:  table "natural_barriers" does not exist, skipping
+
+NOTICE:  table "barrier_overrides" does not exist, skipping
+
+NOTICE:  table "barrier_override_evidence" does not exist, skipping
+
+NOTICE:  schema "pg_temp" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "lnk_bo_pairs" does not exist, skipping
+
+NOTICE:  table "barriers_bt" does not exist, skipping
+
+NOTICE:  table "barriers_bt_min" does not exist, skipping
+
+NOTICE:  table "barriers_ch" does not exist, skipping
+
+NOTICE:  table "barriers_ch_min" does not exist, skipping
+
+NOTICE:  table "barriers_cm" does not exist, skipping
+
+NOTICE:  table "barriers_cm_min" does not exist, skipping
+
+NOTICE:  table "barriers_co" does not exist, skipping
+
+NOTICE:  table "barriers_co_min" does not exist, skipping
+
+NOTICE:  table "barriers_pk" does not exist, skipping
+
+NOTICE:  table "barriers_pk_min" does not exist, skipping
+
+NOTICE:  table "barriers_sk" does not exist, skipping
+
+NOTICE:  table "barriers_sk_min" does not exist, skipping
+
+NOTICE:  table "barriers_st" does not exist, skipping
+
+NOTICE:  table "barriers_st_min" does not exist, skipping
+
+NOTICE:  table "gradient_barriers_minimal" does not exist, skipping
+
+NOTICE:  table "streams" does not exist, skipping
+
+NOTICE:  table "streams_habitat" does not exist, skipping
+
+NOTICE:  table "cabd_exclusions" does not exist, skipping
+
+NOTICE:  table "cabd_blkey_xref" does not exist, skipping
+
+NOTICE:  table "cabd_passability_status_updates" does not exist, skipping
+
+NOTICE:  table "cabd_additions" does not exist, skipping
+
+NOTICE:  table "cabd_dams_raw" does not exist, skipping
+
+NOTICE:  table "dams" does not exist, skipping
+
+NOTICE:  table "pscis_modelledcrossings_streams_xref" does not exist, skipping
+
+NOTICE:  table "pscis_stream_candidates" does not exist, skipping
+
+NOTICE:  table "pscis_streams_150m" does not exist, skipping
+
+NOTICE:  table "pscis_picked" does not exist, skipping
+
+NOTICE:  table "pscis" does not exist, skipping
+
+NOTICE:  table "crossings_lookup" does not exist, skipping
+
+NOTICE:  table "barriers_anthropogenic" does not exist, skipping
+
+NOTICE:  table "barriers_pscis" does not exist, skipping
+
+NOTICE:  table "barriers_dams" does not exist, skipping
+
+NOTICE:  table "barriers_remediations" does not exist, skipping
+
+NOTICE:  table "observations_breaks" does not exist, skipping
+
+NOTICE:  table "habitat_endpoints" does not exist, skipping
+
+NOTICE:  table "crossings_breaks" does not exist, skipping
+
+NOTICE:  table "streams_breaks" does not exist, skipping
+
+NOTICE:  table "streams_habitat_near_river" does not exist, skipping
+
+NOTICE:  relation "streams_id_segment_idx" already exists, skipping
+
+NOTICE:  table "frs_near_river_walk" does not exist, skipping
+
+[wsg_stall] NASR	sampled_utc	wsg	role	pid	leader_pid	blocks_pid	state	wait_event_type	wait_event	query_start	query	load1	load5	load15	n_active
+[wsg_stall] NASR	2026-11-23T16:04:22Z	NASR	leader	94675			active			2026-11-23T15:54:03Z	CREATE TEMP TABLE pg_temp.frs_near_river_walk AS WITH origins AS ( SELECT id_segment, watershed_group_code, channel_width::double precision AS val, blue_line_key, downstream_route_measure, wscode_ltre	10.56	13.24	13.28	2
+[wsg_stall] NASR	2026-11-23T16:05:22Z	NASR	leader	94675			active			2026-11-23T15:54:03Z	CREATE TEMP TABLE pg_temp.frs_near_river_walk AS WITH origins AS ( SELECT id_segment, watershed_group_code, channel_width::double precision AS val, blue_line_key, downstream_route_measure, wscode_ltre	8.42	12.03	12.82	2
+[wsg_stall] NASR	2026-11-23T16:06:23Z	NASR	leader	94675			active			2026-11-23T15:54:03Z	CREATE TEMP TABLE pg_temp.frs_near_river_walk AS WITH origins AS ( SELECT id_segment, watershed_group_code, channel_width::double precision AS val, blue_line_key, downstream_route_measure, wscode_ltre	7.86	11.2	12.46	2
+[wsg_stall] NASR	2026-11-23T16:07:22Z	NASR	leader	94675			active			2026-11-23T15:54:03Z	CREATE TEMP TABLE pg_temp.frs_near_river_walk AS WITH origins AS ( SELECT id_segment, watershed_group_code, channel_width::double precision AS val, blue_line_key, downstream_route_measure, wscode_ltre	6.12	10.17	11.99	2
+[wsg_stall] NASR	2026-11-23T16:08:23Z	NASR	leader	94675			active			2026-11-23T15:54:03Z	CREATE TEMP TABLE pg_temp.frs_near_river_walk AS WITH origins AS ( SELECT id_segment, watershed_group_code, channel_width::double precision AS val, blue_line_key, downstream_route_measure, wscode_ltre	8.94	10.02	11.8	2
+[wsg_stall] NASR	2026-11-23T16:09:22Z	NASR	leader	94675			active			2026-11-23T15:54:03Z	CREATE TEMP TABLE pg_temp.frs_near_river_walk AS WITH origins AS ( SELECT id_segment, watershed_group_code, channel_width::double precision AS val, blue_line_key, downstream_route_measure, wscode_ltre	8.63	9.92	11.65	2
+[wsg_stall] NASR	2026-11-23T16:10:23Z	NASR	leader	94675			active			2026-11-23T15:54:03Z	CREATE TEMP TABLE pg_temp.frs_near_river_walk AS WITH origins AS ( SELECT id_segment, watershed_group_code, channel_width::double precision AS val, blue_line_key, downstream_route_measure, wscode_ltre	6.63	9.11	11.23	2
+[wsg_stall] NASR	2026-11-23T16:11:22Z	NASR	leader	94675			active			2026-11-23T15:54:03Z	CREATE TEMP TABLE pg_temp.frs_near_river_walk AS WITH origins AS ( SELECT id_segment, watershed_group_code, channel_width::double precision AS val, blue_line_key, downstream_route_measure, wscode_ltre	7.15	8.77	10.95	2
+[wsg_stall] NASR	2026-11-23T16:12:23Z	NASR	leader	94675			active			2026-11-23T15:54:03Z	CREATE TEMP TABLE pg_temp.frs_near_river_walk AS WITH origins AS ( SELECT id_segment, watershed_group_code, channel_width::double precision AS val, blue_line_key, downstream_route_measure, wscode_ltre	6.43	8.2	10.57	2
+[wsg_stall] NASR	2026-11-23T16:13:22Z	NASR	leader	94675			active			2026-11-23T15:54:03Z	CREATE TEMP TABLE pg_temp.frs_near_river_walk AS WITH origins AS ( SELECT id_segment, watershed_group_code, channel_width::double precision AS val, blue_line_key, downstream_route_measure, wscode_ltre	6.52	7.92	10.32	2
+[wsg_stall] NASR	2026-11-23T16:14:21Z	NASR	leader	94675			active			2026-11-23T15:54:03Z	CREATE TEMP TABLE pg_temp.frs_near_river_walk AS WITH origins AS ( SELECT id_segment, watershed_group_code, channel_width::double precision AS val, blue_line_key, downstream_route_measure, wscode_ltre	5.9	7.48	9.99	2
+[wsg_stall] NASR	2026-11-23T16:15:22Z	NASR	leader	94675			active			2026-11-23T15:54:03Z	CREATE TEMP TABLE pg_temp.frs_near_river_walk AS WITH origins AS ( SELECT id_segment, watershed_group_code, channel_width::double precision AS val, blue_line_key, downstream_route_measure, wscode_ltre	6.36	7.27	9.73	2
+[wsg_stall] NASR	2026-11-23T16:16:22Z	NASR	leader	94675			active			2026-11-23T15:54:03Z	CREATE TEMP TABLE pg_temp.frs_near_river_walk AS WITH origins AS ( SELECT id_segment, watershed_group_code, channel_width::double precision AS val, blue_line_key, downstream_route_measure, wscode_ltre	6.35	7.08	9.49	2
+[wsg_stall] NASR	2026-11-23T16:17:23Z	NASR	leader	94675			active			2026-11-23T15:54:03Z	CREATE TEMP TABLE pg_temp.frs_near_river_walk AS WITH origins AS ( SELECT id_segment, watershed_group_code, channel_width::double precision AS val, blue_line_key, downstream_route_measure, wscode_ltre	6.57	6.99	9.29	2
+[wsg_stall] NASR	2026-11-23T16:18:22Z	NASR	leader	94675			active			2026-11-23T15:54:03Z	CREATE TEMP TABLE pg_temp.frs_near_river_walk AS WITH origins AS ( SELECT id_segment, watershed_group_code, channel_width::double precision AS val, blue_line_key, downstream_route_measure, wscode_ltre	5.64	6.62	8.99	2
+[wsg_stall] NASR	2026-11-23T16:19:22Z	NASR	leader	94675			active			2026-11-23T15:54:03Z	CREATE TEMP TABLE pg_temp.frs_near_river_walk AS WITH origins AS ( SELECT id_segment, watershed_group_code, channel_width::double precision AS val, blue_line_key, downstream_route_measure, wscode_ltre	6.32	6.64	8.84	2
+[wsg_stall] NASR	2026-11-23T16:20:22Z	NASR	leader	94675			active			2026-11-23T15:54:03Z	CREATE TEMP TABLE pg_temp.frs_near_river_walk AS WITH origins AS ( SELECT id_segment, watershed_group_code, channel_width::double precision AS val, blue_line_key, downstream_route_measure, wscode_ltre	5.44	6.35	8.58	2
+[wsg_stall] NASR	2026-11-23T16:21:21Z	NASR	leader	94675			active			2026-11-23T15:54:03Z	CREATE TEMP TABLE pg_temp.frs_near_river_walk AS WITH origins AS ( SELECT id_segment, watershed_group_code, channel_width::double precision AS val, blue_line_key, downstream_route_measure, wscode_ltre	6.1	6.37	8.43	2
+[wsg_stall] NASR	2026-11-23T16:22:22Z	NASR	leader	94675			active			2026-11-23T15:54:03Z	CREATE TEMP TABLE pg_temp.frs_near_river_walk AS WITH origins AS ( SELECT id_segment, watershed_group_code, channel_width::double precision AS val, blue_line_key, downstream_route_measure, wscode_ltre	6.52	6.48	8.33	2
+[wsg_stall] NASR	2026-11-23T16:23:23Z	NASR	leader	94675			active			2026-11-23T15:54:03Z	CREATE TEMP TABLE pg_temp.frs_near_river_walk AS WITH origins AS ( SELECT id_segment, watershed_group_code, channel_width::double precision AS val, blue_line_key, downstream_route_measure, wscode_ltre	6.3	6.41	8.18	2
+[wsg_stall] NASR	2026-11-23T16:24:21Z	NASR	leader	94675			active			2026-11-23T15:54:03Z	CREATE TEMP TABLE pg_temp.frs_near_river_walk AS WITH origins AS ( SELECT id_segment, watershed_group_code, channel_width::double precision AS val, blue_line_key, downstream_route_measure, wscode_ltre	5.75	6.22	7.98	2
