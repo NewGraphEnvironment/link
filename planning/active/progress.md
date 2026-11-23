@@ -45,3 +45,8 @@ mandate; the merge stays with me.
 - Owner answered the four gate questions: 1a, 2a, 3 not ready, 4a (all recommended).
 - Reproduced #494 on one saved CABD response, found the real cause (a database's first GDAL load), built `cabd_load()` as a staging table and rebuild, proved it from three starting states and against two mutants; PSCIS checked. Scratch databases dropped.
 - Next: Phase 2.
+
+## Phase 2, 2026-11-23 UTC
+- Pool, listings and per-step times landed (`fb9ad4cb`, lints `75f729c3`); tests end to end on a stub aws, two mutants caught.
+- Measured on m1 from the published tree as the root: serial from main 36.5 min, parallel 4.1 min (8.9x), unchanged republish 1.9 min; both prefixes identical but for version ids; 2,800 scratch versions deleted.
+- #334's and #494's bodies edited. Next: Phase 3.
