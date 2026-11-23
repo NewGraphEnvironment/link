@@ -14,9 +14,29 @@ read <- function(f) utils::read.csv(file.path(dir, f), stringsAsFactors = FALSE)
 pairs <- list(default = c("digest_before.csv", "digest_after.csv"),
               bcfishpass = c("digest_bcfp_before.csv", "digest_bcfp_after.csv"))
 
+# Every build ended with an exit-0 row, and each digest holds exactly the
+# groups built: identical digests over a group that failed in both steps
+# would otherwise read as a pass.
+builds <- list(default = c("ADMS", "BULK"), bcfishpass = "ADMS")
+st0 <- do.call(rbind, lapply(c("status_before.tsv", "status_after.tsv"), function(f) {
+  utils::read.delim(file.path(dir, f), stringsAsFactors = FALSE)
+}))
+for (step in c("before", "after")) for (cfg in names(builds)) for (w in builds[[cfg]]) {
+  r <- st0[st0$step == step & st0$config == cfg & st0$wsg == w, ]
+  if (!nrow(r) || r$exit[nrow(r)] != 0L) {
+    stop(step, " ", cfg, " ", w, ": no successful build", call. = FALSE)
+  }
+}
+
 out <- do.call(rbind, lapply(names(pairs), function(cfg) {
   b <- read(pairs[[cfg]][1])
   a <- read(pairs[[cfg]][2])
+  for (d in list(b, a)) {
+    if (!setequal(unique(d$wsg), builds[[cfg]])) {
+      stop(cfg, ": digest groups are ", paste(sort(unique(d$wsg)), collapse = ", "),
+           ", not ", paste(builds[[cfg]], collapse = ", "), call. = FALSE)
+    }
+  }
   key <- function(d) paste(d$table, d$wsg)
   if (!setequal(key(b), key(a))) {
     stop(cfg, ": tables or groups differ: before only ",
