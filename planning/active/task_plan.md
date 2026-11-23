@@ -28,7 +28,7 @@ None open.
 - [x] Province-wide before/after diff of the snap-and-pick tables. Decide the token (decision 4); if it moves, add vocabulary rows, NEWS and the bump, then re-model the groups holding a moved crossing under both configs in scratch schemas and diff against `main` builds. (Done under `bcfishpass` on seven groups; `default`'s NASR build stalled in the near-river walk beside another session's, 30 and then 17 min, and was cancelled both times; owed.)
 - [x] #383 sweep with `fresh::frs_migration_trial()` on the **local docker fwapg only** (a rollback does not undo everything; record the fwapg sha and migration files from `~/Projects/repo/fwapg`). Run before and after on separate connections, each call under its own `SAVEPOINT` with `SET LOCAL statement_timeout`. Inputs: the PSCIS snaps, the stored measures `lnk_barriers_unify()` locates, and the `fwa_locatealong` calls in data-raw/query_habitat_thresholds_obs.R:201-202. Count where `.lnk_sql_locate()`'s first arm (`FWA_LocateAlong`) is NULL (its COALESCE fallback hides it), ties and errors. The before run reproduces the stored output.
 - [x] Migration-gated live tests, for head-measure locates only, which are what depend on the migration. Port fresh's helpers (`indexpoint_current`, strict parsing of `LNK_FWAPG_CURRENT`, a direct connection) into tests/testthat/helper. They skip naming the missing migration, and one fails under `LNK_FWAPG_CURRENT=true`. Show each red before and green under the trial.
-- [ ] `research/` file for the sweep and the snap diff. Update RUNBOOK's PSCIS-pick paragraph (RUNBOOK.md:167-176, "Both KNN snaps end on `linear_feature_id`").
+- [x] `research/` file for the sweep and the snap diff. Update RUNBOOK's PSCIS-pick paragraph (RUNBOOK.md:167-176, "Both KNN snaps end on `linear_feature_id`").
 
 ## Phase 2: Habitat upstream of each crossing (batch 15: #321, #232, #356)
 
@@ -51,9 +51,9 @@ None open.
 
 ## Validation
 
-- [ ] Tests pass
-- [ ] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
+- [x] Tests pass (full suite 6,360 pass, 0 fail, 4 skip, at a3e38823; touched files re-run after)
+- [x] `/code-check branch`: four rounds, ended by enumeration (`review-verdict.md`)
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
 Verification: the snap's before/after counts on all PSCIS (placeholder picks 11 → 0, ties resolved by fwapg's rule, no other pick moves); the gated tests shown red before and green after under the trial; scratch re-models diffed against `main` builds; per-crossing parity reported as a distribution against bcfishpass; two reruns of each threshold script byte-identical.
