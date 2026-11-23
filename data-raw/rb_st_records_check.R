@@ -145,8 +145,13 @@ rec <- q("
 m <- meas[, c("observation_key", "species_code", "counting", "yr",
               "elevation_m", "barrier_below", "major_drainage")]
 names(m)[names(m) == "species_code"] <- "species_read"
+# One row per record: an alias counting as two species (SST as ST and RB)
+# has a measures row per species, and every column kept here is the
+# record's own, so keep its non-RB row.
+m <- m[order(m$observation_key, m$species_read == "RB", method = "radix"), ]
+m <- m[!duplicated(m$observation_key), ]
 rec <- merge(rec, m, by = "observation_key", all.x = TRUE)
-stopifnot(!anyNA(rec$species_read))
+stopifnot(!anyNA(rec$species_read), !anyDuplicated(rec$observation_key))
 rec$wsg <- rec$watershed_group_code
 rec$region <- regions$region[match(rec$wsg, regions$watershed_group_code)]
 rec$subregion <- regions$subregion[match(rec$wsg, regions$watershed_group_code)]
