@@ -184,7 +184,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
   # --- Falls (from fresh) ---
   falls_path <- system.file("extdata", "falls.csv", package = "fresh")
   if (!nzchar(falls_path)) {
-    stop("fresh package falls.csv not found — is fresh installed?",
+    stop("fresh package falls.csv not found \u2014 is fresh installed?",
          call. = FALSE)
   }
   falls_all <- utils::read.csv(falls_path, stringsAsFactors = FALSE)
@@ -323,7 +323,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
   .lnk_validate_identifier(observations, "observations table")
 
   if (is.null(loaded$wsg_species_presence)) {
-    stop("loaded$wsg_species_presence not present — required for the ",
+    stop("loaded$wsg_species_presence not present \u2014 required for the ",
          "per-AOI observations filter (mirrors bcfishpass parity)",
          call. = FALSE)
   }

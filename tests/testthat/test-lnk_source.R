@@ -59,7 +59,7 @@ test_that("break_source errors on missing label_col", {
 
   expect_error(
     lnk_source(conn, "working.test_bs4"),
-    "not found.*lnk_score_severity"
+    "not found.*lnk_score"
   )
 })
 

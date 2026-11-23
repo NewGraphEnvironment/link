@@ -1,5 +1,7 @@
 # `fresh.streams_vw_bcfp` column coding — the parity predicates
 
+**Verification:** none yet. Written before this header existed and not checked against the code since; read its claims as of when it was written.
+
 Migrated from machine-local memory 2026-08-31. Durable: this is the
 bcfishpass view's schema, not a run state. Found 2026-07-03 during #223
 validation.

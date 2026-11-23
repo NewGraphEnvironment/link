@@ -66,6 +66,9 @@ group's own records here under \code{pipeline: observation_upstream: group_gated
 \code{aoi}. Sets \verb{access_<sp> = -9} for species marked \code{FALSE}. Default
 empty list assumes all species present (no -9 codes emitted).}
 
+\item{presence}{\code{NULL} (the default) or an \code{lnk_presence} object. When
+given, it overrides \code{wsg_presence}: absent species get \verb{access_<sp> = -9} and their SQL is skipped.}
+
 \item{barrier_sources}{Named list. Each name is an arbitrary source
 tag (e.g. \code{"anthropogenic"}, \code{"pscis"}, \code{"dams"},
 \code{"remediations"}); each value is a schema-qualified barriers table

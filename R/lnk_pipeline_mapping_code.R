@@ -71,6 +71,8 @@
 #'   semantics (token 1 only emits SPAWN, never REAR). Default
 #'   `c("cm", "pk")`. Mirrors bcfp. (Renamed from `spawn_only_species`
 #'   in v0.40.0.)
+#' @param presence `NULL` (the default) or an `lnk_presence` object. A species
+#'   it marks absent emits `""` in its token column.
 #' @param segment_id_col Character. Default `"id_segment"`.
 #' @param intermittent_feature_code Character. The `feature_code` value
 #'   that flags an intermittent stream. Default `"GA24850150"` (bcfp).

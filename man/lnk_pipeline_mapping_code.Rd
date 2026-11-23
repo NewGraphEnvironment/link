@@ -47,6 +47,9 @@ Default \code{NULL} returns-only.}
 \item{conn}{A \link[DBI:DBIConnection-class]{DBI::DBIConnection}. Required only when \code{to} is
 supplied; ignored otherwise.}
 
+\item{presence}{\code{NULL} (the default) or an \code{lnk_presence} object. A species
+it marks absent emits \code{""} in its token column.}
+
 \item{species_resident}{Character. Species using the resident flavor
 of \code{mapping_code_barrier}. Default \code{c("bt", "wct")}. (Renamed from
 \code{resident_species} in v0.40.0; old name accepted with deprecation

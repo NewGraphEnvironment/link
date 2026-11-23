@@ -6,6 +6,15 @@
 - **`lnk_db_conn()` connects through `fresh::frs_db_conn()`** ([#288](https://github.com/NewGraphEnvironment/link/issues/288)). Fields resolve from the arguments, then the standard `PG*` variables, then `PG_*_SHARE` only when no `PG*` is set, never mixed, with fresh's 10 s connect timeout and TCP keepalives. Until now link read `PG_*_SHARE` first and defaulted to `postgres@localhost:5432/postgis`, so on a machine setting both groups a bare call to link's and fresh's helpers reached different databases; now both reach the `PG*` target. Pass all five fields to reach another one. fresh's `PG_*_SHARE` deprecation message stays quiet for a fully explicit call. `frs_db_conn.R` is now on the pre-run gate's map as `any`.
 - **The live `lnk_wsg_resolve()` closure tests run on the connection their skip gate found** ([#222](https://github.com/NewGraphEnvironment/link/issues/222)), and skip where it has no `whse_basemapping.fwa_downstream()`.
 - **Owed after merge:** fresh 0.55.1 into each host's shared library and a re-prep (`--auto-install`); `lnk_persist_init()` once on `fresh_default`, `fresh` and `fresh_default_minimal` on each host, at a quiet time; the pre-run gate before the next provincial run (`R/`, the pin and `pretest_inputs.csv` changed); the variants harness's bases rebuilt with `--step=base` (a base built on fresh 0.52.0 is refused by 0.55.1's classify). RUNBOOK §7.
+# link 0.86.1
+
+**No behaviour change: `R CMD check` is at 0 warnings and CI now fails on one, and the docs name link's rules as fish habitat definitions** ([#471](https://github.com/NewGraphEnvironment/link/issues/471), backlog move 3).
+
+- **CI fails on a warning** ([#385](https://github.com/NewGraphEnvironment/link/issues/385)). Non-ASCII characters in code strings are written as `—` escapes with identical message text, Rd links point at functions that exist, `presence` and `heads` are documented, and the `R-CMD-check` workflow's `error-on` override is removed.
+- README, DESCRIPTION and CITATION.cff say "fish habitat definitions" for link's own rules ([#456](https://github.com/NewGraphEnvironment/link/issues/456)).
+- One study-area scope table, `research/study_area_scope_and_funders.md`; the generator and its run notes point to it ([#275](https://github.com/NewGraphEnvironment/link/issues/275)).
+- The source test reads only the ssh leg's command, not a comment naming the script ([#493](https://github.com/NewGraphEnvironment/link/issues/493)).
+- `research/` gains an index entry per file and a Related work list; dated records are marked historical.
 
 # link 0.86.0
 

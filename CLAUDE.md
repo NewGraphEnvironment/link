@@ -4,6 +4,8 @@ Experimental package — breaking all the time and loving the learning curve. St
 
 > **Read [`RUNBOOK.md`](RUNBOOK.md) first.** It is the durable mental model of the barrier → access → mapping_code machinery (what feeds what, where each rule lives, the gotchas). This `CLAUDE.md` carries conventions + status; the RUNBOOK carries the *mechanics*. Don't re-derive the system from source each session — read the runbook, and update it in-commit when the mechanics change.
 
+The settled findings behind the methods (what is known, with provenance and the files that index it) are in [`research/README.md`](research/README.md); cite an individual research file only where a rule depends on it.
+
 ## Repository Context
 
 **Repository:** NewGraphEnvironment/link
@@ -19,7 +21,7 @@ Experimental package — breaking all the time and loving the learning curve. St
 
 **Backlog move 13 (#481) lands as one release: the fresh pin v0.52.0 → v0.55.1, #452, #288 and #222.** `streams_near_river` carries `linear_feature_id` (fresh 0.54.0, fresh#293), which `lnk_persist_init()` adds and fills from `streams` once; the validator passes `near_river_lfid = TRUE` and, when cfg reads a pair, refuses a missing column or NULL. `lnk_db_conn()` delegates to `fresh::frs_db_conn()` (arguments, `PG*`, then `PG_*_SHARE`). The live resolve tests use the gated connection. No output or token moves (36 table-group digests, `data-raw/logs/fresh_pin_481/`). Mechanics: RUNBOOK §7, "Keyed on the parent line too".
 
-**Owed:** fresh 0.55.1 into each host's shared library (m1's holds 0.53.0, installed 2026-11-16) and a re-prep; `lnk_persist_init()` once per host on `fresh_default`, `fresh`, `fresh_default_minimal` at a quiet time (an ACCESS EXCLUSIVE rewrite); the pre-run gate before the next provincial run; the variants bases rebuilt with `--step=base`. A fresh issue (its deprecation message fires with every argument explicit) is drafted, not filed. #493 still fails two assertions on `main`.
+**Owed:** fresh 0.55.1 into each host's shared library (m1's holds 0.53.0, installed 2026-11-16) and a re-prep; `lnk_persist_init()` once per host on `fresh_default`, `fresh`, `fresh_default_minimal` at a quiet time (an ACCESS EXCLUSIVE rewrite); the pre-run gate before the next provincial run; the variants bases rebuilt with `--step=base`. A fresh issue (its deprecation message fires with every argument explicit) is drafted, not filed.
 
 **Facts not worth re-deriving:**
 - **m1's colima VM can lose its guest network while still "Running"** (2026-11-21 ~20:46 PDT: ssh and 5432 refused, the guest agent still syncing time). `colima stop && colima start` fixes it; `LIMA_HOME=~/.colima/_lima limactl list` sees the VM.

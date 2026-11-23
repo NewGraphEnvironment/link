@@ -49,7 +49,7 @@
 #' # A named database: every field given, so the environment fills nothing
 #' conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
 #'                     user = "postgres", password = "postgres")
-#' lnk_score_severity(conn, "working.crossings")
+#' lnk_score(conn, "working.crossings")
 #' DBI::dbDisconnect(conn)
 #'
 #' # A slow link: wait longer to connect

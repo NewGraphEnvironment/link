@@ -1,5 +1,7 @@
 # Study-area mapping_code parity — 2026-05-25
 
+**Date opened:** 2026-05-25 · **Status:** HISTORICAL, a dated record kept for its evidence; it is not revised. What is known now is in [`bcfishpass_parity.md`](bcfishpass_parity.md).
+
 First tunnel-free, M1-dispatch, per-segment `mapping_code` parity across the 3
 FWCP study areas (link#175). Run via `data-raw/study_area_run.sh`; procedure +
 methodology in `research/study_area_run.md`.
