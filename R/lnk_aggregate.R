@@ -180,6 +180,8 @@ lnk_aggregate <- function(conn,
     "ref.wscode_ltree, ref.localcode_ltree, f.blue_line_key,",
     "f.downstream_route_measure, f.wscode_ltree, f.localcode_ltree, true, 1)")
 
+  if (!is.null(barriers)) .lnk_aggregate_barrier_pairs(conn)
+
   out <- list()
   for (sp in species) {
     .lnk_db_execute(conn, "DROP TABLE IF EXISTS pg_temp.lnk_agg_f")
@@ -234,6 +236,7 @@ lnk_aggregate <- function(conn,
   .lnk_db_execute(conn, "DROP TABLE IF EXISTS pg_temp.lnk_agg_pts")
   .lnk_db_execute(conn, "DROP TABLE IF EXISTS pg_temp.lnk_agg_f")
   .lnk_db_execute(conn, "DROP TABLE IF EXISTS pg_temp.lnk_agg_sum")
+  .lnk_db_execute(conn, "DROP TABLE IF EXISTS pg_temp.lnk_agg_imm")
 
   if (verbose) {
     s <- DBI::dbGetQuery(conn, sprintf(
@@ -289,37 +292,6 @@ lnk_aggregate <- function(conn,
   below_sel <- ""
   below_join <- ""
   if (!is.null(barriers)) {
-    # Each point's barriers upstream, measured as bcfishpass measures
-    # upstream; the immediate ones have no other such barrier below them.
-    .lnk_db_execute(conn, "DROP TABLE IF EXISTS pg_temp.lnk_agg_up")
-    .lnk_db_execute(conn, "
-      CREATE TEMP TABLE lnk_agg_up AS
-      SELECT a.pt_id, b.pt_id AS bar_id
-        FROM pg_temp.lnk_agg_pts a
-        JOIN whse_basemapping.fwa_stream_networks_sp ra
-          ON ra.blue_line_key = a.blue_line_key
-         AND a.downstream_route_measure >= ra.downstream_route_measure
-         AND a.downstream_route_measure < ra.upstream_route_measure
-        JOIN pg_temp.lnk_agg_pts b ON b.is_barrier AND b.pt_id <> a.pt_id
-        JOIN whse_basemapping.fwa_stream_networks_sp rb
-          ON rb.blue_line_key = b.blue_line_key
-         AND b.downstream_route_measure >= rb.downstream_route_measure
-         AND b.downstream_route_measure < rb.upstream_route_measure
-       WHERE rb.wscode_ltree <@ ra.wscode_ltree
-         AND whse_basemapping.fwa_upstream(
-               a.blue_line_key, a.downstream_route_measure,
-               ra.wscode_ltree, ra.localcode_ltree,
-               b.blue_line_key, b.downstream_route_measure,
-               rb.wscode_ltree, rb.localcode_ltree, true, 1)")
-    .lnk_db_execute(conn, "DROP TABLE IF EXISTS pg_temp.lnk_agg_imm")
-    .lnk_db_execute(conn, "
-      CREATE TEMP TABLE lnk_agg_imm AS
-      SELECT u.pt_id, u.bar_id FROM pg_temp.lnk_agg_up u
-       WHERE NOT EXISTS (
-         SELECT 1 FROM pg_temp.lnk_agg_up mid
-           JOIN pg_temp.lnk_agg_up beyond
-             ON beyond.pt_id = mid.bar_id AND beyond.bar_id = u.bar_id
-          WHERE mid.pt_id = u.pt_id AND mid.bar_id <> u.bar_id)")
     below_join <- sprintf("
       LEFT JOIN (SELECT i.pt_id, %s
                    FROM pg_temp.lnk_agg_imm i
@@ -344,9 +316,49 @@ lnk_aggregate <- function(conn,
   } else {
     .lnk_db_execute(conn, paste("CREATE TEMP TABLE lnk_agg_res AS", res))
   }
-  .lnk_db_execute(conn, "DROP TABLE IF EXISTS pg_temp.lnk_agg_up")
-  .lnk_db_execute(conn, "DROP TABLE IF EXISTS pg_temp.lnk_agg_imm")
   .lnk_db_execute(conn, "DROP TABLE IF EXISTS pg_temp.lnk_agg_tot")
+  invisible(NULL)
+}
+
+#' Each point's immediate barriers upstream, into pg_temp.lnk_agg_imm
+#'
+#' Species-independent, so built once. `lnk_agg_up` holds each point's
+#' barriers upstream, measured as bcfishpass measures upstream (the 10-argument
+#' `fwa_upstream`, equivalents in, 1 m); a barrier is immediate when no other
+#' barrier upstream of the point lies below it. The set difference is one hash
+#' join, where a NOT EXISTS over the pair table ran for minutes on BULK.
+#' @noRd
+.lnk_aggregate_barrier_pairs <- function(conn) {
+  .lnk_db_execute(conn, "DROP TABLE IF EXISTS pg_temp.lnk_agg_up")
+  .lnk_db_execute(conn, "
+    CREATE TEMP TABLE lnk_agg_up AS
+    SELECT a.pt_id, b.pt_id AS bar_id
+      FROM pg_temp.lnk_agg_pts a
+      JOIN whse_basemapping.fwa_stream_networks_sp ra
+        ON ra.blue_line_key = a.blue_line_key
+       AND a.downstream_route_measure >= ra.downstream_route_measure
+       AND a.downstream_route_measure < ra.upstream_route_measure
+      JOIN pg_temp.lnk_agg_pts b ON b.is_barrier AND b.pt_id <> a.pt_id
+      JOIN whse_basemapping.fwa_stream_networks_sp rb
+        ON rb.blue_line_key = b.blue_line_key
+       AND b.downstream_route_measure >= rb.downstream_route_measure
+       AND b.downstream_route_measure < rb.upstream_route_measure
+     WHERE rb.wscode_ltree <@ ra.wscode_ltree
+       AND whse_basemapping.fwa_upstream(
+             a.blue_line_key, a.downstream_route_measure,
+             ra.wscode_ltree, ra.localcode_ltree,
+             b.blue_line_key, b.downstream_route_measure,
+             rb.wscode_ltree, rb.localcode_ltree, true, 1)")
+  .lnk_db_execute(conn, "ANALYZE pg_temp.lnk_agg_up")
+  .lnk_db_execute(conn, "DROP TABLE IF EXISTS pg_temp.lnk_agg_imm")
+  .lnk_db_execute(conn, "
+    CREATE TEMP TABLE lnk_agg_imm AS
+    SELECT pt_id, bar_id FROM pg_temp.lnk_agg_up
+    EXCEPT
+    SELECT mid.pt_id, beyond.bar_id
+      FROM pg_temp.lnk_agg_up mid
+      JOIN pg_temp.lnk_agg_up beyond ON beyond.pt_id = mid.bar_id")
+  .lnk_db_execute(conn, "DROP TABLE IF EXISTS pg_temp.lnk_agg_up")
   invisible(NULL)
 }
 # nolint end: indentation_linter

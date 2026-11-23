@@ -1,0 +1,2 @@
+"link_sha","schema","model_run_id","date_completed","model_version","aggregate_minutes","n_link_crossings","n_link_main_stem","n_bcfp_rows","run_utc"
+"7147aa05","zz478_parity",148,"2026-11-17 20:34:38.113348","v0.7.15-51-g3bd2824c","ADMS 15.42; BULK 91.51",9192,9177,9153,"2026-11-23T21:46:03Z"

@@ -1,0 +1,8 @@
+"wsg","crossing_source","n_link","n_bcfp","n_both","n_link_only","n_bcfp_only","n_status_agree","n_stream_agree","n_measure_within_1m","max_measure_diff_m"
+"ADMS","CABD",7,7,7,0,0,7,7,7,0
+"ADMS","MODELLED_CROSSINGS",3539,3537,3537,2,0,3537,3535,3534,1.623
+"ADMS","PSCIS",69,69,69,0,0,69,69,69,0
+"BULK","CABD",35,35,35,0,0,35,35,35,0
+"BULK","MODELLED CROSSINGS",0,1,0,0,1,0,0,0,NA
+"BULK","MODELLED_CROSSINGS",3978,3965,3965,13,0,3965,3965,3965,0
+"BULK","PSCIS",1564,1567,1560,4,7,1560,1560,1559,3
