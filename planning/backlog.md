@@ -46,7 +46,7 @@ counts them): run `/backlog-sweep` again, the backlog is not finished.
 | - [x] 4 | #472 | 5: `default`'s presence table as a copy plus an overlay (4 issues) | done: https://github.com/NewGraphEnvironment/link/pull/498 | — | — | — |
 | - [x] 5 | #473 | 6, 7: the export contract, one-group runs that read downstream (6 issues) | done: https://github.com/NewGraphEnvironment/link/pull/496 | — | — | — |
 | - [x] 6 | #474 | 8, 9: what a run stamps and checks before launch, how primitives load (10 issues) | done: https://github.com/NewGraphEnvironment/link/pull/485 | — | — | — |
-| - [ ] 7 | #475 | 10: drivers (6 issues) | open | B | 14 | opus then sonnet |
+| - [x] 7 | #475 | 10: drivers (6 issues) | done: https://github.com/NewGraphEnvironment/link/pull/513 | B | 14 | opus then sonnet |
 | - [ ] 8 | #476 | 11: the rules builder and `dimensions.csv` (7 issues) | open | C | 3 | opus |
 | - [ ] 9 | #477 | 12, 13: mapping codes as rules, the persist and run API (8 issues) | open | A | 3, 7, 8, 13 | opus |
 | - [ ] 10 | #478 | 14, 15: snapping, habitat upstream of each crossing (6 issues) | open | C | 3 | opus |
@@ -240,7 +240,7 @@ on a host proves it.
 
 ### 10. Drivers
 
-- [ ] Carried by move 7, #475
+- [x] Carried by move 7, #475 (merged in https://github.com/NewGraphEnvironment/link/pull/513)
 
 **Touches:** `data-raw/README.md`, `data-raw/state_clean.sh`, `data-raw/wsgs_dispatch.sh`, `data-raw/wsgs_run_host.R`, `data-raw/wsg_run_one.R`, `data-raw/study_area_run.sh`, `RUNBOOK.md`, and the argument handling of about 15 other drivers under data-raw
 
