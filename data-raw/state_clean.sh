@@ -3,7 +3,8 @@
 # baseline. Idempotent. Runs in <5 min wall on a healthy cluster.
 #
 # What it cleans:
-#   1. Kills any in-flight dispatch (Rscript / cypher_run.sh / ssh tunnels)
+#   1. Kills stray cypher_run.sh / ssh tunnels / consolidate processes (refuses
+#      while a study_area_run.sh is live)
 #   2. Drops all `working_<wsg>` schemas everywhere (orphans from killed runs)
 #   3. Drops all `fresh_<bundle>` schemas (legacy bundle outputs like
 #      `fresh_default`, `fresh_default_extrabreaks`)
@@ -34,8 +35,7 @@
 #   --tables=s.t,s.t       TABLE MODE (link#181) — drop ONLY these tables
 #                          (DROP TABLE IF EXISTS ... CASCADE), each as
 #                          schema.table. Combinable with --schemas=. Kills
-#                          nothing and refuses while a study_area_run.sh is
-#                          live, reloads no snapshot. Reaches the LOCAL
+#                          nothing, reloads no snapshot. Reaches the LOCAL
 #                          database only; another host only when named:
 #                          --hosts=<ssh target>,... (each runs the database in
 #                          the fresh-db container), and cyphers only when
@@ -98,17 +98,20 @@ if [ "$SAW_TABLES" = "1" ]; then
       exit 1
     fi
   done
-  # A surgical drop during a run would pull a table out from under its legs.
-  if ps -ef | grep -E "study_area_run" | grep -v grep >/dev/null; then
-    echo "FATAL: a study_area_run.sh is live; --tables= will not drop under it." >&2
-    exit 1
-  fi
   # Local by default: other hosts only when named.
   SKIP_M1=1
   [ "$CY_SAW" = "1" ] || SKIP_CY=1
 fi
 if [ -n "$EXTRA_HOSTS" ] && [ "$SAW_TABLES" = "0" ] && [ "$SAW_SCHEMAS" = "0" ]; then
   echo "FATAL: --hosts= is for --tables= or --schemas=." >&2
+  exit 1
+fi
+
+# A drop under a live study_area_run.sh pulls tables out from under its legs, and
+# killing it (kill -9) skips its EXIT trap, which burns the cloud hosts it spun.
+# So every mode refuses; stop the run with its own trap (Ctrl-C) first.
+if ps -ef | grep -E "study_area_run" | grep -v grep >/dev/null; then
+  echo "FATAL: a study_area_run.sh is live; state_clean.sh will not drop or kill under it." >&2
   exit 1
 fi
 
@@ -135,7 +138,7 @@ echo "--- step 1: kill in-flight dispatch ---"
 if [ "$SAW_TABLES" = "1" ]; then
   echo "  SKIPPED (--tables= kills nothing)"
 else
-ps -ef | grep -E "study_area_run|cypher_run|ssh.*cypher@|ssh.*-R.*m1|schema_consolidate" \
+ps -ef | grep -E "cypher_run|ssh.*cypher@|ssh.*-R.*m1|schema_consolidate" \
   | grep -v grep | awk '{print $2}' | xargs -r kill -9 2>/dev/null || true
 sleep 2
 [ "$SKIP_M1" = "0" ] && ssh m1 'pkill -9 -f "Rscript.*run_provincial" 2>/dev/null' 2>&1 || true
@@ -203,7 +206,7 @@ fi
 if [ -n "$EXTRA_HOSTS" ]; then
   IFS=',' read -ra XH_ARR <<< "$EXTRA_HOSTS"
   for h in "${XH_ARR[@]}"; do
-    [[ "$h" =~ ^[A-Za-z0-9_.@-]+$ ]] || { echo "FATAL: --hosts= entry '$h' is not an ssh target" >&2; exit 1; }
+    [[ "$h" =~ ^[A-Za-z0-9_.@][A-Za-z0-9_.@-]*$ ]] || { echo "FATAL: --hosts= entry '$h' is not an ssh target" >&2; exit 1; }
     drop_start "$h" "/tmp/clean_host_${h//[^A-Za-z0-9]/_}.log" \
       ssh "$h" 'docker exec -i fresh-db psql -U postgres -d fwapg -X -v ON_ERROR_STOP=1'
   done

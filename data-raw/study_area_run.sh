@@ -646,7 +646,7 @@ echo "  recompute -j: $RECOMPUTE_JOBS"
 [ -z "${LNK_TEST_STALL_WSG:-}" ] || echo "  TEST HOOK:    LNK_TEST_STALL_WSG=$LNK_TEST_STALL_WSG (that group stalls until the statement bound cancels it)"
 [ "$BUCKETS_EXACT" = "0" ] && echo "  buckets:      closure (each --focal= expanded to its drainage closure, DS-first)" \
                             || echo "  buckets:      exact (--buckets-exact; each --focal= list as given; the recompute settles access)"
-[ "$PREFLIGHT_ONLY" = "0" ] || echo "  MODE:         --preflight-only (no spend, no writes)"
+[ "$PREFLIGHT_ONLY" = "0" ] || echo "  MODE:         --preflight-only (no spend; writes only its own logs)"
 [ "$RECOMPUTE_ONLY" = "0" ] || echo "  MODE:         --recompute-only (finish run_uid $RUN_UID; no spend)"
 [ -z "$PREFLIGHT_NOTE" ] || echo "  OVERRIDE:     vintage+parity downgraded to warnings — $PREFLIGHT_NOTE"
 [ -z "$PRETEST_NOTE" ] || echo "  OVERRIDE:     no pre-run gate record required — $PRETEST_NOTE"
@@ -1749,7 +1749,7 @@ if [ "$PREFLIGHT_ONLY" = "1" ]; then
     [ "$N_WK" -gt 0 ] || echo "    - branch-pushed assertion"
     echo "    - host parity and cypher primitive vintage (need live cyphers)"
     echo "  For the full pre-spend set, pass the workspaces you intend to use:"
-    echo "    bash data-raw/study_area_run.sh --preflight-only --cy-workspaces=job1,job2,job3"
+    echo "    bash data-raw/study_area_run.sh --config=$CONFIG --preflight-only --cy-workspaces=job1,job2,job3"
   else
     echo "  NOT CHECKED (require live cyphers): host parity, cypher primitive vintage."
   fi
