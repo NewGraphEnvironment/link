@@ -305,6 +305,72 @@ lnk_preflight_fresh <- function(required = .lnk_fresh_required(),
   sort(unique(found))
 }
 
+# The fresh internals one function reaches through getFromNamespace(), read
+# from its parsed body and formals (#504). A call is normalised with
+# match.call() against utils::getFromNamespace, so a bare, `utils::` or
+# `utils:::` head and positional or named arguments all read alike (as
+# pretest_ns_calls() in data-raw/pretest.R reads them). A non-literal `ns`,
+# or a non-literal `x` where `ns` is "fresh", is an error rather than a
+# skip: a walker that passed over it would report a clean scan for code it
+# could not read.
+#
+# Known limit: get(x, envir = asNamespace("fresh")), asNamespace("fresh")$x
+# and getExportedValue() are not seen. A `fresh:::x` is caught by
+# .lnk_fresh_callsites(), whose test requires every symbol it finds to be an
+# export.
+.lnk_fresh_internal_calls_in <- function(fun) {
+  stopifnot(is.function(fun))
+  found <- character(0)
+  heads <- list(quote(getFromNamespace), quote(utils::getFromNamespace),
+                quote(utils:::getFromNamespace))
+  drop_empty <- function(xs) {
+    xs[!vapply(xs, identical, logical(1), quote(expr = ))]
+  }
+  walk <- function(x) {
+    if (is.call(x) &&
+        any(vapply(heads, identical, logical(1), x[[1L]]))) {
+      m <- match.call(utils::getFromNamespace, x)
+      ns <- m[["ns"]]
+      if (!is.null(ns)) {
+        if (!(is.character(ns) && length(ns) == 1L)) {
+          stop("getFromNamespace() with a non-literal `ns`: ",
+               paste(deparse(x), collapse = " "), call. = FALSE)
+        }
+        if (identical(ns, "fresh")) {
+          nm <- m[["x"]]
+          if (!(is.character(nm) && length(nm) == 1L)) {
+            stop("getFromNamespace() on fresh with a non-literal `x`: ",
+                 paste(deparse(x), collapse = " "), call. = FALSE)
+          }
+          found <<- c(found, nm)
+        }
+      }
+    }
+    if (is.call(x) || is.pairlist(x) || is.expression(x) || is.list(x)) {
+      for (el in drop_empty(as.list(x))) walk(el)
+    }
+    invisible(NULL)
+  }
+  walk(body(fun))
+  walk(formals(fun))
+  sort(unique(found))
+}
+
+# Every fresh internal link's own namespace reaches through
+# getFromNamespace(); its test requires the set to equal
+# .lnk_fresh_required_internal(), so an internal added or dropped without
+# updating the pinned list fails.
+.lnk_fresh_internal_callsites <- function(pkg = "link") {
+  ns <- asNamespace(pkg)
+  found <- character(0)
+  for (nm in ls(ns, all.names = TRUE)) {
+    obj <- tryCatch(get(nm, envir = ns), error = function(e) NULL)
+    if (!is.function(obj)) next
+    found <- c(found, .lnk_fresh_internal_calls_in(obj))
+  }
+  sort(unique(found))
+}
+
 # Single-source the version floor from link's own DESCRIPTION, so the pin
 # cannot rot in a second place. Returns "0.0.0" when no floor is declared —
 # a permissive default is correct here because the symbol check, not the

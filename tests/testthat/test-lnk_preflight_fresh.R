@@ -211,6 +211,39 @@ test_that(".lnk_fresh_callsites finds a symbol used only as a default argument",
   expect_true("frs_wsg_outlets" %in% .lnk_fresh_callsites())
 })
 
+test_that("every getFromNamespace() call on fresh is a pinned internal (#504)", {
+  callsites <- .lnk_fresh_internal_callsites()
+  expect_gt(length(callsites), 0L)   # an empty scan is not a pass
+  expect_setequal(callsites, .lnk_fresh_required_internal())
+})
+
+test_that(".lnk_fresh_internal_calls_in reads every call shape", {
+  f <- function(x) {
+    a <- getFromNamespace(".frs_bare", "fresh")
+    b <- utils::getFromNamespace(".frs_double", "fresh")
+    c <- utils:::getFromNamespace(".frs_triple", "fresh")
+    d <- utils::getFromNamespace(ns = "fresh", x = ".frs_named")
+    e <- getFromNamespace("other_fn", "stats")
+    g <- getFromNamespace("own_fn")
+    x
+  }
+  expect_identical(.lnk_fresh_internal_calls_in(f),
+                   sort(c(".frs_bare", ".frs_double", ".frs_triple",
+                          ".frs_named")))
+  # in a default argument too
+  h <- function(k = getFromNamespace(".frs_default", "fresh")) k
+  expect_identical(.lnk_fresh_internal_calls_in(h), ".frs_default")
+})
+
+test_that(".lnk_fresh_internal_calls_in refuses what it cannot read", {
+  nm <- ".frs_x"
+  pkg <- "fresh"
+  f_x <- function() getFromNamespace(nm, "fresh")
+  f_ns <- function() utils::getFromNamespace(".frs_x", pkg)
+  expect_error(.lnk_fresh_internal_calls_in(f_x), "non-literal `x`")
+  expect_error(.lnk_fresh_internal_calls_in(f_ns), "non-literal `ns`")
+})
+
 test_that(".lnk_fresh_floor parses the pin out of DESCRIPTION", {
   expect_identical(
     .lnk_fresh_floor(list(Imports = "DBI, fresh (>= 0.33.0), yaml")),
