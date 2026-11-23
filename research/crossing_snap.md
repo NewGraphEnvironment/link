@@ -46,7 +46,7 @@ Seven groups holding a moved pick or dam (NASR, SHUL, JERV, KETL, LILL, GUIC, US
 - **Segments and everything on them** move only in LILL: two segments added on one blue line, the habitat, access and mapping-code rows on them, and one segment's access and mapping code above it. NASR and the other groups' segments, access, habitat and mapping codes are identical.
 - **LILL's move is the snap, one step removed.** PSCIS 63445's fifth candidate is an exact tie between two streams at 91.7 m; the old order took the lower id, fresh's takes the higher start, so the fifth candidate changed streams. On the new one it loses bcfishpass's duplicate-match step, which clears every modelled-crossing match of a PSCIS that loses one (`WHERE stream_crossing_id IN to_update`), including modelled crossing 10702238 on blue line 356248078. That crossing then stands alone at 64 m: a barrier and a break. Every other moved row lies on a blue line holding a moved pick or dam.
 
-The `default` config's re-model did not run here: its first build (NASR) sat 30 minutes in fresh's near-river walk beside another session's walk, the stall #487 tracks, and was cancelled (`stalled_before_default_NASR.log` carries the samples). `default` reads the same crossings code.
+The `default` config's re-model did not run here. Its first build (NASR, 2.2 minutes in the provincial run) sat in fresh's near-river walk twice, 30 and then 17 minutes, each time beside another session's walk, the stall #487 tracks, and was cancelled both times (`stalled_before_default_NASR.log`, `stalled2_before_default_NASR.log` carry the samples). `default` reads the same crossings code; its scratch re-model is owed.
 
 ## FWA_LocateAlong, before and after fwapg#41's rework (#383)
 
