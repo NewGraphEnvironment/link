@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.86.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.86.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,17 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.86.1" id="link-0861">link 0.86.1<a class="anchor" aria-label="anchor" href="#link-0861"></a></h2>
+<p><strong>No behaviour change: <code>R CMD check</code> is at 0 warnings and CI now fails on one, and the docs name link’s rules as fish habitat definitions</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/471" class="external-link">#471</a>, backlog move 3).</p>
+<ul><li>
+<strong>CI fails on a warning</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/385" class="external-link">#385</a>). Non-ASCII characters in code strings are written as <code>—</code> escapes with identical message text, Rd links point at functions that exist, <code>presence</code> and <code>heads</code> are documented, and the <code>R-CMD-check</code> workflow’s <code>error-on</code> override is removed.</li>
+<li>README, DESCRIPTION and CITATION.cff say “fish habitat definitions” for link’s own rules (<a href="https://github.com/NewGraphEnvironment/link/issues/456" class="external-link">#456</a>).</li>
+<li>One study-area scope table, <code>research/study_area_scope_and_funders.md</code>; the generator and its run notes point to it (<a href="https://github.com/NewGraphEnvironment/link/issues/275" class="external-link">#275</a>).</li>
+<li>The source test reads only the ssh leg’s command, not a comment naming the script (<a href="https://github.com/NewGraphEnvironment/link/issues/493" class="external-link">#493</a>).</li>
+<li>
+<code>research/</code> gains an index entry per file and a Related work list; dated records are marked historical.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.86.0" id="link-0860">link 0.86.0<a class="anchor" aria-label="anchor" href="#link-0860"></a></h2>
 <p><strong><code>default</code>’s presence table is bcfishpass’s copy plus an overlay, a bundle can exclude a record bcfishpass has not listed, and the presence groups are bundle data</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/472" class="external-link">#472</a>, backlog move 4). No species cell moves, so no output token moves: <code>default</code> stays <code>acc-v6</code> and <code>bcfishpass</code> <code>acc-bcfp-5</code>. The issues expected a new <code>acc</code> row; none is needed, because the loaded presence cells, the groups and the record rule are the same values.</p>

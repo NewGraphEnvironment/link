@@ -1,5 +1,31 @@
 # Changelog
 
+## link 0.86.1
+
+**No behaviour change: `R CMD check` is at 0 warnings and CI now fails
+on one, and the docs name link’s rules as fish habitat definitions**
+([\#471](https://github.com/NewGraphEnvironment/link/issues/471),
+backlog move 3).
+
+- **CI fails on a warning**
+  ([\#385](https://github.com/NewGraphEnvironment/link/issues/385)).
+  Non-ASCII characters in code strings are written as `—` escapes with
+  identical message text, Rd links point at functions that exist,
+  `presence` and `heads` are documented, and the `R-CMD-check`
+  workflow’s `error-on` override is removed.
+- README, DESCRIPTION and CITATION.cff say “fish habitat definitions”
+  for link’s own rules
+  ([\#456](https://github.com/NewGraphEnvironment/link/issues/456)).
+- One study-area scope table,
+  `research/study_area_scope_and_funders.md`; the generator and its run
+  notes point to it
+  ([\#275](https://github.com/NewGraphEnvironment/link/issues/275)).
+- The source test reads only the ssh leg’s command, not a comment naming
+  the script
+  ([\#493](https://github.com/NewGraphEnvironment/link/issues/493)).
+- `research/` gains an index entry per file and a Related work list;
+  dated records are marked historical.
+
 ## link 0.86.0
 
 **`default`’s presence table is bcfishpass’s copy plus an overlay, a
