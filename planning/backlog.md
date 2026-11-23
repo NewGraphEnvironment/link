@@ -55,7 +55,7 @@ counts them): run `/backlog-sweep` again, the backlog is not finished.
 | - [ ] 15 | #500 | 23: load an export's input snapshots (1 issue) | **waiting** on crate's self-describing table snapshot contract (crate#66) | B | 14 | opus |
 | - [ ] 16 | #501 | 24: rainbow trout back in `default`, the presence review's last rows (2 issues) | open | D | — | opus |
 | - [ ] 17 | #502 | 25: province-wide builds at the new tokens (1 issue) | **waiting** on the operator's word for the provincial runs | C | 3, 13, 14, 16, 18 | opus |
-| - [ ] 18 | #507 | 26: fresh's internals pinned by argument, at fresh 0.56.0 (1 issue) | open | A | 7, 13, 14 | opus |
+| - [x] 18 | #507 | 26: fresh's internals pinned by argument, at fresh 0.56.0 (1 issue) | done: https://github.com/NewGraphEnvironment/link/pull/514 | A | 7, 13, 14 | opus |
 
 Rows are in the order to take them (moves 13 and 14 first since 2026-11-22); a move's number is its name.
 
@@ -456,7 +456,7 @@ lists this build as member 2 of its publish umbrella.
 
 ### 26. fresh's internals pinned by argument, at fresh 0.56.0
 
-- [ ] Carried by move 18, #507
+- [x] Carried by move 18, #507 (merged in https://github.com/NewGraphEnvironment/link/pull/514)
 
 **Touches:** `R/lnk_preflight_fresh.R`, `tests/testthat/test-lnk_preflight_fresh.R`, `DESCRIPTION`, `RUNBOOK.md`, `data-raw/pretest_inputs.csv`
 
