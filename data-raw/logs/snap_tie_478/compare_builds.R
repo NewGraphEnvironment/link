@@ -123,6 +123,11 @@ if (nrow(moved_rows) > 0L) {
     moved_rows$table == out$table[i] & moved_rows$wsg == out$wsg[i] & !moved_rows$explained), 1L)
 } else out$unexplained <- 0L
 out <- out[order(out$table, out$wsg, method = "radix"), ]
+# which code built each side: the builds' own log rows
+stamps <- do.call(rbind, lapply(c(b, a), function(sch) cbind(schema = sch, q(sprintf(
+  "SELECT watershed_group_code AS wsg, link_sha, link_dirty, fresh_sha
+     FROM %s.log ORDER BY 1, date_start DESC", sch)))))
+utils::write.csv(stamps, file.path(dir, sprintf("builds_%s.csv", cfg)), row.names = FALSE)
 utils::write.csv(out, file.path(dir, sprintf("compare_%s.csv", cfg)), row.names = FALSE)
 utils::write.csv(if (nrow(moved_rows)) moved_rows[!moved_rows$explained, ] else moved_rows,
                  file.path(dir, sprintf("unexplained_%s.csv", cfg)), row.names = FALSE)

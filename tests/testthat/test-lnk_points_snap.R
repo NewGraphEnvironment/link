@@ -106,6 +106,8 @@ test_that("lnk_points_snap rejects tables not in <schema>.<table> form", {
                "table_in must be '<schema>\\.<table>'")
   expect_error(run_snap(m, "x.in", "no_dot", id_col = "a"),
                "table_out must be '<schema>\\.<table>'")
+  expect_error(run_snap(m, "x.in", "X.IN", id_col = "a"),
+               "table_out must differ from table_in", fixed = TRUE)
   mockery::expect_called(m$snap, 0)
 })
 

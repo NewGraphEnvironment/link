@@ -109,6 +109,10 @@ lnk_points_snap <- function(conn, table_in, table_out, id_col,
       call. = FALSE
     )
   }
+  # table_out is dropped before it is built from table_in
+  if (identical(tolower(table_in), tolower(table_out))) {
+    stop("table_out must differ from table_in.", call. = FALSE)
+  }
   parts_out <- strsplit(table_out, ".", fixed = TRUE)[[1]]
   if (length(parts_out) != 2L) {
     stop(
