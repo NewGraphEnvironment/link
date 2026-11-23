@@ -6,7 +6,7 @@ Batch 24 of `planning/backlog.md`: #497 (bring rainbow trout back to `default`: 
 
 ## Decided at the gate
 
-There was no plan gate in this pane: `/coordinator` dispatched this `park review` (soul#928), and its plan gate ran at the resume: the answers are under "Decided at the resume". The Plan review ran before the baseline (`planning/active/review-plan.md`); what it changed is marked *(review)* below.
+There was no plan gate in this pane: `/coordinator` dispatched this `park review`, and its plan gate ran at the resume: the answers are under "Decided at the resume". The Plan review ran before the baseline (`planning/active/review-plan.md`); what it changed is marked *(review)* below.
 
 What the plan takes as settled, from earlier owner decisions:
 - The record rule is one rule, read by the cuts, code 2 and the lifts, written as rows of `configs/default/species_pooling.csv` (#470). A row counts one code as one target; aliases do not chain.
