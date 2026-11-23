@@ -146,7 +146,7 @@ fresh,^R/frs_categorize\.R$,none,"not reached from link's modelling path at fres
 fresh,^R/frs_channel_width\.R$,none,"not reached from link's modelling path at fresh v0.44.0 and v0.46.0 (call graph, data-raw/logs/pretest_372/reach.md, data-raw/logs/prefilter_409/reach.md)"
 fresh,^R/frs_classify\.R$,none,"not reached from link's modelling path at fresh v0.44.0 and v0.46.0 (call graph, data-raw/logs/pretest_372/reach.md, data-raw/logs/prefilter_409/reach.md)"
 fresh,^R/frs_clip\.R$,none,"not reached from link's modelling path at fresh v0.44.0 and v0.46.0 (call graph, data-raw/logs/pretest_372/reach.md, data-raw/logs/prefilter_409/reach.md)"
-fresh,^R/frs_db_conn\.R$,none,"not reached from link's modelling path at fresh v0.44.0 and v0.46.0 (call graph, data-raw/logs/pretest_372/reach.md, data-raw/logs/prefilter_409/reach.md)"
+fresh,^R/frs_db_conn\.R$,any,"lnk_db_conn() connects through frs_db_conn() once per group whatever the group holds, from link 0.87.0 (#288; call graph at fresh v0.55.1, data-raw/logs/fresh_pin_481/reach.md)"
 fresh,^R/frs_extract\.R$,none,"not reached from link's modelling path at fresh v0.44.0 and v0.46.0 (call graph, data-raw/logs/pretest_372/reach.md, data-raw/logs/prefilter_409/reach.md)"
 fresh,^R/frs_feature_find\.R$,none,"not reached from link's modelling path at fresh v0.44.0 and v0.46.0 (call graph, data-raw/logs/pretest_372/reach.md, data-raw/logs/prefilter_409/reach.md)"
 fresh,^R/frs_feature_index\.R$,none,"not reached from link's modelling path at fresh v0.44.0 and v0.46.0 (call graph, data-raw/logs/pretest_372/reach.md, data-raw/logs/prefilter_409/reach.md)"

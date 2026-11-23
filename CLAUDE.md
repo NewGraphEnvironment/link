@@ -17,6 +17,19 @@ The settled findings behind the methods (what is known, with provenance and the 
 
 **Take the next move from `planning/backlog.md`** (`bash <soul>/skills/_shared/backlog_moves.sh next planning/backlog.md`; `/compact-prep` names it): 13 moves, umbrellas #469–#481, each planned with one `/planning-init <umbrella>` and landed in one PR, ticked by `/gh-pr-merge`. Moves 12 and 13 wait on knowledge#139's flow-method decision and fresh 0.54.0. A link issue knowledge waits on says so in its batch section. A new issue joins the open move whose batches touch its files; run `/backlog-sweep` again when one fits none. Record: `planning/archive/2026-11-issue-468-backlog-pass/`.
 
+## Status (2026-11-23) — fresh 0.55.1; the near-river table keeps fresh's key; one connection resolver (#481, 0.87.0)
+
+**Backlog move 13 (#481) lands as one release: the fresh pin v0.52.0 → v0.55.1, #452, #288 and #222.** `streams_near_river` carries `linear_feature_id` (fresh 0.54.0, fresh#293), which `lnk_persist_init()` adds and fills from `streams` once; the validator passes `near_river_lfid = TRUE` and, when cfg reads a pair, refuses a missing column or NULL. `lnk_db_conn()` delegates to `fresh::frs_db_conn()` (arguments, `PG*`, then `PG_*_SHARE`). The live resolve tests use the gated connection. No output or token moves (36 table-group digests, `data-raw/logs/fresh_pin_481/`). Mechanics: RUNBOOK §7, "Keyed on the parent line too".
+
+**Owed:** fresh 0.55.1 into each host's shared library (m1's holds 0.53.0, installed 2026-11-16) and a re-prep; `lnk_persist_init()` once per host on `fresh_default`, `fresh`, `fresh_default_minimal` at a quiet time (an ACCESS EXCLUSIVE rewrite); the pre-run gate before the next provincial run; the variants bases rebuilt with `--step=base`. A fresh issue (its deprecation message fires with every argument explicit) is drafted, not filed.
+
+**Facts not worth re-deriving:**
+- **m1's colima VM can lose its guest network while still "Running"** (2026-11-21 ~20:46 PDT: ssh and 5432 refused, the guest agent still syncing time). `colima stop && colima start` fixes it; `LIMA_HOME=~/.colima/_lima limactl list` sees the VM.
+- **On m1 `~/.Renviron` sets `PGHOST`, and wins over an exported one,** so redirect `PG*` from inside R (`Sys.setenv()`) to test a connection path.
+- **fresh's reach from `wsg_run_one.R` is 19 files at v0.55.1** (`frs_db_conn.R` joined through `lnk_db_conn()`).
+- **`public.wsg_outlet` is retired** (fresh 0.33.0); closure mode reads only `whse_basemapping.fwa_downstream()`. The parked plan's gate on the table would have skipped everywhere.
+- **Measure before and after a pin from scratch libraries** (`R CMD INSTALL -l <lib> <tag worktree>`, `R_LIBS=<lib>`, `FRESH_GIT_SHA` for the stamp): the shared library stays put for other sessions.
+
 ## Status (2026-11-18) — default's presence table is bcfishpass's copy plus an overlay; link's own exclusions; presence groups in the bundle (#472, 0.86.0)
 
 **Backlog move 4 (#472) lands as one release: #431, #436, #292, and #402's decisions as overlay rows.** `default`'s `overrides/wsg_species_presence.csv` is bcfishpass's file (3bd2824), synced weekly; its 122 departures (#402's 110 added and 10 removed cells, UTRE CH and LARL GR kept absent) and the four `ko` cells are rows of `wsg_species_presence_overlay.csv`, each reason carrying the decision, the review's rule and the story's opening. `overrides/observation_exclusions_link.csv` excludes three records bcfishpass does not list (GUIC CH, MESI SK, KOTL ST), read with the copy by `.lnk_observation_exclusion_keys()`. `presence_groups.csv` holds `lnk_presence()`'s groups in `default` and `bcfishpass`. No token moves (`acc-v6`, `acc-bcfp-5`). Mechanics: RUNBOOK §7, "Copies and overlays"; §5, "The presence table is checked against the records". Evidence: `data-raw/logs/presence_overlay_431/` (its README).
@@ -1333,13 +1346,13 @@ link is connectivity-system agnostic. Column names are configurable parameters w
 
 ## Database Connection
 
-Uses `PG_*_SHARE` env vars (Docker fwapg) with fallback to standard `PG*` vars. From fresh 0.36.0 `frs_db_conn()` reads them the other way round (`PG*` first), so on a machine that sets both the two connect to different databases (#286). DB is needed for match/score/habitat functions that operate via SQL. The override loading and validation can work with any PostgreSQL.
+`lnk_db_conn()` connects through `fresh::frs_db_conn()` (since 0.87.0, #288), so the two resolve alike: explicit arguments, then the standard `PG*` variables, then `PG_*_SHARE` only when no `PG*` is set (deprecated by fresh, which says so once per session unless every field is given), never mixed, with fresh's 10 s connect timeout and TCP keepalives. Before 0.87.0 link read `PG_*_SHARE` first, so on a machine setting both a bare `lnk_db_conn()` and a bare `frs_db_conn()` reached different databases (#286). DB is needed for match/score/habitat functions that operate via SQL. The override loading and validation can work with any PostgreSQL.
 
 ```r
-conn <- lnk_db_conn()  # reads PG_DB_SHARE, PG_HOST_SHARE, etc.
+conn <- lnk_db_conn()  # PG* variables, else PG_*_SHARE
 ```
 
-**Local docker fwapg (dev / parity work).** `lnk_db_conn()` with no args reads `PG_*_SHARE`, which may point at the bcfp reference DB — the wrong DB for the `fresh.*` persist. For local-docker work pass explicit args: `lnk_db_conn(dbname="fwapg", host="localhost", port=5432L, user="postgres", password="postgres")`. Bring it up from fresh's `docker/` directory with `docker compose up -d db`. The local DB holds the local `fresh.*` persist + `working_<wsg>` schemas + `fresh.streams_vw_bcfp`; the bcfp reference DB holds `bcfishpass.*`, no `fresh.*`.
+**Local docker fwapg (dev / parity work).** `lnk_db_conn()` with no args reads whatever the environment names (`PG*`, else `PG_*_SHARE`), which may be the bcfp reference DB — the wrong DB for the `fresh.*` persist. For local-docker work pass explicit args: `lnk_db_conn(dbname="fwapg", host="localhost", port=5432L, user="postgres", password="postgres")`. Bring it up from fresh's `docker/` directory with `docker compose up -d db`. The local DB holds the local `fresh.*` persist + `working_<wsg>` schemas + `fresh.streams_vw_bcfp`; the bcfp reference DB holds `bcfishpass.*`, no `fresh.*`.
 
 **Join persisted `fresh.*` on the full PK** `(id_segment, watershed_group_code)` — `id_segment` is NOT globally unique across WSGs in the consolidated persist, so a bare `id_segment` join fans out cartesian (#203). Length lives on `streams`, not `streams_access` / `streams_habitat_<sp>`.
 
@@ -1374,7 +1387,7 @@ Note: `<owner>/<repo>@<sha>` references a commit; this does **not** trigger GitH
 
 ### Core
 - `lnk_thresholds(csv, high, moderate, low)` — configurable severity thresholds. Ships BC defaults. CSV or inline override. Feeds into `lnk_score()`.
-- `lnk_db_conn()` — PostgreSQL connection factory. `PG_*_SHARE` then `PG*` env vars.
+- `lnk_db_conn()` — PostgreSQL connection factory, through `fresh::frs_db_conn()`: arguments, then `PG*`, then `PG_*_SHARE` (#288).
 - `lnk_config(name_or_path)` — load a config **manifest**: paths (`cfg$rules`, `cfg$dimensions`), file declarations (`cfg$files`), pipeline knobs (`cfg$pipeline`), provenance metadata. **Manifest-only — no parsed CSVs.** Cheap to call. Configs may declare `extends:` to inherit from another config. Ships with `"bcfishpass"` and `"default"` variants under `inst/extdata/configs/<name>/`.
 - `lnk_load_overrides(cfg)` — materialize the data files declared in `cfg$files`. Returns named list of canonical-shape tibbles. Entries with `source` + `canonical_schema` dispatch through `crate::crt_ingest()`; others fall through to local reads dispatched on path extension. Adding a new source family is a config edit + crate registration — no link R code change.
 
