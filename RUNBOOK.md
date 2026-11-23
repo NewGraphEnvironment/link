@@ -2081,8 +2081,9 @@ thresholds.
   lock. That first call takes an ACCESS EXCLUSIVE lock and rewrites every row,
   so on `fresh_default`, `fresh` and `fresh_default_minimal` it is run on its
   own at a quiet time, not left to a worker's first group. The validator passes
-  `near_river_lfid = TRUE` and refuses a table without the column or with a
-  NULL in a scored group (an unmigrated host's rows, consolidated in).
+  `near_river_lfid = TRUE` and, when cfg reads a pair, refuses a table without
+  the column or with a NULL in a scored group (an unmigrated host's rows,
+  consolidated in).
 - **A variants base from before the pin cannot be reused.** A working schema a
   fresh 0.52.0 build left has no `linear_feature_id` on its classify target
   `streams_habitat`; fresh 0.55.1's classify (`.frs_habitat_target()`) adds the
