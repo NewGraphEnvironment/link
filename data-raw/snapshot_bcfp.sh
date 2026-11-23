@@ -236,16 +236,10 @@ artifact_row whse_fish.pscis_assessment_svw \
 # -----------------------------------------
 # 2. CABD dams (public API; same URL as bcfp's jobs/load_weekly)
 # -----------------------------------------
+# One column layout on every host, whether the table existed or not
+# (cabd_load(), snapshot_bcfp_lib.sh; link#494).
 CABD_URL="https://cabd-web.azurewebsites.net/cabd-api/features/dams?filter=province_territory_code:eq:bc&filter=use_analysis:eq:true"
-ogr2ogr -f PostgreSQL \
-  "PG:$DATABASE_URL" \
-  -overwrite \
-  --config OGR_TRUNCATE YES \
-  --config PG_USE_COPY YES \
-  -nln cabd.dams \
-  -lco GEOMETRY_NAME=geom \
-  "$CABD_URL" \
-  OGRGeoJSON
+cabd_load "$CABD_URL" OGRGeoJSON cabd.dams cabd.dams_load || exit 1
 artifact_row cabd.dams "$CABD_URL" "" "" "" "CABD API; no version handle"
 
 # -----------------------------------------

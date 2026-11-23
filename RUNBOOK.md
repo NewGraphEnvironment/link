@@ -1526,10 +1526,29 @@ stops on a difference (the rows are not that build's); a build from before it
 reads `no digest`, counted per config (`configs[].streams_digest`) and on each
 run.
 
+**How PUBLISH talks to S3 (#488).** Each `aws` process costs a fixed start-up
+and round trip whatever it moves (about 2.4 s each on the cloud host that
+measured 53.5 min for a province, about 0.55 s on m1), so PUBLISH spends as few
+processes as it can and runs the rest concurrently. The checks read one
+`list-objects-v2` of the prefix (the current ETag of every key), not a
+`head-object` per key. Every put (parts, changed per-group parts, the
+dependency map, new write-once keys) goes on one PSOCK pool of
+`LNK_PUBLISH_JOBS` processes (default 8, 1 to 64; `.lnk_publish_run()`), each
+with `--content-md5` and answering with its `VersionId`. The pool is PSOCK, not
+forks, because the refusal gate has opened duckdb by then. It returns only when
+every put has, and every result is checked (exit status, R error, missing
+result) before anything else runs, so a failed put, a 412 on a write-once key
+or a put answered without a `VersionId` stops PUBLISH before the manifest. The
+stale deletes after the manifest go on the same pool. Each step prints its
+seconds. A test runs the driver against a stub `aws` and holds the order:
+the manifest put starts after every other put has ended.
+
 **Versions (#334).** fresh-bc's versioning is Enabled (bucket-wide; PUBLISH
-asserts it). After the parts go up, PUBLISH reads each part's, per-group part's
-and the dependency map's `VersionId` (`head-object`, so a per-group part left
-in place is named too), writes them into the local manifest atomically and
+asserts it). Each part's, changed per-group part's and the dependency map's
+`VersionId` comes from its put's reply; an unchanged per-group part's comes
+from one `list-object-versions` of its prefix (`IsLatest`; delete markers are
+listed apart). That listing grows with every publish until a rule keeps the
+last N versions. PUBLISH writes them into the local manifest atomically and
 then uploads it, so the copy read back is the one written. `lnk_catalog()`
 returns `version_id`, and `lnk_db_load()` and `lnk_downstream_load()` (through
 `lnk_downstream_files()`'s `version_id`) fetch that version
@@ -2484,6 +2503,29 @@ The two checks are two implementations of one rule (one in R over
 `provenance.source_artifact` before the run, one in SQL over `log_input` after
 it), each tested against the same states: a host on another version, an
 unrecorded version, same-size different content, no md5, a missing row.
+
+**An API primitive loads in one column layout on every host (link#494).** The
+content md5 hashes each row's text, so the column order is part of it. The
+first ogr2ogr load into a database, the one that creates GDAL's
+`ogr_system_tables` schema, lays its table out `geom` last; every later load
+puts it second, with or without `OGR_TRUNCATE` (GDAL 3.13.0, measured
+2026-11-22 on one saved CABD response: `data-raw/logs/cabd_shape_494/`). On a
+newly built host CABD is the first ogr2ogr load (PSCIS goes through bcdata), so
+its `cabd.dams` came out `geom` last and its md5 (`cb194733…` on that response)
+differed from every reloaded host's (`6f7f44c0…`), and `compare_inputs` refused
+the run. `cabd_load()` (`snapshot_bcfp_lib.sh`) therefore sets the layout
+itself: the API goes into `cabd.dams_load`, and `cabd.dams` is rebuilt from it
+as `ogc_fid, geom`, then CABD's fields in GDAL's order (read from the catalog,
+so a new CABD field passes through), with its primary key and geometry index,
+in one transaction. That is the layout reloaded hosts already held, so their
+recorded md5s stay valid while CABD returns the same dams. The table is dropped
+without `CASCADE`: ogr2ogr's own drop under `-overwrite` takes a view over the
+table with it silently, and a plain `DROP` fails the snapshot instead (nothing
+in link creates such a view). The PSCIS views need nothing: bcdata does not go
+through GDAL, and two loads of a view, one into a new database, gave one md5.
+`fresh.modelled_stream_crossings` and `bcfishobs.observations` are compared by
+version id, not content. A host loaded before this release holds whichever
+layout its first load gave it until its next `snapshot_bcfp.sh --force`.
 
 ### The vintage gate reads load stamps (link#265, absorbing #247)
 

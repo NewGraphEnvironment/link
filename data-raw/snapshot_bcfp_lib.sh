@@ -223,3 +223,59 @@ INSERT INTO $tbl SELECT $sel FROM obs_stage;
 SQL
   rm -f "$csv" "$py"
 }
+
+# The CABD dams in one column layout on every host (link#494): ogc_fid, geom,
+# then CABD's fields in the order GDAL created them. The content md5
+# (.lnk_table_content_md5()) hashes each row's text, so the column order is part
+# of it, and two hosts holding the same dams in different orders read as holding
+# different data.
+#
+# Measured 2026-11-22 (GDAL 3.13.0, one saved API response, 2,593 dams;
+# data-raw/logs/cabd_shape_494/): the first ogr2ogr load into a database, the one
+# that creates GDAL's ogr_system_tables schema, puts geom last, and every later
+# load puts it second, with or without OGR_TRUNCATE. On a newly built host CABD
+# is the first ogr2ogr load (PSCIS goes through bcdata), so its cabd.dams came
+# out geom-last and its md5 differed from every other host's. The layout is
+# therefore set here, not left to GDAL: the API is loaded into a staging table,
+# and the table is rebuilt from it with ogc_fid and geom first. That is the
+# layout every reloaded host already held, so their recorded md5s stay valid
+# while CABD returns the same dams.
+#
+# The target is dropped without CASCADE, so a view over it fails the load
+# rather than vanishing (ogr2ogr's own drop under -overwrite takes a dependent
+# view with it, silently; measured). Nothing in link creates one. The drop, the
+# rebuild and its key and index are one transaction, so a failure leaves the
+# table as it was.
+cabd_load() {   # $1 = source (URL or file), $2 = layer, $3 = schema.table, $4 = staging schema.table
+  local src="$1" layer="$2" tbl="$3" stg="$4" got
+  $PSQL -q -c "DROP TABLE IF EXISTS $stg;" >/dev/null || return 1
+  ogr2ogr -f PostgreSQL "PG:$DATABASE_URL" -overwrite \
+    --config PG_USE_COPY YES \
+    -nln "$stg" -lco GEOMETRY_NAME=geom \
+    "$src" "$layer" || return 1
+  $PSQL -q <<SQL || return 1
+BEGIN;
+DROP TABLE IF EXISTS $tbl;
+DO \$\$
+DECLARE cols text;
+BEGIN
+  SELECT string_agg(quote_ident(attname), ', ' ORDER BY attnum) INTO cols
+    FROM pg_attribute
+   WHERE attrelid = '$stg'::regclass AND attnum > 0 AND NOT attisdropped
+     AND attname NOT IN ('ogc_fid', 'geom');
+  EXECUTE format('CREATE TABLE $tbl AS SELECT ogc_fid, geom, %s FROM $stg ORDER BY ogc_fid', cols);
+  EXECUTE 'ALTER TABLE $tbl ADD PRIMARY KEY (ogc_fid)';
+  EXECUTE format('CREATE INDEX %I ON $tbl USING gist (geom)',
+                 split_part('$tbl', '.', 2) || '_geom_geom_idx');
+END
+\$\$;
+DROP TABLE $stg;
+COMMIT;
+SQL
+  got=$($PSQL -At -c "SELECT string_agg(attname, ',' ORDER BY attnum) FROM pg_attribute
+                       WHERE attrelid = '$tbl'::regclass AND attnum IN (1, 2)") || return 1
+  if [ "$got" != "ogc_fid,geom" ]; then
+    echo "FATAL: $tbl loaded with columns starting '$got', not 'ogc_fid,geom' (link#494)" >&2
+    return 1
+  fi
+}

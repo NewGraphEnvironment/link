@@ -23,31 +23,40 @@
 #     [--target=s3://fresh-bc/habitat/fwa/v1]
 #
 #   1. The local tree must still match its manifest (every part and file).
-#   2. Parts go up with put-object --content-md5, so S3 refuses a body that
-#      does not hash to the manifest's md5.
-#   3. Before anything is written: this root must not lose anything live
+#   2. Before anything is written: this root must not lose anything live
 #      (a config, a group:species pair, or a group's newer build;
 #      LNK_PUBLISH_REPLACE=1 to remove or roll back on purpose), and each
 #      provenance/ and config/ key must be absent or carry the same md5 (its
-#      single-PUT ETag under the bucket's SSE-S3). Absent keys are then put
-#      with --if-none-match, so they are written once and never deleted.
-#   4. Per-group parts (barriers/, barrier_overrides/, #465) go up like
-#      parts, skipping a key whose ETag already equals its md5; the
-#      dependency map (dependencies/rule=line.parquet) is replaced.
+#      single-PUT ETag under the bucket's SSE-S3). The current ETags come from
+#      one listing of the prefix (list-objects-v2), not a call per key.
+#   3. Every put goes on one pool of LNK_PUBLISH_JOBS aws processes (default
+#      8; link#488, where one at a time took 53 min for a province): parts,
+#      per-group parts whose ETag is not already their md5 (barriers/,
+#      barrier_overrides/, #465), the dependency map (replaced), and the new
+#      provenance/ and config/ keys, which go with --if-none-match, so they are
+#      written once and never deleted. Each put carries --content-md5, so S3
+#      refuses a body that does not hash to the manifest's md5, and answers
+#      with its VersionId. The pool returns only when every put has, and a
+#      failed put stops PUBLISH before the manifest.
+#   4. Each part's VersionId goes into the manifest: from its put, or for an
+#      unchanged per-group part from one list-object-versions of its prefix.
 #   5. manifest.json goes up last, no-cache.
 #   6. Keys under segment/, barriers/ and barrier_overrides/ that the manifest
-#      no longer names are deleted. Nothing outside them is ever deleted.
+#      no longer names are deleted (on the pool). Nothing outside them is ever
+#      deleted.
 #   7. The published manifest is read back and must list the same parts,
 #      per-group parts and md5s.
 #
-# Before step 3 (link#334): a build in the tree with no run_uid, a dirty
+# Each step prints its seconds, and the end the minutes in all.
+#
+# Before step 2 (link#334): a build in the tree with no run_uid, a dirty
 # link or fresh tree, or no logged thresholds, a recompute with no run_uid or
 # a dirty tree, or a config exported from a dirty tree, refuses the publish
 # (.lnk_publish_refusals()). LNK_PUBLISH_ALLOW="<reason>" publishes past it,
 # and the manifest records the reason and the refusals (publish_allowed). The
-# bucket's versioning must be Enabled: after the parts go up, each part's
-# and per-group part's S3 VersionId is written into the manifest (atomically,
-# locally) before the manifest goes up, so a reader can pin the exact bytes.
+# bucket's versioning must be Enabled: each part's and per-group part's S3
+# VersionId is written into the manifest (atomically, locally) before the
+# manifest goes up, so a reader can pin the exact bytes.
 #
 # The prefix is private (link#308, "Staged private first"): every call uses
 # the caller's aws credentials, and readers need theirs too.
@@ -117,38 +126,30 @@ if (identical(Sys.getenv("LNK_PUBLISH"), "1")) {
   }
   m <- v$manifest
 
-  aws <- function(...) {
-    x <- suppressWarnings(system2("aws", shQuote(c(...)), stdout = TRUE,
-                                  stderr = TRUE))
-    attr(x, "status_code") <- attr(x, "status") %||% 0L
-    x
+  jobs <- .lnk_publish_jobs()
+  t_all <- Sys.time()
+  t_step <- Sys.time()
+  step_done <- function(what) {
+    now <- Sys.time()
+    stamp(sprintf("%s in %.1f s", what, as.numeric(difftime(now, t_step,
+                                                             units = "secs"))))
+    t_step <<- now
   }
   aws_ok <- function(...) {
-    x <- aws(...)
-    if (attr(x, "status_code") != 0L) {
-      stop("aws ", paste(c(...)[1:2], collapse = " "), " failed: ",
-           paste(x, collapse = " "), call. = FALSE)
-    }
-    x
+    a <- c(...)
+    .lnk_publish_run(list(list(label = paste(a[1:2], collapse = " "),
+                               args = a)))[[1]]$out
   }
-  md5_b64 <- function(hex) {
-    jsonlite::base64_enc(as.raw(strtoi(substring(hex, seq(1, 31, 2),
-                                                 seq(2, 32, 2)), 16L)))
-  }
-  put <- function(file, key, type, md5, ...) {
-    aws_ok("s3api", "put-object", "--bucket", bucket, "--key", key,
-           "--body", file, "--content-md5", md5_b64(md5),
-           "--content-type", type, ...)
-  }
-  # ETag of an existing key, or NA when it is absent (404). Any other failure
+  # ETag of one existing key, or NA when it is absent (404). Any other failure
   # (403, network) stops: absence must be proven, not assumed.
   etag <- function(key) {
-    x <- aws("s3api", "head-object", "--bucket", bucket, "--key", key,
-             "--query", "ETag", "--output", "text")
-    if (attr(x, "status_code") == 0L) return(gsub('"', "", x[length(x)]))
-    if (any(grepl("\\(404\\)|Not Found", x))) return(NA_character_)
-    stop("aws s3api head-object ", key, " failed: ", paste(x, collapse = " "),
-         call. = FALSE)
+    r <- .lnk_publish_aws(list(label = key, args = c(
+      "s3api", "head-object", "--bucket", bucket, "--key", key,
+      "--query", "ETag", "--output", "text")))
+    if (r$status == 0L) return(gsub('"', "", r$out[length(r$out)]))
+    if (any(grepl("\\(404\\)|Not Found", r$out))) return(NA_character_)
+    stop("aws s3api head-object ", key, " failed: ",
+         paste(r$out, collapse = " "), call. = FALSE)
   }
 
   # The builds a floodplain item can name and rebuild (link#334), and the
@@ -166,22 +167,13 @@ if (identical(Sys.getenv("LNK_PUBLISH"), "1")) {
          "Enabled: the manifest's version ids would not pin anything",
          call. = FALSE)
   }
-  # VersionId of a key just written or confirmed; it must exist.
-  version <- function(key) {
-    x <- aws_ok("s3api", "head-object", "--bucket", bucket, "--key", key,
-                "--query", "VersionId", "--output", "text")
-    v <- trimws(x[length(x)])
-    if (!nzchar(v) || identical(v, "None") || identical(v, "null")) {
-      stop(key, " has no VersionId", call. = FALSE)
-    }
-    v
-  }
 
   # Every check before the first write, so a refusal leaves the bucket as it
   # was. (a) The root must not lose anything live (.lnk_manifest_regressions:
   # a config, a pair, a newer build or recompute, a newer export); the root is
   # the whole published tree. (b) Each write-once key is absent or already
-  # these bytes.
+  # these bytes. Current ETags come from one listing of the prefix, not one
+  # head-object per key (link#488).
   live <- paste(prefix, "manifest.json", sep = "/")
   if (!is.na(etag(live))) {
     live_cfg <- attr(lnk_catalog(paste0(target, "/manifest.json")), "configs")
@@ -198,8 +190,13 @@ if (identical(Sys.getenv("LNK_PUBLISH"), "1")) {
            call. = FALSE)
     }
   }
+  etags <- .lnk_publish_list(bucket, paste0(prefix, "/"), "etag")
+  have <- function(key) {
+    e <- etags[paste(prefix, key, sep = "/")]
+    if (is.na(e)) NA_character_ else unname(e)
+  }
   new_files <- Filter(function(f) {
-    e <- etag(paste(prefix, f$key, sep = "/"))
+    e <- have(f$key)
     if (!is.na(e) && !identical(e, f$md5)) {
       stop(f$key, " is already published with ETag ", e, ", not md5 ", f$md5,
            ". provenance/ and config/ are written once; seed the root's ",
@@ -208,57 +205,75 @@ if (identical(Sys.getenv("LNK_PUBLISH"), "1")) {
     }
     is.na(e)
   }, m$files)
-
-  for (f in new_files) {
-    type <- "text/plain"
-    if (grepl("\\.parquet$", f$key)) type <- "application/vnd.apache.parquet"
-    # the write is the check: S3 refuses it (412) if the key appeared since
-    put(file.path(root, f$key), paste(prefix, f$key, sep = "/"), type, f$md5,
-        "--if-none-match", "*")
-  }
-  stamp(length(new_files), " of ", length(m$files),
-        " provenance/bundle files new")
-  for (p in m$parts) {
-    put(file.path(root, p$key), paste(prefix, p$key, sep = "/"),
-        "application/vnd.apache.parquet", p$md5)
-    stamp("put ", p$key)
-  }
   # one part per group per config, most unchanged between runs: an ETag that
   # is already the md5 (a single PUT under SSE-S3) is these bytes
-  n_same <- 0L
-  for (p in m$group_parts) {
-    k <- paste(prefix, p$key, sep = "/")
-    if (identical(etag(k), p$md5)) {
-      n_same <- n_same + 1L
-      next
-    }
-    put(file.path(root, p$key), k, "application/vnd.apache.parquet", p$md5)
-  }
-  stamp(length(m$group_parts) - n_same, " of ", length(m$group_parts),
-        " per-group parts put")
-  # the dependency map follows FWA, not a build: replaced, never write-once
-  if (!is.null(m$dependencies)) {
-    d <- m$dependencies
-    put(file.path(root, d$key), paste(prefix, d$key, sep = "/"),
-        "application/vnd.apache.parquet", d$md5)
-    stamp("put ", d$key)
-  }
+  gp_same <- vapply(m$group_parts, function(p) identical(have(p$key), p$md5),
+                    logical(1))
+  step_done(sprintf("checks: %d keys listed, %d of %d files new, %d of %d per-group parts unchanged",
+                    length(etags), length(new_files), length(m$files),
+                    sum(gp_same), length(m$group_parts)))
 
-  # Name each part's version in the manifest before it goes up (link#334).
-  # Rewritten locally first, atomically, so the local copy is what is read
-  # back; the manifest cannot name its own version (list-object-versions).
+  # Every put on one pool (LNK_PUBLISH_JOBS at once), each with --content-md5
+  # so S3 refuses a body that does not hash to the manifest's md5, and each
+  # answering with its VersionId. provenance/ and config/ go with
+  # --if-none-match: the write is the check, a key that appeared since is a 412
+  # and stops PUBLISH. The pool returns only when every put has, and every
+  # result is checked, so a failed put stops before the manifest.
+  pq <- "application/vnd.apache.parquet"
+  calls <- c(
+    lapply(new_files, function(f) {
+      type <- if (grepl("\\.parquet$", f$key)) pq else "text/plain"
+      .lnk_publish_put_call(bucket, paste(prefix, f$key, sep = "/"),
+                            file.path(root, f$key), type, f$md5,
+                            c("--if-none-match", "*"))
+    }),
+    lapply(c(m$parts, m$group_parts[!gp_same],
+             if (!is.null(m$dependencies)) list(m$dependencies)),
+           function(p) {
+             .lnk_publish_put_call(bucket, paste(prefix, p$key, sep = "/"),
+                                   file.path(root, p$key), pq, p$md5)
+           }))
+  res <- .lnk_publish_run(calls, jobs)
+  put_version <- vapply(res, .lnk_publish_put_version, character(1))
+  names(put_version) <- vapply(calls, function(x) sub("^put ", "", x$label),
+                               character(1))
+  step_done(sprintf("put %d new files, %d parts, %d of %d per-group parts%s (%d at once)",
+                    length(new_files), length(m$parts), sum(!gp_same),
+                    length(m$group_parts),
+                    if (!is.null(m$dependencies)) ", the dependency map" else "",
+                    min(jobs, length(calls))))
+
+  # Name each part's version in the manifest before it goes up (link#334):
+  # from its put's reply, or for an unchanged per-group part from one listing
+  # of the per-group prefixes. Rewritten locally first, atomically, so the
+  # local copy is what is read back; the manifest cannot name its own version
+  # (list-object-versions).
+  latest <- character(0)
+  if (any(gp_same)) {
+    dirs <- unique(sub("/.*$", "", vapply(m$group_parts[gp_same],
+                                          function(p) p$key, character(1))))
+    for (d in dirs) {
+      latest <- c(latest, .lnk_publish_list(bucket, paste0(prefix, "/", d, "/"),
+                                            "version"))
+    }
+  }
+  version <- function(key) {
+    k <- paste(prefix, key, sep = "/")
+    v <- if (k %in% names(put_version)) put_version[[k]] else
+      if (k %in% names(latest)) latest[[k]] else NA_character_
+    if (is.na(v) || !nzchar(v) || v %in% c("None", "null")) {
+      stop(k, " has no VersionId", call. = FALSE)
+    }
+    v
+  }
   for (i in seq_along(m$parts)) {
-    m$parts[[i]]$version_id <- version(paste(prefix, m$parts[[i]]$key,
-                                             sep = "/"))
+    m$parts[[i]]$version_id <- version(m$parts[[i]]$key)
   }
   for (i in seq_along(m$group_parts)) {
-    m$group_parts[[i]]$version_id <- version(paste(prefix,
-                                                   m$group_parts[[i]]$key,
-                                                   sep = "/"))
+    m$group_parts[[i]]$version_id <- version(m$group_parts[[i]]$key)
   }
   if (!is.null(m$dependencies)) {
-    m$dependencies$version_id <- version(paste(prefix, m$dependencies$key,
-                                               sep = "/"))
+    m$dependencies$version_id <- version(m$dependencies$key)
   }
   m$publish_allowed <- allowed
   f_man <- file.path(root, "manifest.json")
@@ -269,29 +284,30 @@ if (identical(Sys.getenv("LNK_PUBLISH"), "1")) {
     unlink(tmp_man)
     stop("could not write the versioned manifest", call. = FALSE)
   }
-  stamp("versions recorded for ", length(m$parts), " parts and ",
-        length(m$group_parts), " per-group parts")
-  put(f_man, paste(prefix, "manifest.json", sep = "/"), "application/json",
-      unname(tools::md5sum(f_man)), "--cache-control", "no-cache")
-  stamp("put manifest.json")
+  step_done(sprintf("versions recorded for %d parts and %d per-group parts",
+                    length(m$parts), length(m$group_parts)))
+  .lnk_publish_run(list(.lnk_publish_put_call(
+    bucket, paste(prefix, "manifest.json", sep = "/"), f_man,
+    "application/json", unname(tools::md5sum(f_man)),
+    c("--cache-control", "no-cache"))))
+  step_done("put manifest.json")
 
   named <- paste(prefix, vapply(c(m$parts, m$group_parts), function(p) p$key,
                                 character(1)), sep = "/")
   stale <- character(0)
   for (d in c("segment", "barriers", "barrier_overrides")) {
     seg <- paste0(prefix, "/", d, "/")
-    keys <- aws_ok("s3api", "list-objects-v2", "--bucket", bucket,
-                   "--prefix", seg, "--query", "Contents[].Key",
-                   "--output", "text")
-    keys <- setdiff(unlist(strsplit(keys, "\t")), c("None", ""))
+    keys <- names(.lnk_publish_list(bucket, seg, "etag"))
     st <- setdiff(keys, named)
     stopifnot(all(startsWith(st, seg)))
     stale <- c(stale, st)
   }
-  for (k in stale) {
-    aws_ok("s3api", "delete-object", "--bucket", bucket, "--key", k)
-    stamp("deleted stale ", k)
-  }
+  .lnk_publish_run(lapply(stale, function(k) {
+    list(label = paste("delete", k),
+         args = c("s3api", "delete-object", "--bucket", bucket, "--key", k))
+  }), jobs)
+  for (k in stale) stamp("deleted stale ", k)
+  step_done(sprintf("%d stale keys deleted", length(stale)))
 
   pub <- lnk_catalog(paste0(target, "/manifest.json"))
   loc <- lnk_catalog(f_man)
@@ -309,8 +325,10 @@ if (identical(Sys.getenv("LNK_PUBLISH"), "1")) {
     stop("the published manifest does not list the local per-group parts",
          call. = FALSE)
   }
-  stamp("published ", nrow(pub), " parts and ", length(m$group_parts),
-        " per-group parts; ", length(stale), " stale keys deleted")
+  step_done("read back")
+  stamp(sprintf("published %d parts and %d per-group parts; %d stale keys deleted; %.1f min in all",
+                nrow(pub), length(m$group_parts), length(stale),
+                as.numeric(difftime(Sys.time(), t_all, units = "mins"))))
   quit(save = "no")
 }
 

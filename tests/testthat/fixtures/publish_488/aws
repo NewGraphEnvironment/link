@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+# A stub `aws` for PUBLISH's tests (link#488): a local directory is the bucket.
+# STUB_DIR holds store/<key>, versions.json, log.jsonl (one line per call, with
+# its start and end) and inflight/ (a file per put in progress). STUB_SLEEP
+# seconds per put; STUB_FAIL_KEY and STUB_NONE_KEY (substrings) make a put
+# fail, or answer with a None VersionId.
+import fcntl, hashlib, json, os, shutil, sys, time
+
+D = os.environ["STUB_DIR"]
+store = os.path.join(D, "store")
+a = sys.argv[1:]
+
+
+def opt(name):
+    return a[a.index(name) + 1] if name in a else None
+
+
+def log(rec):
+    with open(os.path.join(D, "log.jsonl"), "a") as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        f.write(json.dumps(rec) + "\n")
+
+
+def md5(p):
+    return hashlib.md5(open(p, "rb").read()).hexdigest()
+
+
+def versions():
+    p = os.path.join(D, "versions.json")
+    return json.load(open(p)) if os.path.exists(p) else {}
+
+
+t0 = time.time()
+op = a[1] if a[0] == "s3api" else a[0] + " " + a[1]
+key = opt("--key")
+rec = {"op": op, "key": key, "start": t0}
+rc = 0
+if op == "put-object":
+    body = opt("--body")
+    infl = os.path.join(D, "inflight")
+    os.makedirs(infl, exist_ok=True)
+    mine = os.path.join(infl, str(os.getpid()))
+    open(mine, "w").close()
+    rec["inflight"] = len(os.listdir(infl))
+    time.sleep(float(os.environ.get("STUB_SLEEP", "0")))
+    dest = os.path.join(store, key)
+    fail = os.environ.get("STUB_FAIL_KEY")
+    if fail and fail in key:
+        print("An error occurred (InternalError) when calling the PutObject operation", file=sys.stderr)
+        rc = 254
+    elif opt("--if-none-match") == "*" and os.path.exists(dest):
+        print("An error occurred (PreconditionFailed) when calling the PutObject operation: (412)", file=sys.stderr)
+        rc = 254
+    else:
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        shutil.copyfile(body, dest)
+        # concurrent puts update one file: held under a lock
+        with open(os.path.join(D, "versions.lock"), "w") as lk:
+            fcntl.flock(lk, fcntl.LOCK_EX)
+            v = versions()
+            v[key] = "v%d-%s" % (len(v) + 1000, hashlib.md5(key.encode()).hexdigest()[:6])
+            with open(os.path.join(D, "versions.json.tmp"), "w") as f:
+                json.dump(v, f)
+            os.replace(os.path.join(D, "versions.json.tmp"), os.path.join(D, "versions.json"))
+        none = os.environ.get("STUB_NONE_KEY")
+        vid = "None" if none and none in key else v[key]
+        print('%s\t"%s"' % (vid, md5(dest)))
+    os.remove(mine)
+elif op == "head-object":
+    p = os.path.join(store, key)
+    if os.path.exists(p):
+        print('"%s"' % md5(p))
+    else:
+        print("An error occurred (404) when calling the HeadObject operation: Not Found", file=sys.stderr)
+        rc = 254
+elif op == "get-bucket-versioning":
+    print("Enabled")
+elif op in ("list-objects-v2", "list-object-versions"):
+    pre = opt("--prefix")
+    v = versions()
+    rows = []
+    for root, _, files in os.walk(store):
+        for f in files:
+            k = os.path.relpath(os.path.join(root, f), store)
+            if k.startswith(pre):
+                rows.append(k)
+    for k in sorted(rows):
+        if op == "list-objects-v2":
+            print('%s\t"%s"' % (k, md5(os.path.join(store, k))))
+        else:
+            print("%s\t%s" % (k, v[k]))
+    if not rows and op == "list-objects-v2":
+        print("None")
+elif op == "delete-object":
+    os.remove(os.path.join(store, key))
+elif op == "s3 cp":
+    src = a[2].strip("'")
+    k = src.split("/", 3)[3]
+    rec["key"] = k
+    shutil.copyfile(os.path.join(store, k), a[3].strip("'"))
+else:
+    print("stub aws: unhandled %s" % " ".join(a), file=sys.stderr)
+    rc = 2
+rec["end"] = time.time()
+rec["rc"] = rc
+log(rec)
+sys.exit(rc)

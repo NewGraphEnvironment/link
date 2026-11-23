@@ -17,6 +17,24 @@ The settled findings behind the methods (what is known, with provenance and the 
 
 **Take the next move from `planning/backlog.md`** (`bash <soul>/skills/_shared/backlog_moves.sh next planning/backlog.md`; `/compact-prep` names it): 13 moves, umbrellas #469–#481, each planned with one `/planning-init <umbrella>` and landed in one PR, ticked by `/gh-pr-merge`. Moves 12 and 13 wait on knowledge#139's flow-method decision and fresh 0.54.0. A link issue knowledge waits on says so in its batch section. A new issue joins the open move whose batches touch its files; run `/backlog-sweep` again when one fits none. Record: `planning/archive/2026-11-issue-468-backlog-pass/`.
 
+## Status (2026-11-23) — `cabd.dams` loads in one layout on every host; PUBLISH runs on a pool (#499, 0.88.0)
+
+**Backlog move 14 (#499) lands as one release: #494 and #488; #334's public read stays open (owner, 2026-11-22).** `snapshot_bcfp.sh` loads CABD through `cabd_load()` (`data-raw/snapshot_bcfp_lib.sh`): the API into `cabd.dams_load`, then `cabd.dams` rebuilt as `ogc_fid, geom`, CABD's fields, key and index, in one transaction, so every host's content md5 agrees and, while CABD returns the same dams, matches the reload layout's recorded `6f7f44c0…`. PUBLISH (`data-raw/habitat_publish.R`, helpers `.lnk_publish_run()` / `.lnk_publish_list()` in `R/lnk_publish.R`) checks from one listing, puts on a PSOCK pool of `LNK_PUBLISH_JOBS` (default 8), takes versions from the put replies and one `list-object-versions` per per-group directory, and checks every result before the manifest. Mechanics: RUNBOOK §6d, "How PUBLISH talks to S3"; §8d, "An API primitive loads in one column layout". Evidence: `data-raw/logs/cabd_shape_494/`, `data-raw/logs/publish_parallel_488/`.
+
+**Owed:**
+- Every host re-snapshots (`snapshot_bcfp.sh --force`) before the next multi-host run; a host loaded before 0.88.0 keeps whichever layout its first load gave it.
+- The cloud image swap this waited on (the infrastructure repository's own issue): the scheduled runs move to the new image, a provincial run goes out on it, and the old image is deleted once that run publishes.
+- The next real PUBLISH (the operator's word) records its minutes against #488's 53.5 on a cloud host.
+- #334's public read: the infrastructure change after the budget and anomaly alerts.
+- The pre-run gate is not voided by this release alone (`DESCRIPTION` and `R/lnk_publish.R` map `none`; the snapshot and publish scripts are outside `PRETEST_LINK_PATHS`); it still owes its run from earlier releases.
+
+**Facts not worth re-deriving:**
+- **#494's cause was not "whether the table existed":** the first ogr2ogr load into a database (the one that creates `ogr_system_tables`) lays a table out `geom` last, every later load `geom` second, `OGR_TRUNCATE` or not. A load after `DROP TABLE` comes out `geom` second, so a scratch database that has had one GDAL load cannot show the defect: use a new database, or a stub that builds a geom-last staging table.
+- **ogr2ogr's drop under `-overwrite` takes a dependent view with it silently** (exit 0); `cabd_load()` drops without `CASCADE` first.
+- **One `aws` call on m1 is about 0.55 s, 0.33 of it start-up** (#488's 2.4 s was a cloud host). A full publish of the published tree: 36.5 min serially, 4.1 min on the pool, 1.9 min republishing an unchanged tree.
+- **The PSOCK worker function must carry no link namespace:** `.lnk_publish_aws()` uses base R only and is sent with a global environment.
+- **A stub `aws` written for concurrency needs a lock on any file its calls share** (`flock`): the first stub raced on its versions file and failed one run in two.
+
 ## Status (2026-11-23) — fresh 0.55.1; the near-river table keeps fresh's key; one connection resolver (#481, 0.87.0)
 
 **Backlog move 13 (#481) lands as one release: the fresh pin v0.52.0 → v0.55.1, #452, #288 and #222.** `streams_near_river` carries `linear_feature_id` (fresh 0.54.0, fresh#293), which `lnk_persist_init()` adds and fills from `streams` once; the validator passes `near_river_lfid = TRUE` and, when cfg reads a pair, refuses a missing column or NULL. `lnk_db_conn()` delegates to `fresh::frs_db_conn()` (arguments, `PG*`, then `PG_*_SHARE`). The live resolve tests use the gated connection. No output or token moves (36 table-group digests, `data-raw/logs/fresh_pin_481/`). Mechanics: RUNBOOK §7, "Keyed on the parent line too".

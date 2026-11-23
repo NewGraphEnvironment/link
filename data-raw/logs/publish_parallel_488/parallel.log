@@ -1,0 +1,10 @@
+start 2026-11-23T02:25:02Z
+2026-11-23T02:25:04Z PUBLISH <scratch>/root_parallel -> s3://fresh-bc/scratch/link499/parallel
+2026-11-23T02:25:09Z checks: 0 keys listed, 753 of 753 files new, 0 of 482 per-group parts unchanged in 3.4 s
+2026-11-23T02:29:00Z put 753 new files, 108 parts, 482 of 482 per-group parts, the dependency map (8 at once) in 231.3 s
+2026-11-23T02:29:01Z versions recorded for 108 parts and 482 per-group parts in 0.3 s
+2026-11-23T02:29:02Z put manifest.json in 1.2 s
+2026-11-23T02:29:04Z 0 stale keys deleted in 2.3 s
+2026-11-23T02:29:08Z read back in 4.1 s
+2026-11-23T02:29:08Z published 108 parts and 482 per-group parts; 0 stale keys deleted; 4.0 min in all
+exit 0 end 2026-11-23T02:29:08Z
