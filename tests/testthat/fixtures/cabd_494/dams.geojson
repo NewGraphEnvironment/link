@@ -1,0 +1,8 @@
+{
+"type": "FeatureCollection",
+"features": [
+{ "type": "Feature", "properties": { "cabd_id": "a1", "dam_name_en": "One", "height_m": 3.5, "use_fish": "no" }, "geometry": { "type": "Point", "coordinates": [ -123.1, 49.2 ] } },
+{ "type": "Feature", "properties": { "cabd_id": "b2", "dam_name_en": "Two", "height_m": null, "use_fish": "yes" }, "geometry": { "type": "Point", "coordinates": [ -120.5, 50.7 ] } },
+{ "type": "Feature", "properties": { "cabd_id": "c3", "dam_name_en": null, "height_m": 12.0, "use_fish": null }, "geometry": { "type": "Point", "coordinates": [ -125.0, 54.0 ] } }
+]
+}

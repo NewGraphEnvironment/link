@@ -40,3 +40,8 @@ Start Phase 1 and run every phase to the PR (/code-check branch, /planning-archi
 /gh-pr-push). This message is the resume instruction that starts the run-to-PR
 mandate; the merge stays with me.
 ```
+
+## Phase 1, 2026-11-22 (resume)
+- Owner answered the four gate questions: 1a, 2a, 3 not ready, 4a (all recommended).
+- Reproduced #494 on one saved CABD response, found the real cause (a database's first GDAL load), built `cabd_load()` as a staging table and rebuild, proved it from three starting states and against two mutants; PSCIS checked. Scratch databases dropped.
+- Next: Phase 2.

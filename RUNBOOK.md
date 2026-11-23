@@ -2462,6 +2462,29 @@ The two checks are two implementations of one rule (one in R over
 it), each tested against the same states: a host on another version, an
 unrecorded version, same-size different content, no md5, a missing row.
 
+**An API primitive loads in one column layout on every host (link#494).** The
+content md5 hashes each row's text, so the column order is part of it. The
+first ogr2ogr load into a database, the one that creates GDAL's
+`ogr_system_tables` schema, lays its table out `geom` last; every later load
+puts it second, with or without `OGR_TRUNCATE` (GDAL 3.13.0, measured
+2026-11-22 on one saved CABD response: `data-raw/logs/cabd_shape_494/`). On a
+newly built host CABD is the first ogr2ogr load (PSCIS goes through bcdata), so
+its `cabd.dams` came out `geom` last and its md5 (`cb194733…` on that response)
+differed from every reloaded host's (`6f7f44c0…`), and `compare_inputs` refused
+the run. `cabd_load()` (`snapshot_bcfp_lib.sh`) therefore sets the layout
+itself: the API goes into `cabd.dams_load`, and `cabd.dams` is rebuilt from it
+as `ogc_fid, geom`, then CABD's fields in GDAL's order (read from the catalog,
+so a new CABD field passes through), with its primary key and geometry index,
+in one transaction. That is the layout reloaded hosts already held, so their
+recorded md5s stay valid while CABD returns the same dams. The table is dropped
+without `CASCADE`: ogr2ogr's own drop under `-overwrite` takes a view over the
+table with it silently, and a plain `DROP` fails the snapshot instead (nothing
+in link creates such a view). The PSCIS views need nothing: bcdata does not go
+through GDAL, and two loads of a view, one into a new database, gave one md5.
+`fresh.modelled_stream_crossings` and `bcfishobs.observations` are compared by
+version id, not content. A host loaded before this release holds whichever
+layout its first load gave it until its next `snapshot_bcfp.sh --force`.
+
 ### The vintage gate reads load stamps (link#265, absorbing #247)
 
 `lnk_preflight_vintage()` (via `data-raw/host_vintage.R`) judges each snapshot
