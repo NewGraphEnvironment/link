@@ -6,7 +6,7 @@ Batch 24 of `planning/backlog.md`: #497 (bring rainbow trout back to `default`: 
 
 ## Decided at the gate
 
-There was no plan gate in this pane: `/coordinator` dispatched this `park review` (soul#928), and its plan gate runs at the resume. Nothing below is an owner decision yet; the forks are under `## Open decisions`. The Plan review ran before the baseline (`planning/active/review-plan.md`); what it changed is marked *(review)* below.
+There was no plan gate in this pane: `/coordinator` dispatched this `park review` (soul#928), and its plan gate ran at the resume: the answers are under "Decided at the resume". The Plan review ran before the baseline (`planning/active/review-plan.md`); what it changed is marked *(review)* below.
 
 What the plan takes as settled, from earlier owner decisions:
 - The record rule is one rule, read by the cuts, code 2 and the lifts, written as rows of `configs/default/species_pooling.csv` (#470). A row counts one code as one target; aliases do not chain.
@@ -14,9 +14,28 @@ What the plan takes as settled, from earlier owner decisions:
 - The presence rule is one record dated 1950 or later, releases out, exclusions first, pooling applied (#402, operator 2026-10-30). The first review's precedents (2026-11-01, `research/species_presence.md`, "The first review") stand: cells resting only on stocked fish were removed; Mackenzie salmon were left unmarked as strays.
 - A paused species keeps its rules, thresholds and presence column (#432); unpausing is a `species_modelled.csv` edit, a new `acc` row and a version bump.
 
+## Decided at the resume (owner, 2026-11-23)
+
+Asked after Phase 1's numbers (`data-raw/logs/rb_st_497/`):
+
+1. **Record rule: (b).** An ST record counts as RB where RB is marked present; an RB record never counts as ST. Accepted costs: `cut-full-top-3`, RB's top per line moves in 77 groups, undated ST records cut for RB. Option (c) is not built.
+2. **RB rows:** LPRO and UPET RB removed (stocked fish only, the first review's precedent). CRYL RB goes to the literature issue as a native-range question (Cry Lake, Dease River, Liard side).
+3. **KO's 138 rows wait for kokanee's return (#432).** Their `issue` stays `#432`.
+4. **The four cells since #470:** recommendations come from Phase 3's re-run (asked then).
+5. **#402's 13 rows:** decide the 10 the records settle; TURN ST, CLRH CT and DUNC CT go to a literature issue naming move 16. The owner saw a cutthroat in the Duncan on a snorkel survey about 15 years ago (operator observation, for DUNC CT's story). Accepted cost: a second `acc` token later.
+6. **#402 closes with this PR.** The rows split out carry the literature issue's number, and KO's carry `#432`.
+7. **ST evidence may flag an RB cell** (no change to `.lnk_presence_check()`). The one new flag, TUTR RB (two Steelhead Database records, 1984 and 1991, Tutshi River, Yukon headwaters, where steelhead do not reach), goes to the literature issue.
+8. **The SST/WST alias change is done here:** `SST` and `WST` count as RB as well as ST, in `.lnk_record_aliases()` and its three readers, with tests.
+
+So the literature issue carries CRYL RB, TUTR RB, TURN ST, CLRH CT and DUNC CT.
+
 ## Open decisions
 
-Ask each before the phase that needs it. Each has a recommendation first.
+None open. Write any fork met from here under this heading.
+
+## The forks as drafted at the park
+
+Kept as the record of what was asked; the answers are above.
 
 1. **How a rainbow trout record is told from a steelhead one** (before Phase 2; informed by Phase 1).
    - **(b, recommended pending Phase 1's numbers) One way: steelhead records count as rainbow trout, never the reverse.** A pooling row `RB ← ST` (province scope, or the regions Phase 1 supports). Where RB is marked present, an ST record counts as RB for RB's cuts, code 2 and lifts (lifts filter on the model species over `observations_province`, `R/lnk_barrier_overrides.R:253`). An RB record never counts toward ST, so a resident rainbow above a falls cannot open steelhead access. KOTL's steelhead record, judged a likely rainbow at the first review, then counts as RB. Costs *(review)*:
@@ -51,21 +70,23 @@ Ask each before the phase that needs it. Each has a recommendation first.
 
 ## Phase 1: Measure rainbow trout and steelhead records by code and place (#497)
 
-- [ ] *(review)* State the host and build Phase 1 reads: a province-wide `fresh_default` whose `barriers` and lifts are current on local fwapg. Stamp that build's `run_uid` and tokens in the log.
-- [ ] *(review)* Extend `.lnk_presence_measures()` (`R/lnk_presence_measures.R`) so an RB-coded record can be measured against ST's blocking barriers. Today it matches barriers on the record's own code (`o.species_code = ANY (b.blocks_species)`), so RB records would find RB's 25 % barriers. This is an R change: add a test and a `data-raw/pretest_inputs.csv` row.
-- [ ] `data-raw/rb_st_records_check.R` takes every bcfishobs record coded `RB`, `ST`, `SST`, `WST`, `RB/CT`, `CT/RB` or ` RB` (leading space). It applies `observation_exclusions` (the copy and link's own) first, and tags releases as bcfishpass tags them. Per record it writes:
+- [x] *(review)* State the host and build Phase 1 reads: a province-wide `fresh_default` whose `barriers` and lifts are current on local fwapg. Stamp that build's `run_uid` and tokens in the log.
+- [x] *(review)* Extend `.lnk_presence_measures()` (`R/lnk_presence_measures.R`) so an RB-coded record can be measured against ST's blocking barriers. Today it matches barriers on the record's own code (`o.species_code = ANY (b.blocks_species)`), so RB records would find RB's 25 % barriers. This is an R change: add a test and a `data-raw/pretest_inputs.csv` row.
+- [x] `data-raw/rb_st_records_check.R` takes every bcfishobs record coded `RB`, `ST`, `SST`, `WST`, `RB/CT`, `CT/RB` or ` RB` (leading space). It applies `observation_exclusions` (the copy and link's own) first, and tags releases as bcfishpass tags them. Per record it writes:
   - group, region and subregion (`inst/extdata/wsg_regions.csv`);
   - whether RB and ST are marked present in its group (overlay applied);
   - date, source, lake or stream, and elevation;
   - the nearest natural barrier below it that blocks ST (0.20 access gradient, falls, user-definite, subsurface), with its kind and whether a lift opens it for ST.
-- [ ] Per group and province, count four classes: RB records in steelhead-reachable water, RB records above the steelhead barrier, ST records above an unlifted steelhead barrier (likely rainbow), and ST records in reachable water. For each of options (a) to (c), count:
+- [x] Per group and province, count four classes: RB records in steelhead-reachable water, RB records above the steelhead barrier, ST records above an unlifted steelhead barrier (likely rainbow), and ST records in reachable water. For each of options (a) to (c), count:
   - how many records count as RB;
   - how many RB lift positions each would open (RB lifts on one dated record);
   - how many groups' RB top-per-line moves;
   - *(review)* how many groups the presence check would newly flag RB in.
 
   Count independently in SQL for three groups.
-- [ ] `data-raw/logs/rb_st_497/` with a README (question, method, numbers, what they say about each option) and a stamp (`lnk_stamp()`, bcfishobs row count and newest date, the build read). Committed before Phase 2. The numbers go to the owner with Open decisions 1, 7 and 8.
+- [x] `data-raw/logs/rb_st_497/` with a README (question, method, numbers, what they say about each option) and a stamp (`lnk_stamp()`, bcfishobs row count and newest date, the build read). Committed before Phase 2. The numbers go to the owner with Open decisions 1, 7 and 8.
+
+Outcome: no `pretest_inputs.csv` row was needed (row 86 already maps `R/lnk_presence_measures.R` to `none`). Records are written gzipped (26 MB raw).
 
 ## Phase 2: The record rule for rainbow trout (#497)
 

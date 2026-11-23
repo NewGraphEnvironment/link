@@ -48,3 +48,9 @@ Start Phase 1 and run every phase to the PR (/code-check branch, /planning-archi
 /gh-pr-push). This message is the resume instruction that starts the run-to-PR
 mandate; the merge stays with me.
 ```
+
+## Phase 1, 2026-11-23 (resume on m1, worktree link-501)
+- Merged origin/main (0.89.0); the four plan files that moved on main changed cosmetically, so the plan stands; release moves to 0.90.0.
+- `.lnk_presence_measures(barrier_species =)` (9d3b2ea6); `data-raw/rb_st_records_check.R` and `data-raw/logs/rb_st_497/` (6.8 min on m1, fresh_default build 20261103_163715-269b585a; independent count agrees for BULK, LFRA, OKAN).
+- Owner answered every open decision (task_plan.md, "Decided at the resume"): (b), SST/WST here, five rows to a literature issue, KO waits, #402 closes.
+- Next: Phase 2, the record rule.
