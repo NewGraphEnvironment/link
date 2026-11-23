@@ -124,7 +124,7 @@ FROM bcfishobs.observations")
   if (nzchar(cache)) saveRDS(got, cache)
 }
 meas <- got$meas
-stopifnot(!anyDuplicated(meas$observation_key),
+stopifnot(!anyDuplicated(meas[, c("observation_key", "species_code")]),
           !anyDuplicated(got$pts$observation_key),
           !anyDuplicated(got$bars$observation_key))
 

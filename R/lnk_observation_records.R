@@ -206,7 +206,9 @@
 #' the presence table (`SST` as ST, `CCT` as CT, `BT/DV` as BT where DV pools
 #' into BT), resolved as if every species were present, so a check of an
 #' absent cell reads aliases as a present one would. Empty without a tracker.
-#' One alias code counts as at most one species in a group.
+#' An alias code can count as several species in a group (`SST` as ST and as
+#' RB in `default`, link#501): one row per target, and a reader keys on the
+#' record and the species it reads as.
 #' @return Data frame `watershed_group_code`, `species_obs`, `species_code`,
 #'   `obs_year_max`, with attribute `wsgs`: the groups it was resolved for,
 #'   which `.lnk_record_aliases_everywhere()` reads as "every group".
@@ -228,12 +230,6 @@
                            regions = regions)
   p <- p[!p$obs_species %in% sp_all, , drop = FALSE]
   if (nrow(p) == 0L) return(empty)
-  dup <- duplicated(p[, c("watershed_group_code", "obs_species")])
-  if (any(dup)) {
-    stop("species_pooling counts alias code ", p$obs_species[dup][1],
-         " as more than one species in ", p$watershed_group_code[dup][1],
-         call. = FALSE)
-  }
   out <- data.frame(watershed_group_code = p$watershed_group_code,
                     species_obs = p$obs_species, species_code = p$species_code,
                     obs_year_max = as.integer(p$obs_year_max),
@@ -243,31 +239,33 @@
 }
 
 
-#' The alias codes that count as one species in every group listing them
+#' The alias codes and the species they count as in every group
 #'
 #' For data with no group (the historical distribution zones): an alias is
-#' folded there only where it counts as one species in every group the
-#' aliases were resolved for (the tracker's province rows), never a regional
-#' one such as `BT/DV`. "Every group" is the `wsgs` attribute
-#' `.lnk_record_aliases()` sets, not the groups that happen to list an alias:
-#' with only regional rows those would all be one region.
+#' folded there as a species only where it counts as that species in every
+#' group the aliases were resolved for (the tracker's province rows), never
+#' through a regional row such as `BT/DV`'s. "Every group" is the `wsgs`
+#' attribute `.lnk_record_aliases()` sets, not the groups that happen to list
+#' an alias: with only regional rows those would all be one region. An alias
+#' counting as two species everywhere (`SST` as ST and RB) gives two rows.
 #' @param aliases Data frame from `.lnk_record_aliases()`.
-#' @return Data frame `species_obs`, `species_code`.
+#' @return Data frame `species_obs`, `species_code`, one row per pair.
 #' @noRd
 .lnk_record_aliases_everywhere <- function(aliases) {
   pairs <- unique(aliases[, c("species_obs", "species_code")])
-  one <- pairs[!pairs$species_obs %in%
-                 pairs$species_obs[duplicated(pairs$species_obs)], ,
-               drop = FALSE]
   all_wsgs <- attr(aliases, "wsgs")
   if (is.null(all_wsgs)) {
     stop(".lnk_record_aliases_everywhere() needs the wsgs attribute ",
          ".lnk_record_aliases() sets", call. = FALSE)
   }
-  keep <- vapply(one$species_obs, function(a) {
-    all(all_wsgs %in% aliases$watershed_group_code[aliases$species_obs == a])
+  keep <- vapply(seq_len(nrow(pairs)), function(i) {
+    all(all_wsgs %in% aliases$watershed_group_code[
+      aliases$species_obs == pairs$species_obs[i] &
+        aliases$species_code == pairs$species_code[i]])
   }, logical(1))
-  out <- one[keep, , drop = FALSE]
+  out <- pairs[keep, , drop = FALSE]
+  out <- out[order(out$species_obs, out$species_code, method = "radix"), ,
+             drop = FALSE]
   rownames(out) <- NULL
   out
 }

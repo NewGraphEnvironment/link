@@ -90,15 +90,15 @@ Outcome: no `pretest_inputs.csv` row was needed (row 86 already maps `R/lnk_pres
 
 ## Phase 2: The record rule for rainbow trout (#497)
 
-- [ ] Write the chosen rule into `configs/default/species_pooling.csv`, with its rationale, source (the Phase 1 log), verified date and issue `#497`. Update `configs/dictionary_species_pooling.csv` if a column's meaning changes.
-- [ ] If decision 8 keeps the alias change in this PR, change `.lnk_record_aliases()` and each of its readers named there, with tests. If it splits it out, file the issue naming move 16.
-- [ ] Tests in `test-lnk_observation_records.R` (and `test-lnk_barrier_overrides.R`) *(review)*:
+- [x] Write the chosen rule into `configs/default/species_pooling.csv`, with its rationale, source (the Phase 1 log), verified date and issue `#497`. Update `configs/dictionary_species_pooling.csv` if a column's meaning changes.
+- [x] Decision 8 keeps the alias change in this PR: change `.lnk_record_aliases()` and each of its readers named there, with tests. If it splits it out, file the issue naming move 16.
+- [x] Tests in `test-lnk_observation_records.R` (and `test-lnk_barrier_overrides.R`) *(review)*:
   - an ST record counts as RB where RB is present and the row applies;
   - an RB record never counts as ST;
-  - `SST` and `WST` do not count as RB under (b) alone;
+  - `SST` and `WST` count as RB and as ST (decision 8);
   - an undated ST record counted as RB cuts and sets code 2, but does not lift;
   - the record-rule digest moves.
-- [ ] RUNBOOK §7, "The record rule", updated in the same commit.
+- [x] RUNBOOK §7, "The record rule", updated in the same commit.
 
 ## Phase 3: Unpause rainbow trout and decide the presence review's remaining rows (#497, #402)
 

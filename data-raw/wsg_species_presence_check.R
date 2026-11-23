@@ -123,7 +123,11 @@ meas <- .lnk_presence_measures(
   aliases = .lnk_record_aliases(loaded,
                                 loaded$wsg_species_presence$watershed_group_code),
   year_min = year_min, year_now = year_now)
-if (nrow(meas) != nrow(records)) stop("measures do not cover every record")
+# One row per record and species it reads as: an alias can count as two.
+if (!setequal(meas$observation_key, records$observation_key) ||
+    anyDuplicated(meas[, c("observation_key", "species_code")])) {
+  stop("measures do not cover every record once per species")
+}
 cm <- .lnk_presence_cell_measures(meas)
 # The measures count records by their own SQL; the check by R. They must agree.
 both <- merge(cm[, c("watershed_group_code", "species_code", "n_counting")],

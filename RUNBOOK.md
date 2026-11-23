@@ -1592,11 +1592,23 @@ per group:
 - **Codes.** Each species the group's presence row marks present (every presence column, not
   only `cfg$species`: CT, DV, KO and RB records still cut) counts its own code. Where the bundle
   declares `species_pooling.csv`, [lnk_species_pooling()] adds what it pools: another species'
-  records (DV as BT where the two names mean one species) and alias codes that are no species
-  column, at the `province` scope (`SST`, `WST` as ST; `ADV` as DV; `ABT` as BT; `CCT`, `ACT`,
-  `CT/RB` as CT) or regionally (`BT/DV`, `DV/BT` as BT only where DV pools into BT). A row
-  counts one code as one target: aliases do not chain (`ADV` never reaches BT through DV).
-  `RB/CT` counts as nothing. A bundle with no tracker counts each species' own code only, as
+  records (DV as BT where the two names mean one species; in `default`, ST as RB, link#501) and
+  alias codes that are no species column, at the `province` scope (`SST`, `WST` as ST and as RB;
+  `ADV` as DV; `ABT` as BT; `CCT`, `ACT`, `CT/RB` as CT) or regionally (`BT/DV`, `DV/BT` as BT
+  only where DV pools into BT). A row counts one code as one target: aliases do not chain
+  (`ADV` never reaches BT through DV), so a code counting as two species has a row for each
+  (`RB ← SST` beside `ST ← SST`). Readers key on the record and the species it reads as: the
+  presence check and `.lnk_presence_measures()` give such a record a row per species, and the
+  zones fold an alias into every species it counts as in every group. `RB/CT` counts as nothing.
+- **Rainbow trout and steelhead** (`default`, link#501). A steelhead record (`ST`, `SST`, `WST`)
+  counts as rainbow trout where RB is marked present; a rainbow trout record never counts as
+  steelhead, so a resident rainbow above a falls cannot open steelhead access. The two are one
+  species (*O. mykiss*) whose juveniles cannot be told apart in the field: 58 % of RB records sit
+  in water steelhead can reach, and 348 ST records sit above a barrier no steelhead lift opens
+  (`data-raw/logs/rb_st_497/`). Counted as RB, a steelhead record takes RB's date floor (none),
+  so undated and pre-1990 ones cut and set RB's code 2; a lift still needs a dated record (§5).
+  RB's top record per line is then the higher of the RB and steelhead tops, which moved in 77
+  groups when measured. A bundle with no tracker counts each species' own code only, as
   bcfishpass's `load_observations.sql` does: it tests the recorded code against the presence
   table's codes, so its `species_code_remap` of the cutthroat aliases renames only records
   already coded `CT` (`smnorris/bcfishpass@3bd2824`; on its output 0 of 2,004 alias records

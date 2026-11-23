@@ -1,7 +1,8 @@
 #' Measure each fish record for the presence review
 #'
 #' Builds session temp tables on `conn` and returns one row per record of
-#' `bcfishobs.observations`, with the measures an operator reads before a
+#' `bcfishobs.observations` and species it reads as (an alias counting as two
+#' species, `SST` as ST and RB, gives two rows), with the measures an operator reads before a
 #' record counts as evidence for a presence cell (link#402). Nothing here
 #' judges a record: the rules are the operator's, set from these numbers.
 #'
@@ -55,7 +56,7 @@
 #' as in the record's group (`aliases`, from `.lnk_record_aliases()`), as the
 #' presence check and the pipeline read them (link#470). In the zones, which
 #' carry no group, an alias is folded only where it counts as one species in
-#' every group that lists it (the tracker's province rows).
+#' every group (the tracker's province rows), as each species it counts as.
 #'
 #' @param conn A DBI connection to a database holding `bcfishobs`, FWA and
 #'   `fresh_default.barriers`.
@@ -76,7 +77,7 @@
 #'   (`release_include`).
 #' @param aliases Data frame from `.lnk_record_aliases()`.
 #' @param year_min,year_now Years a counting record falls between.
-#' @return A data frame, one row per record.
+#' @return A data frame, one row per record and species it reads as.
 #' @noRd
 .lnk_presence_measures <- function(conn, zones, species_barrier, lift_pools,
                                    sockeye_lakes, excl_keys, incl_keys,
@@ -102,8 +103,10 @@
   # one species wherever it is listed.
   z <- zones[, c("species_code", "code50")]
   one <- .lnk_record_aliases_everywhere(aliases)
-  hit <- match(z$species_code, one$species_obs)
-  z$species_code[!is.na(hit)] <- one$species_code[hit[!is.na(hit)]]
+  folded <- merge(z, one, by.x = "species_code", by.y = "species_obs")
+  z <- rbind(z[!z$species_code %in% one$species_obs, , drop = FALSE],
+             data.frame(species_code = folded$species_code.y,
+                        code50 = folded$code50, stringsAsFactors = FALSE))
   tmp("pm_zones", unique(z))
   tmp("pm_alias", data.frame(
     watershed_group_code = as.character(aliases$watershed_group_code),
@@ -198,7 +201,8 @@ LEFT JOIN pg_temp.pm_excl x ON x.observation_key = o.observation_key
 LEFT JOIN (SELECT DISTINCT observation_key FROM pg_temp.pm_incl) i
   ON i.observation_key = o.observation_key
 -- an alias reads as its species in the record's group, within the row's year
--- limit (.lnk_record_aliases(), link#470); one target per group and code
+-- limit (.lnk_record_aliases(), link#470); a code counting as two species
+-- gives the record a row as each (link#501)
 LEFT JOIN pg_temp.pm_alias a
   ON a.watershed_group_code = o.watershed_group_code
  AND a.species_obs = o.species_code
@@ -327,7 +331,8 @@ SELECT o.observation_key, o.watershed_group_code, o.species_code, o.counting,
                          WHERE z.species_code = o.species_code
                            AND z.code50 = o.code50) END AS in_hist_zone
 FROM pg_temp.pm_rec o
-LEFT JOIN pg_temp.pm_bar b ON b.observation_key = o.observation_key
+LEFT JOIN pg_temp.pm_bar b
+  ON b.observation_key = o.observation_key AND b.species_code = o.species_code
 LEFT JOIN pg_temp.pm_above a
   ON a.b_blk = b.b_blk AND a.b_drm = b.b_drm AND a.barrier_species = b.barrier_species
 LEFT JOIN pg_temp.pm_lake k
