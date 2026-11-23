@@ -1826,8 +1826,9 @@ waiting when it is not. Pick the instrument by how many answers you need:
 | a value you must have before the next step | a **foreground** call, so the blocking is explicit |
 | a long job that notifies when it exits | `Bash(run_in_background)` with the command as plain foreground text: no `&`, no `nohup` |
 
-A repeated `sleep N; grep` suits none of them. **Tell: if you are about to spawn a second
-waiter for the same thing, the first was the wrong shape.**
+A repeated `sleep N; grep` suits none of them. **Every background loop has a deadline**
+(`timeout 6h …`, or a count), never a `pgrep -f` gate. **Tell: if you are about to spawn a
+second waiter for the same thing, the first was the wrong shape.**
 
 **An `until` waiter over `ssh` to a Mac exits 0 whatever the remote command did:** gate on
 what it prints (`code-check-shell.md`, "Over Tailscale SSH to a Mac, `ssh` exits 0").
@@ -1837,14 +1838,12 @@ own state in a foreground call before reporting it done, against a marker only t
 can produce: clear it at launch, or check it is newer than a stamp touched at launch
 (`code-check.md`, "A wrapper's exit is not the work"), never a string grepped out of a log.
 
-A `Monitor` filter must match the failure states too: silence looks like "still running", so a
-happy-path-only grep stays quiet through a crash.
+A `Monitor` filter must match failure states too: silence reads as "still running".
 
-**Never end a backgrounded call's command with a trailing `&`.** With nothing in the same
-command waiting on it, a `run_in_background` call's wrapper exits at once, so the notification
-reports **exit 0** whatever the job then does. Pick one mechanism from the table, never two.
+**Never end a backgrounded call's command with a trailing `&`.** Nothing in it waits on the
+job, so the call's wrapper exits at once and notifies **exit 0** whatever the job then does. Pick one mechanism from the table, never two.
 
-*20 lines of evidence for this rule are in `conventions/agent-operations.md`.*
+*22 lines of evidence for this rule are in `conventions/agent-operations.md`.*
 
 ### Don't edit files a long-running suite is still reading
 
@@ -1912,14 +1911,13 @@ precondition. If a result must precede the next step, run it synchronously
 
 *8 lines of evidence for this rule are in `conventions/agent-operations.md`.*
 
-### When your own queue is empty, offer backlog work for the wait
+### When your own queue is empty, wait; a new move starts elsewhere
 
-With nothing of the task left while a review or a long run is in flight, offer 2 or 3 queued
-pieces (`planning/backlog.md`, `umbrella.sh next`) sized to the wait, in one phone-answerable
-question, safest first: read-only, issue work in our repos, a park in its own worktree. None
-edits the checkout the run reads. Each class is asked until the answer ledger promotes it (§4).
+With nothing of the task left while a review or a long run is in flight, wait or finish without
+asking, and name the free moves (`planning/backlog.md`, `umbrella.sh next`) in the report. A
+waiting session starts none; a move starts in a fresh session.
 
-*3 lines of evidence for this rule are in `conventions/agent-operations.md`.*
+*7 lines of evidence for this rule are in `conventions/agent-operations.md`.*
 
 ### Don't trust status
 
@@ -2174,9 +2172,9 @@ ends in a question mark, with no approved plan, gets an answer and a one-line of
 work, not the first commit toward it. To explain something, be short and concrete: a worked
 example beats a taxonomy. **The mandate starts at plan approval.**
 
-**When an answer settles a plan or moves an issue's scope, end with one offer** to write it into
-#N's body as `## Plan` / `## Decisions` (a fold names both issues), and edit the body once
-agreed: the next session reads the body, not this conversation.
+**When the owner agrees a plan or a scope change about an open issue, write it into #N's body**
+as `## Plan` / `## Decisions` (a fold names both issues) and say so in the reply: the next
+session reads the body, not this conversation.
 
 *6 lines of evidence for this rule are in `conventions/agent-operations.md`.*
 
@@ -2185,26 +2183,28 @@ agreed: the next session reads the body, not this conversation.
 A decision that permanently shapes stored data — a key, an identifier, a schema
 choice, a deprecation shim versus a hard rename — is the user's, and it goes to the
 **plan gate**, batched, as two or three concrete options with the recommended one
-first and the consequence stated, including a word or field an upstream contract lacks. Found mid-run, it is still not the agent's to decide:
-ask it the same way — options, recommendation first, phone-answerable — commit, and
-continue on the phases that do not depend on it while the answer is outstanding
-(`planning.md`, "When Something Keeps Failing" — escalating is not stopping).
+first and the consequence stated, including a word or field an upstream contract lacks. Found mid-run, it is still the user's:
+ask it the same way, commit, and continue on the phases that do not depend on it
+(`planning.md`, "When Something Keeps Failing": escalating is not stopping).
 
 In plan mode, ask the "this changes what I build" forks together before `ExitPlanMode`.
-Mechanism is never a question (§2), nor is anything with a conventional default: pick it, say
-so, move on.
+**Ask only a real fork** (stored data, a post outside our repos, a machine change, a merge, scope
+and priority); do anything else and report it. A question opens with what is happening (what
+started, where, what it does first) and a link to catch up from, then the options.
 
-*4 lines of evidence for this rule are in `conventions/agent-operations.md`.*
+*8 lines of evidence for this rule are in `conventions/agent-operations.md`.*
 
 ### Record the owner's answers; promote a class only on the record
 
 A hook (`settings/hooks/answers_log.py`) records each `AskUserQuestion`; record a question
-asked in prose with its `--manual` form. `/backlog-sweep` in soul proposes a class with a run
-of approvals and no refusal as a standing authorization. The classes this section reserves
-(stored data, posting outside our repos, machine changes, merges) are never proposed, and work
-under a promoted class is still reported. The coordinator's gated merge is not a promotion.
+asked in prose with its `--manual` form. `/backlog-sweep` in soul proposes a class after 5
+recommended answers in a row; an issue writes an accepted one here. The real forks above,
+scope included, are never proposed; work under a promoted class is still reported. The coordinator's gated merge is not a promotion.
 
-*2 lines of evidence for this rule are in `conventions/agent-operations.md`.*
+**Promoted 2026-11-22: mechanism** (decide it, name it in the report; one reaching upstream
+is still asked) **and idle-work** (§2).
+
+*4 lines of evidence for this rule are in `conventions/agent-operations.md`.*
 
 ### Never post outside our own repos without approval
 
