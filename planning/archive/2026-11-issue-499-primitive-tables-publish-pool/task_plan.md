@@ -6,7 +6,7 @@ Batches: 21 (#494, primitive tables load in one shape) and 22 (#488, publish in 
 
 ## Decided at the gate
 
-The owner answered the four gate questions at the resume (2026-11-22), each with its recommendation: **1a** (the reload layout, `ogc_fid, geom, <attributes>`), **2a** (a PSOCK worker pool in R over `put-object`, `LNK_PUBLISH_JOBS` default 8), **3** (#334's public read not ready; #334 stays open and its body says why), **4a** (measure on two scratch prefixes in fresh-bc, every version removed after). The full text of each option stays under `## Open decisions (answered 2026-11-22)` below.
+The owner answered the four gate questions at the resume (2026-11-22), each with its recommendation: **1a** (the reload layout, `ogc_fid, geom, <attributes>`), **2a** (a PSOCK worker pool in R over `put-object`, `LNK_PUBLISH_JOBS` default 8), **3** (#334's public read not ready; #334 stays open and its body says why), **4a** (measure on two scratch prefixes in fresh-bc, every version removed after). The full text of each option stays under `## Gate decisions, answered by the owner 2026-11-22` below.
 
 A synchronous Plan review ran before the baseline (`planning/active/review-plan.md`, 1 blocker, 12 findings, all folded). It changed Open decisions 1, 2 and 4 and both phases: the scratch measurement on two prefixes, the pool as a PSOCK cluster with every result checked, listed rather than per-key ETags and versions, the proof widened to column types and `ogc_fid`, and `cabd_load()` taking its tables as arguments.
 
@@ -18,7 +18,7 @@ Settled by reading the code, not owner forks:
 - **PUBLISH helpers go in the existing `R/lnk_publish.R`,** mapped `none` in `pretest_inputs.csv:93`. A new `R/` file would need a mapping row, or `test-pretest.R` fails (Plan review).
 - **`R/lnk_scenario_export.R` is not touched:** the issue's "version-id reads" there do not exist. The reads are in `data-raw/habitat_publish.R:170-182`, `:247-262` (Plan review).
 
-## Open decisions (answered 2026-11-22: 1a, 2a, 3 not ready, 4a)
+## Gate decisions, answered by the owner 2026-11-22 (1a, 2a, 3 not ready, 4a)
 
 1. **Which `cabd.dams` layout becomes the standard (#494).**
    - **(a) Recommended: the reload layout, `ogc_fid, geom, <attributes>`.** Load into a staging table that is always created fresh, then rebuild `cabd.dams` from it with `geom` second, the attribute list read from the staging table (not hard-coded, so a new CABD field passes through). What this buys: hosts already in the reload layout (the published run's dispatcher held `6f7f44c0…`) agree with hosts on the new code without a forced reload, and recorded md5s (`provenance.source_artifact`, each build's `log_input`, an export's snapshot key) stay valid while CABD returns the same features. Any new or changed dam re-keys `cabd.dams` under either option. This holds only if Phase 1 shows the rebuilt table's text form and column types equal the reload layout's on the same features.
