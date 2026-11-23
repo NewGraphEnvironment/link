@@ -36,14 +36,25 @@
 # threshold at or above the bound, or a failed start prints one
 # `stall sampler off` line and the group runs without it.
 #
-# Usage: [LNK_LOAD=loadall] Rscript wsg_run_one.R <WSG> [config]
+# Usage: [LNK_LOAD=loadall] Rscript wsg_run_one.R <WSG> <config>
 #   LNK_LOAD=loadall -> pkgload::load_all() (dispatcher dev checkout)
 #   default          -> library(link)       (pak-installed, e.g. cyphers)
 
 args <- commandArgs(trailingOnly = TRUE)
-if (length(args) < 1L) stop("usage: wsg_run_one.R <WSG> [config]", call. = FALSE)
+if (length(args) < 1L) stop("usage: wsg_run_one.R <WSG> <config>", call. = FALSE)
 wsg    <- toupper(args[1])
-config <- if (length(args) >= 2L && nzchar(args[2])) args[2] else "bcfishpass"
+config <- if (length(args) >= 2L && nzchar(args[2])) args[2] else ""
+if (!nzchar(config)) {
+  message("wsg_run_one.R: config is required. Name a bundle from inst/extdata/configs/ ",
+          "(bcfishpass and default both resolve to schema 'fresh'; any bundle ",
+          "but bcfishpass needs an explicit LNK_SCHEMA).")
+  quit(status = 2)
+}
+if (!identical(config, "bcfishpass") && !nzchar(Sys.getenv("LNK_SCHEMA"))) {
+  message("wsg_run_one.R: LNK_SCHEMA is required with config '", config, "': it resolves to the ",
+          "same persist schema as bcfishpass and would overwrite that build in place.")
+  quit(status = 2)
+}
 
 if (identical(Sys.getenv("LNK_LOAD"), "loadall")) {
   suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))

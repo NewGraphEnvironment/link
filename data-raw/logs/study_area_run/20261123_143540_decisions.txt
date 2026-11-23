@@ -1,0 +1,5 @@
+  focal DEAD: 5 kept
+
+    BT,CH,CM,CO,PK,RB,SK,ST: 3 groups (LFRA,HARR,FRCN)
+    BT,CH,CO,PK,RB,SK,ST: 2 groups (THOM,DEAD)
+

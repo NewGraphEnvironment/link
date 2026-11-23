@@ -139,9 +139,9 @@ if (!grepl("^[a-z][a-z0-9_]*_$", prefix)) {
 dir_out <- opt("out", file.path("data-raw", "logs", "habitat_score_284"))
 # The bundle the variants are generated from and the base is modelled with
 # (link#300; #284 and #302 used `default`).
-base_bundle <- opt("base", "default")
+base_bundle <- opt("base", "")
 if (!grepl("^[a-z][a-z0-9_]*$", base_bundle)) {
-  stop("--base must name a shipped bundle", call. = FALSE)
+  stop("config is required: --base=<bundle> must name a shipped bundle", call. = FALSE)
 }
 # Groups of one variant's pass run at once (link#406); 1 is the serial loop.
 jobs <- opt("jobs", "1")

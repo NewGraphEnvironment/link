@@ -49,11 +49,21 @@ conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
 on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
 
 cfg_name    <- Sys.getenv("LNK_CONFIG")
-if (!nzchar(cfg_name)) cfg_name <- "bcfishpass"
+if (!nzchar(cfg_name)) {
+  message("parity_crosssection.R: config is required (LNK_CONFIG=<bundle>); bcfishpass and default ",
+          "both resolve to schema 'fresh'.")
+  quit(status = 2)
+}
 cfg         <- lnk_config(cfg_name)
 loaded      <- lnk_load_overrides(cfg)
 schema      <- Sys.getenv("LNK_SCHEMA")
-if (!nzchar(schema)) schema <- "fresh"
+if (!nzchar(schema)) {
+  if (!identical(cfg_name, "bcfishpass")) {
+    message("parity_crosssection.R: LNK_SCHEMA is required with config '", cfg_name, "'.")
+    quit(status = 2)
+  }
+  schema <- "fresh"
+}
 args        <- commandArgs(trailingOnly = TRUE)
 wsgs        <- if (length(args)) toupper(args) else c("FINA", "PARS", "PCEA", "LKEL")
 species     <- c("bt", "st", "co", "ch", "cm", "pk", "sk", "wct")

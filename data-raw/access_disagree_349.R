@@ -59,7 +59,13 @@ arg <- function(name, default) {
   if (length(hit)) sub(paste0("^--", name, "="), "", hit[1]) else default
 }
 schema <- arg("schema", "fresh_default")
-config <- arg("config", "default")
+config <- arg("config", "")
+if (!nzchar(config)) {
+  message("access_disagree_349.R: config is required. Name a bundle from inst/extdata/configs/ ",
+          "(bcfishpass and default both resolve to schema 'fresh'; any bundle ",
+          "but bcfishpass needs an explicit LNK_SCHEMA).")
+  quit(status = 2)
+}
 out    <- arg("out", "data-raw/logs/access_disagree_349")
 wsgs   <- toupper(strsplit(arg("wsgs", ""), ",")[[1]])
 wsgs   <- wsgs[nzchar(wsgs)]

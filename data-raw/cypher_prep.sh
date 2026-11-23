@@ -98,6 +98,13 @@ case "$STAGE" in
      exit 1 ;;
 esac
 
+# The run config is required for the full prep (link#278); the install stage
+# touches no config, so study_area_run.sh --auto-install runs it without one.
+if [ "$STAGE" = "all" ] && [ -z "${CYPHER_PREP_CONFIG:-}" ]; then
+  echo "FATAL: CYPHER_PREP_CONFIG is required at CYPHER_PREP_STAGE=all (a bundle name)." >&2
+  exit 1
+fi
+
 cd ~/Projects/repo/link
 git fetch origin
 git stash --include-untracked >/dev/null 2>&1 || true
@@ -319,7 +326,7 @@ conn <- DBI::dbConnect(RPostgres::Postgres(),
 # The run config and persist schema (study_area_run.sh passes both), so the
 # DDL repair lands on the schema the run writes. Hardcoding bcfishpass left a
 # --schema=fresh_default run creating its tables without force_recreate (link#246).
-cfg <- lnk_config(Sys.getenv("CYPHER_PREP_CONFIG", "bcfishpass"))
+cfg <- lnk_config(Sys.getenv("CYPHER_PREP_CONFIG"))
 if (nzchar(Sys.getenv("CYPHER_PREP_SCHEMA"))) cfg$pipeline$schema <- Sys.getenv("CYPHER_PREP_SCHEMA")
 loaded <- lnk_load_overrides(cfg)
 # Persist species set MUST match lnk_pipeline_run (R/lnk_pipeline_run.R:

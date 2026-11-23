@@ -89,7 +89,10 @@ path_roles <- opt("roles", file.path("data-raw", "habitat_score",
                                      "wsg_roles.csv"))
 prefix <- opt("prefix", "score284_")
 dir_out <- opt("out", file.path("data-raw", "logs", "habitat_score_284"))
-base_bundle <- opt("base", "default")
+base_bundle <- opt("base", "")
+if (!nzchar(base_bundle)) {
+  stop("config is required: --base=<bundle> must name a shipped bundle", call. = FALSE)
+}
 # The defaults are #284's committed run; another variants file must not
 # score into (and first clear) #284's outputs.
 if (!identical(path_variants, file.path("data-raw", "habitat_score", "variants.csv")) &&

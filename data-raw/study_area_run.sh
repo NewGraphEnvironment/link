@@ -34,7 +34,7 @@
 #     [--focal=<worker1 focal csv> ...] \
 #     --focal=<cy1 focal csv> \
 #     --focal=<cy2 focal csv> \
-#     [--config=bcfishpass] [--schema=<persist-schema>] [--keep-cyphers] \
+#     --config=<bundle> [--schema=<persist-schema>] [--keep-cyphers] \
 #     [--buckets-exact]
 #
 #   bash data-raw/study_area_run.sh --preflight-only    # gates only, no spend
@@ -221,11 +221,12 @@ fi
 
 # --- args ---
 CY_WS=""
-CONFIG="bcfishpass"
+CONFIG=""
 SCHEMA_OVERRIDE=""
 KEEP_CYPHERS=0
 PREFLIGHT_ONLY=0
 REFRESH_PRIMITIVES=0
+VINT_OUT=""
 AUTO_INSTALL=0
 VINTAGE_MAX_DAYS=7
 PREFLIGHT_NOTE=""
@@ -380,6 +381,16 @@ for arg in "$@"; do
     *) echo "unknown arg: $arg" >&2; exit 1 ;;
   esac
 done
+
+# --- explicit config (link#278) ---
+# No driver defaults to the parity bundle: a run that goes out on bcfishpass by
+# default is a decision nobody made (2026-09-03).
+if [ -z "$CONFIG" ]; then
+  echo "FATAL: --config=<bundle> is required (a bundle name from inst/extdata/configs/)." >&2
+  echo "  bcfishpass and default both resolve the persist schema to 'fresh', so any" >&2
+  echo "  bundle but bcfishpass also needs --schema=, e.g. --config=default --schema=fresh_default." >&2
+  exit 1
+fi
 
 # --recompute-only finishes one existing run on the dispatcher, so it needs
 # that run's uid and takes nothing that dispatches. --run-uid and --wsgs
@@ -1287,7 +1298,8 @@ q(status = if (res$ok) 0L else 1L)' "$CONFIG" 2>&1 | sed 's/^/    /'; exit "${PI
   # fresh" and the NULL-timestamp branch are what testthat can prove and
   # shell cannot. `last_analyze` alone is NULL on every primitive; the R
   # side uses GREATEST(last_analyze, last_autoanalyze).
-  if (cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript data-raw/host_vintage.R "$VINTAGE_MAX_DAYS" 2>&1 | sed 's/^/    /'); then
+  if VINT_OUT=$(cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript data-raw/host_vintage.R "$VINTAGE_MAX_DAYS" 2>&1); VINT_RC=$?; \
+     printf '%s\n' "$VINT_OUT" | sed 's/^/    /'; [ "$VINT_RC" -eq 0 ]; then
     echo "  ✓ dispatcher primitives within ${VINTAGE_MAX_DAYS} d"
   else
     if [ -n "$PREFLIGHT_NOTE" ]; then
@@ -1685,8 +1697,48 @@ fi
 preflight_local || { echo "FATAL: pre-flight failed; aborting before spend"; exit 1; }
 echo "  ✓ pre-flight clean (tunnel-free)"
 
+# --- the decisions this run makes (link#278) -------------------------------
+# Printed before the first write, so a run that went out on a default nobody
+# chose can be stopped by reading it. The alternative is named beside each.
+print_decisions() {
+  # $1 = decision file written by study_area_wsgs.R ("" when not resolved)
+  echo "=== decisions for this run ==="
+  if [ "$CONFIG" = "bcfishpass" ]; then
+    echo "  config:       $CONFIG (parity bundle; alternative: default, link's own biological positions)"
+  else
+    echo "  config:       $CONFIG (alternative: bcfishpass, the parity bundle)"
+  fi
+  if [ "$SCHEMA" = "fresh" ]; then
+    echo "  persist:      $SCHEMA (the bcfishpass build's schema; alternative: fresh_<bundle> via --schema=)"
+  else
+    echo "  persist:      $SCHEMA (alternative: fresh, which the bcfishpass build writes)"
+  fi
+  if [ -n "$1" ] && [ -s "$1" ]; then
+    echo "  focal / closure / species (config x presence):"
+    cat "$1"
+  else
+    echo "  focal/closure/species: not resolved (no --focal given)"
+  fi
+  if [ "$REFRESH_PRIMITIVES" = "1" ]; then
+    echo "  primitives:   reloaded in this dispatch (--refresh-primitives)"
+  elif [ -n "$VINT_OUT" ]; then
+    echo "  primitives:   not reloaded; $(printf '%s' "$VINT_OUT" | tr '\n' ' ' | cut -c1-200)"
+  else
+    echo "  primitives:   not reloaded; last load not read in this mode"
+  fi
+}
+
 if [ "$PREFLIGHT_ONLY" = "1" ]; then
   echo "=== --preflight-only: local gates passed; exiting before spin ==="
+  DECISION_FILE=""
+  if [ "${#FOCAL_ARR[@]}" -gt 0 ]; then
+    DECISION_FILE="$LOG_DIR/${TS}_decisions.txt"; : > "$DECISION_FILE"
+    EXACT_ARG=(); [ "$BUCKETS_EXACT" = "1" ] && EXACT_ARG=(--exact)
+    (cd "$REPO_ROOT" && LNK_DECISION_FILE="$DECISION_FILE" LNK_LOAD=loadall Rscript data-raw/study_area_wsgs.R \
+       ${EXACT_ARG[@]+"${EXACT_ARG[@]}"} "${FOCAL_ARR[0]}" "$CONFIG" >/dev/null) \
+      || { echo "FATAL: the dispatcher's --focal could not be resolved" >&2; exit 1; }
+  fi
+  print_decisions "$DECISION_FILE"
   # Report what was NOT checked. Several gates are gated on N_CY > 0, so a
   # bare --preflight-only silently skips the credential probes — which are
   # the highest-value ones, since an expired token is what motivated them.
@@ -1708,17 +1760,6 @@ if [ "$PREFLIGHT_ONLY" = "1" ]; then
   exit 0
 fi
 
-# --- record a run made without the pre-run gate (link#372) -----------------
-# After --preflight-only has exited, which promises no writes. The row's
-# verdict is `override`, which pretest_record_check() never reads as a gate.
-if [ -n "$PRETEST_NOTE" ]; then
-  PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d fwapg -X -q -v ON_ERROR_STOP=1 \
-    -v schema="$SCHEMA" -v config="$CONFIG" -v sha="$RUN_SHA" -v note="$PRETEST_NOTE" -v uid="$RUN_UID" \
-    -f "$REPO_ROOT/data-raw/pretest_override.sql" \
-    || { echo "FATAL: could not record --pretest-note in $SCHEMA.log_pretest"; exit 1; }
-  echo "  recorded --pretest-note in $SCHEMA.log_pretest (run_uid $RUN_UID)"
-fi
-
 # --- resolve drainage-closed DS-first buckets ---
 # Two modes (link#361). Closure (default): each --focal= list is expanded to
 # its drainage closure, DS-first. Exact (--buckets-exact): each list is the
@@ -1736,6 +1777,8 @@ fi
 # The run's config and the source tree, not the defaults: study_area_wsgs.R
 # defaults to bcfishpass's species filter and library(link) is whatever is
 # installed, which silently dropped default's KO/RB/GR-only groups (link#246).
+DECISION_FILE="$LOG_DIR/${TS}_decisions.txt"; : > "$DECISION_FILE"
+export LNK_DECISION_FILE="$DECISION_FILE"
 DISP_BUCKET=$(cd "$REPO_ROOT" && LNK_LOAD=loadall Rscript data-raw/study_area_wsgs.R ${WSGS_FLAG[@]+"${WSGS_FLAG[@]}"} "${FOCAL_ARR[0]}" "$CONFIG")
 DISP_BUCKET=$(echo "$DISP_BUCKET" | tr -d '[:space:]')
 echo "  dispatcher (focal=${FOCAL_ARR[0]}): $DISP_BUCKET"
@@ -1767,6 +1810,19 @@ if [ -n "$DUP" ]; then
     exit 1
   fi
   echo "  WARN: buckets overlap on: $DUP (computed on multiple hosts; consolidate last-writer-wins)"
+fi
+unset LNK_DECISION_FILE
+print_decisions "$DECISION_FILE"
+
+# --- record a run made without the pre-run gate (link#372) -----------------
+# After --preflight-only has exited, which promises no writes. The row's
+# verdict is `override`, which pretest_record_check() never reads as a gate.
+if [ -n "$PRETEST_NOTE" ]; then
+  PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d fwapg -X -q -v ON_ERROR_STOP=1 \
+    -v schema="$SCHEMA" -v config="$CONFIG" -v sha="$RUN_SHA" -v note="$PRETEST_NOTE" -v uid="$RUN_UID" \
+    -f "$REPO_ROOT/data-raw/pretest_override.sql" \
+    || { echo "FATAL: could not record --pretest-note in $SCHEMA.log_pretest"; exit 1; }
+  echo "  recorded --pretest-note in $SCHEMA.log_pretest (run_uid $RUN_UID)"
 fi
 
 # Recorded before any spend (link#358): a run that stops before its tail must
