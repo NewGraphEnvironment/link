@@ -15,10 +15,6 @@ Parked by the coordinator (`park review`); the four open decisions were answered
 
 5. **A tie between two different streams follows `[ds, us)`** (met in Phase 1, answered 2026-11-23). fwapg's "higher measure" means nothing across two streams: on the CABD dams it moved one lower Fraser barrier (LFRA, the Crescent Slough confluence) from the slough's mouth (15 segments upstream) to the top end of an unnamed line (17,656 segments, 7,892 km). The tie key is therefore: a candidate whose snapped position is not at its segment's upstream end first, then the higher segment start, then the lower `linear_feature_id`. It equals fwapg's rule on all 49 same-stream dam ties, keeps the slough dam where it was, and departs from fwapg and fresh only across streams; a fwapg/fresh issue is drafted, not filed.
 
-## Open decisions
-
-None open.
-
 ## Phase 1: Snapping (batch 14: #313, #314, #383)
 
 - [x] Baseline before any edit, on the local fwapg: snap all PSCIS crossings with today's `lnk_points_snap()` (150 m, `num_features` 1 and 5) and today's pick into scratch tables. Count placeholder picks and candidates, and ties on one stream before and after the pick.
