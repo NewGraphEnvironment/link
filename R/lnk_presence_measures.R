@@ -19,8 +19,9 @@
 #' - `barrier_below`: for species in `species_barrier`, the kind of the
 #'   nearest natural barrier below the record (FALLS, GRADIENT,
 #'   USER_DEFINITE in `fresh_default.barriers`) whose `blocks_species` holds
-#'   the species, or the species `barrier_species` measures it against. Lifts are not read: they count only records of species a
-#'   group marks present, so they cannot judge an absent cell. NA where none,
+#'   the species, or the species `barrier_species` measures it against.
+#'   Lifts are not read: they count only records of species a group marks
+#'   present, so they cannot judge an absent cell. NA where none,
 #'   and `barriers_known` is FALSE in a group holding no barrier rows.
 #' - `n_class_above`: counting records above that barrier of the species'
 #'   lift pool (`lift_pools`), presence ignored: not excluded, not a release,
@@ -140,8 +141,9 @@
                     stringsAsFactors = FALSE)
   if (is.null(barrier_species) || length(barrier_species) == 0L) return(out)
   nm <- names(barrier_species)
-  if (!is.character(barrier_species) || is.null(nm) || anyNA(nm) ||
-      any(!nzchar(nm)) || anyDuplicated(nm)) {
+  bad_names <- is.null(nm) || anyNA(nm) || any(!nzchar(nm)) ||
+    anyDuplicated(nm) > 0L
+  if (!is.character(barrier_species) || bad_names) {
     stop("barrier_species must be a character vector named by record species, ",
          "each name once", call. = FALSE)
   }

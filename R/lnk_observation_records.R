@@ -259,9 +259,9 @@
          ".lnk_record_aliases() sets", call. = FALSE)
   }
   keep <- vapply(seq_len(nrow(pairs)), function(i) {
-    all(all_wsgs %in% aliases$watershed_group_code[
-      aliases$species_obs == pairs$species_obs[i] &
-        aliases$species_code == pairs$species_code[i]])
+    hit <- aliases$species_obs == pairs$species_obs[i] &
+      aliases$species_code == pairs$species_code[i]
+    all(all_wsgs %in% aliases$watershed_group_code[hit])
   }, logical(1))
   out <- pairs[keep, , drop = FALSE]
   out <- out[order(out$species_obs, out$species_code, method = "radix"), ,
