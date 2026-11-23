@@ -39,13 +39,14 @@ Review B1, A4 and AC5 changed this phase: the arms, the groups, its place first,
 
 Review B4, G1, G2 and S3 changed this phase: the renderer lives in `R/`, no fallback, and a pretest map row.
 
-- [ ] An internal renderer in `R/` (`.lnk_dictionary_readme()`) renders every `inst/extdata/configs/dictionary_*.csv` into markdown: one section and table per dictionary, from that file's own columns, under a "generated, do not edit" header. `data-raw/dictionary_readme_build.R` is a thin wrapper that writes `inst/extdata/configs/README.md`.
-- [ ] A test renders through the `R/` function and compares the result with the installed `README.md`, so R CMD check in CI fails on a stale README.
-- [ ] `lnk_rules_build(strict = FALSE)` reads the dictionary through the existing `.lnk_dictionary_columns("dimensions")` (`R/lnk_log.R:478`). It warns on a column the dictionary does not list, and `strict = TRUE` stops on one.
-- [ ] Tests cover known columns (silent), an unknown column (warning) and `strict = TRUE` (error). Existing fixtures pass unchanged, with no new warnings in `devtools::test()`.
-- [ ] Add `link,^inst/extdata/configs/README\.md$,none,documentation` to `data-raw/pretest_inputs.csv`, plus a row for any new `R/` file. `test-pretest.R` must stay green.
-- [ ] Switch `data-raw/build_rules.R` to `pkgload::load_all()` on the source tree.
-- [ ] Link the README from `lnk_rules_build()`'s roxygen and from RUNBOOK §7.
+- [x] An internal renderer in `R/` (`.lnk_dictionary_readme()`) renders every `inst/extdata/configs/dictionary_*.csv` into markdown: one section and table per dictionary, from that file's own columns, under a "generated, do not edit" header. `data-raw/dictionary_readme_build.R` is a thin wrapper that writes `inst/extdata/configs/README.md`.
+- [x] A test renders through the `R/` function and compares the result with the installed `README.md`, so R CMD check in CI fails on a stale README.
+- [x] `lnk_rules_build(strict = FALSE)` reads the dictionary through the existing `.lnk_dictionary_columns("dimensions")` (`R/lnk_log.R:478`). It warns on a column the dictionary does not list, and `strict = TRUE` stops on one.
+- [x] Tests cover known columns (silent), an unknown column (warning) and `strict = TRUE` (error). Existing fixtures pass unchanged, with no new warnings in `devtools::test()`.
+- [x] Add `link,^inst/extdata/configs/README\.md$,none,documentation` to `data-raw/pretest_inputs.csv`, plus a row for any new `R/` file. `test-pretest.R` must stay green.
+- [x] Switch `data-raw/build_rules.R` to `pkgload::load_all()` on the source tree.
+- [x] Link the README from `lnk_rules_build()`'s roxygen (`strict`).
+- [ ] Link it from RUNBOOK §7 (with Phase 7's RUNBOOK edits).
 
 ## Phase 3: residence from `dimensions.csv` (#189)
 

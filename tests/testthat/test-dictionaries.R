@@ -326,3 +326,27 @@ test_that("the tracker's rows are unique and their decisions known", {
   expect_true(all(tracker$decision %in% c("pending", "keep", "add", "remove")))
   expect_true(all(tracker$flag %in% c("present_unsupported", "absent_recorded")))
 })
+
+# -- The rendered README (link#75) ----------------------------------------------
+
+test_that("configs/README.md is the render of every dictionary", {
+  readme <- file.path(cfg_dir(), "README.md")
+  expect_true(file.exists(readme))
+  shipped <- paste(readLines(readme, warn = FALSE, encoding = "UTF-8"),
+                   collapse = "\n")
+  rendered <- sub("\n$", "", .lnk_dictionary_readme(cfg_dir()))
+  # A stale README fails here; rebuild with data-raw/dictionary_readme_build.R.
+  expect_identical(shipped, rendered)
+  n_dict <- length(list.files(cfg_dir(), pattern = "^dictionary_[a-z_]+\\.csv$"))
+  expect_gt(n_dict, 0L)
+  expect_identical(length(gregexpr("\n## `", rendered)[[1]]), n_dict)
+})
+
+test_that("the README renderer escapes pipes and newlines in a cell", {
+  d <- withr::local_tempdir()
+  utils::write.csv(data.frame(column = "a", description = "x | y\nz"),
+                   file.path(d, "dictionary_toy.csv"), row.names = FALSE)
+  out <- .lnk_dictionary_readme(d)
+  expect_match(out, "| a | x \\| y z |", fixed = TRUE)
+  expect_error(.lnk_dictionary_readme(withr::local_tempdir()), "no dictionary")
+})

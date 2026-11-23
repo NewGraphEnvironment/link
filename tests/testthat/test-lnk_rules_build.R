@@ -1512,3 +1512,44 @@ test_that("a door or scope that cannot apply, or would leak the pair, stops (rev
                "rear_all_edges = yes would")
 })
 
+
+# -- Columns checked against the dictionary (link#75) ---------------------------
+
+test_that("a column the dictionary does not list warns, and stops under strict", {
+  dims <- tibble::tribble(
+    ~species, ~spawn_lake, ~spawn_stream, ~rear_lake, ~rear_lake_only,
+    ~rear_no_fw, ~rear_stream, ~rear_wetland,
+    "BT", "no", "yes", "no", "no", "no", "yes", "no"
+  )
+  out <- withr::local_tempfile(fileext = ".yaml")
+  csv <- withr::local_tempfile(fileext = ".csv")
+  utils::write.csv(dims, csv, row.names = FALSE)
+  expect_no_warning(lnk_rules_build(csv, out, edge_types = "categories"))
+  expect_no_warning(lnk_rules_build(csv, out, edge_types = "categories",
+                                    strict = TRUE))
+  ref <- yaml::read_yaml(out)
+
+  dims$rear_strem_order <- "yes"
+  utils::write.csv(dims, csv, row.names = FALSE)
+  expect_warning(lnk_rules_build(csv, out, edge_types = "categories"),
+                 "not in dictionary_dimensions.csv.*rear_strem_order")
+  expect_identical(yaml::read_yaml(out), ref)
+  expect_error(lnk_rules_build(csv, out, edge_types = "categories",
+                               strict = TRUE),
+               "rear_strem_order")
+  expect_error(lnk_rules_build(csv, out, strict = NA), "TRUE or FALSE")
+})
+
+test_that("every shipped dimensions.csv passes strict", {
+  cfgs <- system.file("extdata", "configs", package = "link")
+  for (b in basename(list.dirs(cfgs, recursive = FALSE))) {
+    csv <- file.path(cfgs, b, "dimensions.csv")
+    if (!file.exists(csv)) next
+    thr <- file.path(cfgs, b, "parameters_habitat_thresholds.csv")
+    if (!file.exists(thr)) thr <- system.file("extdata",
+      "parameters_habitat_thresholds.csv", package = "fresh")
+    out <- withr::local_tempfile(fileext = ".yaml")
+    expect_no_error(suppressMessages(lnk_rules_build(csv, out, thresholds = thr,
+      edge_types = "explicit", strict = TRUE)), message = b)
+  }
+})

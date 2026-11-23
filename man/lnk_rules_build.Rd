@@ -9,7 +9,8 @@ lnk_rules_build(
   to,
   thresholds = system.file("extdata", "parameters_habitat_thresholds.csv", package =
     "fresh"),
-  edge_types = c("categories", "explicit")
+  edge_types = c("categories", "explicit"),
+  strict = FALSE
 )
 }
 \arguments{
@@ -46,6 +47,12 @@ Default uses the copy shipped with fresh.}
 \item{edge_types}{Character. How to express stream edge types in rules:
 \code{"categories"} (default) uses fresh categories (\code{stream}, \code{canal}).
 \code{"explicit"} uses integer FWA edge_type codes (\verb{1000, 1100, 2000, 2300}).}
+
+\item{strict}{Logical. Every column of \code{csv} is checked against the
+column dictionary, \code{configs/dictionary_dimensions.csv}, whose rendered
+form is \code{configs/README.md}. A column the dictionary does not list is
+a warning by default and an error when \code{strict = TRUE}; either way it
+reaches no rule.}
 }
 \value{
 Invisible path to the written YAML file.

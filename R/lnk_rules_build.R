@@ -34,6 +34,11 @@
 #' @param edge_types Character. How to express stream edge types in rules:
 #'   `"categories"` (default) uses fresh categories (`stream`, `canal`).
 #'   `"explicit"` uses integer FWA edge_type codes (`1000, 1100, 2000, 2300`).
+#' @param strict Logical. Every column of `csv` is checked against the
+#'   column dictionary, `configs/dictionary_dimensions.csv`, whose rendered
+#'   form is `configs/README.md`. A column the dictionary does not list is
+#'   a warning by default and an error when `strict = TRUE`; either way it
+#'   reaches no rule.
 #'
 #' @return Invisible path to the written YAML file.
 #'
@@ -60,14 +65,28 @@ lnk_rules_build <- function(csv,
                              thresholds = system.file("extdata",
                                "parameters_habitat_thresholds.csv",
                                package = "fresh"),
-                             edge_types = c("categories", "explicit")) {
+                             edge_types = c("categories", "explicit"),
+                             strict = FALSE) {
   stopifnot(requireNamespace("yaml", quietly = TRUE))
   edge_types <- match.arg(edge_types)
+  if (!is.logical(strict) || length(strict) != 1L || is.na(strict)) {
+    stop("`strict` must be TRUE or FALSE", call. = FALSE)
+  }
 
   if (!file.exists(csv)) stop("Dimensions CSV not found: ", csv)
   if (thresholds == "") stop("fresh package not installed or thresholds CSV missing")
 
-  dimensions <- utils::read.csv(csv, stringsAsFactors = FALSE)
+  dimensions <- utils::read.csv(csv, stringsAsFactors = FALSE,
+                                check.names = FALSE)
+
+  # Every column is one the dictionary documents (link#75).
+  unknown <- setdiff(names(dimensions), .lnk_dictionary_columns("dimensions"))
+  if (length(unknown) > 0L) {
+    msg <- paste0("Dimensions CSV column(s) not in dictionary_dimensions.csv ",
+                  "(they reach no rule): ", paste(unknown, collapse = ", "))
+    if (strict) stop(msg, call. = FALSE)
+    warning(msg, call. = FALSE)
+  }
   thresh_df <- utils::read.csv(thresholds, stringsAsFactors = FALSE)
 
   # --- Validate ---

@@ -5,7 +5,12 @@
 # (its rear_lake_ha_min is baked into the rules).
 #
 # Usage:
-#   source("data-raw/build_rules.R")
+#   Rscript data-raw/build_rules.R
+#
+# Builds with the source tree's lnk_rules_build() (load_all), not an
+# installed link, so an edit to the builder reaches the rules it writes.
+
+pkgload::load_all(quiet = TRUE)
 
 # Default rules: explicit FWA edge_type codes [1000, 1100, 2000, 2300]
 # for spawn + rear-stream rules. Drops 1050/1150 (stream-thru-wetland)
@@ -16,12 +21,12 @@
 # Authoritative source — lives at top-level inst/extdata/ for any caller
 # of frs_params() with no config. ALSO mirrored into configs/default/
 # so the config bundle is self-contained.
-link::lnk_rules_build(
+lnk_rules_build(
   csv = "inst/extdata/parameters_habitat_dimensions.csv",
   to = "inst/extdata/parameters_habitat_rules.yaml",
   edge_types = "explicit"
 )
-link::lnk_rules_build(
+lnk_rules_build(
   csv = "inst/extdata/configs/default/dimensions.csv",
   to = "inst/extdata/configs/default/rules.yaml",
   thresholds = "inst/extdata/configs/default/parameters_habitat_thresholds.csv",
@@ -29,7 +34,7 @@ link::lnk_rules_build(
 )
 
 # bcfishpass comparison variant (same explicit codes, different dimensions)
-link::lnk_rules_build(
+lnk_rules_build(
   csv = "inst/extdata/configs/bcfishpass/dimensions.csv",
   to = "inst/extdata/configs/bcfishpass/rules.yaml",
   thresholds = "inst/extdata/configs/bcfishpass/parameters_habitat_thresholds.csv",
