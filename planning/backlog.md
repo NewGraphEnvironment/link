@@ -36,7 +36,7 @@ counts them): run `/backlog-sweep` again, the backlog is not finished.
 | - [x] 2 | #470 | 2, 3: which records count, what each lift rests on (7 issues) | done: https://github.com/NewGraphEnvironment/link/pull/495 | — | — | — |
 | - [ ] 13 | #481 | 20: the next fresh pin (3 issues) | open: start here (fresh 0.54.0 shipped 2026-11-20) | A | — | opus |
 | - [ ] 14 | #499 | 21, 22: primitive tables in one shape, a parallel publish (3 issues) | open | B | — | opus |
-| - [ ] 3 | #471 | 4: docs, research files, and a check that fails on warnings (5 issues) | open | C | — | sonnet |
+| - [x] 3 | #471 | 4: docs, research files, and a check that fails on warnings (5 issues) | done: https://github.com/NewGraphEnvironment/link/pull/503 | C | — | sonnet |
 | - [x] 4 | #472 | 5: `default`'s presence table as a copy plus an overlay (4 issues) | done: https://github.com/NewGraphEnvironment/link/pull/498 | — | — | — |
 | - [x] 5 | #473 | 6, 7: the export contract, one-group runs that read downstream (6 issues) | done: https://github.com/NewGraphEnvironment/link/pull/496 | — | — | — |
 | - [x] 6 | #474 | 8, 9: what a run stamps and checks before launch, how primitives load (10 issues) | done: https://github.com/NewGraphEnvironment/link/pull/485 | — | — | — |
@@ -145,7 +145,7 @@ on link's own lifts rather than re-implementing `lnk_barrier_overrides()`.
 
 ### 4. Docs, research files, and a check that fails on warnings
 
-- [ ] Carried by move 3, #471
+- [x] Carried by move 3, #471 (merged in https://github.com/NewGraphEnvironment/link/pull/503)
 
 **Touches:** `README.md`, `CLAUDE.md`, `data-raw/study_area_buckets.R`, `.github/workflows/R-CMD-check.yaml`, `tests/testthat/test-lnk_pipeline_prepare.R`; the 12 files whose code lines R CMD check flags as non-ASCII and the 3 with undocumented arguments (measured 2026-11-22): `R/lnk_access.R`, `R/lnk_barrier_overrides.R`, `R/lnk_compare_mapping_code.R`, `R/lnk_compare_rollup.R`, `R/lnk_crossings_union.R`, `R/lnk_pipeline_load.R`, `R/lnk_pipeline_prepare.R`, `R/lnk_pipeline_pscis_build.R`, `R/lnk_rules_build.R`, `R/lnk_stamp.R`, `R/lnk_wsg_downstream_check.R`, `R/lnk_wsg_resolve.R`, `R/lnk_pipeline_access.R`, `R/lnk_pipeline_mapping_code.R`, `R/lnk_preflight_vintage.R`; the research index and the 25 flagged files (the 9 dated run records are named in #279's body, and no other move touches them): `research/README.md`, `research/habitat_thresholds.md`, `research/study_area_run.md`, `research/bcfp_segmentation_parity.md`, `research/bcfishpass_parity.md`, `research/bcfishpass_comparison.md`, `research/bcfp_compare_mapping_code.md`, `research/accessible_km_divergence.md`, `research/bcfishpass_methodology.md`, `research/bcfp_table_map.md`, `research/bcfp_view_column_coding.md`, `research/default_vs_bcfishpass.md`, `research/dimensions_audit.md`, `research/provincial_run_runbook.md`, `research/rule_flexibility.md`, `research/study_area_scope_and_funders.md`, `research/study_areas.md`, `research/post_compact_provincial_handoff.md`
 
