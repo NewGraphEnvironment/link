@@ -75,8 +75,10 @@ points' own attributes through. The candidate rules are fresh's:
 \item \verb{edge_type NOT IN (exclude_edge_types)} drops more;
 \item an exact distance tie, a point nearest to the vertex two segments
 share, goes to the segment with the higher \code{downstream_route_measure}
-(the one starting at that vertex), then the lower \code{linear_feature_id}.
-This is fwapg's rule for \code{fwa_indexpoint()}.
+(on one stream, the one starting at that vertex), then the lower
+\code{linear_feature_id}. This is fwapg's rule for \code{fwa_indexpoint()}. Across
+two streams the higher measure means nothing; the PSCIS pick, which reads
+every candidate, orders such a tie by which segment starts at the vertex.
 }
 
 The measure is a whole metre, as in bcfishpass's \verb{04_pscis.sql}.

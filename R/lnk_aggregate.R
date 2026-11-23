@@ -119,14 +119,20 @@ lnk_aggregate <- function(conn,
       stop("Table not found: '", tb, "'.", call. = FALSE)
     }
   }
-  # `to` is dropped and recreated: it must name a table outside everything
-  # this reads (the crossings, the barriers, and the persist schema, where
-  # `streams` and `streams_habitat_<sp>` live).
+  # `to` is dropped and recreated, so it may not be the crossings or barriers
+  # table (compared as Postgres resolves the names) nor lie in the persist
+  # schema, where `streams` and `streams_habitat_<sp>` live. The FWA tables
+  # the walk also reads are not checked.
   to_parts <- strsplit(to, ".", fixed = TRUE)[[1]]
   if (length(to_parts) != 2L) {
     stop("`to` must be '<schema>.<table>'; got '", to, "'.", call. = FALSE)
   }
-  if (tolower(to) %in% tolower(c(crossings, barriers)) ||
+  same_table <- isTRUE(DBI::dbGetQuery(conn, sprintf(
+    "SELECT to_regclass(%s) = ANY (ARRAY[%s]) AS same",
+    DBI::dbQuoteString(conn, to),
+    paste(sprintf("to_regclass(%s)", DBI::dbQuoteString(conn, c(crossings, barriers))),
+          collapse = ", ")))$same)
+  if (same_table || tolower(to) %in% tolower(c(crossings, barriers)) ||
         tolower(to_parts[1]) == schema) {
     stop("`to` must differ from the crossings and barriers tables and lie ",
          "outside the persist schema '", schema, "'.", call. = FALSE)

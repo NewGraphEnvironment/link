@@ -1,0 +1,14 @@
+# Two reruns of data-raw/query_habitat_thresholds_obs.R on an unchanged database (link#356, #478), 2026-11-23, link 1d6141e1
+# md5 of each output, run 1 then run 2; stamp.txt differs only in its run time
+bridge_bt.csv e205f45a3a0f716086b7f0172f209d00 e205f45a3a0f716086b7f0172f209d00
+candidates.csv a2cebc62e1cdd6376102f393a3ae7483 a2cebc62e1cdd6376102f393a3ae7483
+fig_selection_gradient.png 35b6ac48b8a7ed02633d9b39f5cca733 35b6ac48b8a7ed02633d9b39f5cca733
+fig_selection_width.png f9a3bfe40a86ccd613299e8574fae428 f9a3bfe40a86ccd613299e8574fae428
+obs_ledger.csv 87e7740a4c408adfe559197e26372070 87e7740a4c408adfe559197e26372070
+obs_segments.csv c30f337d094e2b401e9272ab5108fe20 c30f337d094e2b401e9272ab5108fe20
+obs_status.csv c92785fc5bf9dc90287f7842905ceaf4 c92785fc5bf9dc90287f7842905ceaf4
+projects.csv 1765510522603089bdd487b76947f49a 1765510522603089bdd487b76947f49a
+quantiles.csv fa49df9ed4ab295601bd84eb873cc3f9 fa49df9ed4ab295601bd84eb873cc3f9
+selection.csv 5a63cbd6d477ba54acebb4a538948126 5a63cbd6d477ba54acebb4a538948126
+stamp.txt f7249a0b7911ade693adeb6c91047263 d347e4059a5c41fd88170febaaa5903a
+uhc_ch.csv 5471d803a0abae9b20b4635bff177dd0 5471d803a0abae9b20b4635bff177dd0

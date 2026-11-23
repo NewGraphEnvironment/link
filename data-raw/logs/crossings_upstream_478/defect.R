@@ -48,7 +48,9 @@ s <- data.frame(
   # the old function's code, and the new one's output (parity.R's, this tree)
   old_sha = git1("rev-parse", "--short=8", "HEAD"),
   old_dirty = length(git1("status", "--porcelain", "--untracked-files=no", "--", "R")) > 0L,
-  new_sha = system2("git", c("rev-parse", "--short=8", "HEAD"), stdout = TRUE),
+  # the new side is parity.R's table: take its stamp, not this HEAD
+  new_sha = utils::read.csv(file.path(out, "stamp.csv"))$link_sha,
+  new_dirty = utils::read.csv(file.path(out, "stamp.csv"))$link_dirty,
   n_crossings = nrow(d),
   n_new_spawning_more = sum(d$new_spawning_km > d$old_spawning_km + 0.001),
   n_new_rearing_more = sum(d$new_rearing_km > d$old_rearing_km + 0.001),
