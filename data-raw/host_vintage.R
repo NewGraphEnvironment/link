@@ -7,8 +7,9 @@
 # loaded, which is a failure and not a neutral (link#246).
 #
 # Connects to the LOCAL docker fwapg explicitly rather than through
-# lnk_db_conn()'s env-var defaults, which resolve to the :63333 bcfp tunnel
-# on some hosts — a different database with a different load state (#222).
+# lnk_db_conn()'s env-var defaults (PG*, else PG_*_SHARE), which resolve to
+# the :63333 bcfp tunnel on some hosts — a different database with a
+# different load state (#222).
 #
 # Usage: [LNK_LOAD=loadall] Rscript data-raw/host_vintage.R [max_age_days]
 #   LNK_LOAD=loadall -> pkgload::load_all() (dispatcher dev checkout)

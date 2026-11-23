@@ -232,9 +232,9 @@ focal <- if (nzchar(focal_arg)) {
 }
 focal <- sort(unique(focal[nzchar(focal)]))
 
-# Explicit local docker fwapg — lnk_db_conn()'s env defaults land on the
-# :63333 bcfp tunnel, a different database with a different load state
-# (#222). Same reasoning as study_area_wsgs.R.
+# Explicit local docker fwapg — lnk_db_conn()'s env defaults (PG*, else
+# PG_*_SHARE) can land on the :63333 bcfp tunnel, a different database with a
+# different load state (#222). Same reasoning as study_area_wsgs.R.
 conn <- DBI::dbConnect(RPostgres::Postgres(), host = "localhost", port = 5432,
                        dbname = "fwapg", user = "postgres", password = "postgres")
 on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)

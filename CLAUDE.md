@@ -1331,13 +1331,13 @@ link is connectivity-system agnostic. Column names are configurable parameters w
 
 ## Database Connection
 
-Uses `PG_*_SHARE` env vars (Docker fwapg) with fallback to standard `PG*` vars. From fresh 0.36.0 `frs_db_conn()` reads them the other way round (`PG*` first), so on a machine that sets both the two connect to different databases (#286). DB is needed for match/score/habitat functions that operate via SQL. The override loading and validation can work with any PostgreSQL.
+`lnk_db_conn()` connects through `fresh::frs_db_conn()` (since 0.87.0, #288), so the two resolve alike: explicit arguments, then the standard `PG*` variables, then `PG_*_SHARE` only when no `PG*` is set (deprecated by fresh, which says so once per session unless every field is given), never mixed, with fresh's 10 s connect timeout and TCP keepalives. Before 0.87.0 link read `PG_*_SHARE` first, so on a machine setting both a bare `lnk_db_conn()` and a bare `frs_db_conn()` reached different databases (#286). DB is needed for match/score/habitat functions that operate via SQL. The override loading and validation can work with any PostgreSQL.
 
 ```r
-conn <- lnk_db_conn()  # reads PG_DB_SHARE, PG_HOST_SHARE, etc.
+conn <- lnk_db_conn()  # PG* variables, else PG_*_SHARE
 ```
 
-**Local docker fwapg (dev / parity work).** `lnk_db_conn()` with no args reads `PG_*_SHARE`, which may point at the bcfp reference DB — the wrong DB for the `fresh.*` persist. For local-docker work pass explicit args: `lnk_db_conn(dbname="fwapg", host="localhost", port=5432L, user="postgres", password="postgres")`. Bring it up from fresh's `docker/` directory with `docker compose up -d db`. The local DB holds the local `fresh.*` persist + `working_<wsg>` schemas + `fresh.streams_vw_bcfp`; the bcfp reference DB holds `bcfishpass.*`, no `fresh.*`.
+**Local docker fwapg (dev / parity work).** `lnk_db_conn()` with no args reads whatever the environment names (`PG*`, else `PG_*_SHARE`), which may be the bcfp reference DB — the wrong DB for the `fresh.*` persist. For local-docker work pass explicit args: `lnk_db_conn(dbname="fwapg", host="localhost", port=5432L, user="postgres", password="postgres")`. Bring it up from fresh's `docker/` directory with `docker compose up -d db`. The local DB holds the local `fresh.*` persist + `working_<wsg>` schemas + `fresh.streams_vw_bcfp`; the bcfp reference DB holds `bcfishpass.*`, no `fresh.*`.
 
 **Join persisted `fresh.*` on the full PK** `(id_segment, watershed_group_code)` — `id_segment` is NOT globally unique across WSGs in the consolidated persist, so a bare `id_segment` join fans out cartesian (#203). Length lives on `streams`, not `streams_access` / `streams_habitat_<sp>`.
 
@@ -1372,7 +1372,7 @@ Note: `<owner>/<repo>@<sha>` references a commit; this does **not** trigger GitH
 
 ### Core
 - `lnk_thresholds(csv, high, moderate, low)` — configurable severity thresholds. Ships BC defaults. CSV or inline override. Feeds into `lnk_score()`.
-- `lnk_db_conn()` — PostgreSQL connection factory. `PG_*_SHARE` then `PG*` env vars.
+- `lnk_db_conn()` — PostgreSQL connection factory, through `fresh::frs_db_conn()`: arguments, then `PG*`, then `PG_*_SHARE` (#288).
 - `lnk_config(name_or_path)` — load a config **manifest**: paths (`cfg$rules`, `cfg$dimensions`), file declarations (`cfg$files`), pipeline knobs (`cfg$pipeline`), provenance metadata. **Manifest-only — no parsed CSVs.** Cheap to call. Configs may declare `extends:` to inherit from another config. Ships with `"bcfishpass"` and `"default"` variants under `inst/extdata/configs/<name>/`.
 - `lnk_load_overrides(cfg)` — materialize the data files declared in `cfg$files`. Returns named list of canonical-shape tibbles. Entries with `source` + `canonical_schema` dispatch through `crate::crt_ingest()`; others fall through to local reads dispatched on path extension. Adding a new source family is a config edit + crate registration — no link R code change.
 

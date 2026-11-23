@@ -5,52 +5,79 @@
 \title{Connect to FWA PostgreSQL database}
 \usage{
 lnk_db_conn(
-  dbname = Sys.getenv("PG_DB_SHARE", Sys.getenv("PGDATABASE", "postgis")),
-  host = Sys.getenv("PG_HOST_SHARE", Sys.getenv("PGHOST", "localhost")),
-  port = as.integer(Sys.getenv("PG_PORT_SHARE", Sys.getenv("PGPORT", "5432"))),
-  user = Sys.getenv("PG_USER_SHARE", Sys.getenv("PGUSER", "postgres")),
-  password = Sys.getenv("PG_PASS_SHARE", Sys.getenv("PGPASSWORD", ""))
+  dbname = NULL,
+  host = NULL,
+  port = NULL,
+  user = NULL,
+  password = NULL,
+  connect_timeout = NULL,
+  ...
 )
 }
 \arguments{
-\item{dbname}{Database name. Defaults to \code{PG_DB_SHARE} or \code{PGDATABASE}.}
+\item{dbname}{Database name. Default \code{NULL} (resolved as below).}
 
-\item{host}{Host. Defaults to \code{PG_HOST_SHARE} or \code{PGHOST}.}
+\item{host}{Host. Default \code{NULL}.}
 
-\item{port}{Port. Defaults to \code{PG_PORT_SHARE} or \code{PGPORT}.}
+\item{port}{Port. Default \code{NULL}.}
 
-\item{user}{User. Defaults to \code{PG_USER_SHARE} or \code{PGUSER}.}
+\item{user}{User. Default \code{NULL}.}
 
-\item{password}{Password. Defaults to \code{PG_PASS_SHARE} or \code{PGPASSWORD}.}
+\item{password}{Password. Default \code{NULL}.}
+
+\item{connect_timeout}{Seconds to wait for each connection attempt, a
+whole number; \code{0} waits without limit. Default \code{NULL}: \code{PGCONNECT_TIMEOUT}
+when set, otherwise 10. Passed to \code{\link[fresh:frs_db_conn]{fresh::frs_db_conn()}}.}
+
+\item{...}{Further libpq connection keywords, passed to
+\code{\link[fresh:frs_db_conn]{fresh::frs_db_conn()}} (which sets TCP keepalives by default).}
 }
 \value{
 A \link[DBI:DBIConnection-class]{DBI::DBIConnection} object.
 }
 \description{
 Opens a connection to a PostgreSQL database containing fwapg, bcfishpass,
-and bcfishobs. Defaults to the \verb{PG_*_SHARE} environment variables used
-by fresh and fpr (Docker-hosted fwapg). Falls back to standard \verb{PG*}
-variables for local PostgreSQL.
+and bcfishobs, through \code{\link[fresh:frs_db_conn]{fresh::frs_db_conn()}}, so link and fresh resolve a
+connection the same way and a bare call to either reaches the same
+database.
 }
 \details{
-Checks \verb{PG_*_SHARE} first, then standard PostgreSQL variables
-(\code{PGHOST}, etc.). This is the reverse of \code{\link[fresh:frs_db_conn]{fresh::frs_db_conn()}} from
-fresh 0.36.0, which reads \verb{PG*} first and \verb{PG_*_SHARE} only when none
-of \verb{PG*} is set. On a machine that sets both groups to different
-targets, the two functions connect to different databases.
+Parameters resolve in this order, as \code{\link[fresh:frs_db_conn]{fresh::frs_db_conn()}} resolves them:
+\enumerate{
+\item Explicit arguments, field by field.
+\item The standard libpq variables (\code{PGHOST}, \code{PGPORT}, \code{PGDATABASE},
+\code{PGUSER}, \code{PGPASSWORD}, \code{PGSERVICE}, ...). When any of \code{PGHOST},
+\code{PGHOSTADDR}, \code{PGPORT}, \code{PGDATABASE}, \code{PGUSER} or \code{PGSERVICE} is set,
+libpq resolves every field not given, and the \verb{PG_*_SHARE} variables
+are not read.
+\item The legacy \verb{PG_*_SHARE} variables (\code{PG_DB_SHARE}, \code{PG_HOST_SHARE},
+\code{PG_PORT_SHARE}, \code{PG_USER_SHARE}, \code{PG_PASS_SHARE}), only when none of
+the standard variables above is set. fresh marks them deprecated and
+says so once per R session; link keeps that message quiet when all five
+fields are given, since the variables then fill nothing.
+\item libpq's own defaults (the local socket or \code{localhost}, the operating
+system's user name, \verb{~/.pgpass}).
+}
+
+The two groups of variables are never mixed. Before link 0.87.0 this
+function read \verb{PG_*_SHARE} first and fell back to \code{postgres@localhost:5432}
+and the database \code{postgis}; on a machine setting both groups, a bare call
+now reaches the \verb{PG*} target, so pass the arguments to reach the other one.
 }
 \examples{
 \dontrun{
-# Default — reads PG_*_SHARE env vars (Docker fwapg)
+# The environment's database: PG* variables, else PG_*_SHARE
 conn <- lnk_db_conn()
+DBI::dbDisconnect(conn)
 
-# Override for a specific database
-conn <- lnk_db_conn(dbname = "fishpass", host = "db.example.com")
-
-# Use with other lnk_* functions
-conn <- lnk_db_conn()
+# A named database: every field given, so the environment fills nothing
+conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
+                    user = "postgres", password = "postgres")
 lnk_score_severity(conn, "working.crossings")
+DBI::dbDisconnect(conn)
 
+# A slow link: wait longer to connect
+conn <- lnk_db_conn(connect_timeout = 30)
 DBI::dbDisconnect(conn)
 }
 

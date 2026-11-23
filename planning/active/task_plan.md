@@ -42,11 +42,11 @@ None open.
 
 ## Phase 4: One connection resolver (#288)
 
-- [ ] `lnk_db_conn()` (`R/lnk_db_conn.R`) per Open decision 1: signature (NULL defaults; `connect_timeout` and `...` passed through under (a)), roxygen `@details` and examples saying which variables it reads, in what order, the no-environment default, and the deprecation message.
-- [ ] `data-raw/wsg_vignette_data.R:201-210` passes explicit `PG_*_SHARE` values for the tunnel; comments at `data-raw/host_vintage.R:10` and `data-raw/study_area_buckets.R:235` read the new order.
-- [ ] `data-raw/pretest_inputs.csv:149`: under (a) or with any `fresh::frs_db_conn` call, `R/frs_db_conn.R` is reached from `wsg_run_one.R` through `lnk_db_conn()` (`PRETEST_ENTRIES`, `data-raw/pretest.R:44-46`), so its row becomes `any` with its reason.
-- [ ] `tests/testthat/test-lnk_db_conn.R` rewritten: `withr::local_envvar()` clearing `PGHOST`, `PGHOSTADDR`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGSERVICE` and the five `PG_*_SHARE`; `DBI::dbConnect` mocked; assert explicit args win, no `PG_*_SHARE` value reaches the call when a `PG*` is set, `PG_*_SHARE` fills only with no `PG*`; reset `fresh:::.frs_state$share_msg_shown` before testing the message.
-- [ ] CLAUDE.md "Database Connection" and the lines describing the old order, RUNBOOK `:43`, and the `m1-link-db-env` memory read the new order.
+- [x] `lnk_db_conn()` (`R/lnk_db_conn.R`) per Open decision 1: signature (NULL defaults; `connect_timeout` and `...` passed through under (a)), roxygen `@details` and examples saying which variables it reads, in what order, the no-environment default, and the deprecation message.
+- [x] `data-raw/wsg_vignette_data.R:201-210` passes explicit `PG_*_SHARE` values for the tunnel; comments at `data-raw/host_vintage.R:10` and `data-raw/study_area_buckets.R:235` read the new order.
+- [x] `data-raw/pretest_inputs.csv:149`: under (a) or with any `fresh::frs_db_conn` call, `R/frs_db_conn.R` is reached from `wsg_run_one.R` through `lnk_db_conn()` (`PRETEST_ENTRIES`, `data-raw/pretest.R:44-46`), so its row becomes `any` with its reason.
+- [x] `tests/testthat/test-lnk_db_conn.R` rewritten: `withr::local_envvar()` clearing `PGHOST`, `PGHOSTADDR`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGSERVICE` and the five `PG_*_SHARE`; `DBI::dbConnect` mocked; assert explicit args win, no `PG_*_SHARE` value reaches the call when a `PG*` is set, `PG_*_SHARE` fills only with no `PG*`; reset `fresh:::.frs_state$share_msg_shown` before testing the message.
+- [x] CLAUDE.md "Database Connection" and the lines describing the old order, RUNBOOK `:43`, and the `m1-link-db-env` memory read the new order.
 
 ## Phase 5: The live resolve tests use the gated connection (#222)
 
