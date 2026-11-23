@@ -2306,6 +2306,24 @@ hand: a cloud host installs fresh at prep from the `Remotes:` pin, and a persist
 gets it when the run is launched with `--auto-install` (`worker_prep.sh`'s `install-fresh`
 stage), which re-checks its `RemoteSha` against the dispatcher's.
 
+**fresh's internals are pinned by ordered signature (link#504).** link reaches four
+non-exported fresh functions through `getFromNamespace()`: `.frs_run_connectivity`,
+`.frs_habitat_models`, `.frs_near_river_specs` and `.frs_sql_num`, the last three called
+positionally. `lnk_preflight_fresh()` checks each against
+`.lnk_fresh_required_internal_formals()`: it passes when the declared formals are the
+installed function's leading formals, in order, and any formal after them has a default,
+and reports a mismatch as `mismatched_internal_formals` ("changed internal signatures").
+Order is checked because a reordered internal would bind a positional call's arguments
+to the wrong formals with no error. The test compares the installed fresh's formals
+exactly, so a fresh that changes any of them fails CI before it reaches a host. The drift
+guard (`.lnk_fresh_internal_callsites()`) finds every `getFromNamespace()` call on fresh
+in link's namespace and requires the set to equal the pinned list; it refuses a call
+whose `x` or `ns` is not a literal, and does not see `get(…, envir = asNamespace("fresh"))`
+or `asNamespace("fresh")$x`. fresh's contract test of the same internals is
+NewGraphEnvironment/fresh#329. The pin is fresh v0.56.0 since link 0.90.0 (#507): no
+persisted output moves (`data-raw/logs/fresh_pin_507/`), and the pre-run gate owes a run
+on it once the dispatcher's shared library holds 0.56.0.
+
 ### The pre-run gate (link#372)
 
 On 2026-10-23 the provincial run was the first contact between new code and

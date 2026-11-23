@@ -8,6 +8,7 @@ lnk_preflight_fresh(
   required = .lnk_fresh_required(),
   required_internal = .lnk_fresh_required_internal(),
   required_formals = .lnk_fresh_required_formals(),
+  required_internal_formals = .lnk_fresh_required_internal_formals(),
   min_version = .lnk_fresh_floor(),
   quiet = FALSE
 )
@@ -25,6 +26,17 @@ exported and still reject the call: \code{frs_habitat_classify()} existed
 long before it took \code{params_method}. Defaults to
 \code{.lnk_fresh_required_formals()}.}
 
+\item{required_internal_formals}{Named list mapping each non-exported
+\code{fresh} function link calls to its formal arguments, in order.
+Defaults to \code{.lnk_fresh_required_internal_formals()}. Order is checked
+here and not for exports because link calls three of the four
+internals positionally, so a reordered signature would bind its
+arguments to the wrong formals without an error, and because fresh
+promises nothing about an internal's arguments between releases. The
+installed function passes when the listed formals are its leading
+formals, in order, and every formal after them has a default: a later
+fresh that adds a trailing optional argument still passes.}
+
 \item{min_version}{Minimum acceptable \code{fresh} version. Defaults to the
 floor declared in link's own \code{DESCRIPTION}, so the pin lives in one
 place.}
@@ -35,7 +47,7 @@ point on a cypher, where the log is all the operator gets.}
 \value{
 Invisibly, a list with \code{ok}, \code{version}, \code{version_ok},
 \code{missing}, \code{missing_internal}, \code{missing_formals} (\code{"fn(arg)"}
-strings) and \code{message}.
+strings), \code{mismatched_internal_formals} (\code{"fn(want: a, b; have: a, c)"} strings) and \code{message}.
 }
 \description{
 \code{link} calls \verb{fresh::} in a dozen places with no \code{requireNamespace()}

@@ -17,7 +17,7 @@ The settled findings behind the methods (what is known, with provenance and the 
 
 **Take the next move from `planning/backlog.md`** (`bash <soul>/skills/_shared/backlog_moves.sh next planning/backlog.md`; `/compact-prep` names it): 13 moves, umbrellas #469–#481, each planned with one `/planning-init <umbrella>` and landed in one PR, ticked by `/gh-pr-merge`. Moves 12 and 13 wait on knowledge#139's flow-method decision and fresh 0.54.0. A link issue knowledge waits on says so in its batch section. A new issue joins the open move whose batches touch its files; run `/backlog-sweep` again when one fits none. Record: `planning/archive/2026-11-issue-468-backlog-pass/`.
 
-## Status (2026-11-23) — rainbow trout back in `default`; steelhead records count as RB; the presence review's last rows outside KO (#501, 0.90.0)
+## Status (2026-11-23) — rainbow trout back in `default`; steelhead records count as RB; the presence review's last rows outside KO (#501, 0.91.0)
 
 **Backlog move 16 (#501) lands as one release: #497 and #402 close.** `default`'s `species_pooling.csv` counts `ST`, `SST` and `WST` records as RB where RB is marked present (province rows), and an RB record never as ST; `species_modelled.csv` models RB again (KO stays paused). The second presence review added BT in nine groups and DV in VICT, removed RB in LPRO and UPET, kept four cells absent, and sent six native-range cells to #515; KO's 138 rows wait for kokanee's return, #516. Tokens: `default`, `default_tuned`, `default_parent` `cut-full-top-3 acc-v7`; `default_minimal` `cut-min acc-v7`. Mechanics: RUNBOOK §7, "The record rule" and "Pausing a species". Evidence: `data-raw/logs/rb_st_497/`, `data-raw/logs/presence_check_501/`, `data-raw/logs/rb_return_501/`.
 
@@ -30,6 +30,17 @@ The settled findings behind the methods (what is known, with provenance and the 
 - **"Steelhead-reachable" in `rb_st_497` is geometry:** no unlifted natural ST barrier below, read from the 2026-11-03 build's lifts (`acc-v5`); it ignores dams and whether steelhead live in the drainage.
 - **With RB modelled, `ct_dv_rb` promotion cuts at RB's barriers in 16 groups whose RB cell is empty** (LPRO joined them when its RB cell was removed); the record rule reads the cell as written, so no RB record there cuts or lifts.
 - **No group holds only paused species now;** the seven that did (BRID, GRNL, LEUT, LNRS, MURT, PITR, UISR) all mark RB.
+## Status (2026-11-23) — fresh 0.56.0; fresh's four internals pinned by ordered signature (#507, 0.90.0)
+
+**Backlog move 18 (#507) lands as one release: #504 and the fresh pin v0.55.1 → v0.56.0.** `lnk_preflight_fresh()` checks `.frs_run_connectivity`, `.frs_habitat_models`, `.frs_near_river_specs` and `.frs_sql_num` against `.lnk_fresh_required_internal_formals()` (leading formals in order, later ones defaulted; the test compares exactly), and `.lnk_fresh_internal_callsites()` requires every `getFromNamespace()` call on fresh to be one of them. No persisted output or token moves (`data-raw/logs/fresh_pin_507/`). Mechanics: RUNBOOK §8d, "fresh's internals are pinned by ordered signature".
+
+**Owed:** fresh 0.56.0 into each host's shared library and a re-prep (`load_all()` refuses 0.55.1 at the new floor); then the full pre-run gate at main before the next provincial run (its pick at this branch: QUES, BULK, SETN, LFRA, TOAD, OKAN, HARR, TAKL, UPCE, HORS, SAJR); a comment on NewGraphEnvironment/fresh#329 giving link's ordered list. fresh v0.57.0 (reservoirs in `lake_rearing`, stricter rules files) is its own move (owner, 2026-11-23).
+
+**Facts not worth re-deriving:**
+- **Three of the four internals are called positionally,** so order is load-bearing; their signatures are identical at fresh v0.55.1, v0.56.0 and v0.57.0.
+- **A plain environment cannot stand in for fresh's namespace in `lnk_preflight_fresh()`** (`getNamespaceExports()` refuses it); test the helper on environments and the whole function against the real fresh.
+- **`quote(utils:::f)` in R/ reads to R CMD check as a `:::` call;** build the head with `call(":::", ...)`.
+- **`data-raw/query_habitat_thresholds_mad.R` reaches a fifth internal (`.frs_rule_to_sql`)**, off the run path and not pinned.
 
 ## Status (2026-11-23) — drivers need an explicit config; a standalone run is labelled; the legacy `wsgs_*` path is retired (#475, 0.89.0)
 
