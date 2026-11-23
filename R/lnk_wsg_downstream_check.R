@@ -707,13 +707,13 @@ lnk_wsg_downstream_check <- function(conn, aoi, cfg, loaded,
     if (length(first)) sprintf(
       paste0("  1. Model the downstream WSGs first:\n",
              "       for w in %s; do ",
-             "Rscript data-raw/wsg_run_one.R $w <config>; done\n"),
+             "LNK_SCHEMA=<schema> LNK_RUN_LABEL=<label> Rscript data-raw/wsg_run_one.R $w <config>; done\n"),
       paste(first, collapse = " ")) else "",
     sprintf(paste0("  2. Model %s now and settle access after they land:\n",
-                   "       Rscript data-raw/wsg_recompute_one.R %s <config>\n"),
+                   "       LNK_SCHEMA=<schema> LNK_RUN_LABEL=<label> Rscript data-raw/wsg_recompute_one.R %s <config>\n"),
             aoi, aoi),
     "  3. Override, if those dams are known passable / remediated / irrelevant.\n",
     "     Recorded in the run log and surfaced by lnk_log_read():\n",
-    sprintf("       LNK_GUARD_DOWNSTREAM_NOTE=\"...\" Rscript data-raw/wsg_run_one.R %s <config>\n", aoi)
+    sprintf("       LNK_GUARD_DOWNSTREAM_NOTE=\"...\" LNK_SCHEMA=<schema> LNK_RUN_LABEL=<label> Rscript data-raw/wsg_run_one.R %s <config>\n", aoi)
   )
 }

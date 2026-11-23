@@ -399,7 +399,7 @@ test_that("no group with rows from this run: coverage failed, the rest skipped, 
 test_that("the driver refuses --run-uid / --wsgs without --recompute-only, and dispatch flags with it", {
   skip_if_no_finish_lib()
   run_drv <- function(...) {
-    out <- suppressWarnings(system2(hosts_bash(), c(shQuote(finish_driver()), ...),
+    out <- suppressWarnings(system2(hosts_bash(), c(shQuote(finish_driver()), "--config=bcfishpass", ...),
                                     stdout = TRUE, stderr = TRUE))
     list(out = paste(out, collapse = "\n"), status = attr(out, "status") %||% 0L)
   }
@@ -886,7 +886,7 @@ test_that("the driver bounds a statement on both modelling legs and refuses a ba
   expect_length(grep("echo \"  statement:", drv, fixed = TRUE), 1L)
 
   run_drv <- function(...) {
-    out <- suppressWarnings(system2(hosts_bash(), c(shQuote(finish_driver()), ...),
+    out <- suppressWarnings(system2(hosts_bash(), c(shQuote(finish_driver()), "--config=bcfishpass", ...),
                                     stdout = TRUE, stderr = TRUE))
     list(out = paste(out, collapse = "\n"), status = attr(out, "status") %||% 0L)
   }
@@ -1019,7 +1019,7 @@ test_that("the driver passes the stall threshold on both legs and refuses a bad 
   expect_length(grep('LNK_STALL_AFTER_MIN="$STALL_AFTER_MIN"', legs, fixed = TRUE), 1L)
   expect_length(grep("echo \"  stall:", drv, fixed = TRUE), 1L)
   run_drv <- function(...) {
-    out <- suppressWarnings(system2(hosts_bash(), c(shQuote(finish_driver()), ...),
+    out <- suppressWarnings(system2(hosts_bash(), c(shQuote(finish_driver()), "--config=bcfishpass", ...),
                                     stdout = TRUE, stderr = TRUE))
     list(out = paste(out, collapse = "\n"), status = attr(out, "status") %||% 0L)
   }

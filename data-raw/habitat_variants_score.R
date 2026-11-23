@@ -27,7 +27,7 @@
 #     [--roles=data-raw/habitat_score/wsg_roles.csv] \
 #     [--wsgs=...] [--buffers=0,100] [--prefix=score284_] \
 #     [--floor=found|expected] [--out=data-raw/logs/habitat_score_284]
-#     [--base=default]   the base bundle, as habitat_variants_build.R took it
+#     --base=<bundle>    (required) the base bundle, as habitat_variants_build.R took it
 #
 # Absences come from LNK_KNOWLEDGE_DIR (the private `knowledge` repo) through
 # data-raw/habitat_validate_inputs.R, as habitat_validate.R reads them; only
@@ -89,7 +89,10 @@ path_roles <- opt("roles", file.path("data-raw", "habitat_score",
                                      "wsg_roles.csv"))
 prefix <- opt("prefix", "score284_")
 dir_out <- opt("out", file.path("data-raw", "logs", "habitat_score_284"))
-base_bundle <- opt("base", "default")
+base_bundle <- opt("base", "")
+if (!nzchar(base_bundle)) {
+  stop("config is required: --base=<bundle> must name a shipped bundle", call. = FALSE)
+}
 # The defaults are #284's committed run; another variants file must not
 # score into (and first clear) #284's outputs.
 if (!identical(path_variants, file.path("data-raw", "habitat_score", "variants.csv")) &&

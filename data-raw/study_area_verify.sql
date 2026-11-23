@@ -475,8 +475,8 @@ BEGIN
 
   IF n_gap > 0 THEN
     RAISE EXCEPTION
-      'run %: % WSG(s) modelled but not recomputed: %. Re-run just those: LNK_SCHEMA=% LNK_LOAD=loadall Rscript data-raw/wsg_recompute_one.R <WSG>',
-      v_run, n_gap, bad, v_sch;
+      'run %: % WSG(s) modelled but not recomputed: %. Re-run just those: LNK_SCHEMA=% LNK_RUN_UID=% LNK_LOAD=loadall Rscript data-raw/wsg_recompute_one.R <WSG> <config>',
+      v_run, n_gap, bad, v_sch, v_run;
   END IF;
 
   -- An open row (date_end NULL) is a failed or killed attempt. One that a later
@@ -660,8 +660,8 @@ BEGIN
   END LOOP;
   IF n_unset > 0 THEN
     RAISE EXCEPTION
-      'run %: % segment(s) are accessible in streams_habitat_<sp> where streams_access.access_<sp> = 0 (%). The habitat was not settled on access (link#349): re-run the recompute, LNK_SCHEMA=% LNK_LOAD=loadall Rscript data-raw/wsg_recompute_one.R <WSG> <config>',
-      v_run, n_unset, bad, v_sch;
+      'run %: % segment(s) are accessible in streams_habitat_<sp> where streams_access.access_<sp> = 0 (%). The habitat was not settled on access (link#349): re-run the recompute, LNK_SCHEMA=% LNK_RUN_UID=% LNK_LOAD=loadall Rscript data-raw/wsg_recompute_one.R <WSG> <config>',
+      v_run, n_unset, bad, v_sch, v_run;
   END IF;
 
   -- Habitat no build of the run classified (link#432). A group's newest
