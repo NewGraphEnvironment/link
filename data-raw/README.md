@@ -3,10 +3,12 @@
 Scripts that drive the link pipeline, generate package data, and produce
 research artifacts. Anything that's NOT exported R code from `R/`.
 
-Naming convention for new files: **verb-prefix the action, suffix the
-target.** Pick the verb prefix from the categories below; suffix the
-target (e.g. `_provincial`, `_wsg`, `_schema`, `_breaks`) so the purpose
-reads left-to-right.
+Naming convention for new files: **noun first, then the action**
+(`<noun>_<verb>[-detail]`, as `schema_consolidate.R`, `wsg_compare.R`,
+`study_area_run.sh`, `host_vintage.R`): the subject sorts the directory and
+reads left-to-right. Forward-only: the older verb-first scripts below keep
+their names because research files, archive records, `R/`, tests and the weekly
+workflow cite them by path, and a rename would break that evidence.
 
 ## Bootstrap
 
@@ -123,21 +125,20 @@ Research scratchpad and one-off verification scripts.
 | `regress_dams_isolation.R` | One-off regression test for the dams-isolation work (link #109). |
 | `test_sequential_breaking.R` | Break-order experiment script (research). |
 
-## Naming conventions for new scripts
+## Naming conventions
 
-Each new script picks a verb prefix from this list — makes purpose
-discoverable without opening the file:
+New scripts are `<noun>_<verb>[-detail]` (noun first: `wsg_run_one.R`,
+`schema_consolidate.R`, `streams_parent_build.R`). Verbs in use: `run`,
+`compare`, `query`, `build`, `sync`, `check`, `verify`.
 
-| Prefix | When to use |
-|--------|-------------|
-| `run_` | Drives a multi-step pipeline run (replaces an inline R block in a runbook). |
-| `compare_` | Compares two outputs / sources side-by-side. |
-| `query_` | Issues SQL against persistent state, no pipeline mutation. |
-| `balance_` / `consolidate_` | Operational helpers around runs (planning, multi-host merging). |
-| `build_` / `make_` / `sync_` / `regen_` | Generates / refreshes a committed artifact (rules, hex, vignette data, provenance). |
-| `audit_` | Recurring drift / consistency check. |
-| `exp_` | Experimental research script. Often superseded by package code; keep as a reference. |
-| `regress_` / `test_` | Regression-test driver for a specific issue or feature. |
+Verb-first scripts that predate the rule keep their names, forward-only,
+because each is cited by path from `research/`, `planning/archive/`, `R/`,
+`tests/`, `inst/` or `.github/`: `build_minutes_append.R`, `build_rules.R`,
+`build_species_views.R`, `compare_adms.R`, `compare_rollups.R`,
+`exp_gradient_extra_breaks.R`, `query_*.R`, `regen_provenance.R`,
+`regress_dams_isolation.R`, `rule_flexibility_*.R`, `snapshot_bcfp.sh` (and its
+lib), `sync_bcfishpass_csvs.R`, `test_sequential_breaking.R`. `make_hexsticker.R`
+is soul's template name.
 
 ## Output directories
 

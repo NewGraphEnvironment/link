@@ -72,9 +72,9 @@ None. Answered by the owner 2026-11-23, all as recommended (moved to the decisio
 ## Phase 5: Noun-first names (#166)
 
 - [x] Decision 2 answered (rename only where uncited)
-- [ ] List the remaining verb-first scripts and, under decision 2's rule, which are renamed and which keep their names and why; record the table in `findings.md`
-- [ ] `git mv` each rename and update every reference
-- [ ] Rewrite `data-raw/README.md`'s naming section to noun-first (`<noun>_<verb>[-detail]`, `newgraph.md`), with a forward-only note for the kept names
+- [x] List the remaining verb-first scripts and, under decision 2's rule, which are renamed and which keep their names and why; record the table in `findings.md`
+- [x] `git mv` each rename and update every reference (none: every verb-first script is cited)
+- [x] Rewrite `data-raw/README.md`'s naming section to noun-first (`<noun>_<verb>[-detail]`, `newgraph.md`), with a forward-only note for the kept names
 
 ## Phase 6: Release
 

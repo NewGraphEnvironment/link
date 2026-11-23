@@ -31,3 +31,7 @@ Draft closing comments (post at merge):
 - #179: "Closed as retired: the fallback split lived in `wsgs_dispatch.sh`, deleted in 0.89.0 (#475). `study_area_run.sh` packs by measured minutes, not an alphabetical fallback."
 - #110: "Closed as retired: the RDS cache key lived in `wsgs_run_host.R`, deleted in 0.89.0 (#475). The study-area path resumes from persisted PG state and stamps each run in `<schema>.log`."
 - #176: "Smaller after #475: the legacy `wsgs_*` scripts are gone; the remaining rename is `lnk_compare_wsg` itself."
+
+## Phase 5: verb-first scripts (2026-11-23)
+
+Decision 2 (rename only where nothing cites the old name). Every remaining verb-first script is named by at least one of `research/`, `planning/archive/`, `R/`, `tests/`, `inst/`, `.github/` (grep counts: `snapshot_bcfp` 102 files, `sync_bcfishpass_csvs` 41, `query_habitat_thresholds_mad` 27, `build_rules` 24, the rest 2 to 25), and `make_hexsticker.R` is soul's template name. So no script was renamed; `data-raw/README.md`'s convention is corrected to noun-first with the kept names listed. #166 closes with that list.
