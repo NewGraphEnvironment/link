@@ -321,8 +321,10 @@ lnk_preflight_fresh <- function(required = .lnk_fresh_required(),
 .lnk_fresh_internal_calls_in <- function(fun) {
   stopifnot(is.function(fun))
   found <- character(0)
+  # The `:::` head is built with call(), since a literal one reads to
+  # R CMD check as a `:::` call on utils.
   heads <- list(quote(getFromNamespace), quote(utils::getFromNamespace),
-                quote(utils:::getFromNamespace))
+                call(":::", quote(utils), quote(getFromNamespace)))
   drop_empty <- function(xs) {
     xs[!vapply(xs, identical, logical(1), quote(expr = ))]
   }

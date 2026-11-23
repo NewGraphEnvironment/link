@@ -23,8 +23,18 @@ A mocked namespace cannot stand in for fresh inside `lnk_preflight_fresh()` (`ge
 
 In a detached worktree of the Phase 2 commit (Phase 2's commit), appended `.lnk_mutant_507 <- function() getFromNamespace(".frs_fake", "fresh")` to `R/lnk_pipeline_connect.R`: `test-lnk_preflight_fresh.R` FAIL 1, at the set-equality test, naming `.frs_fake` as the extra call site. Worktree removed. On the branch: FAIL 0, PASS 70.
 
+## Phase 3: 0.56.0's refusals against link's calls (2026-11-23)
+
+- link's one `frs_habitat_overlay()` call (`R/lnk_pipeline_classify.R:149`) passes `bridge = <schema>.streams`, so 0.56.0's new bridge refusal (`.frs_group_required(conn, bridge)`) applies to it; the direct-mode `by = "id_segment"` refusal does not (no `by`).
+- `frs_cluster()` gains `.frs_group_required()`; `frs_habitat_classify()` now refuses any NULL group, not only on a table carrying `linear_feature_id`. link's working `streams` is the FWA's, with `watershed_group_code` on every row; the after-builds are the check (a NULL would stop them).
+- `data-raw/compare_adms.R` (legacy, off the run path) calls `frs_habitat()`, whose 0.56.0 refusal of an unkeyed `to_barriers` would reach it.
+- The gate's reach at v0.56.0 is the same 19 files as at v0.55.1 (`data-raw/logs/fresh_pin_507/reach.md`), and all seven changed files are mapped, so `pretest_inputs.csv` does not change. The walk at 0.55.1 now refuses on this branch (`load_all` needs fresh >= 0.56.0), as expected.
+- Lint against `origin/main`: new rows are indentation (2,458 stand on main in the same style) and three helper names over 30 characters (`object_length_linter`, 18 on main); the names are the plan's and kept.
+
 ## Errors Encountered
 
 | Error | Resolution |
 |-------|------------|
 | `diff -rq` in a probe ran `git diff` (a shell function shadows `diff`) | `/usr/bin/diff -rq` |
+| `git -C <repo> worktree add lint_main` put the worktree inside the repo (relative to `-C`) | removed; absolute path under `/tmp/link507/` |
+| A mocked plain environment as fresh's namespace fails `getNamespaceExports()` | end-to-end refusal test declares a reordered list against the real fresh |
