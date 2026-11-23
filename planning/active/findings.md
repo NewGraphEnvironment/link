@@ -46,3 +46,10 @@ Move 14 of link's backlog, [`planning/backlog.md`](../blob/main/planning/backlog
 - Today's CABD response gives `6f7f44c0…` under the reload layout, equal to this host's recorded md5 (loaded 2026-11-13).
 - PSCIS: two bc2pg loads and one into a new database, one md5 (bcdata never creates `ogr_system_tables`). Unmeasured residual: a WFS-fallback PSCIS load is an ogr2ogr load and could take either layout on a new host; its md5 already differs from bc2pg's.
 - The "three starting states" live test cannot fail against the old call in a database GDAL has already loaded into; the stub test with a geom-last staging table is the one that discriminates (4 tests fail on the old call, 2 with `CASCADE`).
+
+## Phase 2 (2026-11-22, m1)
+
+- One `aws` call on m1: `aws --version` 0.32 to 0.34 s, a `head-object` on the published manifest 0.55 to 0.63 s (five each, aws-cli 2.34.34). So start-up is about 60 % of a call here; #488's 2.4 s was a cloud host.
+- No built root on m1. The published tree (`s3://fresh-bc/habitat/fwa/v1/`, 108 parts 724 MB, 482 per-group parts 212 MB, 753 files 10 MB, the dependency map) was synced down as the seed root for the scratch measurement: a full built root by construction.
+- The test stub's first version raced on `versions.json` (concurrent puts, no lock) and failed one run in two; fixed in the stub with `flock`, not in the code under test.
+- Mutants: the manifest put sent on the pool with the parts fails 3 tests; the pool's result check removed fails 2.

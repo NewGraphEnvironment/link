@@ -33,6 +33,7 @@ Imports:
     fresh (>= 0.52.0),
     httr,
     jsonlite,
+    parallel,
     RPostgres,
     tibble,
     tidyr,
