@@ -1,5 +1,60 @@
 # Changelog
 
+## link 0.89.0
+
+**Every driver needs an explicit config, a standalone run needs a label,
+and the legacy `wsgs_*` path is gone**
+([\#475](https://github.com/NewGraphEnvironment/link/issues/475),
+backlog move 7). No output token moves and no group re-models.
+
+- **No driver defaults to `bcfishpass`**
+  ([\#278](https://github.com/NewGraphEnvironment/link/issues/278)).
+  `study_area_run.sh`, `recompute_parity.sh`, `recompute_sweep.sh`,
+  `wsg_run_one.R`, `wsg_recompute_one.R`, `study_area_wsgs.R`,
+  `study_area_compare.R`, `host_stamp.R`, `barriers_views_build.R`,
+  `study_area_buckets.R`, `parity_crosssection.R`,
+  `access_disagree_349.R`, the variants build and score (`--base`) and
+  `cypher_prep.sh` (at `CYPHER_PREP_STAGE=all`; the install stage takes
+  none) refuse to run without one, and say that `bcfishpass` and
+  `default` both resolve the persist schema to `fresh`. `wsg_run_one.R`,
+  `wsg_recompute_one.R`, `barriers_views_build.R` and the two recompute
+  drivers refuse a bundle other than `bcfishpass` with no `LNK_SCHEMA`,
+  as `study_area_run.sh` already did. `study_area_run.sh` prints a
+  `=== decisions for this run ===` block (config and persist schema with
+  their alternatives, focal groups, the resolved closure, species by
+  config x presence, the primitives’ last load) before its first write;
+  `--preflight-only` prints it too, resolving the dispatcher’s focal
+  when one is given.
+- **A standalone run carries a label**
+  ([\#281](https://github.com/NewGraphEnvironment/link/issues/281)).
+  `wsg_run_one.R` and `wsg_recompute_one.R` with no `LNK_RUN_UID` refuse
+  an empty `LNK_RUN_LABEL` (`data-raw/run_label_check.R`). Its `run_uid`
+  stays NULL: it means one dispatch across hosts, and PUBLISH keeps
+  refusing such a build unless `LNK_PUBLISH_ALLOW` gives a reason.
+- **`state_clean.sh --tables=schema.table,...`**
+  ([\#181](https://github.com/NewGraphEnvironment/link/issues/181))
+  drops listed tables, locally unless `--hosts=` names others, kills
+  nothing and refuses while a `study_area_run.sh` is live. Every host’s
+  drop is now checked: a failed one fails the run, for `--schemas=` too.
+- **The legacy `wsgs_*` path is retired**
+  ([\#179](https://github.com/NewGraphEnvironment/link/issues/179),
+  [\#110](https://github.com/NewGraphEnvironment/link/issues/110) close
+  with it): `wsgs_dispatch.sh`, `wsgs_run_host.R`,
+  `wsgs_run_pipeline.sh`, `wsgs_run_m4_offline.sh`, `trifecta_15wsg.sh`,
+  `trifecta_smoke.sh`, `runs_archive.sh`, `buckets_balance.R`,
+  `progress_check.sh`. `study_area_run.sh` is the runner.
+- **Naming**
+  ([\#166](https://github.com/NewGraphEnvironment/link/issues/166)):
+  `data-raw/README.md` now says noun-first and lists the verb-first
+  scripts that keep their names because research files, archives, tests
+  and the weekly workflow cite them.
+- Owed: the pre-run gate still owes its run from earlier releases
+  (`wsg_run_one.R`, `wsg_recompute_one.R`, `study_area_run.sh` and
+  `R/utils.R` changed again, so any record is void); this adds no new
+  owed run. Hosts and scheduled jobs that call a retired script or omit
+  a config move to `study_area_run.sh --config=`. The data-raw tests
+  skip in CI, so they ran locally.
+
 ## link 0.88.0
 
 **Every host loads `cabd.dams` in one column layout, and PUBLISH puts

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.88.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.89.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,21 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.89.0" id="link-0890">link 0.89.0<a class="anchor" aria-label="anchor" href="#link-0890"></a></h2>
+<p><strong>Every driver needs an explicit config, a standalone run needs a label, and the legacy <code>wsgs_*</code> path is gone</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/475" class="external-link">#475</a>, backlog move 7). No output token moves and no group re-models.</p>
+<ul><li>
+<strong>No driver defaults to <code>bcfishpass</code></strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/278" class="external-link">#278</a>). <code>study_area_run.sh</code>, <code>recompute_parity.sh</code>, <code>recompute_sweep.sh</code>, <code>wsg_run_one.R</code>, <code>wsg_recompute_one.R</code>, <code>study_area_wsgs.R</code>, <code>study_area_compare.R</code>, <code>host_stamp.R</code>, <code>barriers_views_build.R</code>, <code>study_area_buckets.R</code>, <code>parity_crosssection.R</code>, <code>access_disagree_349.R</code>, the variants build and score (<code>--base</code>) and <code>cypher_prep.sh</code> (at <code>CYPHER_PREP_STAGE=all</code>; the install stage takes none) refuse to run without one, and say that <code>bcfishpass</code> and <code>default</code> both resolve the persist schema to <code>fresh</code>. <code>wsg_run_one.R</code>, <code>wsg_recompute_one.R</code>, <code>barriers_views_build.R</code> and the two recompute drivers refuse a bundle other than <code>bcfishpass</code> with no <code>LNK_SCHEMA</code>, as <code>study_area_run.sh</code> already did. <code>study_area_run.sh</code> prints a <code>=== decisions for this run ===</code> block (config and persist schema with their alternatives, focal groups, the resolved closure, species by config x presence, the primitives’ last load) before its first write; <code>--preflight-only</code> prints it too, resolving the dispatcher’s focal when one is given.</li>
+<li>
+<strong>A standalone run carries a label</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/281" class="external-link">#281</a>). <code>wsg_run_one.R</code> and <code>wsg_recompute_one.R</code> with no <code>LNK_RUN_UID</code> refuse an empty <code>LNK_RUN_LABEL</code> (<code>data-raw/run_label_check.R</code>). Its <code>run_uid</code> stays NULL: it means one dispatch across hosts, and PUBLISH keeps refusing such a build unless <code>LNK_PUBLISH_ALLOW</code> gives a reason.</li>
+<li>
+<strong><code>state_clean.sh --tables=schema.table,...</code></strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/181" class="external-link">#181</a>) drops listed tables, locally unless <code>--hosts=</code> names others, kills nothing and refuses while a <code>study_area_run.sh</code> is live. Every host’s drop is now checked: a failed one fails the run, for <code>--schemas=</code> too.</li>
+<li>
+<strong>The legacy <code>wsgs_*</code> path is retired</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/179" class="external-link">#179</a>, <a href="https://github.com/NewGraphEnvironment/link/issues/110" class="external-link">#110</a> close with it): <code>wsgs_dispatch.sh</code>, <code>wsgs_run_host.R</code>, <code>wsgs_run_pipeline.sh</code>, <code>wsgs_run_m4_offline.sh</code>, <code>trifecta_15wsg.sh</code>, <code>trifecta_smoke.sh</code>, <code>runs_archive.sh</code>, <code>buckets_balance.R</code>, <code>progress_check.sh</code>. <code>study_area_run.sh</code> is the runner.</li>
+<li>
+<strong>Naming</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/166" class="external-link">#166</a>): <code>data-raw/README.md</code> now says noun-first and lists the verb-first scripts that keep their names because research files, archives, tests and the weekly workflow cite them.</li>
+<li>Owed: the pre-run gate still owes its run from earlier releases (<code>wsg_run_one.R</code>, <code>wsg_recompute_one.R</code>, <code>study_area_run.sh</code> and <code>R/utils.R</code> changed again, so any record is void); this adds no new owed run. Hosts and scheduled jobs that call a retired script or omit a config move to <code>study_area_run.sh --config=</code>. The data-raw tests skip in CI, so they ran locally.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.88.0" id="link-0880">link 0.88.0<a class="anchor" aria-label="anchor" href="#link-0880"></a></h2>
 <p><strong>Every host loads <code>cabd.dams</code> in one column layout, and PUBLISH puts its objects on a pool</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/499" class="external-link">#499</a>, backlog move 14). No output token moves and no group re-models.</p>
