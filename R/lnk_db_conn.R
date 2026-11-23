@@ -30,8 +30,8 @@
 #' 3. The legacy `PG_*_SHARE` variables (`PG_DB_SHARE`, `PG_HOST_SHARE`,
 #'    `PG_PORT_SHARE`, `PG_USER_SHARE`, `PG_PASS_SHARE`), only when none of
 #'    the standard variables above is set. fresh marks them deprecated and
-#'    says so once per R session; link keeps that message quiet when all five
-#'    fields are given, since the variables then fill nothing.
+#'    says so once per R session. A call giving all five fields does not read
+#'    them at all, so it neither prints that message nor uses it up.
 #' 4. libpq's own defaults (the local socket or `localhost`, the operating
 #'    system's user name, `~/.pgpass`).
 #'
@@ -67,13 +67,19 @@ lnk_db_conn <- function(dbname = NULL, host = NULL, port = NULL, user = NULL,
   }
   given <- list(dbname, host, port, user, password)
   if (!all(vapply(given, .lnk_conn_arg_set, logical(1)))) return(conn())
-  # fresh reads the environment before the arguments, so it warns of
-  # PG_*_SHARE even when every field is explicit and the variables are unused.
-  withCallingHandlers(conn(), message = function(m) {
-    if (grepl("PG_*_SHARE", conditionMessage(m), fixed = TRUE)) {
-      invokeRestart("muffleMessage")
-    }
-  })
+  # With every field given the PG_*_SHARE variables fill nothing, but fresh
+  # reads the environment before the arguments: it would print its deprecation
+  # message, and spend its once-per-session notice (set before it prints), so a
+  # later call that does read them would say nothing. Unset them for this call.
+  share <- c("PG_DB_SHARE", "PG_HOST_SHARE", "PG_PORT_SHARE", "PG_USER_SHARE",
+             "PG_PASS_SHARE")
+  old <- Sys.getenv(share, unset = NA)
+  old <- old[!is.na(old)]
+  if (length(old) > 0L) {
+    Sys.unsetenv(names(old))
+    on.exit(do.call(Sys.setenv, as.list(old)), add = TRUE)
+  }
+  conn()
 }
 
 # A connection field the caller gave, by fresh's own test (NULL, NA and ""

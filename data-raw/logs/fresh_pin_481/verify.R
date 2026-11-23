@@ -15,7 +15,8 @@
 #
 # Usage (from the repo root, R_LIBS holding fresh 0.55.1):
 #   Rscript data-raw/logs/fresh_pin_481/verify.R
-# Writes verify.txt beside it. Drops its copy schema on exit.
+# Writes verify.txt beside it. Drops its copy schema once check 2 has read it;
+# a run that stops before then leaves it, and the next run drops it first.
 suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
 stopifnot(utils::packageVersion("fresh") == "0.55.1")
 dir <- "data-raw/logs/fresh_pin_481"
@@ -45,7 +46,6 @@ say("1. fresh_pin481_after.streams_near_river: %s rows, none NULL, every one equ
 
 # 2 ---------------------------------------------------------------------------
 copy <- "fresh_pin481_backfill"
-on.exit(try(ex(sprintf("DROP SCHEMA IF EXISTS %s CASCADE", copy)), silent = TRUE), add = TRUE)
 ex(sprintf("DROP SCHEMA IF EXISTS %s CASCADE", copy))
 ex(sprintf("CREATE SCHEMA %s", copy))
 before_cols <- q("SELECT column_name FROM information_schema.columns
@@ -67,6 +67,8 @@ c2 <- q(sprintf("
       ON c.id_segment = a.id_segment AND c.watershed_group_code = a.watershed_group_code
      AND c.measure = a.measure AND c.threshold = a.threshold
      AND c.distance_max = a.distance_max", copy))
+# Dropped here, not by on.exit(), which never fires at a script's top level.
+ex(sprintf("DROP SCHEMA %s CASCADE", copy))
 stopifnot(c2$n_after > 0L, c2$n_after == c2$n_copy, c2$n_differ == 0L)
 say(paste("2. lnk_persist_init() on a copy of the 0.52.0 build filled linear_feature_id",
           "on %d rows, equal to fresh 0.55.1's on every row"),

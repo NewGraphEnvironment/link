@@ -76,14 +76,23 @@ test_that("with no variables set, libpq's defaults apply", {
                    %in% names(got)))
 })
 
-test_that("a fully explicit call says nothing of PG_*_SHARE", {
+test_that("a fully explicit call says nothing of PG_*_SHARE, and leaves the notice", {
   reset_share_msg()
   expect_no_message(connect_args(share_env, dbname = "fwapg",
                                  host = "localhost", port = 5432L,
                                  user = "postgres", password = "postgres"))
-  # The premise: a call that leaves a field to the environment does say it.
-  reset_share_msg()
+  # fresh's once-per-session notice is still there for a call that does read
+  # the variables (no reset in between).
   expect_message(connect_args(share_env, dbname = "fwapg"), "PG_\\*_SHARE")
+  # and the variables are back as they were
+  withr::local_envvar(share_env)
+  connect_args2 <- function() {
+    testthat::local_mocked_bindings(dbConnect = function(drv, ...) "conn",
+                                    .package = "DBI")
+    lnk_db_conn(dbname = "a", host = "b", port = 1L, user = "c", password = "d")
+  }
+  connect_args2()
+  expect_identical(Sys.getenv(names(share_env)), share_env)
 })
 
 test_that("fresh's connection bounds reach the call", {

@@ -53,8 +53,8 @@ are not read.
 \item The legacy \verb{PG_*_SHARE} variables (\code{PG_DB_SHARE}, \code{PG_HOST_SHARE},
 \code{PG_PORT_SHARE}, \code{PG_USER_SHARE}, \code{PG_PASS_SHARE}), only when none of
 the standard variables above is set. fresh marks them deprecated and
-says so once per R session; link keeps that message quiet when all five
-fields are given, since the variables then fill nothing.
+says so once per R session. A call giving all five fields does not read
+them at all, so it neither prints that message nor uses it up.
 \item libpq's own defaults (the local socket or \code{localhost}, the operating
 system's user name, \verb{~/.pgpass}).
 }

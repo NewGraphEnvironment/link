@@ -1126,8 +1126,11 @@ test_that("a near_river bundle is scored against the persisted distances", {
   ins("705")
   after <- go()$observations
   expect_true(after$pred_rear[after$observation_key == "o10"])
-  # a cfg with no pair ignores the table and needs no log value
+  # a cfg with no pair ignores the table and needs no log value, nor the
+  # table's parent-line key (every schema has the table, #452)
   DBI::dbExecute(conn, sprintf("UPDATE %s.log SET near_river = ''", s))
+  DBI::dbExecute(conn, sprintf(
+    "ALTER TABLE %s.streams_near_river DROP COLUMN linear_feature_id", s))
   expect_no_error(lnk_habitat_validate(
     conn, aoi = c("AAAA", "BBBB"), cfg = default_nopair(),
     loaded = validate_loaded(), species = "BT", schema = s,

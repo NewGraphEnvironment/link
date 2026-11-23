@@ -425,6 +425,9 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
          "link >= 0.67.0", call. = FALSE)
   }
   if (!has_near) return(NULL)
+  # Every schema has the table (lnk_persist_init() makes it); only a cfg whose
+  # rules read a pair reads it, so only then must it carry the key.
+  if (!nzchar(near_river)) return(paste0(schema, ".streams_near_river"))
   # The predicates match a distance on the parent line as well as the
   # segment (fresh 0.54.0, #452), so every scored row needs one. A table
   # lnk_persist_init() has not migrated, or one a consolidate filled from an
