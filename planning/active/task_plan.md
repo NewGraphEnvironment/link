@@ -21,18 +21,13 @@ No plan gate in this pane: a `/coordinator` dispatched this `park review` (`GATE
 
 ## Open decisions
 
-Ask these before the phase that needs them.
+None. Answered by the owner 2026-11-23, all as recommended (moved to the decisions below).
 
-1. **(Phase 3, #281) What a standalone run stores in `run_uid`.** `run_uid` is a stored identifier, and PUBLISH refuses a build with none by design (#334: `R/lnk_publish.R:7` names "a direct `wsg_run_one.R` run, outside a dispatch"; `RUNBOOK.md:1333`). In every option a standalone `wsg_run_one.R` / `wsg_recompute_one.R` (no `LNK_RUN_UID` set) refuses an empty `LNK_RUN_LABEL`; the orchestrated path is unchanged. Options (review reframed them):
-   - **(b, recommended)** `run_uid` stays NULL: it keeps meaning "one dispatch across hosts", PUBLISH keeps refusing a standalone build unless `LNK_PUBLISH_ALLOW` gives a reason, and the label carries the traceability #281 asks for (its own lean). No `R/` change.
-   - (a′) Mint `standalone-<TS>-<8 hex>`, queryable as a run of one, and change `lnk_publish.R:37,49` so PUBLISH still refuses a `standalone-` uid. Edits `R/`; `wsg_run_one.R:149-153`'s stall-file hint must then not fire for it.
-   - (c) Mint a uid in the dispatcher's shape and let PUBLISH take standalone builds: a reversal of #334's gate, stated as such.
-2. **(Phase 5, #166) How far the rename goes.** #166's acceptance says every `data-raw/` script is noun-first, and also "no broken cross-references in research/ or planning/archive/"; its table is stale (most renames landed in #172). Options:
-   - **(a, recommended)** Correct `data-raw/README.md`'s convention to noun-first, and rename a remaining verb-first script only when no `research/` file, archive README, `R/`, `tests/`, `inst/` or `.github/` file names it. Scripts cited as evidence (`query_*`, `build_rules.R`, `snapshot_bcfp.sh` and its lib, `sync_bcfishpass_csvs.R`, `build_species_views.R`, `build_minutes_append.R`) keep their names, forward-only, as logs do; the cost of renaming them is the evidence citations and the external callers (the weekly workflow, hosts running the snapshot), not the gate, which this PR voids anyway. #166 closes with the kept names listed.
-   - (b) Rename every verb-first script and update every reference.
-3. **(Phase 4, #181) Which hosts `state_clean.sh --tables=` reaches.** The script's host model is stale (review): it treats `localhost` as M4 and `ssh m1` as a second host, while the dispatcher is M1 today; it does not reach workers (#376); its header's `/tmp/cy_ips.env` is never read (IPs come from `tofu` with `job1,job2,job3` as the default). #181 asks for M4 + M1 + cyphers. Options:
-   - **(a, recommended)** Local by default; other hosts only when named (`--hosts=<ssh target>,...`, cyphers by workspace), so a surgical drop never reaches a host by assumption.
-   - (b) #181 as written: the same hosts `--schemas=` reaches, with `--skip-m1` / `--skip-cy`.
+## Decided at the resume (2026-11-23, owner)
+
+1. **#281:** `run_uid` stays NULL on a standalone run; the required label carries traceability; PUBLISH keeps refusing a standalone build unless `LNK_PUBLISH_ALLOW` gives a reason. No `R/lnk_publish.R` change.
+2. **#166:** correct `data-raw/README.md` to noun-first; rename a verb-first script only when no `research/`, archive README, `R/`, `tests/`, `inst/` or `.github/` file names it; evidence-cited scripts keep their names, listed at close.
+3. **#181:** `state_clean.sh --tables=` is local by default; other hosts only when named with `--hosts=<ssh target>,...` (cyphers by workspace).
 
 ## Phase 1: Retire the legacy `wsgs_*` path (#179, #110; shrinks #176)
 
@@ -59,7 +54,7 @@ Ask these before the phase that needs them.
 
 ## Phase 3: A standalone run is labelled (#281)
 
-- [ ] Ask open decision 1
+- [x] Decision 1 answered (NULL `run_uid`, label required)
 - [ ] Put the label and `run_uid` rule in one small function each driver sources or inlines identically, testable without a database (`wsg_run_one.R` connects at `:56`) (review)
 - [ ] `wsg_run_one.R` and `wsg_recompute_one.R`: with `LNK_RUN_UID` unset, refuse an empty `LNK_RUN_LABEL` with a usage line, and apply decision 1's `run_uid` rule; with it set, behave as today. Keep the label check `study_area_run.sh` applies to `--run-label=` (`A-Z a-z 0-9 . _ -`). Under (a′), edit `lnk_publish.R` and the stall hint at `wsg_run_one.R:149-153`
 - [ ] Every printed and documented standalone invocation carries a label (`RUNBOOK.md`, CLAUDE.md's current instructions); the review found the printed re-model commands and remote legs already carry `LNK_RUN_UID`, and `pretest_run.sh:256` (label, no uid) runs under every option
@@ -67,7 +62,7 @@ Ask these before the phase that needs them.
 
 ## Phase 4: `state_clean.sh --tables=` (#181)
 
-- [ ] Ask open decision 3
+- [x] Decision 3 answered (local by default, `--hosts=`)
 - [ ] Parse `--tables=schema.table,...`; refuse an empty value and any entry outside `^[a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*$`; combinable with `--schemas=`
 - [ ] Skip step 1 (the kill step, `:87-97`: `kill -9` of matching local processes, `pkill` on M1 and every cypher) under `--tables=`, and refuse while a `study_area_run.sh` is live (review, blocker): a surgical drop during a run would end its legs
 - [ ] Drop each listed table (`DROP TABLE IF EXISTS … CASCADE`) on the hosts decision 3 names, with no snapshot reload; check each host's exit status instead of the unconditional "✓ schemas dropped" after `wait` (`:146`), for `--schemas=` too
@@ -76,7 +71,7 @@ Ask these before the phase that needs them.
 
 ## Phase 5: Noun-first names (#166)
 
-- [ ] Ask open decision 2
+- [x] Decision 2 answered (rename only where uncited)
 - [ ] List the remaining verb-first scripts and, under decision 2's rule, which are renamed and which keep their names and why; record the table in `findings.md`
 - [ ] `git mv` each rename and update every reference
 - [ ] Rewrite `data-raw/README.md`'s naming section to noun-first (`<noun>_<verb>[-detail]`, `newgraph.md`), with a forward-only note for the kept names
