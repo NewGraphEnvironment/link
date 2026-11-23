@@ -57,7 +57,7 @@ Settled by reading the code, not owner forks:
 
 ## Phase 3: Release
 
-- [ ] `NEWS.md` entry and the `DESCRIPTION` version bump as the last commit (minor: a new loader path and a new PUBLISH mechanism).
+- [x] `NEWS.md` entry and the `DESCRIPTION` version bump as the last commit (minor: a new loader path and a new PUBLISH mechanism).
 - [ ] The PR body says `Closes #494`, `Closes #488`, and references #334 without closing it (unless Open decision 3 opens the read).
 - [x] `CLAUDE.md` status block for move 14 (what landed, owed, facts not worth re-deriving).
 
