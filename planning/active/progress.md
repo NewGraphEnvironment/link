@@ -54,3 +54,9 @@ mandate; the merge stays with me.
 - `.lnk_presence_measures(barrier_species =)` (9d3b2ea6); `data-raw/rb_st_records_check.R` and `data-raw/logs/rb_st_497/` (6.8 min on m1, fresh_default build 20261103_163715-269b585a; independent count agrees for BULK, LFRA, OKAN).
 - Owner answered every open decision (task_plan.md, "Decided at the resume"): (b), SST/WST here, five rows to a literature issue, KO waits, #402 closes.
 - Next: Phase 2, the record rule.
+
+## Phases 2 to 5 and review, 2026-11-23
+- Phase 2: record rule rows and the two-target alias (997a63b9). Phase 3: RB unpaused, check re-run, decisions, #515 filed (4a3df5ed, 7421b02c, bdae8e3d). Phase 4: tokens cut-full-top-3 / acc-v7 (5b649456). Phase 5: three-state builds (86b5d533). Release 0.90.0 (90a2f88c).
+- Full suite 6415 pass / 0 fail / 1 skip; R CMD check 0 errors, 0 warnings, 3 pre-existing notes; check_pkgdown clean.
+- #516 filed for kokanee's 138 rows (#432 is closed).
+- /code-check branch: 4 rounds. R1 rb_st merge by key (fixed); R2 same in the check's recall and the map (shared helper); R3 a defect inside that helper's tie-break (prefer argument); R4 two counts of rows read as records (fixed, stamps corrected). Ended on R4's enumeration of 38 places. A re-run of rb_st_records_check.R at the fix equals the committed records except LPRO and UPET's RB presence, which the decisions changed.

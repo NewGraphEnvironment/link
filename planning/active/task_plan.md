@@ -157,7 +157,7 @@ Outcome: the re-run seeded FINA ST, MFRA BT, UFRT ST, TUTR RB and UFRT RB; the o
   Compare RB with the last pre-pause build of the same groups, if one exists (`acc-v4`, m1's `fresh_default_20261023`).
 - [x] *(review)* From the presence table and records alone, count the groups whose cuts move province-wide: RB present with ST records, plus the 16 promoted groups.
 - [x] `data-raw/logs/rb_return_501/` README with the stamp, commands and numbers.
-- [ ] Run `devtools::test()`, `devtools::check()`, `lintr` per file against `origin/main`, and `pkgdown::check_pkgdown()`.
+- [x] Run `devtools::test()`, `devtools::check()`, `lintr` per file against `origin/main`, and `pkgdown::check_pkgdown()`.
 
 ## Phase 6: Hand off and close (#497, #402)
 
@@ -172,8 +172,8 @@ Outcome: the re-run seeded FINA ST, MFRA BT, UFRT ST, TUTR RB and UFRT RB; the o
 
 ## Validation
 
-- [ ] Tests pass
-- [ ] `/code-check` clean, once over the branch with `/code-check branch` *(review: commits in Phases 2 and 3 leave the token pins red until Phase 4, so the per-commit gate cannot assume green)*
+- [x] Tests pass
+- [x] `/code-check` clean, once over the branch with `/code-check branch`: 4 rounds, ended on round 4's enumeration (`review-verdict.md`) *(review: commits in Phases 2 and 3 leave the token pins red until Phase 4, so the per-commit gate cannot assume green)*
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
