@@ -29,7 +29,7 @@ connect_args <- function(env = character(0), ...) {
   unset[names(env)] <- env
   withr::local_envvar(unset)
   got <- NULL
-  local_mocked_bindings(
+  testthat::local_mocked_bindings(
     dbConnect = function(drv, ...) {
       got <<- list(...)
       "conn"

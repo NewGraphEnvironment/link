@@ -1,0 +1,4 @@
+step	config	wsg	start_utc	end_utc	exit	load_start	load_end
+before	default	ADMS	2026-11-23T01:35:20Z	2026-11-23T01:38:04Z	0	7.65	8.61
+before	default	BULK	2026-11-23T01:38:04Z	2026-11-23T01:46:40Z	0	8.61	7.84
+before	bcfishpass	ADMS	2026-11-23T01:46:40Z	2026-11-23T01:48:21Z	0	7.84	9.46

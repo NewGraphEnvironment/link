@@ -20,9 +20,9 @@ None open.
 
 ## Phase 1: Baseline at fresh 0.52.0 (before any install)
 
-- [ ] Confirm the host is quiet (no other session modelling ADMS or BULK: `lnk_pipeline_run()` drops `working_<wsg>`).
-- [ ] From a worktree of `origin/main` (link 0.86.0, with `R_LIBS` on a scratch library holding fresh 0.52.0 alone: the shared library holds 0.53.0, installed 2026-11-16), model ADMS and BULK under `default` into scratch `fresh_pin481_before`, and ADMS under `bcfishpass` into `fresh_pin481_bcfp_before`; `LNK_GUARD_DOWNSTREAM=ignore` with its `_NOTE`, the same in both arms. ADMS holds `near_river` rows under CH's `wetland_flow` scope. Record each group's minutes.
-- [ ] Digest every persisted table per group by named columns: `streams`, `streams_habitat_<sp>`, `barriers`, `barrier_overrides`, `barrier_override_evidence`, `streams_access`, `streams_mapping_code`, `streams_near_river` (`consolidate_persist_core`, `data-raw/schema_consolidate.R:240`), to `data-raw/logs/fresh_pin_481/before/`, with `lnk_stamp()`.
+- [x] Confirm the host is quiet (no other session modelling ADMS or BULK: `lnk_pipeline_run()` drops `working_<wsg>`).
+- [x] From a worktree of `origin/main` (link 0.86.0, with `R_LIBS` on a scratch library holding fresh 0.52.0 alone: the shared library holds 0.53.0, installed 2026-11-16), model ADMS and BULK under `default` into scratch `fresh_pin481_before`, and ADMS under `bcfishpass` into `fresh_pin481_bcfp_before`; `LNK_GUARD_DOWNSTREAM=ignore` with its `_NOTE`, the same in both arms. ADMS holds `near_river` rows under CH's `wetland_flow` scope. Record each group's minutes.
+- [x] Digest every persisted table per group by named columns: `streams`, `streams_habitat_<sp>`, `barriers`, `barrier_overrides`, `barrier_override_evidence`, `streams_access`, `streams_mapping_code`, `streams_near_river` (`consolidate_persist_core`, `data-raw/schema_consolidate.R:240`), to `data-raw/logs/fresh_pin_481/before/`, with `lnk_stamp()`.
 - [x] Install fresh v0.55.1 alone into a scratch library (`R CMD INSTALL -l <lib>` from a worktree of the tag; not `pak`). Confirm `packageVersion("fresh", lib.loc = <lib>)` is 0.55.1 and the shared library still holds 0.52.0. It writes no `RemoteSha`, so the after-arm sets `FRESH_GIT_SHA` to the v0.55.1 commit for its stamps.
 
 ## Phase 2: The pin and the preflight
@@ -51,17 +51,17 @@ None open.
 ## Phase 5: The live resolve tests use the gated connection (#222)
 
 - [x] `tests/testthat/test-lnk_wsg_resolve.R:129-167`: the two closure tests pass `conn = skip_if_no_db()` and skip when that connection has no `whse_basemapping.fwa_downstream()` (the gate can fall back to `lnk_db_conn()`, `tests/testthat/setup.R:28-30`; corrected at the resume: `public.wsg_outlet` was retired by fresh 0.33.0 and dropped from m1 on 2026-08-28, so a gate on it would skip everywhere; closure mode reads only the routine); the province-mode test drops its skip (province mode returns before any connection).
-- [ ] Prove it: with the local fwapg up and `PG*` pointed at an unreachable host, the closure tests pass on the gated connection.
+- [x] Prove it: with the local fwapg up and `PG*` pointed at an unreachable host, the closure tests pass on the gated connection.
 
 ## Phase 6: Verify the pin moved nothing but the column
 
-- [ ] With `R_LIBS=<scratch lib>` and the branch, model the same groups into `fresh_pin481_after` and `fresh_pin481_bcfp_after`; digest as in Phase 1, `streams_near_river` over its old columns. `data-raw/logs/fresh_pin_481/compare.R` asserts every digest identical and stops on anything else. Minutes beside Phase 1's.
-- [ ] Every row of `fresh_pin481_after.streams_near_river` has a `linear_feature_id` equal to `streams.linear_feature_id` at its `(id_segment, watershed_group_code)`, and none is NULL.
-- [ ] Under Open decision 2 (a): the branch's `lnk_persist_init()` on a copy of `fresh_pin481_before` backfills the column equal to what fresh wrote in `fresh_pin481_after`.
-- [ ] `lnk_habitat_validate()` on `fresh_pin481_after` (ADMS, `default`) gives identical results with `near_river_lfid` TRUE and FALSE, with non-zero near-river hits.
-- [ ] The variants harness: a working schema left by a 0.52.0 build is refused by fresh 0.55.1 (`.frs_habitat_target` adds the column, `.frs_null_key_guard` refuses its NULL rows), and `working_habitat_digest` hashes `t::text` (`data-raw/habitat_variants_build.R:666-669`), so a base recorded before the pin cannot match. Say both in RUNBOOK §7 and the harness header (rebuild with `--step=base`); no probe on a kept schema.
+- [x] With `R_LIBS=<scratch lib>` and the branch, model the same groups into `fresh_pin481_after` and `fresh_pin481_bcfp_after`; digest as in Phase 1, `streams_near_river` over its old columns. `data-raw/logs/fresh_pin_481/compare.R` asserts every digest identical and stops on anything else. Minutes beside Phase 1's.
+- [x] Every row of `fresh_pin481_after.streams_near_river` has a `linear_feature_id` equal to `streams.linear_feature_id` at its `(id_segment, watershed_group_code)`, and none is NULL.
+- [x] Under Open decision 2 (a): the branch's `lnk_persist_init()` on a copy of `fresh_pin481_before` backfills the column equal to what fresh wrote in `fresh_pin481_after`.
+- [x] `lnk_habitat_validate()` on `fresh_pin481_after` (ADMS, `default`) gives identical results with `near_river_lfid` TRUE and FALSE, with non-zero near-river hits.
+- [x] The variants harness: a working schema left by a 0.52.0 build is refused by fresh 0.55.1 (`.frs_habitat_target` adds the column, `.frs_null_key_guard` refuses its NULL rows), and `working_habitat_digest` hashes `t::text` (`data-raw/habitat_variants_build.R:666-669`), so a base recorded before the pin cannot match. Say both in RUNBOOK §7 and the harness header (rebuild with `--step=base`); no probe on a kept schema.
 - [ ] Under `R_LIBS`: `devtools::test()`, `devtools::check()`, `lintr::lint_package()` per file and linter against `origin/main`, `pkgdown::check_pkgdown()`.
-- [ ] Drop the four scratch schemas (and the backfill copy); evidence README in `data-raw/logs/fresh_pin_481/`.
+- [x] Drop the four scratch schemas (and the backfill copy); evidence README in `data-raw/logs/fresh_pin_481/`.
 
 ## Phase 7: Release
 

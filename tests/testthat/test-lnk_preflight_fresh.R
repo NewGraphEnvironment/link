@@ -57,7 +57,9 @@ test_that("a pre-0.35.0 frs_habitat_classify signature is caught (#286)", {
   ns$frs_habitat_predicates <- function(sp_params) NULL
   # fresh 0.54.0's frs_db_conn, before the connect timeout (#288)
   ns$frs_db_conn <- function(dbname = NULL, host = NULL, port = NULL,
-                             user = NULL, password = NULL) NULL
+                             user = NULL, password = NULL) {
+    NULL
+  }
   # fresh 0.46.0's frs_network_features, before the existence walk (#394)
   ns$frs_network_features <- function(conn, segments, features,
                                       segment_id_col, feature_id_col,

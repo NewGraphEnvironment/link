@@ -43,3 +43,12 @@ Start Phase 1 and run every phase to the PR (/code-check branch, /planning-archi
 /gh-pr-push). This message is the resume instruction that starts the run-to-PR
 mandate; the merge stays with me.
 ```
+
+## Phases 1-6, 2026-11-23 (m1)
+
+- m1's fwapg was down (colima guest network, since 2026-11-21 ~20:46 PDT); restarted on the owner's word. The owner decided #288 (delegate to `frs_db_conn()`) and #452 (add, backfill, pass TRUE).
+- Before-arm at main `be06e2b4` on fresh 0.52.0 and after-arm at `f40c1d49` on fresh 0.55.1, both from scratch libraries (the shared library holds fresh 0.53.0 and was not touched): 36 table-group digests identical over the old columns, tokens unchanged, column equal to streams on 7,295 rows, migration of a 0.52.0 copy equal to fresh's, validator identical TRUE/FALSE (`data-raw/logs/fresh_pin_481/`).
+- Every guard's defect restored in a separate worktree turned its test red (preflight formals, the connection order and muffle, the migration's three branches and its call, the validator's column, NULL and key checks); Phase 5: with `PGHOST` unreachable inside R, main's closure tests error twice, the branch's pass.
+- Full suite under fresh 0.55.1: 6,170 passed, 8 skipped, 2 failed, both #493's stale grep (fails the same on main).
+- Lint against main: 25 new, mostly the repo's indented SQL-string style; the `object_usage`, `brace` and line-length ones in new code fixed.
+- Commits: a918b76b (pin), 980530ca (#452), 8e89f4f1 (#288), f40c1d49 (#222), then the evidence.

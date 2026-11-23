@@ -1105,11 +1105,13 @@ test_that("a near_river bundle is scored against the persisted distances", {
   # river, and then TRUE: the validator reads the build's own walk.
   before <- go()$observations
   expect_false(before$pred_rear[before$observation_key == "o10"])
-  ins <- function(lfid) DBI::dbExecute(conn, sprintf(
-    "INSERT INTO %s.streams_near_river
-       (id_segment, watershed_group_code, measure, threshold, distance_max,
-        dist_m, linear_feature_id)
-     VALUES (5, 'AAAA', 'channel_width', 20, 1000, 250, %s)", s, lfid))
+  ins <- function(lfid) {
+    DBI::dbExecute(conn, sprintf(
+      "INSERT INTO %s.streams_near_river
+         (id_segment, watershed_group_code, measure, threshold, distance_max,
+          dist_m, linear_feature_id)
+       VALUES (5, 'AAAA', 'channel_width', 20, 1000, 250, %s)", s, lfid))
+  }
   # a row with no parent line (an unmigrated host's, consolidated in) is
   # refused for the groups it is in
   ins("NULL")
