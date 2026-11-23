@@ -440,9 +440,8 @@ run group holds `accessible AND access_<sp> = 0`.
   one host reads other hosts' barriers and overrides as that host holds them, possibly a previous
   run's, and a one-way gate there would blank habitat the recompute then lifts. The recompute
   settles every group on final access, and so does the re-model command §8d prints for a run's
-  missing groups. A single-group `wsg_run_one.R` gates at model time; so does the legacy
-  `wsgs_dispatch.sh` path (`lnk_compare_wsg()`), which runs no recompute and settles on the access
-  it ships.
+  missing groups. A single-group `wsg_run_one.R` gates at model time. (The legacy `wsgs_dispatch.sh` path, which
+  settled on the access it shipped, was retired in 0.89.0.)
 - **Schemas built before it are unsettled.** A recompute settles one
   (`bash data-raw/study_area_run.sh --recompute-only --run-uid=<uid> --config=<config>
   --schema=<schema>`, §8d), but re-model first, then gate: a re-gate settles on today's access, and
@@ -1346,7 +1345,7 @@ stops (named `wsgs`; a group is taken from whichever of the config's schemas
 holds its build). Provenance is keyed per finished build, never per dispatch:
 a dispatch's set of rows grows as its other groups close and depends on which
 schemas an export reads, while one build's log row does not change. A NULL
-`run_uid` (a direct `wsg_run_one.R` run) is kept under
+`run_uid` (a direct `wsg_run_one.R` run, which carries a label instead) is kept under
 `provenance/run_id=<run_id>/`. Each config entry carries `exported`, which the
 regressions judgement below reads.
 
@@ -2302,6 +2301,24 @@ preflight rather than reaching a walk with an argument it does not take. Nothing
 hand: a cloud host installs fresh at prep from the `Remotes:` pin, and a persistent worker
 gets it when the run is launched with `--auto-install` (`worker_prep.sh`'s `install-fresh`
 stage), which re-checks its `RemoteSha` against the dispatcher's.
+
+**fresh's internals are pinned by ordered signature (link#504).** link reaches four
+non-exported fresh functions through `getFromNamespace()`: `.frs_run_connectivity`,
+`.frs_habitat_models`, `.frs_near_river_specs` and `.frs_sql_num`, the last three called
+positionally. `lnk_preflight_fresh()` checks each against
+`.lnk_fresh_required_internal_formals()`: it passes when the declared formals are the
+installed function's leading formals, in order, and any formal after them has a default,
+and reports a mismatch as `mismatched_internal_formals` ("changed internal signatures").
+Order is checked because a reordered internal would bind a positional call's arguments
+to the wrong formals with no error. The test compares the installed fresh's formals
+exactly, so a fresh that changes any of them fails CI before it reaches a host. The drift
+guard (`.lnk_fresh_internal_callsites()`) finds every `getFromNamespace()` call on fresh
+in link's namespace and requires the set to equal the pinned list; it refuses a call
+whose `x` or `ns` is not a literal, and does not see `get(…, envir = asNamespace("fresh"))`
+or `asNamespace("fresh")$x`. fresh's contract test of the same internals is
+NewGraphEnvironment/fresh#329. The pin is fresh v0.56.0 since link 0.90.0 (#507): no
+persisted output moves (`data-raw/logs/fresh_pin_507/`), and the pre-run gate owes a run
+on it once the dispatcher's shared library holds 0.56.0.
 
 ### The pre-run gate (link#372)
 
@@ -3520,9 +3537,18 @@ docker exec fresh-db psql -U postgres -d fwapg -c \
   "SELECT pg_get_viewdef('fresh_default.barriers_bt_unified', true);"
 
 # Single-WSG tunnel-free build (the headline path)
-bash data-raw/wsgs_run_m4_offline.sh --wsgs=PARS --config=default \
-  --schema=fresh_default --force --mapping-code
+LNK_SCHEMA=fresh_default LNK_RUN_LABEL=pars-check \
+  Rscript data-raw/wsg_run_one.R PARS default
 ```
+
+A standalone `wsg_run_one.R` / `wsg_recompute_one.R` (no `LNK_RUN_UID`) refuses an empty
+`LNK_RUN_LABEL` (`data-raw/run_label_check.R`; label characters `A-Z a-z 0-9 . _ -`). Its
+`run_uid` stays NULL: that column means one dispatch across hosts, and PUBLISH keeps refusing a
+build without one unless `LNK_PUBLISH_ALLOW` gives a reason. The label is what records why the run
+happened. Every driver also refuses to run without an explicit config, and the three that write
+persist tables (`wsg_run_one.R`, `wsg_recompute_one.R`, `barriers_views_build.R`) refuse a bundle
+other than `bcfishpass` with no `LNK_SCHEMA`, because `default` resolves to the schema `fresh`
+that `bcfishpass` writes.
 
 Local docker fwapg: `host=localhost port=5432 dbname=fwapg user=postgres
 password=postgres` (compose at `~/Projects/repo/fresh/docker/`).

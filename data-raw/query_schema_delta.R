@@ -4,8 +4,8 @@
 # the script actually does is query side-by-side state from any two
 # `<schema>.streams` + `<schema>.streams_habitat_<sp>` pairs.
 #
-# Schemas are populated by lnk_pipeline_persist via a provincial trifecta
-# run (see wsgs_dispatch.sh). This script reads streams +
+# Schemas are populated by lnk_pipeline_persist via a provincial
+# run (see study_area_run.sh). This script reads streams +
 # streams_habitat_<sp> from each schema and emits:
 #   1. Province-wide totals per species (spawn / rear / accessible km)
 #   2. Per-species delta summary (km, percent, # WSGs shifted)

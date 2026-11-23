@@ -26,14 +26,23 @@
 set -euo pipefail
 
 WSGS="${1:?usage: recompute_sweep.sh \"WSG,WSG,...\" [config] [widths...]}"
-CONFIG="${2:-bcfishpass}"
+CONFIG="${2:-}"
+if [ -z "$CONFIG" ]; then
+  echo "FATAL: config is required (second argument): a bundle name from inst/extdata/configs/." >&2
+  exit 1
+fi
 shift 2 2>/dev/null || shift $#
 WIDTHS=("$@")
 [ ${#WIDTHS[@]} -gt 0 ] || WIDTHS=(1 2 4)
 
+export LNK_RUN_LABEL="${LNK_RUN_LABEL:-recompute-sweep}"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 RUN_SH="$REPO_ROOT/data-raw/study_area_run.sh"
 SCHEMA="${LNK_SCHEMA:-fresh}"
+if [ "$CONFIG" != "bcfishpass" ] && [ -z "${LNK_SCHEMA:-}" ]; then
+  echo "FATAL: LNK_SCHEMA is required with config $CONFIG: it resolves to the same persist schema as bcfishpass." >&2
+  exit 1
+fi
 OUT_DIR="$REPO_ROOT/data-raw/logs/recompute_parity"
 TS="$(date -u +%Y%m%d_%H%M%S)"
 mkdir -p "$OUT_DIR"

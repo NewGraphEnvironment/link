@@ -24,15 +24,29 @@
 # Prereq: each WSG re-run through lnk_pipeline_run(mapping_code = TRUE) with the fix.
 # Usage: [LNK_LOAD=loadall] [LNK_SCHEMA=<persist>] [LNK_PARITY_OUT=<csv>] \
 #          Rscript data-raw/parity_crosssection.R [WSG ...]
-#   LNK_SCHEMA      link-side persist schema (default `fresh`), e.g. a scratch
+#   LNK_SCHEMA      link-side persist schema (`fresh` only with bcfishpass; any other config needs one), e.g. a scratch
 #                   schema for a parity build beside a province-wide run (link#246).
 #                   The bcfp side is always fresh.streams_vw_bcfp.
-#   LNK_CONFIG      the config the link side was built with (default
-#                   `bcfishpass`). A species link reports as absent is excused
+#   LNK_CONFIG      the config the link side was built with (required). A species link reports as absent is excused
 #                   only where that config does not model it in the group;
 #                   anywhere else it is a failure.
 #   LNK_PARITY_OUT  also write the sweep, annotated by lnk_parity_annotate()
 #                   against research/bcfp_divergence_taxonomy.yml, to this CSV.
+
+cfg_name    <- Sys.getenv("LNK_CONFIG")
+if (!nzchar(cfg_name)) {
+  message("parity_crosssection.R: config is required (LNK_CONFIG=<bundle>); bcfishpass and default ",
+          "both resolve to schema 'fresh'.")
+  quit(status = 2)
+}
+schema      <- Sys.getenv("LNK_SCHEMA")
+if (!nzchar(schema)) {
+  if (!identical(cfg_name, "bcfishpass")) {
+    message("parity_crosssection.R: LNK_SCHEMA is required with config '", cfg_name, "'.")
+    quit(status = 2)
+  }
+  schema <- "fresh"
+}
 
 if (identical(Sys.getenv("LNK_LOAD"), "loadall")) {
   suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
@@ -48,12 +62,8 @@ conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
                     user = "postgres", password = "postgres")
 on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
 
-cfg_name    <- Sys.getenv("LNK_CONFIG")
-if (!nzchar(cfg_name)) cfg_name <- "bcfishpass"
 cfg         <- lnk_config(cfg_name)
 loaded      <- lnk_load_overrides(cfg)
-schema      <- Sys.getenv("LNK_SCHEMA")
-if (!nzchar(schema)) schema <- "fresh"
 args        <- commandArgs(trailingOnly = TRUE)
 wsgs        <- if (length(args)) toupper(args) else c("FINA", "PARS", "PCEA", "LKEL")
 species     <- c("bt", "st", "co", "ch", "cm", "pk", "sk", "wct")

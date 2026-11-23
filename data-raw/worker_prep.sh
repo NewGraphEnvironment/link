@@ -103,7 +103,7 @@ check_versions() {
 suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
 fail <- function(...) { cat("FATAL: ", ..., "\n", sep = ""); quit(status = 1) }
 res <- lnk_preflight_fresh(quiet = TRUE)
-if (!isTRUE(res$ok)) fail("fresh does not export what the pipeline calls: ", res$message)
+if (!isTRUE(res$ok)) fail("fresh does not provide what the pipeline calls: ", res$message)
 st <- link:::.lnk_pkg_git_state("fresh")
 remote <- link:::.lnk_pkg_remote_sha("fresh")
 if (is.na(st$sha)) fail("fresh_sha unresolvable on this worker; install fresh from a published ref")

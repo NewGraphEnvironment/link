@@ -94,6 +94,71 @@ test_that("a pre-0.35.0 frs_habitat_classify signature is caught (#286)", {
            after = which(expected == "frs_order_child(gradient_max)")))
 })
 
+test_that("the internals' formals list and the internals list agree", {
+  expect_identical(names(.lnk_fresh_required_internal_formals()),
+                   .lnk_fresh_required_internal())
+  expect_length(.lnk_fresh_required_internal(), 4L)
+})
+
+test_that("each declared internal's formals equal the installed fresh's (#504)", {
+  # Exact, unlike the run-time check: a fresh that changes any of these
+  # signatures, trailing optional argument included, fails here first, so
+  # the list is updated on purpose rather than drifting.
+  skip_if_not_installed("fresh")
+  ns <- asNamespace("fresh")
+  for (fn in names(.lnk_fresh_required_internal_formals())) {
+    expect_identical(names(formals(get(fn, envir = ns))),
+                     .lnk_fresh_required_internal_formals()[[fn]],
+                     info = fn)
+  }
+  res <- lnk_preflight_fresh(quiet = TRUE)
+  expect_length(res$mismatched_internal_formals, 0L)
+})
+
+test_that("a changed internal signature fails and is named (#504)", {
+  want <- list(.frs_f = c("a", "b", "c"))
+  check <- function(f) {
+    ns <- new.env()
+    ns$.frs_f <- f
+    .lnk_fresh_mismatched_internal_formals(ns, want)
+  }
+  expect_length(check(function(a, b, c) NULL), 0L)
+  # reordered: a positional call would bind b's value to c
+  expect_identical(check(function(a, c, b) NULL),
+                   ".frs_f(want: a, b, c; have: a, c, b)")
+  # renamed
+  expect_identical(check(function(a, b, d) NULL),
+                   ".frs_f(want: a, b, c; have: a, b, d)")
+  # dropped
+  expect_identical(check(function(a, b) NULL),
+                   ".frs_f(want: a, b, c; have: a, b)")
+  # a trailing formal with a default passes; one without fails
+  expect_length(check(function(a, b, c, d = 1) NULL), 0L)
+  expect_identical(check(function(a, b, c, d) NULL),
+                   ".frs_f(want: a, b, c; have: a, b, c, d)")
+  # an object that is not a closure is a mismatch, not a pass
+  ns <- new.env()
+  ns$.frs_f <- 1
+  expect_identical(.lnk_fresh_mismatched_internal_formals(ns, want),
+                   ".frs_f(want: a, b, c; have: not a closure)")
+  # absent: reported by missing_internal, not here
+  expect_length(.lnk_fresh_mismatched_internal_formals(new.env(), want), 0L)
+})
+
+test_that("lnk_preflight_fresh fails and reports a changed internal signature", {
+  # Against the real fresh: a declared order the installed .frs_run_connectivity
+  # does not have, as a reorder in fresh would present.
+  skip_if_not_installed("fresh")
+  want <- list(.frs_run_connectivity = c("table", "conn", "habitat", "species",
+                                         "params", "params_fresh", "verbose"))
+  res <- lnk_preflight_fresh(required_internal_formals = want, quiet = TRUE)
+  expect_false(res$ok)
+  expect_length(res$mismatched_internal_formals, 1L)
+  expect_match(res$mismatched_internal_formals,
+               "^\\.frs_run_connectivity\\(want: table, conn, ")
+  expect_match(res$message, "changed internal signatures", fixed = TRUE)
+})
+
 test_that("required formals name functions in the required export set", {
   expect_true(all(names(.lnk_fresh_required_formals()) %in%
                     .lnk_fresh_required()))
@@ -120,6 +185,8 @@ test_that("lnk_preflight_fresh reports rather than errors when fresh is absent",
   expect_false(res$ok)
   expect_true(is.na(res$version))
   expect_setequal(res$missing, .lnk_fresh_required())
+  expect_length(res$mismatched_internal_formals,
+                length(.lnk_fresh_required_internal_formals()))
   expect_match(res$message, "not installed")
 })
 
@@ -157,6 +224,39 @@ test_that(".lnk_fresh_callsites finds a symbol used only as a default argument",
   expect_true("frs_wsg_outlets" %in% .lnk_fresh_callsites())
 })
 
+test_that("every getFromNamespace() call on fresh is a pinned internal (#504)", {
+  callsites <- .lnk_fresh_internal_callsites()
+  expect_gt(length(callsites), 0L)   # an empty scan is not a pass
+  expect_setequal(callsites, .lnk_fresh_required_internal())
+})
+
+test_that(".lnk_fresh_internal_calls_in reads every call shape", {
+  f <- function(x) {
+    a <- getFromNamespace(".frs_bare", "fresh")
+    b <- utils::getFromNamespace(".frs_double", "fresh")
+    c <- utils:::getFromNamespace(".frs_triple", "fresh")
+    d <- utils::getFromNamespace(ns = "fresh", x = ".frs_named")
+    e <- getFromNamespace("other_fn", "stats")
+    g <- getFromNamespace("own_fn")
+    x
+  }
+  expect_identical(.lnk_fresh_internal_calls_in(f),
+                   sort(c(".frs_bare", ".frs_double", ".frs_triple",
+                          ".frs_named")))
+  # in a default argument too
+  h <- function(k = getFromNamespace(".frs_default", "fresh")) k
+  expect_identical(.lnk_fresh_internal_calls_in(h), ".frs_default")
+})
+
+test_that(".lnk_fresh_internal_calls_in refuses what it cannot read", {
+  nm <- ".frs_x"
+  pkg <- "fresh"
+  f_x <- function() getFromNamespace(nm, "fresh")
+  f_ns <- function() utils::getFromNamespace(".frs_x", pkg)
+  expect_error(.lnk_fresh_internal_calls_in(f_x), "non-literal `x`")
+  expect_error(.lnk_fresh_internal_calls_in(f_ns), "non-literal `ns`")
+})
+
 test_that(".lnk_fresh_floor parses the pin out of DESCRIPTION", {
   expect_identical(
     .lnk_fresh_floor(list(Imports = "DBI, fresh (>= 0.33.0), yaml")),
@@ -190,4 +290,7 @@ test_that("lnk_preflight_fresh validates its arguments", {
   expect_error(lnk_preflight_fresh(required = ""))
   expect_error(lnk_preflight_fresh(min_version = ""))
   expect_error(lnk_preflight_fresh(quiet = NA))
+  expect_error(lnk_preflight_fresh(required_internal_formals = list("x")))
+  expect_error(lnk_preflight_fresh(
+    required_internal_formals = list(.frs_f = 1)))
 })

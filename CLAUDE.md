@@ -17,7 +17,7 @@ The settled findings behind the methods (what is known, with provenance and the 
 
 **Take the next move from `planning/backlog.md`** (`bash <soul>/skills/_shared/backlog_moves.sh next planning/backlog.md`; `/compact-prep` names it): 13 moves, umbrellas #469–#481, each planned with one `/planning-init <umbrella>` and landed in one PR, ticked by `/gh-pr-merge`. Moves 12 and 13 wait on knowledge#139's flow-method decision and fresh 0.54.0. A link issue knowledge waits on says so in its batch section. A new issue joins the open move whose batches touch its files; run `/backlog-sweep` again when one fits none. Record: `planning/archive/2026-11-issue-468-backlog-pass/`.
 
-## Status (2026-11-23, later) — crossings snap by one rule; habitat upstream of each crossing over the network (#478, 0.89.0)
+## Status (2026-11-23, later) — crossings snap by one rule; habitat upstream of each crossing over the network (#478, 0.91.0)
 
 **Backlog move 10 (#478) lands as one release: #313, #314, #383 (snapping) and #321, #232, #356 (habitat upstream of each crossing).** `lnk_points_snap()` wraps `fresh::frs_point_snap()` (required `id_col`), so no crossing snaps to a `999.*` placeholder; the PSCIS pick and the CABD dam snap give a shared-vertex tie to the segment that **starts** there (not at its own upstream end, then higher start, then lower id): fwapg's rule on one stream, and the stream starting at the vertex across two. `cut-full-top-3` / `cut-full-ssf-all-3` replace the `-2` rows (same specs). `lnk_aggregate()` is rebuilt on `fresh::frs_aggregate()` (breaking): per crossing and species over the whole network, bcfishpass's `fwa_upstream(..., true, 1)`, long table to `to`, below-barrier totals. Mechanics: RUNBOOK's PSCIS-pick paragraph, "Snapping and ties". Write-ups: `research/crossing_snap.md`, `research/bcfishpass_parity.md` ("Crossings, and habitat upstream of each crossing"). Evidence: `data-raw/logs/snap_tie_478/`, `data-raw/logs/crossings_upstream_478/`, `data-raw/logs/crossings_parity_232/`.
 
@@ -29,6 +29,28 @@ The settled findings behind the methods (what is known, with provenance and the 
 - **FWA segments overlap** (a start before the last segment's end): a point resolved by `m >= ds AND m < us` can match two, which doubled `frs_aggregate()`'s sums (225 modelled crossings province-wide). Resolve once, highest start.
 - **The PSCIS pick reads all five candidates, so the snap's own tie order matters only at the five-candidate cutoff** (LILL's one indirect move: a cross-stream tie in PSCIS 63445's fifth candidate, then bcfishpass's duplicate-match step clears all of a PSCIS's modelled matches).
 - **Killing an R client leaves its Postgres query running:** two orphaned near-river walks from a killed parallel attempt held the database; `pg_terminate_backend` them. Two builds of different code cannot run at once: they share `working_<wsg>`.
+## Status (2026-11-23) — fresh 0.56.0; fresh's four internals pinned by ordered signature (#507, 0.90.0)
+
+**Backlog move 18 (#507) lands as one release: #504 and the fresh pin v0.55.1 → v0.56.0.** `lnk_preflight_fresh()` checks `.frs_run_connectivity`, `.frs_habitat_models`, `.frs_near_river_specs` and `.frs_sql_num` against `.lnk_fresh_required_internal_formals()` (leading formals in order, later ones defaulted; the test compares exactly), and `.lnk_fresh_internal_callsites()` requires every `getFromNamespace()` call on fresh to be one of them. No persisted output or token moves (`data-raw/logs/fresh_pin_507/`). Mechanics: RUNBOOK §8d, "fresh's internals are pinned by ordered signature".
+
+**Owed:** fresh 0.56.0 into each host's shared library and a re-prep (`load_all()` refuses 0.55.1 at the new floor); then the full pre-run gate at main before the next provincial run (its pick at this branch: QUES, BULK, SETN, LFRA, TOAD, OKAN, HARR, TAKL, UPCE, HORS, SAJR); a comment on NewGraphEnvironment/fresh#329 giving link's ordered list. fresh v0.57.0 (reservoirs in `lake_rearing`, stricter rules files) is its own move (owner, 2026-11-23).
+
+**Facts not worth re-deriving:**
+- **Three of the four internals are called positionally,** so order is load-bearing; their signatures are identical at fresh v0.55.1, v0.56.0 and v0.57.0.
+- **A plain environment cannot stand in for fresh's namespace in `lnk_preflight_fresh()`** (`getNamespaceExports()` refuses it); test the helper on environments and the whole function against the real fresh.
+- **`quote(utils:::f)` in R/ reads to R CMD check as a `:::` call;** build the head with `call(":::", ...)`.
+- **`data-raw/query_habitat_thresholds_mad.R` reaches a fifth internal (`.frs_rule_to_sql`)**, off the run path and not pinned.
+
+## Status (2026-11-23) — drivers need an explicit config; a standalone run is labelled; the legacy `wsgs_*` path is retired (#475, 0.89.0)
+
+**Backlog move 7 (#475) lands as one release: #278, #281, #181, #166; #179 and #110 close as retired.** Every `data-raw/` driver refuses to run without a config, the three that write persist tables also refuse a non-`bcfishpass` bundle with no `LNK_SCHEMA`, `study_area_run.sh` prints a decisions block before its first write, a standalone `wsg_run_one.R` / `wsg_recompute_one.R` needs `LNK_RUN_LABEL` (its `run_uid` stays NULL, so PUBLISH still refuses it), and `state_clean.sh --tables=` drops named tables locally (or on `--hosts=`). The nine legacy scripts are deleted. Mechanics: RUNBOOK §8d and the single-group path in §8c. Tests: `test-driver_config.R`, `test-state_clean.R` (local only; `data-raw/` skips in CI).
+
+**Owed:** the pre-run gate runs before the next provincial run (this voids any record). Hosts and jobs calling a retired script or omitting a config move to `study_area_run.sh --config=`.
+
+**Facts not worth re-deriving:**
+- **A mutant R driver that accepts a config models for real** against the local fwapg: the mutation proof for the config refusals runs only on the shell drivers.
+- **`state_clean.sh` needs bash 5** (associative arrays); macOS `/bin/bash` 3.2 fails at `declare -A`.
+- **Every verb-first script is cited by path** from research, archives, tests or the weekly workflow, so none was renamed.
 
 ## Status (2026-11-23) — `cabd.dams` loads in one layout on every host; PUBLISH runs on a pool (#499, 0.88.0)
 
