@@ -55,10 +55,10 @@ None. Answered by the owner 2026-11-23, all as recommended (moved to the decisio
 ## Phase 3: A standalone run is labelled (#281)
 
 - [x] Decision 1 answered (NULL `run_uid`, label required)
-- [ ] Put the label and `run_uid` rule in one small function each driver sources or inlines identically, testable without a database (`wsg_run_one.R` connects at `:56`) (review)
-- [ ] `wsg_run_one.R` and `wsg_recompute_one.R`: with `LNK_RUN_UID` unset, refuse an empty `LNK_RUN_LABEL` with a usage line, and apply decision 1's `run_uid` rule; with it set, behave as today. Keep the label check `study_area_run.sh` applies to `--run-label=` (`A-Z a-z 0-9 . _ -`). Under (a′), edit `lnk_publish.R` and the stall hint at `wsg_run_one.R:149-153`
-- [ ] Every printed and documented standalone invocation carries a label (`RUNBOOK.md`, CLAUDE.md's current instructions); the review found the printed re-model commands and remote legs already carry `LNK_RUN_UID`, and `pretest_run.sh:256` (label, no uid) runs under every option
-- [ ] Test the function (refusal, label check, stored `run_uid`), and restore the old path and watch the test fail; the stored value is checked live by the validation run
+- [x] Put the label and `run_uid` rule in one small function each driver sources or inlines identically, testable without a database (`wsg_run_one.R` connects at `:56`) (review)
+- [x] `wsg_run_one.R` and `wsg_recompute_one.R`: with `LNK_RUN_UID` unset, refuse an empty `LNK_RUN_LABEL` with a usage line, and apply decision 1's `run_uid` rule; with it set, behave as today. Keep the label check `study_area_run.sh` applies to `--run-label=` (`A-Z a-z 0-9 . _ -`). Under (a′), edit `lnk_publish.R` and the stall hint at `wsg_run_one.R:149-153`
+- [x] Every printed and documented standalone invocation carries a label (`RUNBOOK.md`, CLAUDE.md's current instructions); the review found the printed re-model commands and remote legs already carry `LNK_RUN_UID`, and `pretest_run.sh:256` (label, no uid) runs under every option
+- [x] Test the function (refusal, label check, stored `run_uid`), and restore the old path and watch the test fail; the stored value is checked live by the validation run
 
 ## Phase 4: `state_clean.sh --tables=` (#181)
 

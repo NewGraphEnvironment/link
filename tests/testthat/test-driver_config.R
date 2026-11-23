@@ -100,3 +100,22 @@ test_that("the study-area driver's refusal comes before its focal-count check", 
   expect_match(r$out, "--config=<bundle> is required", fixed = TRUE)
   expect_no_match(r$out, "need exactly", fixed = TRUE)
 })
+
+test_that("a standalone run needs a label, and a dispatched run does not", {
+  e <- new.env()
+  sys.source(driver_path("run_label_check.R"), envir = e)
+  expect_match(e$run_label_check(uid = "", label = ""), "needs LNK_RUN_LABEL")
+  expect_match(e$run_label_check(uid = "", label = "a b"), "accepts only")
+  expect_match(e$run_label_check(uid = "", label = "x'y"), "accepts only")
+  expect_null(e$run_label_check(uid = "", label = "pars-check_1.0"))
+  # Orchestrated: the uid says which dispatch; an empty label is allowed.
+  expect_null(e$run_label_check(uid = "20261123_000000-abc", label = ""))
+})
+
+test_that("wsg_run_one.R and wsg_recompute_one.R refuse a standalone run with no label", {
+  for (nm in c("wsg_run_one.R", "wsg_recompute_one.R")) {
+    r <- run_r_driver(nm, c("DEAD", "bcfishpass"), env = c("LNK_RUN_UID=", "LNK_RUN_LABEL="))
+    expect_gt(r$status, 0L, label = nm)
+    expect_match(r$out, "needs LNK_RUN_LABEL", info = nm)
+  }
+})

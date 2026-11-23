@@ -55,6 +55,9 @@ if (!identical(config, "bcfishpass") && !nzchar(Sys.getenv("LNK_SCHEMA"))) {
           "same persist schema as bcfishpass and would overwrite that build in place.")
   quit(status = 2)
 }
+source(file.path(dirname(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1])),
+                "run_label_check.R"))
+run_label_require("wsg_run_one.R")
 
 if (identical(Sys.getenv("LNK_LOAD"), "loadall")) {
   suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))

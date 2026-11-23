@@ -41,6 +41,9 @@ if [ -z "$CONFIG" ]; then
 fi
 WIDTH="${3:-4}"
 
+# A measurement run, not a build: the label stands in for the dispatch uid
+# wsg_recompute_one.R asks a standalone run for (link#281).
+export LNK_RUN_LABEL="${LNK_RUN_LABEL:-recompute-parity}"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 RUN_SH="$REPO_ROOT/data-raw/study_area_run.sh"
 SCHEMA="${LNK_SCHEMA:-fresh}"

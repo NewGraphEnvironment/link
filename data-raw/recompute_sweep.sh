@@ -35,6 +35,7 @@ shift 2 2>/dev/null || shift $#
 WIDTHS=("$@")
 [ ${#WIDTHS[@]} -gt 0 ] || WIDTHS=(1 2 4)
 
+export LNK_RUN_LABEL="${LNK_RUN_LABEL:-recompute-sweep}"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 RUN_SH="$REPO_ROOT/data-raw/study_area_run.sh"
 SCHEMA="${LNK_SCHEMA:-fresh}"

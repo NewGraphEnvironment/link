@@ -1329,7 +1329,7 @@ stops (named `wsgs`; a group is taken from whichever of the config's schemas
 holds its build). Provenance is keyed per finished build, never per dispatch:
 a dispatch's set of rows grows as its other groups close and depends on which
 schemas an export reads, while one build's log row does not change. A NULL
-`run_uid` (a direct `wsg_run_one.R` run) is kept under
+`run_uid` (a direct `wsg_run_one.R` run, which carries a label instead) is kept under
 `provenance/run_id=<run_id>/`. Each config entry carries `exported`, which the
 regressions judgement below reads.
 
@@ -3502,9 +3502,18 @@ docker exec fresh-db psql -U postgres -d fwapg -c \
   "SELECT pg_get_viewdef('fresh_default.barriers_bt_unified', true);"
 
 # Single-WSG tunnel-free build (the headline path)
-LNK_WSG=PARS LNK_CONFIG=default LNK_SCHEMA=fresh_default LNK_RUN_LABEL=pars-check \
-  Rscript data-raw/wsg_run_one.R --wsgs=PARS --config=default --schema=fresh_default
+LNK_SCHEMA=fresh_default LNK_RUN_LABEL=pars-check \
+  Rscript data-raw/wsg_run_one.R PARS default
 ```
+
+A standalone `wsg_run_one.R` / `wsg_recompute_one.R` (no `LNK_RUN_UID`) refuses an empty
+`LNK_RUN_LABEL` (`data-raw/run_label_check.R`; label characters `A-Z a-z 0-9 . _ -`). Its
+`run_uid` stays NULL: that column means one dispatch across hosts, and PUBLISH keeps refusing a
+build without one unless `LNK_PUBLISH_ALLOW` gives a reason. The label is what records why the run
+happened. Every driver also refuses to run without an explicit config, and the three that write
+persist tables (`wsg_run_one.R`, `wsg_recompute_one.R`, `barriers_views_build.R`) refuse a bundle
+other than `bcfishpass` with no `LNK_SCHEMA`, because `default` resolves to the schema `fresh`
+that `bcfishpass` writes.
 
 Local docker fwapg: `host=localhost port=5432 dbname=fwapg user=postgres
 password=postgres` (compose at `~/Projects/repo/fresh/docker/`).
