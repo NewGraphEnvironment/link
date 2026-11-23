@@ -2,103 +2,115 @@
 % Please edit documentation in R/lnk_aggregate.R
 \name{lnk_aggregate}
 \alias{lnk_aggregate}
-\title{Compute upstream habitat per crossing}
+\title{Habitat upstream of each crossing, per species}
 \usage{
 lnk_aggregate(
   conn,
   crossings,
-  habitat,
-  col_id = "modelled_crossing_id",
-  cols_sum = c(spawning_km = "spawning", rearing_km = "rearing"),
-  col_blk = "blue_line_key",
-  col_measure = "downstream_route_measure",
-  col_length = "length_metre",
-  to = NULL,
+  schema,
+  to,
+  config,
+  species = NULL,
+  col_id = "aggregated_crossings_id",
+  barriers = NULL,
+  barriers_col_id = "barriers_anthropogenic_id",
   verbose = TRUE
 )
 }
 \arguments{
 \item{conn}{A \link[DBI:DBIConnection-class]{DBI::DBIConnection} object.}
 
-\item{crossings}{Character. Schema-qualified crossings table.}
+\item{crossings}{Character. Schema-qualified table of crossings, with
+\code{col_id}, \code{blue_line_key} and \code{downstream_route_measure}. Typically a
+working schema's \code{crossings}.}
 
-\item{habitat}{Character. Schema-qualified habitat table (output of
-\code{frs_habitat_classify()} or similar).}
+\item{schema}{Character. The persist schema holding \code{streams} and
+\verb{streams_habitat_<sp>} (for example \code{"fresh_default"}). Every group it
+holds is read: upstream habitat crosses watershed groups, so groups
+upstream of the crossings must be persisted for their habitat to count.}
 
-\item{col_id}{Character. Crossing identifier column (system-agnostic).}
+\item{to}{Character. Schema-qualified table to write (dropped and
+recreated). One row per crossing and species.}
 
-\item{cols_sum}{Named character vector. Names = output column names,
-values = habitat columns to sum. Default sums spawning and rearing
-kilometres.}
+\item{config}{Character. The config whose build \code{schema} holds, written
+to the \code{config} column (for example \code{cfg$name}).}
 
-\item{col_blk}{Character. Network key column name.}
+\item{species}{Character vector of species codes, or \code{NULL} (default)
+for every \verb{streams_habitat_<sp>} table in \code{schema}.}
 
-\item{col_measure}{Character. Network measure column name.}
+\item{col_id}{Character. Crossing identifier column. Default
+\code{"aggregated_crossings_id"}.}
 
-\item{col_length}{Character. Habitat segment length column for summing.}
+\item{barriers}{Character or \code{NULL}. Schema-qualified table of human-made
+barriers (for example a working schema's \code{barriers_anthropogenic}, from
+\code{\link[=lnk_barriers_emit]{lnk_barriers_emit()}}), with \code{barriers_col_id}, \code{blue_line_key},
+\code{downstream_route_measure}. When given, each metric also gets a
+\verb{_belowupstrbarriers_km} total: the habitat upstream of the crossing
+but below the next barriers upstream, as bcfishpass's
+\verb{*_belowupstrbarriers_km}.}
 
-\item{to}{Character. If \code{NULL}, adds columns to crossings table.
-Otherwise writes to new table.}
+\item{barriers_col_id}{Character. Identifier column of \code{barriers}.
+Default \code{"barriers_anthropogenic_id"}. Ids shared with \code{crossings}
+name the same feature.}
 
-\item{verbose}{Logical. Report summary statistics.}
+\item{verbose}{Logical. Report each species' summary.}
 }
 \value{
-The table name (invisibly).
+\code{invisible(to)}. Side effect: creates \code{to}.
 }
 \description{
-For each crossing, sum the upstream habitat accessible if the crossing
-were remediated. This is the demand side of prioritization — severity
-tells you how bad the barrier is, upstream habitat tells you what you'd
-gain by fixing it.
+For each crossing, sums the habitat of each species found anywhere
+upstream of it on the stream network: the crossing's own stream above
+it and every tributary, in every watershed group the persist schema
+holds. This is the demand side of prioritization: severity says how bad
+a barrier is, upstream habitat says what fixing it would open.
 }
 \details{
-\strong{The other half of prioritization:} severity alone doesn't tell you
-where to invest. A high-severity barrier with 50m of upstream habitat is
-lower priority than a moderate barrier with 15km of spawning habitat.
+The walk is \code{\link[fresh:frs_aggregate]{fresh::frs_aggregate()}}, refined by the measure-aware
+\code{fwa_upstream(..., include_equivalents = TRUE, tolerance = 1)} that
+bcfishpass's \code{crossings_upstream_habitat} uses, so a segment counts when
+it starts at or above the crossing (within 1 m) on the crossing's own
+stream, or lies on a stream that joins above it. The main stem below
+the crossing never counts.
 
-\strong{Flexible aggregation:} \code{cols_sum} lets you sum any habitat metric —
-not just spawning/rearing. Lake rearing hectares, wetland area, total
-accessible length — whatever the habitat classification produced.
+Columns of \code{to}: the crossing id (named as \code{col_id}), \code{config},
+\code{species_code}, then in km:
+\itemize{
+\item \code{spawning_km}: segments the species spawns on;
+\item \code{rearing_km}: segments it rears on, lake connection lines left out,
+as \code{\link[=lnk_rollup_wsg]{lnk_rollup_wsg()}}'s \code{rearing_km};
+\item \code{rearing_stream_km}, \code{rearing_lake_km}, \code{rearing_wetland_km}: that
+rearing split by the polygon each line sits in;
+\item \code{rearing_lake_connection_km}: rearing on lake connection lines
+(FWA edge 1450 in a lake), which bcfishpass counts in rearing.
+}
 
-\strong{Data flow:}
+Each sum is exact (\code{numeric}), so it does not depend on row order. A
+crossing with no habitat upstream gets zeros. A crossing whose measure
+is exactly the top of its stream has no segment holding it, so nothing
+is found above it and it gets zeros.
 
-\if{html}{\out{<div class="sourceCode">}}\preformatted{link (score crossings) -> fresh (segment, classify) -> link (rollup)
-}\if{html}{\out{</div>}}
-
-link scores crossings. fresh segments the network and classifies habitat.
-link reads fresh's output to compute per-crossing rollups.
+The barrier totals subtract, from a crossing's total, the totals of the
+barriers upstream of it that have no other barrier between it and them
+(a barrier at the crossing's own id is not its own upstream barrier).
 }
 \examples{
-# --- "Two barriers are both high severity.
-#      One blocks 0.3km of rearing habitat.
-#      The other blocks 12km of spawning habitat for chinook.
-#      Which do you fix first?" ---
 \dontrun{
 conn <- lnk_db_conn()
-
-# Score crossings
-lnk_score(conn, "working.crossings")
-
-# Compute upstream habitat from fresh output
+# a working schema left by lnk_pipeline_run(cleanup_working = FALSE)
 lnk_aggregate(conn,
-  crossings = "working.crossings",
-  habitat = "fresh.streams_habitat")
-# Added spawning_km, rearing_km to working.crossings
-# Summary:
-#   spawning_km: min=0.0, median=2.3, max=45.1
-#   rearing_km:  min=0.0, median=5.7, max=89.2
+  crossings = "working_adms.crossings",
+  schema = "fresh_default",
+  to = "working_adms.crossings_upstream_habitat",
+  config = "default",
+  barriers = "working_adms.barriers_anthropogenic")
 
-# Now you have severity + habitat — the full picture
-# ORDER BY severity DESC, spawning_km DESC
-# to find high-severity barriers blocking the most habitat.
-
-# --- Custom metrics ---
-lnk_aggregate(conn,
-  crossings = "working.crossings",
-  habitat = "fresh.streams_habitat",
-  cols_sum = c(spawning_km = "spawning",
-               rearing_km = "rearing",
-               lake_ha = "lake_rearing"))
+# which barriers block the most chinook spawning below the next barrier?
+DBI::dbGetQuery(conn, "
+  SELECT aggregated_crossings_id, spawning_belowupstrbarriers_km
+  FROM working_adms.crossings_upstream_habitat
+  WHERE species_code = 'CH'
+  ORDER BY 2 DESC LIMIT 5")
 }
 
 }

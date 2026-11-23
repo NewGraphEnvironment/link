@@ -736,7 +736,7 @@ Mechanics: RUNBOOK §6d (`access`, contract, gates, digest, versions) and §8c (
   - `lnk_habitat_validate()`'s cost has the same split.
   - `parity_crosssection.R` and `wsg_vignette_data.R` apply `.lnk_sql_lake_connection()` to `fresh.streams_vw_bcfp`.
   - **Capture still reads the `rearing` flag.** About half of in-lake fish records (bcfishobs A / B) sit on a 1450 line, so they are lake evidence.
-  - **Still on the flag:** `lnk_aggregate()` (per crossing) and the older one-off scripts with their own SQL (`compare_adms.R`, `exp_gradient_extra_breaks.R`).
+  - **Still on the flag:** the older one-off scripts with their own SQL (`compare_adms.R`, `exp_gradient_extra_breaks.R`). `lnk_aggregate()` splits connectors out since #478.
 - **Measured** (`data-raw/logs/lake_connection_319/`):
   - Cross-section 25/25 pass before and after; FINA BT rearing −393.6 km on both sides.
   - #284's `habitat_change.csv` reproduces 36 / 36.
@@ -1444,7 +1444,7 @@ Six-phase bcfishpass-reproducing pipeline, driven by `lnk_config()` + `lnk_load_
 
 ### Bridge to fresh
 - `lnk_source(conn, crossings, label_col, label_map)` — returns `list(table, label_col, label_map)` that plugs directly into `frs_habitat(break_sources = list(...))`. `label_map` translates link severity → fresh access labels (`high → blocked`, `moderate → potential`).
-- `lnk_aggregate(conn, crossings, habitat, cols_sum)` — sums habitat on the crossing's **own stream line** above it (same `blue_line_key`, higher measure). There is no network walk, it is not per species, it cannot read the persisted `streams_habitat_<sp>` (no key, measure or length columns there), and nothing calls it (measured in #338). It is not a per-crossing upstream rollup.
+- `lnk_aggregate(conn, crossings, schema, to, config, species, col_id, barriers)` — per crossing and species, the habitat upstream over the whole network (the crossing's stream above it and every tributary, across groups), from a persist schema's `streams` and `streams_habitat_<sp>` (#478, #321). `fresh::frs_aggregate()` refined by bcfishpass's measure-aware `fwa_upstream(..., true, 1)`; exact numeric sums; zeros where nothing is upstream. Writes a long table to `to` (`config`, `species_code`, `spawning_km`, `rearing_km` with connectors out, the stream / lake / wetland split, `rearing_lake_connection_km`), plus `*_belowupstrbarriers_km` given a `barriers` table (to the next human-made barriers upstream). Barriers outside the table (another group's) do not stop the walk.
 
 ## Integration with fresh
 
@@ -1460,8 +1460,10 @@ src <- lnk_source(conn, "working.crossings")
 # fresh consumes it — zero translation
 frs_habitat(conn, "MORR", break_sources = list(src))
 
-# link reads fresh output for per-crossing rollup
-lnk_aggregate(conn, "working.crossings", "fresh.streams_habitat")
+# link reads fresh output for per-crossing rollup: per species, over the network
+lnk_aggregate(conn, "working_morr.crossings", schema = "fresh_default",
+              to = "working_morr.crossings_upstream_habitat", config = "default",
+              barriers = "working_morr.barriers_anthropogenic")
 ```
 
 The data flows both directions: link → fresh (scored crossings as break sources) and fresh → link (habitat classification for upstream rollup).
@@ -1500,7 +1502,7 @@ frs_habitat(conn, "BULK",
 
 ### `gate` parameter
 
-`gate = FALSE` skips accessibility entirely — classifies all segments by gradient/channel width alone. Useful for total habitat potential before considering barriers. `lnk_aggregate()` can compare gated vs ungated to show how much habitat each crossing blocks.
+`gate = FALSE` skips accessibility entirely — classifies all segments by gradient/channel width alone. Useful for total habitat potential before considering barriers. Summed per crossing with `lnk_aggregate()` on a gated and an ungated build, it shows how much habitat each crossing blocks.
 
 ### Any AOI
 
