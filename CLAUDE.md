@@ -15,6 +15,24 @@ Experimental package — breaking all the time and loving the learning curve. St
 
 **Take the next move from `planning/backlog.md`** (`bash <soul>/skills/_shared/backlog_moves.sh next planning/backlog.md`; `/compact-prep` names it): 13 moves, umbrellas #469–#481, each planned with one `/planning-init <umbrella>` and landed in one PR, ticked by `/gh-pr-merge`. Moves 12 and 13 wait on knowledge#139's flow-method decision and fresh 0.54.0. A link issue knowledge waits on says so in its batch section. A new issue joins the open move whose batches touch its files; run `/backlog-sweep` again when one fits none. Record: `planning/archive/2026-11-issue-468-backlog-pass/`.
 
+## Status (2026-11-23) — `cabd.dams` loads in one layout on every host; PUBLISH runs on a pool (#499, 0.87.0)
+
+**Backlog move 14 (#499) lands as one release: #494 and #488; #334's public read stays open (owner, 2026-11-22).** `snapshot_bcfp.sh` loads CABD through `cabd_load()` (`data-raw/snapshot_bcfp_lib.sh`): the API into `cabd.dams_load`, then `cabd.dams` rebuilt as `ogc_fid, geom`, CABD's fields, key and index, in one transaction, so every host's content md5 agrees and matches the reload layout's recorded `6f7f44c0…`. PUBLISH (`data-raw/habitat_publish.R`, helpers `.lnk_publish_run()` / `.lnk_publish_list()` in `R/lnk_publish.R`) checks from one listing, puts on a PSOCK pool of `LNK_PUBLISH_JOBS` (default 8), takes versions from the put replies and one `list-object-versions`, and checks every result before the manifest. Mechanics: RUNBOOK §6d, "How PUBLISH talks to S3"; §8d, "An API primitive loads in one column layout". Evidence: `data-raw/logs/cabd_shape_494/`, `data-raw/logs/publish_parallel_488/`.
+
+**Owed:**
+- Every host re-snapshots (`snapshot_bcfp.sh --force`) before the next multi-host run; a host loaded before 0.87.0 keeps whichever layout its first load gave it.
+- rtj: the scheduled runs swap to image `254953701`, a provincial run goes out on it, and image `228350154` is deleted once that run publishes (NewGraphEnvironment/rtj#434).
+- The next real PUBLISH (the operator's word) records its minutes against #488's 53.5 on a cloud host.
+- #334's public read: the infrastructure change after the budget and anomaly alerts.
+- The pre-run gate is not voided by this release alone (`DESCRIPTION` and `R/lnk_publish.R` map `none`; the snapshot and publish scripts are outside `PRETEST_LINK_PATHS`); it still owes its run from earlier releases.
+
+**Facts not worth re-deriving:**
+- **#494's cause was not "whether the table existed":** the first ogr2ogr load into a database (the one that creates `ogr_system_tables`) lays a table out `geom` last, every later load `geom` second, `OGR_TRUNCATE` or not. A load after `DROP TABLE` comes out `geom` second, so a scratch database that has had one GDAL load cannot show the defect: use a new database, or a stub that builds a geom-last staging table.
+- **ogr2ogr's drop under `-overwrite` takes a dependent view with it silently** (exit 0); `cabd_load()` drops without `CASCADE` first.
+- **One `aws` call on m1 is about 0.55 s, 0.33 of it start-up** (#488's 2.4 s was a cloud host). A full publish of the published tree: 36.5 min serially, 4.1 min on the pool, 1.9 min republishing an unchanged tree.
+- **The PSOCK worker function must carry no link namespace:** `.lnk_publish_aws()` uses base R only and is sent with a global environment.
+- **A stub `aws` written for concurrency needs a lock on any file its calls share** (`flock`): the first stub raced on its versions file and failed one run in two.
+
 ## Status (2026-11-18) — default's presence table is bcfishpass's copy plus an overlay; link's own exclusions; presence groups in the bundle (#472, 0.86.0)
 
 **Backlog move 4 (#472) lands as one release: #431, #436, #292, and #402's decisions as overlay rows.** `default`'s `overrides/wsg_species_presence.csv` is bcfishpass's file (3bd2824), synced weekly; its 122 departures (#402's 110 added and 10 removed cells, UTRE CH and LARL GR kept absent) and the four `ko` cells are rows of `wsg_species_presence_overlay.csv`, each reason carrying the decision, the review's rule and the story's opening. `overrides/observation_exclusions_link.csv` excludes three records bcfishpass does not list (GUIC CH, MESI SK, KOTL ST), read with the copy by `.lnk_observation_exclusion_keys()`. `presence_groups.csv` holds `lnk_presence()`'s groups in `default` and `bcfishpass`. No token moves (`acc-v6`, `acc-bcfp-5`). Mechanics: RUNBOOK §7, "Copies and overlays"; §5, "The presence table is checked against the records". Evidence: `data-raw/logs/presence_overlay_431/` (its README).

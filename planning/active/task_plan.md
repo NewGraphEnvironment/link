@@ -59,7 +59,7 @@ Settled by reading the code, not owner forks:
 
 - [ ] `NEWS.md` entry and the `DESCRIPTION` version bump as the last commit (minor: a new loader path and a new PUBLISH mechanism).
 - [ ] The PR body says `Closes #494`, `Closes #488`, and references #334 without closing it (unless Open decision 3 opens the read).
-- [ ] `CLAUDE.md` status block for move 14 (what landed, owed, facts not worth re-deriving).
+- [x] `CLAUDE.md` status block for move 14 (what landed, owed, facts not worth re-deriving).
 
 ## Owed at the end (reported, done after merge)
 
@@ -71,7 +71,7 @@ Settled by reading the code, not owner forks:
 
 ## Validation
 
-- [ ] Tests pass
+- [x] Tests pass (6,265; the one failing test is #493 on main too)
 - [ ] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
