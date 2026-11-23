@@ -19,6 +19,10 @@ Swapped `.frs_habitat_models`'s declared formals to `c("params_method", "wsg_cod
 
 A mocked namespace cannot stand in for fresh inside `lnk_preflight_fresh()` (`getNamespaceExports()` refuses a plain environment), so the end-to-end refusal test declares a reordered list against the real fresh; the helper's cases (reorder, rename, drop, trailing with and without a default, absent) run on plain environments.
 
+## Phase 2 mutation proof (2026-11-23)
+
+In a detached worktree of the Phase 2 commit (Phase 2's commit), appended `.lnk_mutant_507 <- function() getFromNamespace(".frs_fake", "fresh")` to `R/lnk_pipeline_connect.R`: `test-lnk_preflight_fresh.R` FAIL 1, at the set-equality test, naming `.frs_fake` as the extra call site. Worktree removed. On the branch: FAIL 0, PASS 70.
+
 ## Errors Encountered
 
 | Error | Resolution |

@@ -30,7 +30,7 @@ Imports:
     crate (>= 0.0.2),
     DBI,
     digest,
-    fresh (>= 0.55.1),
+    fresh (>= 0.56.0),
     httr,
     jsonlite,
     parallel,
@@ -42,7 +42,7 @@ Imports:
     yaml
 Remotes:
     NewGraphEnvironment/crate,
-    NewGraphEnvironment/fresh@v0.55.1,
+    NewGraphEnvironment/fresh@v0.56.0,
     NewGraphEnvironment/gq,
     NewGraphEnvironment/wet@v0.4.7
 Suggests:

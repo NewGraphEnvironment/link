@@ -33,10 +33,10 @@ None open.
 
 ## Phase 2: The drift guard names every `getFromNamespace()` call site
 
-- [ ] `.lnk_fresh_internal_calls_in(fun)` and `.lnk_fresh_internal_callsites(pkg = "link")` as decided above (`match.call()` normalisation; bare, `utils::`, `utils:::`; refuse a non-literal `x` or `ns`)
-- [ ] Tests: `setequal(.lnk_fresh_internal_callsites(), .lnk_fresh_required_internal())`, non-empty; `.lnk_fresh_internal_calls_in()` on throwaway functions finds a bare, a `utils::` and a `utils:::` call, a named-argument call (`ns = "fresh", x = ".frs_y"`), ignores a call on another namespace, and errors on a non-literal `x` and a non-literal `ns`
-- [ ] Mutation proof, recorded: add a fake `getFromNamespace(".frs_fake", "fresh")` call in a scratch copy and confirm the test goes red (in a `git worktree`, not this tree)
-- [ ] Comment above `.lnk_fresh_required_internal_formals()`: a change to the list is a change to fresh#329's contract test too; `data-raw/query_habitat_thresholds_mad.R:164` reaches a fifth internal (`fresh:::.frs_rule_to_sql`), off the run path and outside the namespace walk, so it is not pinned
+- [x] `.lnk_fresh_internal_calls_in(fun)` and `.lnk_fresh_internal_callsites(pkg = "link")` as decided above (`match.call()` normalisation; bare, `utils::`, `utils:::`; refuse a non-literal `x` or `ns`)
+- [x] Tests: `setequal(.lnk_fresh_internal_callsites(), .lnk_fresh_required_internal())`, non-empty; `.lnk_fresh_internal_calls_in()` on throwaway functions finds a bare, a `utils::` and a `utils:::` call, a named-argument call (`ns = "fresh", x = ".frs_y"`), ignores a call on another namespace, and errors on a non-literal `x` and a non-literal `ns`
+- [x] Mutation proof, recorded: add a fake `getFromNamespace(".frs_fake", "fresh")` call in a scratch copy and confirm the test goes red (in a `git worktree`, not this tree)
+- [x] Comment above `.lnk_fresh_required_internal_formals()`: a change to the list is a change to fresh#329's contract test too; `data-raw/query_habitat_thresholds_mad.R:164` reaches a fifth internal (`fresh:::.frs_rule_to_sql`), off the run path and outside the namespace walk, so it is not pinned
 
 ## Phase 3: fresh pin v0.55.1 → v0.56.0, proved by digests
 
