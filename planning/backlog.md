@@ -14,6 +14,12 @@ before this file and so never ticked); fresh's releases (0.54.0 on 2026-11-20, 0
 knowledge#139 (still open); crate's snapshot contract issue (crate#66, open); soul's `research_check.sh` (25
 files flagged, folded into #279) · four umbrellas filed: #499, #500, #501, #502; #474 closed
 
+**Verified:** 2026-11-23 against 84 open issues · **Produced by:** a read of the one open issue the file did
+not place (#504) and its comments; #504's premise against `origin/main` (87140608) and move 13's branch;
+fresh's 0.56.0 release and NewGraphEnvironment/fresh#328 and #329 (open); the open members of finished moves
+(#279, #402, #236, #334, #270); the research check (19 files flagged: 6 grown, 10 undated, 3 on dated
+historical records) · one umbrella filed for move 18; two research issues filed from #279; #279 closed
+
 How to use this file: `/backlog-sweep` writes it. Take the first move in **Moves** that is not
 ticked and not **waiting**; `/planning-init <umbrella>` plans it, one phase per batch, one PR.
 A move that waits only on other moves is `open`, with them in `waits on`; `**waiting**` is for
@@ -48,7 +54,8 @@ counts them): run `/backlog-sweep` again, the backlog is not finished.
 | - [ ] 12 | #480 | 17, 18, 19: thresholds from knowledge's table, MAD everywhere, the PARS vignette (7 issues) | **waiting** on knowledge#139's decision of which method sets link's flow numbers | C | 3, 11, 16 | opus |
 | - [ ] 15 | #500 | 23: load an export's input snapshots (1 issue) | **waiting** on crate's self-describing table snapshot contract (crate#66) | B | 14 | opus |
 | - [ ] 16 | #501 | 24: rainbow trout back in `default`, the presence review's last rows (2 issues) | open | D | — | opus |
-| - [ ] 17 | #502 | 25: province-wide builds at the new tokens (1 issue) | **waiting** on the operator's word for the provincial runs | C | 3, 13, 14, 16 | opus |
+| - [ ] 17 | #502 | 25: province-wide builds at the new tokens (1 issue) | **waiting** on the operator's word for the provincial runs | C | 3, 13, 14, 16, 18 | opus |
+| - [ ] 18 | #507 | 26: fresh's internals pinned by argument, at fresh 0.56.0 (1 issue) | open | A | 7, 13, 14 | opus |
 
 Rows are in the order to take them (moves 13 and 14 first since 2026-11-22); a move's number is its name.
 
@@ -90,6 +97,7 @@ built and knowledge#120 reads it.
 | 23 | #500 | load an export's input snapshots: #491 | 1 | crate#66's contract; the crate release pinned | after batch 21 settles the table layout the loader writes into |
 | 24 | #501 | rainbow trout back in `default`: #497, #402 | 2 | how a rainbow trout record is told from steelhead; the pending rows | one record rule, one overlay, one `acc` row, before the provincial runs |
 | 25 | #502 | province-wide builds at the new tokens: #490 | 1 | the run decisions; whether move 11's `acc` row goes first | the parent-gradient build needs `default` and `default_minimal` at one `acc` |
+| 26 | #507 | fresh's internals by argument: #504 | 1 | formals link passes or full signatures; before or after fresh#329 | one pin bump to fresh 0.56.0 and one pre-run gate pay for both |
 
 ### 1. The parent gradient and the grad tokens
 
@@ -446,6 +454,22 @@ each bundle first, and every host's primitives are re-snapshotted. Gate: the ope
 decisions stated per run; whether move 11's `acc` row goes in first. knowledge waits on it: knowledge#220
 lists this build as member 2 of its publish umbrella.
 
+### 26. fresh's internals pinned by argument, at fresh 0.56.0
+
+- [ ] Carried by move 18, #507
+
+**Touches:** `R/lnk_preflight_fresh.R`, `tests/testthat/test-lnk_preflight_fresh.R`, `DESCRIPTION`, `RUNBOOK.md`, `data-raw/pretest_inputs.csv`
+
+#504 (the pre-flight checks that `.frs_run_connectivity`, `.frs_habitat_models`, `.frs_near_river_specs`
+and `.frs_sql_num` exist but not their arguments; pin the formals link passes, as it already does for
+exports, have the callsite drift guard report `getFromNamespace()` sites, and run the pre-run gate when the
+pin moves). fresh's side is NewGraphEnvironment/fresh#329 (a contract test on the same four internals) and
+NewGraphEnvironment/fresh#328 (link's tests on every fresh pull request), both open. Decided at the sweep's
+go (2026-11-23): this move bumps the pin to fresh 0.56.0, whose new refusals (a network with no watershed
+group; an `id_segment` overlay join without `watershed_group_code`) reach link's calls of
+`frs_habitat_overlay()` and `frs_cluster()`. Gate: which formals to pin; before or after fresh#329. One pin
+bump and one pre-run gate. It lands before move 17, so the provincial builds run at the pinned fresh.
+
 ## Singles
 
 - #203: a globally unique `id_segment` re-models every persist schema and changes the export key; fresh#231 and fresh#218 hold fresh's half.
@@ -467,6 +491,7 @@ lists this build as member 2 of its publish umbrella.
 
 ## Closed and transferred
 
+- #279: superseded by #508 (consolidate the six grown research files) and #509 (re-verify and date the ten undated ones), which carry its two open asks; PR #503 (move 3) did the rest; closed 2026-11-23.
 - #474: superseded by PR #485 (0.82.0), move 6's release, which fixed every member but #270 (now a single); closed 2026-11-22.
 - #444: superseded by PR #457 (0.79.0), which built `streams_parent` on all 241 groups, every acceptance line ticked (knowledge#120 ticked the first on 2026-11-05). Follow-ups #462, #463.
 - #439: no consequence now; the minimal run and the `default` run it readied hosts for ran on fresh 0.52.0 with both verifiers passing. The worker's refused token moves to #269 (batch 8).
