@@ -8,7 +8,7 @@ Members, one phase each besides the pin and the proof: #452 (`cols_streams_near_
 
 ## Decided at the gate
 
-No plan gate in this pane: `/coordinator` dispatched this as a `park review` (soul#928), so the coordinator's plan gate, or the owner, decides `## Open decisions`. Taken here as mechanism or convention, with the Plan review's corrections (`review-plan.md`):
+No plan gate in this pane: `/coordinator` dispatched this as a `park review`, so the coordinator's plan gate, or the owner, decides `## Open decisions`. Taken here as mechanism or convention, with the Plan review's corrections (`review-plan.md`):
 
 - **Pin fresh v0.55.1, floor 0.55.1.** `test-lnk_preflight_fresh.R:162-170` holds the `Imports:` floor equal to the `Remotes:` tag (review B1; the draft's 0.55.0 floor would fail it). fresh NEWS 0.52.0 → 0.55.1: 0.53.0 keys `to_streams` on `linear_feature_id`; 0.54.0 (fresh#293) adds `linear_feature_id` to the classify target and its `_near_river` table, keys their deletes and joins on it, and requires `frs_habitat_predicates(near_river_lfid)` with `near_river_table`; 0.55.0 (fresh#305) bounds `frs_db_conn()`; 0.55.1 changes fresh's tests only. Nine fresh `R/` files changed, none added, all already mapped in `data-raw/pretest_inputs.csv`.
 - **The shared R library stays as it is until after the merge** (it held fresh 0.53.0, not 0.52.0, at the resume). Every `load_all()`, test, check, lint and pretest reach from Phase 2 on runs with `R_LIBS=<scratch lib>` holding fresh 0.55.1 alone (`load_all()` refuses a fresh below the floor; other sessions on the host read the shared library). The shared install is owed after merge (review O1, O2).
