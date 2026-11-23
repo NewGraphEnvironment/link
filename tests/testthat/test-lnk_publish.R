@@ -121,8 +121,9 @@ test_that("the pool runs calls at most `jobs` at once and checks every result", 
   f <- file.path(d, "x.txt")
   writeLines("x", f)
   md5 <- unname(tools::md5sum(f))
-  calls <- lapply(sprintf("k/%02d", 1:8), function(k)
-    .lnk_publish_put_call("b", k, f, "text/plain", md5))
+  calls <- lapply(sprintf("k/%02d", 1:8), function(k) {
+    .lnk_publish_put_call("b", k, f, "text/plain", md5)
+  })
   res <- .lnk_publish_run(calls, jobs = 3L)
   expect_length(res, 8L)
   lg <- stub_log(d)
@@ -140,8 +141,9 @@ test_that("one failed call stops the pool, naming it, after every call has retur
   withr::local_envvar(STUB_FAIL_KEY = "k/03")
   f <- file.path(d, "x.txt")
   writeLines("x", f)
-  calls <- lapply(sprintf("k/%02d", 1:5), function(k)
-    .lnk_publish_put_call("b", k, f, "text/plain", unname(tools::md5sum(f))))
+  calls <- lapply(sprintf("k/%02d", 1:5), function(k) {
+    .lnk_publish_put_call("b", k, f, "text/plain", unname(tools::md5sum(f)))
+  })
   expect_error(.lnk_publish_run(calls, jobs = 2L), "1 of 5 aws call\\(s\\) failed:\n  put k/03")
   expect_identical(nrow(stub_log(d)), 5L)
 })

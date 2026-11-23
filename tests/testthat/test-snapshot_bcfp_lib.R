@@ -308,7 +308,13 @@ test_that("cabd_load: a geom-last staging table becomes ogc_fid, geom, then the 
   bin <- withr::local_tempdir()
   writeLines(c("#!/bin/sh",
                'tgt=""; prev=""; for a in "$@"; do [ "$prev" = "-nln" ] && tgt="$a"; prev="$a"; done',
-               sprintf('psql %s -v ON_ERROR_STOP=1 -q -c "CREATE TABLE $tgt (ogc_fid serial PRIMARY KEY, cabd_id varchar, height_m float8, geom geometry(Point, 4326)); INSERT INTO $tgt (cabd_id, height_m, geom) VALUES (\'a1\', 3.5, ST_SetSRID(ST_MakePoint(-123.1, 49.2), 4326)), (\'b2\', NULL, ST_SetSRID(ST_MakePoint(-120.5, 50.7), 4326));"', lv$url)),
+               sprintf(paste0('psql %s -v ON_ERROR_STOP=1 -q -c "',
+                              'CREATE TABLE $tgt (ogc_fid serial PRIMARY KEY, cabd_id varchar, ',
+                              'height_m float8, geom geometry(Point, 4326)); ',
+                              'INSERT INTO $tgt (cabd_id, height_m, geom) VALUES ',
+                              '(\'a1\', 3.5, ST_SetSRID(ST_MakePoint(-123.1, 49.2), 4326)), ',
+                              '(\'b2\', NULL, ST_SetSRID(ST_MakePoint(-120.5, 50.7), 4326));"'),
+                       lv$url)),
              file.path(bin, "ogr2ogr"))
   Sys.chmod(file.path(bin, "ogr2ogr"), "755")
   tbl <- paste0(lv$schema, ".dams")

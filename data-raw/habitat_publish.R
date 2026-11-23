@@ -135,8 +135,11 @@ if (identical(Sys.getenv("LNK_PUBLISH"), "1")) {
                                                              units = "secs"))))
     t_step <<- now
   }
-  aws_ok <- function(...) .lnk_publish_run(list(list(
-    label = paste(c(...)[1:2], collapse = " "), args = c(...))))[[1]]$out
+  aws_ok <- function(...) {
+    a <- c(...)
+    .lnk_publish_run(list(list(label = paste(a[1:2], collapse = " "),
+                               args = a)))[[1]]$out
+  }
   # ETag of one existing key, or NA when it is absent (404). Any other failure
   # (403, network) stops: absence must be proven, not assumed.
   etag <- function(key) {
@@ -226,9 +229,10 @@ if (identical(Sys.getenv("LNK_PUBLISH"), "1")) {
     }),
     lapply(c(m$parts, m$group_parts[!gp_same],
              if (!is.null(m$dependencies)) list(m$dependencies)),
-           function(p) .lnk_publish_put_call(
-             bucket, paste(prefix, p$key, sep = "/"), file.path(root, p$key),
-             pq, p$md5)))
+           function(p) {
+             .lnk_publish_put_call(bucket, paste(prefix, p$key, sep = "/"),
+                                   file.path(root, p$key), pq, p$md5)
+           }))
   res <- .lnk_publish_run(calls, jobs)
   put_version <- vapply(res, .lnk_publish_put_version, character(1))
   names(put_version) <- vapply(calls, function(x) sub("^put ", "", x$label),
@@ -298,9 +302,10 @@ if (identical(Sys.getenv("LNK_PUBLISH"), "1")) {
     stopifnot(all(startsWith(st, seg)))
     stale <- c(stale, st)
   }
-  .lnk_publish_run(lapply(stale, function(k) list(
-    label = paste("delete", k),
-    args = c("s3api", "delete-object", "--bucket", bucket, "--key", k))), jobs)
+  .lnk_publish_run(lapply(stale, function(k) {
+    list(label = paste("delete", k),
+         args = c("s3api", "delete-object", "--bucket", bucket, "--key", k))
+  }), jobs)
   for (k in stale) stamp("deleted stale ", k)
   step_done(sprintf("%d stale keys deleted", length(stale)))
 
