@@ -1643,8 +1643,9 @@ the file models every rules species. It refuses a code with no rules entry, a
 rules species with no row, a value other than `t`/`f`, a duplicate, a paused row
 without its reason or date, and pausing every species. `extends:` inherits the
 file, so `default_tuned` pauses what `default` pauses. `default` pauses KO (its
-presence column was never sourced) and RB (records do not separate rainbow trout
-from steelhead), at `acc-v5`.
+presence column was never sourced), since `acc-v5`. RB was paused with it until
+#501 (`acc-v7`), which settled how its records are told from steelhead's (§7,
+"The record rule").
 
 What a paused species does, and does not do:
 
@@ -1676,9 +1677,17 @@ What a paused species does, and does not do:
   per segment, with no habitat: other groups' recompute reads its barrier rows
   (LEUT and LNRS are each read by 19 groups). `lnk_pipeline_species(paused =
   TRUE)` answers whether a group is modelled; `lnk_wsg_resolve()`,
-  `wsg_run_one.R` and `wsg_recompute_one.R` use it. Under `default` these are
-  BRID, GRNL, LEUT, LNRS, MURT, PITR and UISR (CHUK's only cell is DV, so the
-  filter has always dropped it). Compare skips them with a NOTE.
+  `wsg_run_one.R` and `wsg_recompute_one.R` use it. Under `default` there are
+  none since RB is modelled again (#501); while RB was paused they were BRID,
+  GRNL, LEUT, LNRS, MURT, PITR and UISR. CHUK's only cell is DV, so the filter
+  has always dropped it. Compare skips such groups with a NOTE.
+- **A modelled species can still break streams in a group whose cell does not
+  mark it.** `.lnk_pipeline_prep_minimal()` promotes presence through
+  `presence_groups.csv`, so with RB modelled, a group with CT or DV marked and no
+  RB cell breaks its streams at RB's barriers (`ct_dv_rb`), while the record rule
+  reads the cell as written: no RB record there cuts, sets code 2 or lifts, and
+  RB is not classified. 17 groups at #501: BEAV, BLUR, CHUK, COAL, DEAL, DEAR,
+  FROG, JENR, KTSU, KUSR, LKEC, LPRO, LRAN, MBNK, NBNK, SWIR, TOAD.
 - The validator (`--species`) refuses a paused species only where no scored group's newest build classified it (`log.species`), so a schema built before the pause can still be scored; the variants harness refuses a variant of one among the variants a run builds.
 
 ### Copies and overlays: the bcfishpass files a bundle carries (link#429)

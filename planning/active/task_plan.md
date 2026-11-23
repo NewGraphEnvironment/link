@@ -121,19 +121,19 @@ Outcome: the re-run seeded FINA ST, MFRA BT, UFRT ST, TUTR RB and UFRT RB; the o
 
 ## Phase 4: Tokens and release (#497)
 
-- [ ] Tests that pin the pause or the tokens *(review)*:
+- [x] Tests that pin the pause or the tokens *(review)*:
   - `test-lnk_config.R:620-638` ("default and default_tuned pause KO and RB", and the `paused: +KO, RB` print);
   - `test-lnk_pipeline_species.R:124-129` (MURT and KOTL read the shipped bundle);
   - `test-lnk_vocabulary.R:74-87` (default's and default_tuned's tokens);
   - `test-lnk_log.R:744` (default_tuned's tokens).
 
   `test-lnk_pipeline_run.R:335` mocks the species and needs no change.
-- [ ] *(review)* Vocabulary rows are keyed by spec, not by bundle. Add `acc-v7`, which `default`, `default_tuned`, `default_minimal` and `default_parent` all share (`test-lnk_vocabulary.R:140-147`). Under option (b), also add `cut-full-top-3`, shared by `default`, `default_tuned` and `default_parent`. `default_minimal` does not cut at records, so `cut-min` and `grad-parent` stay (`R/lnk_vocabulary.R:149-153`). Retire the replaced rows at the release version; the append-only test must pass. Confirm with `lnk_vocabulary_resolve()` on all four.
-- [ ] Provenance checksums for the changed bundle files, written directly: `regen_provenance.R` re-dates `rules.yaml` every run.
-- [ ] Docs *(review)*:
+- [x] *(review)* Vocabulary rows are keyed by spec, not by bundle. Add `acc-v7`, which `default`, `default_tuned`, `default_minimal` and `default_parent` all share (`test-lnk_vocabulary.R:140-147`). Under option (b), also add `cut-full-top-3`, shared by `default`, `default_tuned` and `default_parent`. `default_minimal` does not cut at records, so `cut-min` and `grad-parent` stay (`R/lnk_vocabulary.R:149-153`). Retire the replaced rows at the release version; the append-only test must pass. Confirm with `lnk_vocabulary_resolve()` on all four.
+- [x] Provenance checksums for the changed bundle files, written directly: `regen_provenance.R` re-dates `rules.yaml` every run.
+- [x] Docs *(review)*:
   - `R/lnk_pipeline_species.R:50` example, then `devtools::document()` (`man/lnk_pipeline_species.Rd`);
   - `research/output_vocabulary.md:33`;
-  - RUNBOOK §7, "Pausing a species": `default` pauses KO only. With RB modelled, a group with CT or DV marked present and no RB cell breaks streams at RB's barriers with no RB lifts (`ct_dv_rb`; 16 groups today).
+  - RUNBOOK §7, "Pausing a species": `default` pauses KO only. With RB modelled, a group with CT or DV marked present and no RB cell breaks streams at RB's barriers with no RB lifts (`ct_dv_rb`; 17 groups at #501, LPRO added by its RB removal). Done.
 - [ ] Version 0.90.0 in `DESCRIPTION` (main reached 0.89.0 after the park), a `NEWS.md` entry, and a `CLAUDE.md` status block (what moved, what is owed, facts not worth re-deriving).
 
 ## Phase 5: Verify on builds (#497)

@@ -617,12 +617,13 @@ test_that("species_modelled refuses a malformed tracker", {
   expect_error(lnk_config(dir), "missing column")
 })
 
-test_that("default and default_tuned pause KO and RB; other bundles pause nothing", {
+test_that("default and default_tuned pause KO; other bundles pause nothing", {
   rules_sp <- c("BT", "CH", "CM", "CO", "PK", "SK", "ST", "WCT", "KO", "RB", "GR")
   for (b in c("default", "default_tuned")) {
     cfg <- lnk_config(b)
-    expect_identical(cfg$species, setdiff(rules_sp, c("KO", "RB")), info = b)
-    expect_identical(cfg$species_paused, c("KO", "RB"), info = b)
+    # RB is modelled again since #501
+    expect_identical(cfg$species, setdiff(rules_sp, "KO"), info = b)
+    expect_identical(cfg$species_paused, "KO", info = b)
   }
   for (b in c("default_extrabreaks", "default_rearbreaks")) {
     expect_identical(lnk_config(b)$species, rules_sp, info = b)
@@ -635,5 +636,5 @@ test_that("default and default_tuned pause KO and RB; other bundles pause nothin
 test_that("print shows paused species", {
   cfg <- lnk_config("default")
   out <- paste(capture.output(print(cfg)), collapse = "\n")
-  expect_match(out, "paused: +KO, RB")
+  expect_match(out, "paused: +KO$|paused: +KO\n")
 })
