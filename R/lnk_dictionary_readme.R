@@ -10,8 +10,8 @@
 #' @param dir Directory holding the `dictionary_*.csv` files.
 #' @return The README as one character string, ending in a newline.
 #' @noRd
-.lnk_dictionary_readme <- function(dir = system.file("extdata", "configs",
-                                                      package = "link")) {
+.lnk_dictionary_readme <- function(
+    dir = system.file("extdata", "configs", package = "link")) {
   files <- sort(list.files(dir, pattern = "^dictionary_[a-z_]+\\.csv$",
                            full.names = TRUE), method = "radix")
   if (length(files) == 0L) {
@@ -45,8 +45,9 @@
       "",
       paste0("| ", paste(names(d), collapse = " | "), " |"),
       paste0("|", paste(rep("---", ncol(d)), collapse = "|"), "|"),
-      apply(d, 1L, function(r) paste0("| ", paste(cell(r), collapse = " | "),
-                                      " |")),
+      apply(d, 1L, function(r) {
+        paste0("| ", paste(cell(r), collapse = " | "), " |")
+      }),
       ""
     )
   }

@@ -70,12 +70,12 @@
 #'
 #' @export
 lnk_rules_build <- function(csv,
-                             to,
-                             thresholds = system.file("extdata",
-                               "parameters_habitat_thresholds.csv",
-                               package = "fresh"),
-                             edge_types = c("categories", "explicit"),
-                             strict = FALSE) {
+                            to,
+                            thresholds = system.file("extdata",
+                                                     "parameters_habitat_thresholds.csv",
+                                                     package = "fresh"),
+                            edge_types = c("categories", "explicit"),
+                            strict = FALSE) {
   stopifnot(requireNamespace("yaml", quietly = TRUE))
   edge_types <- match.arg(edge_types)
   if (!is.logical(strict) || length(strict) != 1L || is.na(strict)) {

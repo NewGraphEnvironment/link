@@ -1546,11 +1546,15 @@ test_that("every shipped dimensions.csv passes strict", {
     csv <- file.path(cfgs, b, "dimensions.csv")
     if (!file.exists(csv)) next
     thr <- file.path(cfgs, b, "parameters_habitat_thresholds.csv")
-    if (!file.exists(thr)) thr <- system.file("extdata",
-      "parameters_habitat_thresholds.csv", package = "fresh")
+    if (!file.exists(thr)) {
+      thr <- system.file("extdata", "parameters_habitat_thresholds.csv",
+                         package = "fresh")
+    }
     out <- withr::local_tempfile(fileext = ".yaml")
-    expect_no_error(suppressMessages(lnk_rules_build(csv, out, thresholds = thr,
-      edge_types = "explicit", strict = TRUE)), message = b)
+    expect_no_error(suppressMessages(
+      lnk_rules_build(csv, out, thresholds = thr, edge_types = "explicit",
+                      strict = TRUE)
+    ), message = b)
   }
 })
 
@@ -1558,12 +1562,13 @@ test_that("every shipped dimensions.csv passes strict", {
 
 test_that("the top-level sample and its dimensions are default's", {
   ext <- system.file("extdata", package = "link")
-  body <- function(p) grep("^#", readLines(p, warn = FALSE), value = TRUE,
-                           invert = TRUE)
-  expect_identical(
-    body(file.path(ext, "parameters_habitat_rules.yaml")),
-    body(file.path(ext, "configs", "default", "rules.yaml")))
-  expect_identical(
-    unname(tools::md5sum(file.path(ext, "parameters_habitat_dimensions.csv"))),
-    unname(tools::md5sum(file.path(ext, "configs", "default", "dimensions.csv"))))
+  body <- function(p) {
+    grep("^#", readLines(p, warn = FALSE), value = TRUE, invert = TRUE)
+  }
+  sample_rules <- file.path(ext, "parameters_habitat_rules.yaml")
+  default_rules <- file.path(ext, "configs", "default", "rules.yaml")
+  expect_identical(body(sample_rules), body(default_rules))
+  md5 <- function(p) unname(tools::md5sum(p))
+  expect_identical(md5(file.path(ext, "parameters_habitat_dimensions.csv")),
+                   md5(file.path(ext, "configs", "default", "dimensions.csv")))
 })
