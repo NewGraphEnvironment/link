@@ -18,7 +18,7 @@
 #'   metric name).
 #'
 #' @details
-#' Thresholds control how [lnk_score_severity()] classifies crossings. The
+#' Thresholds control how [lnk_score()] classifies crossings. The
 #' default values reflect BC provincial fish passage assessment criteria:
 #'
 #' \describe{
@@ -55,7 +55,7 @@
 #' # How thresholds plug into scoring (the integration point)
 #' \dontrun{
 #' conn <- lnk_db_conn()
-#' lnk_score_severity(conn, "working.crossings",
+#' lnk_score(conn, "working.crossings",
 #'   thresholds = lnk_thresholds(high = list(outlet_drop = 0.8)))
 #' }
 #'

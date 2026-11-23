@@ -1,5 +1,7 @@
 # dimensions.csv audit (bcfishpass-bundle)
 
+**Verification:** none yet. Written before this header existed and not checked against the code since; read its claims as of when it was written.
+
 Triggered 2026-04-30 by finding `rear_stream_in_waterbody = no` for **all** species when bcfp's per-species rear rule has different waterbody handling depending on species. Systematic per-column, per-species review.
 
 ## Per-species bcfp rear-rule waterbody filter

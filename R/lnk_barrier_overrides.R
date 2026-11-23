@@ -148,7 +148,7 @@ lnk_barrier_overrides <- function(conn,
   }
 
   if (nrow(species_to_process) == 0) {
-    if (verbose) message("No species to process — no overrides")
+    if (verbose) message("No species to process \u2014 no overrides")
     return(invisible(data.frame(species_code = character(), n_overrides = integer())))
   }
 

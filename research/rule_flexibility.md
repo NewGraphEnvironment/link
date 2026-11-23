@@ -1,5 +1,7 @@
 # Rule flexibility — three configs, one pipeline, one CSV
 
+**Verification:** none yet. Written before this header existed and not checked against the code since; read its claims as of when it was written.
+
 This page demonstrates that link's habitat classification methodology is fully expressed in `dimensions.csv` cells. Three different models are produced from the same pipeline by swapping a small set of cells per config:
 
 | config | what it expresses |

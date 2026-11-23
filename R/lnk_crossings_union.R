@@ -123,7 +123,7 @@
     CREATE TABLE %s.crossings AS
 
     -- PSCIS branch (highest precedence). Reads from <schema>.pscis
-    -- built by .lnk_pipeline_pscis_build — that table already has the
+    -- built by .lnk_pipeline_pscis_build - that table already has the
     -- watershed_group_code (computed via the FWA join during build),
     -- so we don't need to JOIN to fwa_stream_networks_sp again here.
     -- modelled_crossing_id is also present and is what drives the

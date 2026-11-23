@@ -1,5 +1,7 @@
 # bcfishpass methodology — canonical reference
 
+**Verification:** none yet. Written before this header existed and not checked against the code since; read its claims as of when it was written.
+
 Living doc capturing bcfishpass's per-species classification logic, link's matching dimensions, and methodology choices we've made (or deferred). Cross-links: `research/bcfishpass_comparison.md` (rollup history + bug fixes), `research/dimensions_audit.md` (per-column audit), open issues, and merged PRs.
 
 ## Reading the rollup

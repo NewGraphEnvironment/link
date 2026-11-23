@@ -669,7 +669,7 @@ lnk_rules_build <- function(csv,
     sprintf("# Generated: %s", format(Sys.Date(), "%Y-%m-%d")),
     sprintf("# Edge types: %s", edge_types),
     "#",
-    "# DO NOT EDIT — edit the CSV and re-run lnk_rules_build()",
+    "# DO NOT EDIT \u2014 edit the CSV and re-run lnk_rules_build()",
     ""
   )
 
