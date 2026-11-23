@@ -6,7 +6,7 @@ One batch (26), one member (#504), one PR. Touches `R/lnk_preflight_fresh.R`, `t
 
 ## Decided at the gate
 
-No plan gate in this pane: a headless `park review` dispatched by the coordinator (soul#928). These were decided while drafting (mechanism, `agent-operations.md` §4); the owner's forks are under `## Open decisions`.
+No plan gate in this pane: a headless `park review` dispatched by the coordinator. These were decided while drafting (mechanism, `agent-operations.md` §4); the owner's forks are under `## Open decisions`.
 
 - **Decided at the sweep (2026-11-23, owner):** this move bumps the pin to fresh 0.56.0.
 - **0.56.0, not 0.57.0 (owner, 2026-11-23, option a; #507 `## Decisions`):** fresh v0.57.0 (released 2026-11-23) changes output (`lake_rearing` counts reservoirs) and tightens rules-file refusals that reach `lnk_rules_build()`'s output, so it gets its own move with a re-model and a rules check; this move stays a no-output-change bump proved by digests.
