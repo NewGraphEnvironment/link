@@ -1021,9 +1021,9 @@ cat(res$message, "\n", sep = "")
 quit(status = if (isTRUE(res$ok)) 0L else 1L)
 ' 2>&1) && fresh_rc=0 || fresh_rc=$?
   case "$fresh_rc" in
-    0) echo "  ✓ dispatcher fresh exports what the pipeline calls" ;;
+    0) echo "  ✓ dispatcher fresh provides what the pipeline calls" ;;
     1) printf '%s\n' "$fresh_out" | sed 's/^/    /'
-       echo "  ✗ dispatcher fresh is missing required symbols"; fail=1 ;;
+       echo "  ✗ dispatcher fresh lacks a required symbol or signature"; fail=1 ;;
     *) printf '%s\n' "$fresh_out" | sed 's/^/    /'
        echo "  ✗ could not run the fresh check (R error, not a fresh problem)"; fail=1 ;;
   esac

@@ -13,6 +13,12 @@ See #507's body (batch 26, member #504) and #504's body: pin the formals link pa
 - **fresh v0.57.0 exists** (released 2026-11-23 04:51 UTC) and changes `lake_rearing` (reservoirs counted): an open decision in `task_plan.md`.
 - #481's evidence scripts (`data-raw/logs/fresh_pin_481/run.sh`, `digest.R`, `compare.R`) are the template for Phase 3.
 
+## Phase 1 mutation proof (2026-11-23)
+
+Swapped `.frs_habitat_models`'s declared formals to `c("params_method", "wsg_codes")` in `.lnk_fresh_required_internal_formals()` and ran `test-lnk_preflight_fresh.R` (`NOT_CRAN=true`, fresh 0.55.1): FAIL 3 (the live pass at line 4, the exact-equality loop naming `.frs_habitat_models` at 102, and `mismatched_internal_formals` empty at 107). Restored: FAIL 0, PASS 64.
+
+A mocked namespace cannot stand in for fresh inside `lnk_preflight_fresh()` (`getNamespaceExports()` refuses a plain environment), so the end-to-end refusal test declares a reordered list against the real fresh; the helper's cases (reorder, rename, drop, trailing with and without a default, absent) run on plain environments.
+
 ## Errors Encountered
 
 | Error | Resolution |
