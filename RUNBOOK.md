@@ -424,9 +424,8 @@ run group holds `accessible AND access_<sp> = 0`.
   one host reads other hosts' barriers and overrides as that host holds them, possibly a previous
   run's, and a one-way gate there would blank habitat the recompute then lifts. The recompute
   settles every group on final access, and so does the re-model command §8d prints for a run's
-  missing groups. A single-group `wsg_run_one.R` gates at model time; so does the legacy
-  `wsgs_dispatch.sh` path (`lnk_compare_wsg()`), which runs no recompute and settles on the access
-  it ships.
+  missing groups. A single-group `wsg_run_one.R` gates at model time. (The legacy `wsgs_dispatch.sh` path, which
+  settled on the access it shipped, was retired in 0.89.0.)
 - **Schemas built before it are unsettled.** A recompute settles one
   (`bash data-raw/study_area_run.sh --recompute-only --run-uid=<uid> --config=<config>
   --schema=<schema>`, §8d), but re-model first, then gate: a re-gate settles on today's access, and
@@ -3503,8 +3502,8 @@ docker exec fresh-db psql -U postgres -d fwapg -c \
   "SELECT pg_get_viewdef('fresh_default.barriers_bt_unified', true);"
 
 # Single-WSG tunnel-free build (the headline path)
-bash data-raw/wsgs_run_m4_offline.sh --wsgs=PARS --config=default \
-  --schema=fresh_default --force --mapping-code
+LNK_WSG=PARS LNK_CONFIG=default LNK_SCHEMA=fresh_default LNK_RUN_LABEL=pars-check \
+  Rscript data-raw/wsg_run_one.R --wsgs=PARS --config=default --schema=fresh_default
 ```
 
 Local docker fwapg: `host=localhost port=5432 dbname=fwapg user=postgres

@@ -3,9 +3,9 @@
 #
 # Productionizes the proven smoke flow (cypher_up -> cypher_prep ->
 # lnk_pipeline_run(mapping_code=TRUE) per WSG -> schema_consolidate ->
-# wsg_compare_mapping_code -> cypher_down). NOT a refactor of the old
-# M4-centric wsgs_run_pipeline.sh — it reuses the simple local flow the
-# 3-WSG smoke validated (link#175).
+# wsg_compare_mapping_code -> cypher_down). It reuses the simple
+# local flow the 3-WSG smoke validated (link#175); the older M4-centric
+# wsgs_* path was retired.
 #
 # Host model: the local machine is the dispatcher (M1) and the consolidate
 # destination. Two kinds of remote host model beside it: cyphers, cloud hosts
@@ -795,8 +795,8 @@ recompute_one() {   # $1 = WSG
 # A pool's makespan is bounded below by its slowest single job, so a long job
 # that starts last extends the whole phase. Measured 2026-09-01: CHWK is 226 s
 # against 11 s for SALR, and one WSG was 74% of a four-WSG set. LPT is already
-# this repo's answer for packing components onto hosts (study_area_buckets.R,
-# wsgs_dispatch.sh); this is the same rule one level down, inside one host.
+# this repo's answer for packing components onto hosts (study_area_buckets.R);
+# this is the same rule one level down, inside one host.
 #
 # Ordered on prior RECOMPUTE times, never on segment count. Segments are a
 # reasonable proxy for modelling work (R^2 0.64 over 104 WSGs) and a bad one
@@ -2047,7 +2047,7 @@ if [ "$N_HOSTS" -gt 0 ]; then
 fi
 
 # --- run buckets DS-first (dispatcher local + cyphers, parallel) ---
-# Per-WSG SOFT-FAIL (mirrors wsgs_run_host.R resume-safe behaviour): a single
+# Per-WSG SOFT-FAIL (resume-safe): a single
 # WSG error logs a warning and the loop CONTINUES. It must NEVER abort the host
 # and trip the trap-burn before consolidate — that lost a whole run + the
 # cyphers' data on 2026-05-25 (one species-less WSG -> exit 1 -> FATAL -> burn).

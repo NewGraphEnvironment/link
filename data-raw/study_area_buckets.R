@@ -20,8 +20,7 @@
 # focal WSGs share a component iff their closures intersect. Each component
 # is then resolved through `lnk_wsg_resolve()` for the species filter and
 # the downstream-first order, and the components are packed onto hosts by
-# greedy LPT (longest processing time first) — the same algorithm
-# wsgs_dispatch.sh uses, with a component rather than a single WSG as the
+# greedy LPT (longest processing time first) — with a component rather than a single WSG as the
 # indivisible atom.
 #
 # The atom (link#361): a component, or a single group.

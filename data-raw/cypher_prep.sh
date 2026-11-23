@@ -82,7 +82,7 @@
 # The override-aware default protects against the cognitive trap of
 # "which branch is everyone on?" — under the default path, all hosts
 # converge on main and the orchestrator's preflight version check
-# (data-raw/wsgs_dispatch.sh, and study_area_run.sh's preflight_hosts)
+# (study_area_run.sh's preflight_hosts)
 # confirms link and fresh agree across hosts.
 
 set -euo pipefail
@@ -253,7 +253,7 @@ export PGUSER=postgres PGPASSWORD=postgres PGHOST=localhost PGPORT=5432 PGDATABA
 # of being masked by `| tail -5` (set -e doesn't propagate exit codes
 # through pipelines). On success, tail-5 to stdout preserves the
 # umbrella's downstream `grep -q "snapshot_bcfp.sh: complete"` check
-# (data-raw/wsgs_run_pipeline.sh:264). Bug class documented in CLAUDE.md
+# (study_area_run.sh's cypher prep). Bug class documented in CLAUDE.md
 # "Shell Scripts → pipefail with ssh+tee"; sibling fix in an internal issue.
 TMP_SNAP_LOG=$(mktemp)
 if ! bash snapshot_bcfp.sh > "$TMP_SNAP_LOG" 2>&1; then

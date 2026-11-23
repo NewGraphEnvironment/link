@@ -31,13 +31,13 @@ None. Answered by the owner 2026-11-23, all as recommended (moved to the decisio
 
 ## Phase 1: Retire the legacy `wsgs_*` path (#179, #110; shrinks #176)
 
-- [ ] Re-grep every reference to the nine retired scripts across the repo (code, tests, workflows, docs) and record it in `findings.md`; refuse to delete any that something kept reaches
-- [ ] `git rm` the nine scripts
-- [ ] Remove or reword live references: `state_clean.sh`'s `ps` pattern and header, `cypher_prep.sh`'s comments, `wsg_compare.R`'s header, `wsg_pipeline_run.R:5`, `query_schema_delta.R:7-8`, `study_area_buckets.R:24`, `study_area_run.sh`'s two comments, `R/utils.R:319`'s roxygen line (review added four)
-- [ ] `data-raw/README.md`: drop the legacy rows and the "Provincial dispatch (`wsgs_dispatch.sh`)" section; one line saying the path was retired in this release and `study_area_run.sh` is the runner
-- [ ] `RUNBOOK.md`: `:428`, and the "headline path" at `:3506`, which uses `wsgs_run_m4_offline.sh`: replace it with a `wsg_run_one.R` command carrying `LNK_SCHEMA`, an explicit config and (after Phase 3) a label (review)
-- [ ] `research/provincial_run_runbook.md` (`:23-27`, `:150-191`, `:303-305`) and `research/study_area_run.md`: remove or redirect live instructions that name the retired scripts (review)
-- [ ] Draft the closing comments for #179 and #110 and the shrink note for #176 (posted at merge)
+- [x] Re-grep every reference to the nine retired scripts across the repo (code, tests, workflows, docs) and record it in `findings.md`; refuse to delete any that something kept reaches
+- [x] `git rm` the nine scripts
+- [x] Remove or reword live references: `state_clean.sh`'s `ps` pattern and header, `cypher_prep.sh`'s comments, `wsg_compare.R`'s header, `wsg_pipeline_run.R:5`, `query_schema_delta.R:7-8`, `study_area_buckets.R:24`, `study_area_run.sh`'s two comments, `R/utils.R:319`'s roxygen line (review added four)
+- [x] `data-raw/README.md`: drop the legacy rows and the "Provincial dispatch (`wsgs_dispatch.sh`)" section; one line saying the path was retired in this release and `study_area_run.sh` is the runner
+- [x] `RUNBOOK.md`: `:428`, and the "headline path" at `:3506`, which uses `wsgs_run_m4_offline.sh`: replace it with a `wsg_run_one.R` command carrying `LNK_SCHEMA`, an explicit config and (after Phase 3) a label (review)
+- [x] `research/provincial_run_runbook.md` (`:23-27`, `:150-191`, `:303-305`) and `research/study_area_run.md`: remove or redirect live instructions that name the retired scripts (review)
+- [x] Draft the closing comments for #179 and #110 and the shrink note for #176 (posted at merge)
 
 ## Phase 2: Every driver needs an explicit config, and the run prints its decisions (#278)
 

@@ -7,9 +7,10 @@ golden-path sequence is **archive → smoke → full → verify → burn**. Skip
 step risks wasted compute or wasted DO spend; the orchestrator's tests (#162
 Phase 7 hardening) make each step's failure mode loud.
 
+**Retired path (0.89.0):** the `wsgs_dispatch.sh` / `trifecta_smoke.sh` / `runs_archive.sh` dispatch this runbook was written around is gone. `data-raw/study_area_run.sh` is the runner (`RUNBOOK.md` §8d); it needs an explicit `--config=`. Sections 1, 5 and 6 (spin, consolidate, burn) still describe the manual steps `study_area_run.sh` now automates; sections 2 and 3 and the quick-reference rows for the retired scripts were removed, and section 4 reads the retired dispatch's output (RDS pull-back, annotated CSV), kept as history.
+
 Companion docs:
 
-- `data-raw/README.md` — `Provincial dispatch` section: full CLI flag reference
 - `research/provincial_parity_2026_05_12.md` — most recent run results
 - `research/bcfp_divergence_taxonomy.yml` — known divergence patterns
 - `research/bcfp_divergence_investigation.md` — diagnostic recipes
@@ -17,22 +18,7 @@ Companion docs:
 
 ## TL;DR sequence
 
-```bash
-cd ~/Projects/repo/link/data-raw
-
-./runs_archive.sh                            # 1. clean LPT input
-# (spin cyphers per §1)
-./trifecta_smoke.sh --cy-workspaces=job1,job2,job3      # 2. smoke (~3 min)
-# (if smoke errors loud, fix and re-run; DO NOT skip to full)
-./wsgs_dispatch.sh --with-mapping-code --cy-workspaces=job1,job2,job3   # 3. full (~80 min)
-# (inspect annotated CSV)
-# (consolidate fresh schema via schema_consolidate.R)
-~/Projects/repo/rtj/scripts/cypher/cypher_down.sh --workspace job1   # 4. burn (mandatory)
-~/Projects/repo/rtj/scripts/cypher/cypher_down.sh --workspace job2
-~/Projects/repo/rtj/scripts/cypher/cypher_down.sh --workspace job3
-```
-
-Each step has explicit checks below. **Don't proceed when a step fails.**
+Run `bash data-raw/study_area_run.sh --config=<bundle> --schema=<schema> ...` (`RUNBOOK.md` §8d). It spins, preps, models, consolidates, recomputes and burns on its own; `--preflight-only` checks the hosts first.
 
 ## 1. Spin up + snapshot inputs
 
@@ -141,64 +127,6 @@ wait
 
 After this, `lnk_persist_init` future calls (during dispatch) are silent no-ops.
 
-## 2. Archive prior run + smoke
-
-### 2.1 Archive ALL hosts' RDS
-
-```bash
-cd ~/Projects/repo/link/data-raw
-./runs_archive.sh
-ssh m1 'cd ~/Projects/repo/link/data-raw && ./runs_archive.sh'
-for IP in $JOB1_IP $JOB2_IP $JOB3_IP; do
-  ssh "cypher@$IP" 'cd ~/Projects/repo/link/data-raw && ./runs_archive.sh' &
-done
-wait
-```
-
-Skipping a host means its leftover RDS files SCP back to M4 at run-end and
-pollute the aggregate annotation (caught on 2026-05-12).
-
-### 2.2 Smoke (1 WSG per host, ~3 min)
-
-```bash
-cd ~/Projects/repo/link/data-raw
-./trifecta_smoke.sh --cy-workspaces=job1,job2,job3 --with-mapping-code
-```
-
-**Exits non-zero** if any host produced an error stub. Inspect:
-
-```
-data-raw/logs/<TS>_wsgs_dispatch_*.txt       # orchestrator + per-host
-data-raw/logs/<TS>_wsgs_dispatch_cypher_*_R.txt   # cypher R output (auto-pulled)
-```
-
-Common smoke failures + fixes:
-
-| Error | Cause | Fix |
-|---|---|---|
-| `DDL drift in fresh.streams` | §1.5 not done | Run §1.5 |
-| `packageVersion mismatch` | preflight version drift | §1.4 install |
-| `cannot connect to localhost:63333` | bcfp tunnel down on M4 | check SSH forwarding |
-| `bcfishobs row count differs` | §1.3 not done on this host | re-run snapshot_bcfp.sh |
-
-**Don't dispatch the full run until smoke exits 0.** Saves ~90 min of wasted
-compute per failure mode.
-
-## 3. Full dispatch
-
-```bash
-cd ~/Projects/repo/link/data-raw
-./wsgs_dispatch.sh \
-  --with-mapping-code \
-  --cy-workspaces=job1,job2,job3 \
-  > /tmp/full_run.log 2>&1 &
-disown
-```
-
-Inline LPT computes balanced buckets from prior `_per_wsg_times.csv`. Override
-manually via `--host-speeds=` or `--<host>-bucket=` per `data-raw/README.md`.
-Wall: ~80-95 min for 217 WSGs across 5 hosts.
-
 ## 4. Post-run verification
 
 The orchestrator's final headline tells the truth:
@@ -300,8 +228,5 @@ Required sections:
 |---|---|---|
 | `snapshot_bcfp.sh` | Load PSCIS + CABD + bchamp + bcfishobs into local fwapg | ~5-15 min |
 | `cypher_up.sh --workspace <ws>` | Spin DO droplet from `cypher-<date>-warm` snapshot | ~3 min |
-| `runs_archive.sh` | Move prior-run RDS + CSVs to archive/ | <1s |
-| `trifecta_smoke.sh` | 1-WSG-per-host smoke; fails loud on any error stub | ~3 min |
-| `wsgs_dispatch.sh` | N-cypher full dispatch with inline LPT + annotation | ~80 min (5-host) |
 | `schema_consolidate.R` | pg_dump from m1+cyphers → pg_restore on M4 | ~5 min |
 | `cypher_down.sh --workspace <ws>` | Destroy DO droplet (idempotent) | ~30s |

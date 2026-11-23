@@ -32,8 +32,7 @@
 #                          not touched). Use for per-bundle pre-cleans like
 #                          `--schemas=fresh_default` before subset dispatches.
 #
-# Honors /tmp/cy_ips.env if present (set by wsgs_dispatch.sh dispatch
-# wrapper). Otherwise derives cypher IPs from tofu state.
+# Derives cypher IPs from tofu state (workspaces job1,job2,job3 by default).
 #
 # Expected wall:
 #   Full mode (default):  ~2-3 min (drop + snapshot reload, parallel)
@@ -86,7 +85,7 @@ echo "  hosts: M4 + $([ "$SKIP_M1" = "0" ] && echo "M1 + ")$([ "$SKIP_CY" = "0" 
 
 # --- Step 1: kill in-flight processes ---
 echo "--- step 1: kill in-flight dispatch ---"
-ps -ef | grep -E "wsgs_dispatch|cypher_run|wsgs_run_host|ssh.*cypher@|ssh.*-R.*m1|schema_consolidate" \
+ps -ef | grep -E "study_area_run|cypher_run|ssh.*cypher@|ssh.*-R.*m1|schema_consolidate" \
   | grep -v grep | awk '{print $2}' | xargs -r kill -9 2>/dev/null || true
 sleep 2
 [ "$SKIP_M1" = "0" ] && ssh m1 'pkill -9 -f "Rscript.*run_provincial" 2>/dev/null' 2>&1 || true

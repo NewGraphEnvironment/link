@@ -22,3 +22,12 @@ Move 7 of link's backlog, `planning/backlog.md`. Run `/planning-init <this issue
 - **`LNK_RUN_LABEL` may be set but empty on the orchestrated path:** `study_area_run.sh` exports `RUN_LABEL=""` when `--run-label=` is absent, so a label requirement must apply only where `LNK_RUN_UID` is unset.
 - **Spend order in `study_area_run.sh`:** buckets resolve at ~1739, `cypher_up` at ~1930, the `--preflight-only` exit at ~1688.
 - **`PRETEST_LINK_PATHS`** (`data-raw/pretest.R:109`) holds `wsg_run_one.R`, `wsg_recompute_one.R`, `schema_consolidate.R`, `study_area_run.sh`, `wsg_stall_sample.R`: Phases 2 and 3 void the gate record for them.
+
+## Phase 1: retirement grep (2026-11-23)
+
+Re-grepped the nine retired scripts (`wsgs_dispatch.sh`, `wsgs_run_host.R`, `wsgs_run_pipeline.sh`, `wsgs_run_m4_offline.sh`, `trifecta_15wsg.sh`, `trifecta_smoke.sh`, `runs_archive.sh`, `buckets_balance.R`, `progress_check.sh`) over `R/`, `tests/`, `inst/`, `.github/`, `_targets.R`, `DESCRIPTION`, `.Rbuildignore`: no hits. In `data-raw/` the only references from kept scripts were comments (reworded). Living docs edited: `RUNBOOK.md`, `data-raw/README.md`, `research/provincial_run_runbook.md`, `research/study_area_run.md`. Historical files keep the old names (dated `research/` records, `bcfp_compare_mapping_code.md`, `post_compact_provincial_handoff.md`, `distributed_2hosts_2026_05_01.md`, `NEWS.md`, `CLAUDE.md` status blocks, `planning/archive/`).
+
+Draft closing comments (post at merge):
+- #179: "Closed as retired: the fallback split lived in `wsgs_dispatch.sh`, deleted in 0.89.0 (#475). `study_area_run.sh` packs by measured minutes, not an alphabetical fallback."
+- #110: "Closed as retired: the RDS cache key lived in `wsgs_run_host.R`, deleted in 0.89.0 (#475). The study-area path resumes from persisted PG state and stamps each run in `<schema>.log`."
+- #176: "Smaller after #475: the legacy `wsgs_*` scripts are gone; the remaining rename is `lnk_compare_wsg` itself."
