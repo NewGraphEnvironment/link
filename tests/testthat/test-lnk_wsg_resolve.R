@@ -126,8 +126,22 @@ test_that("lnk_wsg_resolve strict mode upper-cases focal codes", {
 
 # -- live DB (closure mode) --------------------------------------------------
 
+# Closure tests run on the connection the skip gate found, so the closure runs
+# where the gate looked (#222), and only on one that holds what closure mode
+# reads: the whse_basemapping.fwa_downstream() routine frs_wsg_drainage()
+# calls, the outlets coming from fresh itself.
+skip_if_no_fwa_downstream <- function(conn) {
+  ok <- DBI::dbGetQuery(conn, "
+    SELECT EXISTS (SELECT 1 FROM pg_proc p
+                     JOIN pg_namespace n ON n.oid = p.pronamespace
+                    WHERE n.nspname = 'whse_basemapping'
+                      AND p.proname = 'fwa_downstream') AS ok")$ok
+  testthat::skip_if_not(isTRUE(ok), "no whse_basemapping.fwa_downstream() on the gated connection")
+}
+
 test_that("lnk_wsg_resolve closure mode returns the PARS+BULK closure DS-first", {
-  skip_if_no_db()
+  conn   <- skip_if_no_db()
+  skip_if_no_fwa_downstream(conn)
   cfg    <- lnk_config("bcfishpass")
   loaded <- lnk_load_overrides(cfg)
 
@@ -141,23 +155,24 @@ test_that("lnk_wsg_resolve closure mode returns the PARS+BULK closure DS-first",
     "LPCE", "LSKE", "KLUM", "UPCE", "KISP", "PCEA", "BULK", "PARA", "PARS"
   )
   expect_identical(
-    lnk_wsg_resolve(cfg, loaded, wsgs = c("PARS", "BULK")),
+    lnk_wsg_resolve(cfg, loaded, wsgs = c("PARS", "BULK"), conn = conn),
     expected
   )
 })
 
 test_that("lnk_wsg_resolve closure excludes upstream and sibling groups", {
-  skip_if_no_db()
+  conn   <- skip_if_no_db()
+  skip_if_no_fwa_downstream(conn)
   cfg    <- lnk_config("bcfishpass")
   loaded <- lnk_load_overrides(cfg)
 
-  res <- lnk_wsg_resolve(cfg, loaded, wsgs = c("PARS", "BULK"))
+  res <- lnk_wsg_resolve(cfg, loaded, wsgs = c("PARS", "BULK"), conn = conn)
   expect_false(any(c("MORR", "MSKE", "USKE", "LKEL", "LBTN", "FINA") %in% res))
   expect_true(all(c("PARS", "BULK") %in% res))
 })
 
 test_that("lnk_wsg_resolve province mode returns the full bundle-species list", {
-  skip_if_no_db()
+  # Province mode returns before any connection is opened.
   cfg    <- lnk_config("bcfishpass")
   loaded <- lnk_load_overrides(cfg)
   res <- lnk_wsg_resolve(cfg, loaded)

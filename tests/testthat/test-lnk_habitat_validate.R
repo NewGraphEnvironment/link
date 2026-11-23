@@ -1045,7 +1045,8 @@ test_that(".lnk_hv_relax leaves a compiled near_river EXISTS alone", {
   p <- paste0("(s.gradient BETWEEN 0 AND 0.05 AND (s.channel_width BETWEEN 1.5 ",
               "AND 9999 OR EXISTS (SELECT 1 FROM x.streams_near_river n WHERE ",
               "n.id_segment = s.id_segment AND n.watershed_group_code = ",
-              "s.watershed_group_code AND n.measure = 'channel_width' AND ",
+              "s.watershed_group_code AND n.linear_feature_id = ",
+              "s.linear_feature_id AND n.measure = 'channel_width' AND ",
               "n.threshold = 20 AND n.distance_max = 1000 AND n.dist_m <= 1000)))")
   r <- link:::.lnk_hv_relax(p, gradient = 0, size = 0)
   ex <- function(x) sub("^.*(EXISTS \\(.*\\))\\)\\)$", "\\1", x)
@@ -1068,6 +1069,16 @@ test_that("a near_river bundle is scored against the persisted distances", {
     "CREATE TABLE %s.streams_near_river (id_segment integer,
        watershed_group_code varchar(4), measure text, threshold double precision,
        distance_max double precision, dist_m double precision)", s))
+  # persisted streams carry each segment's parent line, which the predicate
+  # keys on (fresh 0.54.0)
+  DBI::dbExecute(conn, sprintf(
+    "ALTER TABLE %s.streams ADD COLUMN linear_feature_id bigint", s))
+  DBI::dbExecute(conn, sprintf(
+    "UPDATE %s.streams SET linear_feature_id = 700 + id_segment", s))
+  # a table from before fresh 0.54.0's key cannot be re-tested on it (#452)
+  expect_error(go(), "streams_near_river has no linear_feature_id.*lnk_persist_init")
+  DBI::dbExecute(conn, sprintf(
+    "ALTER TABLE %s.streams_near_river ADD COLUMN linear_feature_id bigint", s))
   # a log from before the column, or with other pairs, is refused
   DBI::dbExecute(conn, sprintf(
     "CREATE TABLE %s.log (watershed_group_code text, config_name text,
@@ -1094,13 +1105,32 @@ test_that("a near_river bundle is scored against the persisted distances", {
   # river, and then TRUE: the validator reads the build's own walk.
   before <- go()$observations
   expect_false(before$pred_rear[before$observation_key == "o10"])
-  DBI::dbExecute(conn, sprintf(
-    "INSERT INTO %s.streams_near_river VALUES
-       (5, 'AAAA', 'channel_width', 20, 1000, 250)", s))
+  ins <- function(lfid) {
+    DBI::dbExecute(conn, sprintf(
+      "INSERT INTO %s.streams_near_river
+         (id_segment, watershed_group_code, measure, threshold, distance_max,
+          dist_m, linear_feature_id)
+       VALUES (5, 'AAAA', 'channel_width', 20, 1000, 250, %s)", s, lfid))
+  }
+  # a row with no parent line (an unmigrated host's, consolidated in) is
+  # refused for the groups it is in
+  ins("NULL")
+  expect_error(go(), "no linear_feature_id for: AAAA")
+  DBI::dbExecute(conn, sprintf("DELETE FROM %s.streams_near_river", s))
+  # a distance measured on another line at the same segment id is not this
+  # segment's (fresh#293): the predicate keys on the parent line
+  ins("999")
+  wrong <- go()$observations
+  expect_false(wrong$pred_rear[wrong$observation_key == "o10"])
+  DBI::dbExecute(conn, sprintf("DELETE FROM %s.streams_near_river", s))
+  ins("705")
   after <- go()$observations
   expect_true(after$pred_rear[after$observation_key == "o10"])
-  # a cfg with no pair ignores the table and needs no log value
+  # a cfg with no pair ignores the table and needs no log value, nor the
+  # table's parent-line key (every schema has the table, #452)
   DBI::dbExecute(conn, sprintf("UPDATE %s.log SET near_river = ''", s))
+  DBI::dbExecute(conn, sprintf(
+    "ALTER TABLE %s.streams_near_river DROP COLUMN linear_feature_id", s))
   expect_no_error(lnk_habitat_validate(
     conn, aoi = c("AAAA", "BBBB"), cfg = default_nopair(),
     loaded = validate_loaded(), species = "BT", schema = s,

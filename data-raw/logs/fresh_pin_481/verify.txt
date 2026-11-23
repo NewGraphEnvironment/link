@@ -1,0 +1,5 @@
+# verify.R, 2026-11-23 02:11:55 UTC, link f40c1d49, fresh 0.55.1
+
+1. fresh_pin481_after.streams_near_river: ADMS 2896, BULK 4399 rows, none NULL, every one equal to streams.linear_feature_id
+2. lnk_persist_init() on a copy of the 0.52.0 build filled linear_feature_id on 7295 rows, equal to fresh 0.55.1's on every row
+3. lnk_habitat_validate() on ADMS (CH, CO, BT): identical with near_river_lfid TRUE and FALSE (3 and 3 predicate builds on the near-river table); 94 observations, 27 on near-river segments

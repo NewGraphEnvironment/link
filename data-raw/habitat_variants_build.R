@@ -41,6 +41,12 @@
 #     difference of its own;
 #   - a variant marked `equals_bundle` has exactly that bundle's thresholds.
 #
+# A base built under fresh 0.52.0 or earlier cannot be reused under fresh
+# >= 0.54.0 (link#481, RUNBOOK §7): its working streams_habitat has no
+# linear_feature_id, which the new classify adds and then refuses the NULL
+# rows of, and the working digest it recorded hashes the old rows. Rebuild
+# with --step=base.
+#
 # Where the time goes (link#404): <out>/variant_timing.csv holds seconds per
 # step for every pass (classify, connect, the working digest, persist, the
 # access copy and ANALYZE, the gate, the persisted digests), which sum to the

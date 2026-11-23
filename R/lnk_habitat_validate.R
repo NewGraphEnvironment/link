@@ -424,7 +424,32 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
          "near_river pairs (", near_river, "): rebuild the groups with ",
          "link >= 0.67.0", call. = FALSE)
   }
-  if (has_near) paste0(schema, ".streams_near_river") else NULL
+  if (!has_near) return(NULL)
+  # Every schema has the table (lnk_persist_init() makes it); only a cfg whose
+  # rules read a pair reads it, so only then must it carry the key.
+  if (!nzchar(near_river)) return(paste0(schema, ".streams_near_river"))
+  # The predicates match a distance on the parent line as well as the
+  # segment (fresh 0.54.0, #452), so every scored row needs one. A table
+  # lnk_persist_init() has not migrated, or one a consolidate filled from an
+  # unmigrated host, cannot be re-tested on the key the build used.
+  near_cols <- DBI::dbListFields(conn, DBI::Id(schema = schema,
+                                               table = "streams_near_river"))
+  if (!"linear_feature_id" %in% near_cols) {
+    stop(schema, ".streams_near_river has no linear_feature_id: run ",
+         "lnk_persist_init() on ", schema, " to add and fill it (#452)",
+         call. = FALSE)
+  }
+  null_wsg <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT DISTINCT watershed_group_code FROM %s.streams_near_river
+      WHERE linear_feature_id IS NULL AND watershed_group_code = ANY($1)
+      ORDER BY 1", schema), params = list(aoi_arr))$watershed_group_code
+  if (length(null_wsg) > 0L) {
+    stop(schema, ".streams_near_river holds rows with no linear_feature_id ",
+         "for: ", paste(null_wsg, collapse = ", "), " (rows written before ",
+         "the column, not filled from streams): re-model those groups",
+         call. = FALSE)
+  }
+  paste0(schema, ".streams_near_river")
 }
 
 #' Fail loud when a mad group cannot be scored: its discharge is joined on
@@ -1092,8 +1117,12 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
          rear = sprintf("(%s) OR (%s) OR (%s)", pr$rear, pr$lake_rear,
                         pr$wetland_rear))
   }
+  # A persisted near-river table carries linear_feature_id, checked by
+  # .lnk_hv_check_schema(), so the match keys on the parent line as the
+  # build's did (fresh 0.54.0, #452).
   sp_pred <- stage_pred(fresh::frs_habitat_predicates(spp, model = model,
-    near_river_table = near_river_table))
+    near_river_table = near_river_table,
+    near_river_lfid = !is.null(near_river_table)))
   mins <- .lnk_hv_stage_min(spp, model)
   no_range <- vapply(c("spawn", "rear"), function(st) {
     model == "mad" && .lnk_hv_mad_missing(spp$params_sp, st)
@@ -1106,7 +1135,8 @@ lnk_habitat_validate <- function(conn, aoi, cfg, loaded, species, schema,
       open$params_sp$ranges[[st]][["mad_m3s"]] <- c(0, 0)
     }
     open_pred <- stage_pred(fresh::frs_habitat_predicates(open, model = model,
-      near_river_table = near_river_table))
+      near_river_table = near_river_table,
+    near_river_lfid = !is.null(near_river_table)))
   }
   unlist(lapply(c("spawn", "rear"), function(st) {
     g <- mins[[st]][["gradient"]]
