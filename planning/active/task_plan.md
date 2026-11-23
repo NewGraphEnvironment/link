@@ -38,7 +38,7 @@ None open.
 - [ ] Tests on a hand-built network covering a tributary counted, the main stem below not counted, the barrier stop and a zero row. Also the example, and CLAUDE.md's "Integration with fresh" snippet.
 - [ ] #232: `data-raw/crossings_parity.R` comparing `<schema>.crossings` with `bcfishpass.crossings_vw` on ADMS and BULK: row coverage, per-branch counts, `barrier_status`, and positions (`blue_line_key` and measure within 1 m). Stamp both sides' versions.
 - [ ] #321 parity under `bcfishpass` on ADMS and BULK, **with every group upstream of them persisted** (BULK's main stem reads MORR, and so on; check with `lnk_wsg_resolve(expand = TRUE)`). Per crossing and species, link against `bcfishpass.crossings_upstream_habitat`, joined on `aggregated_crossings_id`. Report the distribution of differences and annotate departures (side channels, segmentation #324). Into `research/bcfishpass_parity.md`.
-- [ ] #356 in `data-raw/query_habitat_thresholds_obs.R` and `_mad.R`: sum `length_metre::numeric` and sort before R reductions. Two reruns byte-identical. The committed CSVs (`habitat_thresholds_284/`, `_302/`, `discharge_wet_331/mad_*`) stay as the records of their runs, and a note in each log README says so.
+- [x] #356 in `data-raw/query_habitat_thresholds_obs.R` and `_mad.R`: sum `length_metre::numeric` and sort before R reductions. Two reruns byte-identical (obs: every output identical, 2026-11-23; mad: blocked on this host by #481's owed `lnk_persist_init()` on `fresh_default`, same change, not rerun). The committed CSVs (`habitat_thresholds_284/`, `_302/`, `discharge_wet_331/mad_*`) stay as the records of their runs, and a note in each log README says so.
 
 ## Owed at the end (reported, done after merge)
 
