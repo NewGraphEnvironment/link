@@ -27,7 +27,8 @@ Asked after Phase 1's numbers (`data-raw/logs/rb_st_497/`):
 7. **ST evidence may flag an RB cell** (no change to `.lnk_presence_check()`). The one new flag, TUTR RB (two Steelhead Database records, 1984 and 1991, Tutshi River, Yukon headwaters, where steelhead do not reach), goes to the literature issue.
 8. **The SST/WST alias change is done here:** `SST` and `WST` count as RB as well as ST, in `.lnk_record_aliases()` and its three readers, with tests.
 
-So the literature issue carries CRYL RB, TUTR RB, TURN ST, CLRH CT and DUNC CT.
+So the literature issue carries CRYL RB, TUTR RB, TURN ST, CLRH CT and DUNC CT; filed as #515 with UFRT RB added (Phase 3).
+9. **KO's 138 rows go to a new issue, #516** (owner, 2026-11-23): decision 6 had handed them to #432, which is closed. Their `issue` reads `#516`, and #402 closes.
 
 ## Open decisions
 

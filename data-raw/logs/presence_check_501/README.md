@@ -24,5 +24,5 @@ rows where a cell leaves bcfishpass's copy):
 - removed: RB in LPRO and UPET (stocked fish only);
 - to the literature, #515: CRYL RB, UFRT RB, TUTR RB, TURN ST, CLRH CT, DUNC CT.
 
-**After:** 356 rows, 144 pending: 138 KO on #432 and 6 on #515. `after/` is the
+**After:** 356 rows, 144 pending: 138 KO, moved from #432 (closed) to #516 (kokanee's return), and 6 on #515. `after/` is the
 check re-run on the decided tables.

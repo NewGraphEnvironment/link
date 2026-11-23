@@ -1,6 +1,6 @@
 # Species presence: which groups each species is modelled in
 
-**Verified:** 2026-11-23 · **Issues:** #402 (this), #497 and #501 (the second review), #515 (the cells left to the literature), #292 and #153 (the presence groups), #290 (pooling), #398 (CT aliases in code 2), #425 to #427 (follow-ups) · **Produced by:** `.lnk_presence_check()` (`R/lnk_presence_check.R`) and `.lnk_presence_measures()` (`R/lnk_presence_measures.R`) through `data-raw/wsg_species_presence_check.R` on local fwapg, bcfishobs 375,962 rows (newest valid date 2026-10-10) → `data-raw/logs/presence_check_402/` and `data-raw/logs/presence_check_501/`; historical zones from `data-raw/presence_evidence_load.R` (retrieved 2026-10-31) · **Status:** second review done 2026-11-23, provisional: 121 cells added, 11 removed, 80 kept, 144 pending (138 kokanee on #432, 6 native-range cells on #515); see "The first review" and "The second review"
+**Verified:** 2026-11-23 · **Issues:** #402 (this), #497 and #501 (the second review), #515 (the cells left to the literature), #516 (kokanee's return), #292 and #153 (the presence groups), #290 (pooling), #398 (CT aliases in code 2), #425 to #427 (follow-ups) · **Produced by:** `.lnk_presence_check()` (`R/lnk_presence_check.R`) and `.lnk_presence_measures()` (`R/lnk_presence_measures.R`) through `data-raw/wsg_species_presence_check.R` on local fwapg, bcfishobs 375,962 rows (newest valid date 2026-10-10) → `data-raw/logs/presence_check_402/` and `data-raw/logs/presence_check_501/`; historical zones from `data-raw/presence_evidence_load.R` (retrieved 2026-10-31) · **Status:** second review done 2026-11-23, provisional: 121 cells added, 11 removed, 80 kept, 144 pending (138 kokanee on #516, 6 native-range cells on #515); see "The first review" and "The second review"
 
 ## What a presence cell decides
 
@@ -134,7 +134,7 @@ The check was re-run under that rule with RB modelled (`data-raw/logs/presence_c
 - **Removed:** RB in LPRO and UPET, resting only on stocked fish, as the first review removed THOM CT, LNTH CT and BULL GR. LPRO's DV cell still makes RB present there for breaks through the `ct_dv_rb` presence group.
 - **Kept absent:** CT in FINL and LOMI, and ST in FINA and UFRT: single records in the Mackenzie basin, left unmarked as the Mackenzie salmon were. The two winter-steelhead records count as rainbow trout where RB is present.
 - **Left to the literature (#515):** RB in CRYL, UFRT and TUTR, ST in TURN, and CT in CLRH and DUNC. Whether rainbow are native on the Liard side of the Mackenzie and in the Yukon headwaters is a range question; TUTR's two "steelhead" records sit in the upper Yukon, where steelhead do not reach. The operator saw a cutthroat in the Duncan on a snorkel survey about 15 years ago.
-- **Kokanee's 138 rows** wait for the species' own return (#432).
+- **Kokanee's 138 rows** wait for the species' own return (#516; they carried #432, the pause, which is closed).
 
 After the review the check flags 223 cells: 79 decided `keep`, 138 kokanee and 6 on #515 (`presence_check_501/after/`).
 
