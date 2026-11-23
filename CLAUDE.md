@@ -17,6 +17,17 @@ The settled findings behind the methods (what is known, with provenance and the 
 
 **Take the next move from `planning/backlog.md`** (`bash <soul>/skills/_shared/backlog_moves.sh next planning/backlog.md`; `/compact-prep` names it): 13 moves, umbrellas #469–#481, each planned with one `/planning-init <umbrella>` and landed in one PR, ticked by `/gh-pr-merge`. Moves 12 and 13 wait on knowledge#139's flow-method decision and fresh 0.54.0. A link issue knowledge waits on says so in its batch section. A new issue joins the open move whose batches touch its files; run `/backlog-sweep` again when one fits none. Record: `planning/archive/2026-11-issue-468-backlog-pass/`.
 
+## Status (2026-11-23) — drivers need an explicit config; a standalone run is labelled; the legacy `wsgs_*` path is retired (#475, 0.89.0)
+
+**Backlog move 7 (#475) lands as one release: #278, #281, #181, #166; #179 and #110 close as retired.** Every `data-raw/` driver refuses to run without a config, the three that write persist tables also refuse a non-`bcfishpass` bundle with no `LNK_SCHEMA`, `study_area_run.sh` prints a decisions block before its first write, a standalone `wsg_run_one.R` / `wsg_recompute_one.R` needs `LNK_RUN_LABEL` (its `run_uid` stays NULL, so PUBLISH still refuses it), and `state_clean.sh --tables=` drops named tables locally (or on `--hosts=`). The nine legacy scripts are deleted. Mechanics: RUNBOOK §8d and the single-group path in §8c. Tests: `test-driver_config.R`, `test-state_clean.R` (local only; `data-raw/` skips in CI).
+
+**Owed:** the pre-run gate runs before the next provincial run (this voids any record). Hosts and jobs calling a retired script or omitting a config move to `study_area_run.sh --config=`.
+
+**Facts not worth re-deriving:**
+- **A mutant R driver that accepts a config models for real** against the local fwapg: the mutation proof for the config refusals runs only on the shell drivers.
+- **`state_clean.sh` needs bash 5** (associative arrays); macOS `/bin/bash` 3.2 fails at `declare -A`.
+- **Every verb-first script is cited by path** from research, archives, tests or the weekly workflow, so none was renamed.
+
 ## Status (2026-11-23) — `cabd.dams` loads in one layout on every host; PUBLISH runs on a pool (#499, 0.88.0)
 
 **Backlog move 14 (#499) lands as one release: #494 and #488; #334's public read stays open (owner, 2026-11-22).** `snapshot_bcfp.sh` loads CABD through `cabd_load()` (`data-raw/snapshot_bcfp_lib.sh`): the API into `cabd.dams_load`, then `cabd.dams` rebuilt as `ogc_fid, geom`, CABD's fields, key and index, in one transaction, so every host's content md5 agrees and, while CABD returns the same dams, matches the reload layout's recorded `6f7f44c0…`. PUBLISH (`data-raw/habitat_publish.R`, helpers `.lnk_publish_run()` / `.lnk_publish_list()` in `R/lnk_publish.R`) checks from one listing, puts on a PSOCK pool of `LNK_PUBLISH_JOBS` (default 8), takes versions from the put replies and one `list-object-versions` per per-group directory, and checks every result before the manifest. Mechanics: RUNBOOK §6d, "How PUBLISH talks to S3"; §8d, "An API primitive loads in one column layout". Evidence: `data-raw/logs/cabd_shape_494/`, `data-raw/logs/publish_parallel_488/`.
