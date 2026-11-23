@@ -33,12 +33,12 @@ None open.
 
 ## Phase 3: `streams_near_river` mirrors fresh's table (#452)
 
-- [ ] `cols_streams_near_river` (`R/lnk_persist_init.R:218`) gains `linear_feature_id = "bigint"`, last; roxygen says it mirrors fresh 0.54.0's table.
-- [ ] `lnk_persist_init()` adds the column to an existing table where `.lnk_schema_columns()` (`R/lnk_log.R:520`) shows it missing, taking no lock when present (#369's no-lock test, `test-lnk_persist_init.R:235-275`, covers it); the backfill per Open decision 2.
-- [ ] `lnk_pipeline_persist()` projects the column from the vector (`R/lnk_pipeline_persist.R:276-283`); confirm no other edit.
-- [ ] `.lnk_hv_stage_exprs()` (`R/lnk_habitat_validate.R:1095`, `:1108`) passes `near_river_lfid` at both calls, and `.lnk_hv_check_schema()` (`:386-428`) carries the check Open decision 2 picks.
-- [ ] Tests: `test-lnk_persist_init.R` (an old-shape table gains the column, idempotently, with its backfill), `test-lnk_pipeline_persist.R`, `test-lnk_habitat_validate.R`, whose fixtures gain the column (`:384-395` `streams`, `:1067-1071` `streams_near_river`) and whose INSERT at `:1098` names its columns; restore each defect and see its test fail.
-- [ ] RUNBOOK §7 ("Persisted and logged", ~`:2065`): the column, the key, the migration. `data-raw/logs/minimal_breaks_415/proof.R:317` calls the predicate without the flag and is left as a record; say so in findings.
+- [x] `cols_streams_near_river` (`R/lnk_persist_init.R:218`) gains `linear_feature_id = "bigint"`, last; roxygen says it mirrors fresh 0.54.0's table.
+- [x] `lnk_persist_init()` adds the column to an existing table where `.lnk_schema_columns()` (`R/lnk_log.R:520`) shows it missing, taking no lock when present (#369's no-lock test, `test-lnk_persist_init.R:235-275`, covers it); the backfill per Open decision 2.
+- [x] `lnk_pipeline_persist()` projects the column from the vector (`R/lnk_pipeline_persist.R:276-283`); confirm no other edit.
+- [x] `.lnk_hv_stage_exprs()` (`R/lnk_habitat_validate.R:1095`, `:1108`) passes `near_river_lfid` at both calls, and `.lnk_hv_check_schema()` (`:386-428`) carries the check Open decision 2 picks.
+- [x] Tests: `test-lnk_persist_init.R` (an old-shape table gains the column, idempotently, with its backfill), `test-lnk_pipeline_persist.R`, `test-lnk_habitat_validate.R`, whose fixtures gain the column (`:384-395` `streams`, `:1067-1071` `streams_near_river`) and whose INSERT at `:1098` names its columns; restore each defect and see its test fail.
+- [x] RUNBOOK §7 ("Persisted and logged", ~`:2065`): the column, the key, the migration. `data-raw/logs/minimal_breaks_415/proof.R:317` calls the predicate without the flag and is left as a record; say so in findings.
 
 ## Phase 4: One connection resolver (#288)
 
@@ -50,7 +50,7 @@ None open.
 
 ## Phase 5: The live resolve tests use the gated connection (#222)
 
-- [ ] `tests/testthat/test-lnk_wsg_resolve.R:129-167`: the two closure tests pass `conn = skip_if_no_db()` and skip when `to_regclass('public.wsg_outlet')` is NULL on it (the gate can fall back to `lnk_db_conn()`, `tests/testthat/setup.R:28-30`); the province-mode test drops its skip (province mode returns before any connection).
+- [ ] `tests/testthat/test-lnk_wsg_resolve.R:129-167`: the two closure tests pass `conn = skip_if_no_db()` and skip when that connection has no `whse_basemapping.fwa_downstream()` (the gate can fall back to `lnk_db_conn()`, `tests/testthat/setup.R:28-30`; corrected at the resume: `public.wsg_outlet` was retired by fresh 0.33.0 and dropped from m1 on 2026-08-28, so a gate on it would skip everywhere; closure mode reads only the routine); the province-mode test drops its skip (province mode returns before any connection).
 - [ ] Prove it: with the local fwapg up and `PG*` pointed at an unreachable host, the closure tests pass on the gated connection.
 
 ## Phase 6: Verify the pin moved nothing but the column

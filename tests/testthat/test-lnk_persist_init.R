@@ -356,3 +356,91 @@ test_that("a replace by another writer that leaves the comment is noticed", {
   def <- .lnk_view_state(conn, schema, "streams_habitat_long_vw")$def
   expect_match(def, "streams_habitat_ch")
 })
+
+# fresh 0.54.0 keys its near-river table on linear_feature_id (#452), and a
+# table persisted before then gains the column once.
+test_that("a near-river table without linear_feature_id is migrated, once", {
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql)
+      invisible(3L)
+    },
+    .lnk_db_transaction = function(conn, code) code
+  )
+  cols <- function(...) {
+    nm <- c(...)
+    function(conn, schema) {
+      data.frame(table_name = rep("streams_near_river", length(nm)),
+                 column_name = nm)
+    }
+  }
+  old <- c("id_segment", "watershed_group_code", "measure", "threshold",
+           "distance_max", "dist_m")
+
+  local_mocked_bindings(.lnk_schema_columns = cols(old))
+  expect_identical(.lnk_near_river_lfid_migrate("c", "s"), 3L)
+  expect_identical(captured[1],
+    "ALTER TABLE s.streams_near_river ADD COLUMN IF NOT EXISTS linear_feature_id bigint")
+  expect_match(captured[2], "UPDATE s\\.streams_near_river nr")
+  expect_match(captured[2], "st\\.id_segment = nr\\.id_segment")
+  expect_match(captured[2], "st\\.watershed_group_code = nr\\.watershed_group_code")
+  expect_match(captured[2], "nr\\.linear_feature_id IS NULL")
+  expect_length(captured, 2L)
+
+  # Up to date: nothing issued, so no lock (#369).
+  captured <- character(0)
+  local_mocked_bindings(.lnk_schema_columns = cols(c(old, "linear_feature_id")))
+  expect_identical(.lnk_near_river_lfid_migrate("c", "s"), 0L)
+  expect_length(captured, 0L)
+
+  # A catalog that names nothing: left alone (the persist's INSERT names the
+  # column and fails loudly if it is missing).
+  local_mocked_bindings(.lnk_schema_columns = cols())
+  expect_identical(.lnk_near_river_lfid_migrate("c", "s"), 0L)
+  expect_length(captured, 0L)
+})
+
+test_that("lnk_persist_init fills linear_feature_id on an old near-river table from streams", {
+  conn <- skip_if_no_db()
+  info <- DBI::dbGetInfo(conn)
+  skip_if_not(identical(info$host, "localhost") && identical(info$dbname, "fwapg"),
+              "needs the local docker fwapg")
+  schema <- paste0("zz_test452_", Sys.getpid())
+  cfg <- lnk_config("default")
+  cfg$pipeline$schema <- schema
+  sp <- c("BT", "CH")
+  withr::defer(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schema)))
+  suppressMessages(lnk_persist_init(conn, cfg, species = sp))
+  # Back to the table as link 0.86.0 made it, holding a build's rows.
+  DBI::dbExecute(conn, sprintf(
+    "ALTER TABLE %s.streams_near_river DROP COLUMN linear_feature_id", schema))
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.streams (id_segment, watershed_group_code, linear_feature_id)
+     VALUES (1, 'AAAA', 701), (2, 'AAAA', 702), (1, 'BBBB', 801)", schema))
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.streams_near_river
+       (id_segment, watershed_group_code, measure, threshold, distance_max, dist_m)
+     VALUES (1, 'AAAA', 'channel_width', 15, 1000, 10),
+            (2, 'AAAA', 'channel_width', 15, 1000, 20),
+            (1, 'BBBB', 'channel_width', 15, 1000, 30),
+            (9, 'BBBB', 'channel_width', 15, 1000, 40)", schema))
+
+  suppressMessages(lnk_persist_init(conn, cfg, species = sp))
+  got <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT id_segment, watershed_group_code, linear_feature_id
+       FROM %s.streams_near_river ORDER BY watershed_group_code, id_segment", schema))
+  # Each row takes its own group's segment, never another group's at the same
+  # id_segment; a row whose segment is not in streams stays NULL.
+  expect_identical(as.numeric(got$linear_feature_id), c(701, 702, 801, NA))
+
+  # A second init finds the column and changes nothing.
+  DBI::dbExecute(conn, sprintf(
+    "UPDATE %s.streams_near_river SET linear_feature_id = NULL
+      WHERE id_segment = 1 AND watershed_group_code = 'AAAA'", schema))
+  suppressMessages(lnk_persist_init(conn, cfg, species = sp))
+  again <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT count(*)::int AS n FROM %s.streams_near_river
+      WHERE linear_feature_id IS NULL", schema))$n
+  expect_identical(again, 2L)
+})

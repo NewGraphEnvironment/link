@@ -33,7 +33,18 @@ Move 13 of link's backlog, [`planning/backlog.md`](../blob/main/planning/backlog
 - **`lnk_wsg_resolve()`** province and strict modes return before any connection (`R/lnk_wsg_resolve.R:111-124`); only closure mode opens `lnk_db_conn()` when `conn` is NULL.
 - **Consolidate copies the columns both sides share** (`data-raw/schema_consolidate.R:388-390`), and `streams_near_river` is in its persist core (`data-raw/study_area_hosts.sh:434`).
 
+## Resume, 2026-11-22/23 (m1)
+
+- **m1's fwapg was unreachable from about 2026-11-21 20:46 PDT:** the colima VM ran, its guest agent still synced time over vsock, but the guest's network was gone (last host-agent event: the guest dropped its DHCP lease on 192.168.5.1; ssh to the VM and 5432 refused). `colima stop && colima start` (owner's call, 2026-11-23 01:30 UTC) brought `fresh-db` back within 10 s, not in recovery. `LIMA_HOME=~/.colima/_lima limactl list` sees colima's VM; plain `limactl` does not.
+- **The shared R library held fresh 0.53.0** (installed 2026-11-16, `RemoteSha 43b7cb32`), not the 0.52.0 main pins. So both arms run fresh from scratch libraries: `~/tmp/pin481/lib052` (v0.52.0, 245c8d8d) and `lib0551` (v0.55.1, 29e7aa13), each `R CMD INSTALL -l` from a worktree of the tag.
+- **Phase 5's draft gate was stale:** it skipped on `to_regclass('public.wsg_outlet')`, a table fresh 0.33.0 retired (outlets ship in fresh). Closure mode reads only `whse_basemapping.fwa_downstream()`, so the gate checks that routine.
+- **fresh's deprecation message fires with all five arguments explicit** (`.frs_conn_resolve()` reads the environment before the arguments). link muffles it for a fully explicit call; worth a fresh issue (drafted in the PR, not filed).
+- **fresh's reach at v0.55.1 is 19 files** (18 at v0.42.0 to v0.46.0): `frs_db_conn.R` joins it through `lnk_db_conn()`, and was the only reached file mapped `none` (`data-raw/logs/fresh_pin_481/reach.md`).
+- `data-raw/logs/minimal_breaks_415/proof.R:317` calls `frs_habitat_predicates(near_river_table =)` without `near_river_lfid`, so it would error under fresh >= 0.54.0 if re-run; left as the record it is.
+
 ## Errors Encountered
 
 | Error | Resolution |
 |-------|------------|
+| `sed` substitution with `#` delimiter broke on `#288` in the replacement | Edited the map row with Python |
+| A helper wrapping `skip_if_no_db()` would close the connection on return (it defers the disconnect to its caller's frame) | A check-only `skip_if_no_fwa_downstream(conn)` beside it |
