@@ -85,7 +85,8 @@ meas <- .lnk_presence_measures(
   sockeye_lakes = numeric(0), excl_keys = excl,
   incl_keys = .lnk_observation_release_include_keys(loaded),
   aliases = aliases, barrier_species = c(RB = "ST"))
-cat("measures:", nrow(meas), "records in",
+cat("measures:", length(unique(meas$observation_key)), "records,", nrow(meas),
+    "rows (one per record and species) in",
     round(as.numeric(difftime(Sys.time(), t0, units = "mins")), 1), "min\n")
 
 # -- lifts and "any unlifted ST barrier below" -----------------------------------
