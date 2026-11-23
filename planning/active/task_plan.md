@@ -102,20 +102,22 @@ Outcome: no `pretest_inputs.csv` row was needed (row 86 already maps `R/lnk_pres
 
 ## Phase 3: Unpause rainbow trout and decide the presence review's remaining rows (#497, #402)
 
-- [ ] *(review)* First, set RB to `t` in `configs/default/species_modelled.csv` and clear its reason, date and issue as `configs/dictionary_species_modelled.csv` requires. The check's stories and its `modelled` column read `cfg$species` (`R/lnk_presence_check.R:360-371`), so the re-run must see RB modelled.
-- [ ] If decision 7 says RB's flag counts its own records only, change `.lnk_presence_check()` with a test.
-- [ ] Re-run `data-raw/wsg_species_presence_check.R --seed-tracker --out=data-raw/logs/presence_check_501/` at this branch's head, with Phase 2's rule and the unpause in force. This gives the four cells since #470 their tracker rows, and counts RB records under the new rule. Commit the log directory, and record the RB flag count before and after.
-- [ ] Record each decision in `configs/default/wsg_species_presence_review.csv` (`decision`, `reviewer`, `review_date`, `issue`), with the story opening on its reason. The rows to decide:
+- [x] *(review)* First, set RB to `t` in `configs/default/species_modelled.csv` and clear its reason, date and issue as `configs/dictionary_species_modelled.csv` requires. The check's stories and its `modelled` column read `cfg$species` (`R/lnk_presence_check.R:360-371`), so the re-run must see RB modelled.
+- [x] Decision 7 lets ST evidence flag RB: no change to `.lnk_presence_check()`.
+- [x] Re-run `data-raw/wsg_species_presence_check.R --seed-tracker --out=data-raw/logs/presence_check_501/` at this branch's head, with Phase 2's rule and the unpause in force. This gives the four cells since #470 their tracker rows, and counts RB records under the new rule. Commit the log directory, and record the RB flag count before and after.
+- [x] Record each decision in `configs/default/wsg_species_presence_review.csv` (`decision`, `reviewer`, `review_date`, `issue`), with the story opening on its reason. The rows to decide:
   - the 3 RB rows;
   - the 4 cells;
   - the 13 rows outside KO and RB;
   - any new RB flags (decision 7);
   - the 138 KO rows, as decision 3 settles.
-- [ ] Each decision that leaves a cell unlike bcfishpass's copy is a row of `overrides/wsg_species_presence_overlay.csv`, whose `reason` carries the decision, the rule and the story's opening, plus the `issue`. A decision that agrees with the copy has no row. VICT DV already has a removal row: change it or keep it.
-- [ ] Re-run the check; the decided rows drop out of its flags.
-- [ ] `test-lnk_csv_sync.R`: re-pin the loaded species-cell digest deliberately where cells moved.
-- [ ] *(review)* `data-raw/pretest_inputs.csv:123` maps the presence overlay to `segments` only, but a cell decides which records are seen (`observations`, `obs_upstream`). Add those rows, or say why not.
-- [ ] `research/species_presence.md`: revise it in place with the second review (rules applied, decisions by class, what is left), and update its `**Verified:**` line.
+- [x] Each decision that leaves a cell unlike bcfishpass's copy is a row of `overrides/wsg_species_presence_overlay.csv`, whose `reason` carries the decision, the rule and the story's opening, plus the `issue`. A decision that agrees with the copy has no row. VICT DV already has a removal row: change it or keep it.
+- [x] Re-run the check; the decided rows drop out of its flags.
+- [x] `test-lnk_csv_sync.R`: re-pin the loaded species-cell digest deliberately where cells moved.
+- [x] *(review)* `data-raw/pretest_inputs.csv:123` maps the presence overlay to `segments` only, but a cell decides which records are seen (`observations`, `obs_upstream`). Add those rows, or say why not.
+- [x] `research/species_presence.md`: revise it in place with the second review (rules applied, decisions by class, what is left), and update its `**Verified:**` line.
+
+Outcome: the re-run seeded FINA ST, MFRA BT, UFRT ST, TUTR RB and UFRT RB; the owner decided them with the rest (2026-11-23): VICT DV and MFRA BT added, FINA and UFRT ST kept absent, UFRT RB to #515. The check also needed `--evidence=` and a zone fold for a two-target alias.
 
 ## Phase 4: Tokens and release (#497)
 

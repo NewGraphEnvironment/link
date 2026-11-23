@@ -1,0 +1,13 @@
+date: 2026-11-23 20:54 UTC
+link: 0.89.0 @ 7421b02c
+config: default; presence table inst/extdata/configs/default/overrides/wsg_species_presence.csv + overlay inst/extdata/configs/default/overrides/wsg_species_presence_overlay.csv
+db: docker fwapg localhost:5432
+bcfishobs.observations rows: 375962; newest observation_date not after today 2026-10-10
+rule: at least 1 record dated 1950 or later; releases and excluded records out; pooled per species_pooling.csv
+groups: 246; cells: 3198; flagged: 223 (present_unsupported 12, absent_recorded 211)
+records under codes the table has no column for and the tracker counts as no species (not counted, as in the pipeline): 131583 records, 153 codes (per group in groups.csv); alias codes the tracker counts: ABT -> BT; ACT -> CT; ADV -> DV; BT/DV -> BT; CCT -> CT; CT/RB -> CT; DV/BT -> BT; SST -> RB; SST -> ST; WST -> RB; WST -> ST
+SQL cross-check: PARS, ADMS, ALBN, 39 cells, 5429 records, all counts agree
+measures: 376724 records; 6038 cells with a counting record (measures.csv), each counting the records the check counts (1577 cells compared); SQL recount of PARS, ADMS, ALBN, 104 cells, all agree on: n_counting, n_sites, n_waterbodies, n_years, n_code_other_group, n_above_barrier, n_hist_zone
+evidence: retrieved: 2026-10-31T15:42:07Z; hist_zones: b665c14f-3d29-414b-b232-cba2a9c3cc55 (BC Historical Fish Distribution - Zones (50,000)); hist_zones_wfs_rows: 19094
+recall set: 67 data_error records in observation_exclusions.csv (recall.csv), 67 of them in bcfishobs
+tracker: not seeded

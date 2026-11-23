@@ -1,6 +1,6 @@
 # Species presence: which groups each species is modelled in
 
-**Verified:** 2026-11-01 · **Issues:** #402 (this), #292 and #153 (the presence groups), #290 (pooling), #398 (CT aliases in code 2), #425 to #427 (follow-ups) · **Produced by:** `.lnk_presence_check()` (`R/lnk_presence_check.R`) and `.lnk_presence_measures()` (`R/lnk_presence_measures.R`) through `data-raw/wsg_species_presence_check.R` on local fwapg, bcfishobs 375,962 rows (newest valid date 2026-10-10) → `data-raw/logs/presence_check_402/`; historical zones from `data-raw/presence_evidence_load.R` (retrieved 2026-10-31) · **Status:** first review done 2026-11-01, provisional: 111 cells added, 10 removed, 76 kept, 154 pending (141 of them kokanee and rainbow, waiting on #432); see "The first review"
+**Verified:** 2026-11-23 · **Issues:** #402 (this), #497 and #501 (the second review), #515 (the cells left to the literature), #292 and #153 (the presence groups), #290 (pooling), #398 (CT aliases in code 2), #425 to #427 (follow-ups) · **Produced by:** `.lnk_presence_check()` (`R/lnk_presence_check.R`) and `.lnk_presence_measures()` (`R/lnk_presence_measures.R`) through `data-raw/wsg_species_presence_check.R` on local fwapg, bcfishobs 375,962 rows (newest valid date 2026-10-10) → `data-raw/logs/presence_check_402/` and `data-raw/logs/presence_check_501/`; historical zones from `data-raw/presence_evidence_load.R` (retrieved 2026-10-31) · **Status:** second review done 2026-11-23, provisional: 121 cells added, 11 removed, 80 kept, 144 pending (138 kokanee on #432, 6 native-range cells on #515); see "The first review" and "The second review"
 
 ## What a presence cell decides
 
@@ -124,9 +124,23 @@ Of the 24 cells marked present without a counting record:
 
 **Not carried out.** The three misplaced or misidentified records (KOTL ST, MESI SK, GUIC CH) belong in `observation_exclusions.csv` as data errors. In `default` that file is a byte-for-byte bcfishpass copy, and an overlay can change only rows the copy holds. None of the three changes a presence cell.
 
+## The second review (2026-11-23)
+
+Rainbow trout came back to `default` with a record rule for telling it from steelhead (#497, #501; RUNBOOK §7, "The record rule"): a record coded `ST`, `SST` or `WST` counts as rainbow trout where RB is marked present, and an `RB` record never counts as steelhead. They are one species whose juveniles cannot be told apart in the field: 58 % of RB records sit in water steelhead can reach, and 348 ST records sit above a barrier no steelhead lift opens (`data-raw/logs/rb_st_497/`). Steelhead evidence may flag an RB cell like a pooled species' records.
+
+The check was re-run under that rule with RB modelled (`data-raw/logs/presence_check_501/`). It flagged five new cells, each on one record under an alias code (`ADV`, `ABT`, `WST`) or on steelhead records counted as RB. The operator decided every row outside kokanee's:
+
+- **Added:** BT in CHIL, CLWR, EUCH, LKEC, LSAL, MUSK, SALR and STUL, on DV records the tracker reads as bull trout inland; BT in MFRA (one sea-run bull trout record); DV in VICT, whose first-review removal for stocked fish is reversed by one wild sea-run record (1977).
+- **Removed:** RB in LPRO and UPET, resting only on stocked fish, as the first review removed THOM CT, LNTH CT and BULL GR. LPRO's DV cell still makes RB present there for breaks through the `ct_dv_rb` presence group.
+- **Kept absent:** CT in FINL and LOMI, and ST in FINA and UFRT: single records in the Mackenzie basin, left unmarked as the Mackenzie salmon were. The two winter-steelhead records count as rainbow trout where RB is present.
+- **Left to the literature (#515):** RB in CRYL, UFRT and TUTR, ST in TURN, and CT in CLRH and DUNC. Whether rainbow are native on the Liard side of the Mackenzie and in the Yukon headwaters is a range question; TUTR's two "steelhead" records sit in the upper Yukon, where steelhead do not reach. The operator saw a cutthroat in the Duncan on a snorkel survey about 15 years ago.
+- **Kokanee's 138 rows** wait for the species' own return (#432).
+
+After the review the check flags 223 cells: 79 decided `keep`, 138 kokanee and 6 on #515 (`presence_check_501/after/`).
+
 ## The tracker
 
-`configs/default/wsg_species_presence_review.csv` holds one row per flagged cell: the flag, the rule, a story drafted from the evidence, and a decision (`pending`, `keep`, `add`, `remove`), with the reviewer, date and issue. The check refreshes the story on a pending row and never touches a decided one; a row it no longer flags stays and is reported. A decision to add or remove is carried out by editing the presence table, whose `notes` cell names the rule. That edit moves the `acc` output token (the presence species columns are in its spec; `notes` is not).
+`configs/default/wsg_species_presence_review.csv` holds one row per flagged cell: the flag, the rule, a story drafted from the evidence, and a decision (`pending`, `keep`, `add`, `remove`), with the reviewer, date and issue. The check refreshes the story on a pending row and never touches a decided one; a row it no longer flags stays and is reported. A decision to add or remove is carried out as a row of `overrides/wsg_species_presence_overlay.csv`, whose `reason` names the decision and the rule; a decision that agrees with bcfishpass's copy has no row (#431). A moved cell moves the `acc` output token (the presence species columns are in its spec).
 
 The tracker is deliberately not declared under the bundle's `files:`. A d declared file enters `config_hash`, so after a review edit link reads every earlier build as another bundle: `recompute_readers_check.R` refuses to recompute the groups outside a partial run that read it (`config_changed_since_run`; the run's own groups still recompute), and an export of an earlier build ships its habitat without the bundle files ("bundle has changed since the build"). No run reads the tracker.
 

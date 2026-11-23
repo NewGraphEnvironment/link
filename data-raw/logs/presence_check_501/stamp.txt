@@ -1,6 +1,6 @@
 date: 2026-11-23 20:46 UTC
 link: 0.89.0 @ 4a3df5ed
-config: default; presence table /Users/airvine/Projects/repo/link-501/inst/extdata/configs/default/overrides/wsg_species_presence.csv + overlay /Users/airvine/Projects/repo/link-501/inst/extdata/configs/default/overrides/wsg_species_presence_overlay.csv
+config: default; presence table inst/extdata/configs/default/overrides/wsg_species_presence.csv + overlay inst/extdata/configs/default/overrides/wsg_species_presence_overlay.csv
 db: docker fwapg localhost:5432
 bcfishobs.observations rows: 375962; newest observation_date not after today 2026-10-10
 rule: at least 1 record dated 1950 or later; releases and excluded records out; pooled per species_pooling.csv
