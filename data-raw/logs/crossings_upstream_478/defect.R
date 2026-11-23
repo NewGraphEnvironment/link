@@ -42,8 +42,14 @@ d <- DBI::dbGetQuery(conn, sprintf("
 DBI::dbExecute(conn, sprintf("DROP TABLE IF EXISTS %s.zz478_flat", ws))
 DBI::dbExecute(conn, sprintf("DROP TABLE IF EXISTS %s.zz478_old", ws))
 DBI::dbDisconnect(conn)
+git1 <- function(...) system2("git", c("-C", main_wt, ...), stdout = TRUE)
 s <- data.frame(
-  wsg = wsg, species_code = sp, n_crossings = nrow(d),
+  wsg = wsg, species_code = sp,
+  # the old function's code, and the new one's output (parity.R's, this tree)
+  old_sha = git1("rev-parse", "--short=8", "HEAD"),
+  old_dirty = length(git1("status", "--porcelain", "--untracked-files=no", "--", "R")) > 0L,
+  new_sha = system2("git", c("rev-parse", "--short=8", "HEAD"), stdout = TRUE),
+  n_crossings = nrow(d),
   n_new_spawning_more = sum(d$new_spawning_km > d$old_spawning_km + 0.001),
   n_new_rearing_more = sum(d$new_rearing_km > d$old_rearing_km + 0.001),
   old_spawning_total_km = round(sum(d$old_spawning_km), 1),

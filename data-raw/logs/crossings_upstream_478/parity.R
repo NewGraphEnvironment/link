@@ -120,6 +120,9 @@ rownames(dist) <- NULL
 
 stamp <- data.frame(
   link_sha = system2("git", c("rev-parse", "--short=8", "HEAD"), stdout = TRUE),
+  # load_all() read this tree's R/, inst/ and DESCRIPTION, against that commit
+  link_dirty = length(system2("git", c("status", "--porcelain", "--untracked-files=no",
+                                       "--", "R", "inst", "DESCRIPTION"), stdout = TRUE)) > 0L,
   schema = schema,
   num64(DBI::dbGetQuery(ref, "SELECT model_run_id, date_completed::text AS date_completed,
                                      model_version

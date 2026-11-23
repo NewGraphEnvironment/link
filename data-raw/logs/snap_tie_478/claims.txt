@@ -1,0 +1,11 @@
+            placement             | segments_upstream | km_upstream 
+----------------------------------+-------------------+-------------
+ higher measure: side channel top |             17657 |      7892.0
+ lower id: slough mouth           |                16 |         7.7
+(2 rows)
+
+ in_gap 
+--------
+     10
+(1 row)
+

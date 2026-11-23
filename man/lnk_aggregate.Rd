@@ -29,8 +29,9 @@ working schema's \code{crossings}.}
 holds is read: upstream habitat crosses watershed groups, so groups
 upstream of the crossings must be persisted for their habitat to count.}
 
-\item{to}{Character. Schema-qualified table to write (dropped and
-recreated). One row per crossing and species.}
+\item{to}{Character. \verb{<schema>.<table>} to write (dropped and recreated),
+outside \code{schema} and different from \code{crossings} and \code{barriers}. One row
+per crossing and species.}
 
 \item{config}{Character. The config whose build \code{schema} holds, written
 to the \code{config} column (for example \code{cfg$name}).}
@@ -92,7 +93,9 @@ is found above it and it gets zeros.
 
 The barrier totals subtract, from a crossing's total, the totals of the
 barriers upstream of it that have no other barrier between it and them
-(a barrier at the crossing's own id is not its own upstream barrier).
+(a barrier at the crossing's own id is not its own upstream barrier). Of
+two barriers within 1 m on one stream, the one with the higher measure is
+upstream of the other, so the habitat above the pair is subtracted once.
 }
 \examples{
 \dontrun{

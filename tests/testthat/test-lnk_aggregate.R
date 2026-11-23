@@ -107,14 +107,16 @@ test_that("lnk_aggregate counts tributaries, not the main stem below, and stops 
       v(barriers_anthropogenic_id, blue_line_key, downstream_route_measure)",
     s, as.integer(blk), ds_up + 0.5, ds_up + 1))
 
+  DBI::dbExecute(conn, "CREATE SCHEMA IF NOT EXISTS zz_test_agg478_out")
+  withr::defer(DBI::dbExecute(conn, "DROP SCHEMA IF EXISTS zz_test_agg478_out CASCADE"))
   suppressMessages(lnk_aggregate(conn, paste0(s, ".crossings"), schema = s,
-                                 to = paste0(s, ".up"), config = "test",
+                                 to = "zz_test_agg478_out.up", config = "test",
                                  barriers = paste0(s, ".barriers")))
   got <- DBI::dbGetQuery(conn, sprintf(
     "SELECT aggregated_crossings_id AS id, config, species_code, spawning_km,
             rearing_km, rearing_stream_km, spawning_belowupstrbarriers_km,
             rearing_belowupstrbarriers_km
-       FROM %s.up ORDER BY 1", s))
+       FROM zz_test_agg478_out.up ORDER BY 1"))
   num <- function(x) as.numeric(x)
   expect_identical(got$id, c(1L, 2L, 3L))
   expect_identical(unique(got$config), "test")
@@ -149,6 +151,70 @@ test_that("lnk_aggregate refuses a crossing id that is not unique", {
   DBI::dbExecute(conn, sprintf("CREATE TABLE %s.streams (id_segment int, watershed_group_code text)", s))
   DBI::dbExecute(conn, sprintf("CREATE TABLE %s.streams_habitat_bt (id_segment int, watershed_group_code text, spawning bool, rearing bool)", s))
   DBI::dbExecute(conn, sprintf("CREATE TABLE %s.crossings AS SELECT * FROM (VALUES (1, 1, 1.0::float8), (1, 1, 2.0::float8)) v(aggregated_crossings_id, blue_line_key, downstream_route_measure)", s))
-  expect_error(lnk_aggregate(conn, paste0(s, ".crossings"), s, paste0(s, ".up"), "test"),
+  expect_error(lnk_aggregate(conn, paste0(s, ".crossings"), s, "working.zz_agg478_up", "test"),
                "not unique")
+  # `to` is dropped and recreated, so it may not be a table this reads
+  expect_error(lnk_aggregate(conn, paste0(s, ".crossings"), s, paste0(s, ".streams"), "test"),
+               "outside the persist schema")
+  expect_error(lnk_aggregate(conn, paste0(s, ".crossings"), s, paste0(s, ".crossings"), "test"),
+               "must differ")
+  expect_error(lnk_aggregate(conn, paste0(s, ".crossings"), s, "up_unqualified", "test"),
+               "<schema>.<table>", fixed = TRUE)
+})
+
+test_that("a crossing where two FWA segments overlap is counted once (#478)", {
+  conn <- skip_if_no_db()
+  # A blue line where a segment starts before the one below it ends: a point
+  # at that start lies in both segments' [downstream, upstream) ranges.
+  o <- DBI::dbGetQuery(conn, "
+    SELECT b.blue_line_key, b.linear_feature_id AS lfid_below,
+           a.linear_feature_id AS lfid_at, a.downstream_route_measure AS m
+      FROM whse_basemapping.fwa_stream_networks_sp a
+      JOIN whse_basemapping.fwa_stream_networks_sp b
+        ON b.blue_line_key = a.blue_line_key
+       AND a.downstream_route_measure > b.downstream_route_measure + 2
+       AND a.downstream_route_measure < b.upstream_route_measure
+     WHERE a.watershed_group_code = 'ADMS' AND a.localcode_ltree IS NOT NULL
+       AND b.localcode_ltree IS NOT NULL AND NOT a.wscode_ltree <@ '999'
+     ORDER BY a.linear_feature_id LIMIT 1")
+  skip_if(nrow(o) == 0L, "no overlapping segments in ADMS on this database")
+  s <- "zz_test_agg478c"
+  DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", s))
+  withr::defer(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", s)))
+  DBI::dbExecute(conn, sprintf("CREATE SCHEMA %s", s))
+  # every segment of the line, spawning throughout
+  DBI::dbExecute(conn, sprintf("
+    CREATE TABLE %1$s.streams AS
+    SELECT row_number() OVER (ORDER BY linear_feature_id)::int AS id_segment,
+           watershed_group_code, linear_feature_id, edge_type, blue_line_key,
+           waterbody_key, wscode_ltree, localcode_ltree,
+           downstream_route_measure, upstream_route_measure, length_metre
+      FROM whse_basemapping.fwa_stream_networks_sp WHERE blue_line_key = %2$d",
+    s, as.integer(o$blue_line_key)))
+  DBI::dbExecute(conn, sprintf("
+    CREATE TABLE %1$s.streams_habitat_bt AS
+    SELECT id_segment, watershed_group_code, true AS spawning, false AS rearing
+      FROM %1$s.streams", s))
+  DBI::dbExecute(conn, sprintf("
+    CREATE TABLE %1$s.crossings AS
+    SELECT 1 AS aggregated_crossings_id, %2$d AS blue_line_key,
+           %3$.17g::double precision AS downstream_route_measure",
+    s, as.integer(o$blue_line_key), o$m))
+  DBI::dbExecute(conn, "CREATE SCHEMA IF NOT EXISTS zz_test_agg478_out")
+  withr::defer(DBI::dbExecute(conn, "DROP SCHEMA IF EXISTS zz_test_agg478_out CASCADE"))
+  suppressMessages(lnk_aggregate(conn, paste0(s, ".crossings"), s,
+                                 "zz_test_agg478_out.upc", "test"))
+  got <- as.numeric(DBI::dbGetQuery(conn,
+    "SELECT spawning_km FROM zz_test_agg478_out.upc")$spawning_km)
+  # each distinct segment upstream of the point once (fwa_upstream's own test)
+  want <- as.numeric(DBI::dbGetQuery(conn, sprintf("
+    SELECT sum(f.length_metre::numeric) / 1000 AS km
+      FROM %1$s.streams f
+      JOIN whse_basemapping.fwa_stream_networks_sp r ON r.linear_feature_id = %2$s
+     WHERE whse_basemapping.fwa_upstream(%3$d, %4$.17g, r.wscode_ltree, r.localcode_ltree,
+             f.blue_line_key, f.downstream_route_measure, f.wscode_ltree, f.localcode_ltree,
+             true, 1)", s, format(o$lfid_at, scientific = FALSE),
+    as.integer(o$blue_line_key), o$m))$km)
+  expect_gt(want, 0)
+  expect_equal(got, want)
 })

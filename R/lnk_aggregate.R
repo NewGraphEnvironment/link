@@ -21,8 +21,9 @@
 #'   `streams_habitat_<sp>` (for example `"fresh_default"`). Every group it
 #'   holds is read: upstream habitat crosses watershed groups, so groups
 #'   upstream of the crossings must be persisted for their habitat to count.
-#' @param to Character. Schema-qualified table to write (dropped and
-#'   recreated). One row per crossing and species.
+#' @param to Character. `<schema>.<table>` to write (dropped and recreated),
+#'   outside `schema` and different from `crossings` and `barriers`. One row
+#'   per crossing and species.
 #' @param config Character. The config whose build `schema` holds, written
 #'   to the `config` column (for example `cfg$name`).
 #' @param species Character vector of species codes, or `NULL` (default)
@@ -118,9 +119,17 @@ lnk_aggregate <- function(conn,
       stop("Table not found: '", tb, "'.", call. = FALSE)
     }
   }
-  if (tolower(to) %in% tolower(c(crossings, barriers))) {
-    stop("`to` must differ from the crossings and barriers tables.",
-         call. = FALSE)
+  # `to` is dropped and recreated: it must name a table outside everything
+  # this reads (the crossings, the barriers, and the persist schema, where
+  # `streams` and `streams_habitat_<sp>` live).
+  to_parts <- strsplit(to, ".", fixed = TRUE)[[1]]
+  if (length(to_parts) != 2L) {
+    stop("`to` must be '<schema>.<table>'; got '", to, "'.", call. = FALSE)
+  }
+  if (tolower(to) %in% tolower(c(crossings, barriers)) ||
+        tolower(to_parts[1]) == schema) {
+    stop("`to` must differ from the crossings and barriers tables and lie ",
+         "outside the persist schema '", schema, "'.", call. = FALSE)
   }
 
   if (is.null(species)) {
@@ -168,16 +177,34 @@ lnk_aggregate <- function(conn,
         GROUP BY pt_id",
       pts_sql, DBI::dbQuoteIdentifier(conn, barriers_col_id), barriers)
   }
-  .lnk_db_execute(conn, paste("CREATE TEMP TABLE lnk_agg_pts AS", pts_sql))
+  # Each point's segment, resolved once: the one holding its measure
+  # ([downstream, upstream)) with the highest start, then the lowest id. FWA
+  # segments can overlap (the next starts before the last ends), and a point
+  # there would match two, doubling everything upstream of it in
+  # frs_aggregate()'s join; the walk is held to this segment through `where`.
+  .lnk_db_execute(conn, sprintf(
+    "CREATE TEMP TABLE lnk_agg_pts AS
+     SELECT u.*, r.linear_feature_id AS ref_lfid,
+            r.wscode_ltree AS ref_wscode, r.localcode_ltree AS ref_localcode
+       FROM (%s) u
+       LEFT JOIN LATERAL (
+         SELECT s.linear_feature_id, s.wscode_ltree, s.localcode_ltree
+           FROM whse_basemapping.fwa_stream_networks_sp s
+          WHERE s.blue_line_key = u.blue_line_key
+            AND u.downstream_route_measure >= s.downstream_route_measure
+            AND u.downstream_route_measure < s.upstream_route_measure
+          ORDER BY s.downstream_route_measure DESC, s.linear_feature_id
+          LIMIT 1) r ON true", pts_sql))
   n_dup <- DBI::dbGetQuery(conn, sprintf(
     "SELECT count(*) - count(DISTINCT %s) AS n FROM %s", q_id, crossings))$n
   if (as.numeric(n_dup) > 0) {
     stop("`", col_id, "` is not unique in ", crossings, ".", call. = FALSE)
   }
 
-  # Exact upstream test, bcfishpass's: the segment holding the point (the
-  # `ref` frs_aggregate() joins, [downstream, upstream)) gives its codes.
+  # Exact upstream test, bcfishpass's: the point's resolved segment (one of
+  # the `ref` rows frs_aggregate() joins) gives its codes.
   upstream_where <- paste(
+    "ref.linear_feature_id = p.ref_lfid AND",
     "whse_basemapping.fwa_upstream(p.blue_line_key, p.downstream_route_measure,",
     "ref.wscode_ltree, ref.localcode_ltree, f.blue_line_key,",
     "f.downstream_route_measure, f.wscode_ltree, f.localcode_ltree, true, 1)")
@@ -340,21 +367,14 @@ lnk_aggregate <- function(conn,
     CREATE TEMP TABLE lnk_agg_up AS
     SELECT a.pt_id, b.pt_id AS bar_id
       FROM pg_temp.lnk_agg_pts a
-      JOIN whse_basemapping.fwa_stream_networks_sp ra
-        ON ra.blue_line_key = a.blue_line_key
-       AND a.downstream_route_measure >= ra.downstream_route_measure
-       AND a.downstream_route_measure < ra.upstream_route_measure
       JOIN pg_temp.lnk_agg_pts b ON b.is_barrier AND b.pt_id <> a.pt_id
-      JOIN whse_basemapping.fwa_stream_networks_sp rb
-        ON rb.blue_line_key = b.blue_line_key
-       AND b.downstream_route_measure >= rb.downstream_route_measure
-       AND b.downstream_route_measure < rb.upstream_route_measure
-     WHERE rb.wscode_ltree <@ ra.wscode_ltree
+     WHERE a.ref_lfid IS NOT NULL AND b.ref_lfid IS NOT NULL
+       AND b.ref_wscode <@ a.ref_wscode
        AND whse_basemapping.fwa_upstream(
              a.blue_line_key, a.downstream_route_measure,
-             ra.wscode_ltree, ra.localcode_ltree,
+             a.ref_wscode, a.ref_localcode,
              b.blue_line_key, b.downstream_route_measure,
-             rb.wscode_ltree, rb.localcode_ltree, true, 1)
+             b.ref_wscode, b.ref_localcode, true, 1)
        -- the 1 m tolerance makes two barriers within 1 m of each other on one
        -- stream each upstream of the other; order them, higher measure (then
        -- higher id) upstream, or the EXCEPT drops both
