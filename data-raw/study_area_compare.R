@@ -6,7 +6,7 @@
 # top_pattern_count). Run on the dispatcher AFTER consolidate. No tunnel,
 # no PG_PASS_SHARE, no :63333 — a single local connection per WSG.
 #
-# Usage: [LNK_LOAD=loadall] Rscript study_area_compare.R <out.csv> <WSG1,WSG2,...> [config]
+# Usage: [LNK_LOAD=loadall] Rscript study_area_compare.R <out.csv> <WSG1,WSG2,...> <config>
 
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) < 2L) {

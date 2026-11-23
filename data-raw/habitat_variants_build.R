@@ -53,7 +53,7 @@
 # "done in" line, plus the discharge join before it and the base run's model
 # and recompute per WSG, outside that total.
 #
-#   Rscript data-raw/habitat_variants_build.R \
+#   Rscript data-raw/habitat_variants_build.R --base=<bundle> \
 #     [--variants=data-raw/habitat_score/variants.csv] \
 #     [--roles=data-raw/habitat_score/wsg_roles.csv] \
 #     [--wsgs=BULL]            focal subset (pre-flight); default: every

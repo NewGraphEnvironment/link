@@ -48,7 +48,7 @@
 # Loads the source tree (pkgload::load_all), never the installed link.
 #
 # Usage: Rscript data-raw/access_disagree_349.R [--schema=fresh_default]
-#          [--config=default] [--wsgs=DUNC,CARP] [--out=<dir>]
+#          --config=<bundle> [--wsgs=DUNC,CARP] [--out=<dir>]
 
 suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
 suppressPackageStartupMessages(library(DBI))

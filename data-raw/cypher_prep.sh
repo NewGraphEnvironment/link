@@ -6,7 +6,7 @@
 #
 #   for IP in <cy1_ip> <cy2_ip> <cy3_ip>; do
 #     scp -q data-raw/cypher_prep.sh "cypher@$IP:/tmp/cypher_prep.sh"
-#     ssh "cypher@$IP" "bash /tmp/cypher_prep.sh" &
+#     ssh "cypher@$IP" "CYPHER_PREP_CONFIG=<bundle> bash /tmp/cypher_prep.sh" &
 #   done
 #   wait
 #
@@ -74,8 +74,8 @@
 # floor on your branch, where the change is reviewable.
 #
 # Examples:
-#   bash cypher_prep.sh                            # main
-#   CYPHER_PREP_BRANCH=feat/foo bash cypher_prep.sh
+#   CYPHER_PREP_CONFIG=<bundle> bash cypher_prep.sh    # main (the config is required at stage all)
+#   CYPHER_PREP_CONFIG=<bundle> CYPHER_PREP_BRANCH=feat/foo bash cypher_prep.sh
 #   CYPHER_PREP_STAGE=install bash cypher_prep.sh
 #   CYPHER_PREP_FRESH_REF=NewGraphEnvironment/fresh@feat/bar bash cypher_prep.sh
 #

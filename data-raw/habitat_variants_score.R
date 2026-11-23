@@ -27,7 +27,7 @@
 #     [--roles=data-raw/habitat_score/wsg_roles.csv] \
 #     [--wsgs=...] [--buffers=0,100] [--prefix=score284_] \
 #     [--floor=found|expected] [--out=data-raw/logs/habitat_score_284]
-#     [--base=default]   the base bundle, as habitat_variants_build.R took it
+#     --base=<bundle>    (required) the base bundle, as habitat_variants_build.R took it
 #
 # Absences come from LNK_KNOWLEDGE_DIR (the private `knowledge` repo) through
 # data-raw/habitat_validate_inputs.R, as habitat_validate.R reads them; only
