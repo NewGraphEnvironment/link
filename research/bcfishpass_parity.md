@@ -47,7 +47,7 @@ recomputed and verified by `study_area_verify.sql` (PASS). The primitives are th
 `fresh_parity361` was built on, and the reference did not move on any of the 50 pairs. The full
 stamp is in `data-raw/logs/parity_0.78.0/README.md`.
 
-## Crossings, and habitat upstream of each crossing (2026-11-23, #478)
+## Crossings, and habitat upstream of each crossing
 
 Against bcfishpass run 148 (`v0.7.15-51-g3bd2824c`, 2026-11-17), with link's `bcfishpass` config built at `2b12adf0` (`zz478_parity.log`; `data-raw/logs/snap_tie_478/status_parity_bcfishpass.tsv`) into scratch schema `zz478_parity` for ADMS, BULK, MORR (upstream of BULK) and their downstream groups (LFRA, HARR, FRCN, THOM, STHM; LSKE, KLUM, KISP), downstream first. Producers: `data-raw/crossings_parity.R` (logs in `data-raw/logs/crossings_parity_232/`) and `data-raw/logs/crossings_upstream_478/` (`parity.R`, `defect.R`).
 

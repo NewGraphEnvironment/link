@@ -48,7 +48,7 @@ Seven groups holding a moved pick or dam (NASR, SHUL, JERV, KETL, LILL, GUIC, US
 
 The `default` config's re-model did not run here. Its first build (NASR, 2.2 minutes in the provincial run) sat in fresh's near-river walk twice, 30 and then 17 minutes, each time beside another session's walk, the stall #487 tracks, and was cancelled both times (`stalled_before_default_NASR.log`, `stalled2_before_default_NASR.log` carry the samples). `default` reads the same crossings code; its scratch re-model is owed.
 
-## FWA_LocateAlong, before and after fwapg#41's rework (#383)
+## FWA_LocateAlong before and after fwapg's rework
 
 link places stored measures with `FWA_LocateAlong`: `lnk_barriers_unify()` through `.lnk_sql_locate()`, whose fallback (interpolating on the nearest segment of the line) hides a miss, and `data-raw/query_habitat_thresholds_obs.R`, whose upper locate is capped at the blue line's top. `sweep.R` calls it on link's inputs on the local docker fwapg (base: neither `202610131654__watershedatmeasure_drop_exbc` nor `202610240132__indexpoint_tiebreak` applied), once on committed state and once with both migrations from fwapg's `indexpoint-tiebreak-41` branch (`a8d00b97`) applied inside a transaction `fresh::frs_migration_trial()` rolls back (`sweep.csv`; the function's source hash differs between the passes):
 
