@@ -1,0 +1,20 @@
+RB,f,"paused for the #501 three-state build",2026-11-23,#501
+=== main LKEL 21:03:36
+[wsg_run_one] LKEL done in 5.0 min (persist=fresh_rb501_main)
+=== main GRNL 21:08:40
+[wsg_run_one] GRNL done in 1.0 min (persist=fresh_rb501_main)
+=== main NBNK 21:09:40
+[wsg_run_one] NBNK done in 1.5 min (persist=fresh_rb501_main)
+=== paused LKEL 21:11:12
+[wsg_run_one] LKEL done in 4.9 min (persist=fresh_rb501_paused)
+=== paused GRNL 21:16:11
+[wsg_run_one] GRNL done in 0.9 min (persist=fresh_rb501_paused)
+=== paused NBNK 21:17:11
+[wsg_run_one] NBNK done in 1.5 min (persist=fresh_rb501_paused)
+=== ship LKEL 21:18:43
+[wsg_run_one] LKEL done in 4.9 min (persist=fresh_rb501_ship)
+=== ship GRNL 21:23:41
+[wsg_run_one] GRNL done in 3.7 min (persist=fresh_rb501_ship)
+=== ship NBNK 21:27:24
+[wsg_run_one] NBNK done in 1.7 min (persist=fresh_rb501_ship)
+=== all done 21:29:07

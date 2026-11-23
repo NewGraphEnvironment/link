@@ -138,7 +138,7 @@ Outcome: the re-run seeded FINA ST, MFRA BT, UFRT ST, TUTR RB and UFRT RB; the o
 
 ## Phase 5: Verify on builds (#497)
 
-- [ ] *(review)* Pre-flight on local fwapg in scratch schemas. Build three states, each from its own `git worktree`:
+- [x] *(review)* Pre-flight on local fwapg in scratch schemas. Build three states, each from its own `git worktree`:
   - `main`;
   - this branch with RB still paused (the record rule and presence alone);
   - this branch as it ships.
@@ -147,15 +147,15 @@ Outcome: the re-run seeded FINA ST, MFRA BT, UFRT ST, TUTR RB and UFRT RB; the o
   - one with ST and RB present (Skeena or Fraser);
   - one with RB present and no ST (interior);
   - one of the 16 groups where RB's breaks come only through promotion, CHUK excepted (not in the run).
-- [ ] Report per group:
+- [x] Report per group:
   - segments in each state;
   - RB access km (codes 1 and 2), habitat km, and code 2 km;
   - lifts on RB resting on ST records (`barrier_override_evidence.species_code_recorded = 'ST'`) *(review)*;
   - that no other species' access or habitat moves beyond what re-segmentation explains (`data-raw/habitat_diff_segments.R`).
 
   Compare RB with the last pre-pause build of the same groups, if one exists (`acc-v4`, m1's `fresh_default_20261023`).
-- [ ] *(review)* From the presence table and records alone, count the groups whose cuts move province-wide: RB present with ST records, plus the 16 promoted groups.
-- [ ] `data-raw/logs/rb_return_501/` README with the stamp, commands and numbers.
+- [x] *(review)* From the presence table and records alone, count the groups whose cuts move province-wide: RB present with ST records, plus the 16 promoted groups.
+- [x] `data-raw/logs/rb_return_501/` README with the stamp, commands and numbers.
 - [ ] Run `devtools::test()`, `devtools::check()`, `lintr` per file against `origin/main`, and `pkgdown::check_pkgdown()`.
 
 ## Phase 6: Hand off and close (#497, #402)
