@@ -1553,3 +1553,17 @@ test_that("every shipped dimensions.csv passes strict", {
       edge_types = "explicit", strict = TRUE)), message = b)
   }
 })
+
+# -- The top-level sample is default's rules (link#129) -------------------------
+
+test_that("the top-level sample and its dimensions are default's", {
+  ext <- system.file("extdata", package = "link")
+  body <- function(p) grep("^#", readLines(p, warn = FALSE), value = TRUE,
+                           invert = TRUE)
+  expect_identical(
+    body(file.path(ext, "parameters_habitat_rules.yaml")),
+    body(file.path(ext, "configs", "default", "rules.yaml")))
+  expect_identical(
+    unname(tools::md5sum(file.path(ext, "parameters_habitat_dimensions.csv"))),
+    unname(tools::md5sum(file.path(ext, "configs", "default", "dimensions.csv"))))
+})

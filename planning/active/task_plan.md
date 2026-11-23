@@ -24,9 +24,9 @@ Batch 11 of `planning/backlog.md`: #75, #86, #129, #189, #212, #316, #327. Gate 
 
 Review B1, A4 and AC5 changed this phase: the arms, the groups, its place first, and a fixed environment.
 
-- [ ] Run the build from a separate `git worktree` at the baseline commit. The harness needs a clean tree that nothing edits while it runs (`habitat_variants_build.R:96-97, 156`). fresh is at the `DESCRIPTION` pin (v0.55.1) on m1; stamp it.
-- [ ] Find and cite why fwapg models no order-1 width (Thorley & Irvine 2021b; the channel width memo, attachment 2 of `fish_passage_parsnip_2021_reporting`) through the Zotero skills, or record that it was not found.
-- [ ] Write `data-raw/habitat_score/variants_327.csv` and `wsg_roles_327.csv`. A `dims` variant edits one species' row, so each arm is one row per species:
+- [x] Run the build from a separate `git worktree` at the baseline commit. The harness needs a clean tree that nothing edits while it runs (`habitat_variants_build.R:96-97, 156`). fresh is at the `DESCRIPTION` pin (v0.55.1) on m1; stamp it.
+- [x] Find and cite why fwapg models no order-1 width (Thorley & Irvine 2021b; the channel width memo, attachment 2 of `fish_passage_parsnip_2021_reporting`) through the Zotero skills, or record that it was not found.
+- [x] Write `data-raw/habitat_score/variants_327.csv` and `wsg_roles_327.csv`. A `dims` variant edits one species' row, so each arm is one row per species:
   - BT's bypass on PARS, PCEA and FINA (the Peace closure). #324 found the exception moves BT there, and these groups hold no CH, CO or ST. PARS has been in-sample for BT in every earlier roles file, so the roles file states its roles and why.
   - CH's and ST's bypass, and CH's near-river pair at `both`, on #364's groups (ADMS, BULK, CHWK, CLWR, SQAM). This is the side-by-side #327 asks for.
   - CO's rearing bands are skipped (BULK holds a CO rearing `user_habitat_classification` reach). WCT is dropped, since no scored group holds it; say so.
@@ -68,15 +68,15 @@ Review G3, G4 and G6 changed this phase: the bundles touched, the `cfg = NULL` d
 
 Review B2, G7 and G8 changed this phase: the workflow's permissions, idempotency, header lines and proof, plus the docs that flip.
 
-- [ ] `data-raw/build_rules.R` builds the top-level sample from `default/dimensions.csv` with `default`'s thresholds. It writes `inst/extdata/parameters_habitat_dimensions.csv` as a byte copy of `default/dimensions.csv`, which today lacks seven columns from #326 and #364. Regenerate the sample here, since the next test needs it.
-- [ ] A test holds the top-level sample equal to `default/rules.yaml` below the header, and the top-level dimensions CSV equal to `default`'s.
-- [ ] Do the sync as Open decision 4 answers. Under the recommended option, a fresh branch and PR add `.github/workflows/sync-link-rules.yml`. It:
+- [x] `data-raw/build_rules.R` builds the top-level sample from `default/dimensions.csv` with `default`'s thresholds. It writes `inst/extdata/parameters_habitat_dimensions.csv` as a byte copy of `default/dimensions.csv`, which today lacks seven columns from #326 and #364. Regenerate the sample here, since the next test needs it.
+- [x] A test holds the top-level sample equal to `default/rules.yaml` below the header, and the top-level dimensions CSV equal to `default`'s.
+- [x] Do the sync as Open decision 4 answers. Under the recommended option, a fresh branch and PR add `.github/workflows/sync-link-rules.yml`. It:
   - runs weekly and on dispatch, with `permissions: contents: write, pull-requests: write`;
   - compares link main's sample with fresh's, ignoring every `^# Generated` line;
   - on drift, force-pushes a fixed branch and opens or updates one PR, labelled `rules-sync`, never auto-merged.
   Its body says fresh CI must be run by hand, and what changes in fresh's fallback. The branch carries no planning files.
-- [ ] Prove the workflow on the fresh branch with a temporary `push` trigger with no `paths:` filter, removed before merge, or with `act`. `workflow_dispatch` cannot run a workflow that is not yet on fresh's default branch. The current drift is 338 lines against fresh's 2026-04-28 copy.
-- [ ] Fix the docs that call the top-level CSV the source of truth or describe a hand copy:
+- [x] Prove the workflow on the fresh branch with a temporary `push` trigger with no `paths:` filter, removed before merge, or with `act`. `workflow_dispatch` cannot run a workflow that is not yet on fresh's default branch. The current drift is 338 lines against fresh's 2026-04-28 copy.
+- [x] Fix the docs that call (RUNBOOK §7 with Phase 7's edits) the top-level CSV the source of truth or describe a hand copy:
   - `inst/extdata/configs/default/README.md:28`;
   - `inst/extdata/configs/default_rearbreaks/README.md:24`;
   - CLAUDE.md's config-change workflow, step 4;

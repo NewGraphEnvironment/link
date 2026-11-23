@@ -22,6 +22,13 @@ Move 8 of link's backlog, `planning/backlog.md`. Run `/planning-init <this issue
 - **#327:** `lnk_rules_build()` emits the bypass with `width_known_below_min = TRUE` on every bypass (#326), and `default` sets `rear_stream_order_bypass = no` for every species. The variants harness takes `dims` variants (#364).
 - **#86:** no manifest holds a `row_count`. `lnk_config_verify()` checks sha256 bytes and header shape against provenance.
 
+## Resume, 2026-11-23
+
+- **Order-1 widths, the citation (#327).** Not found. The group library holds Thorley & Irvine (2021) "Channel Width 2021" (`thorley_irvine2021ChannelWidtha`, K6NXJRMR, stored as HTML) and four copies of Thorley, Norris & Irvine (2021b) "Channel Width 2021b" (`thorley_etal2021ChannelWidthc` and siblings), none with a stored file; the Poisson pages render by script and return no text to a fetch. The 2021 appendix's data preparation drops only widths of 0 or over 300 m, watershed areas under 0.1 ha and negative gradients; it says nothing about stream order. The filter is `WHERE s.stream_order > 1` in fwapg's `extras/channel_width/sql/channel_width.sql`, present at fwapg `69d1c4e` (2024-02-18, a file move), and fresh `research/fwapg_channel_width.md` finds the regression itself is not order-limited.
+- **Phase 1 roles.** BT is held out in ADMS, BULK, CHWK and SQAM as well as PCEA and FINA, for power: the salmon groups' BT band moves on the same rule. PARS is in-sample for BT (its BT records set #284's percentiles). CH and ST user habitat reaches in the scored groups are spawning only, so rearing scores.
+- **Phase 3 proof.** ADMS and PARS mapping codes digest identical under the old and the bundle-read sets (`data-raw/logs/residence_189/`).
+- **Phase 4 proof.** fresh PR #332's workflow, run 45203080645 on its branch with a temporary push trigger: drift found, `rules-sync` pushed carrying link main's file byte for byte, label created, `gh pr create` refused by fresh's Actions setting; its re-run skipped the unchanged push. `rules-sync` deleted after. Neither bundle's `rules.yaml` body moved when rebuilt; the sample's diff is the one decision 4 named, plus CH's stream rule taking `near_river: false`.
+
 ## Errors Encountered
 
 | Error | Resolution |
