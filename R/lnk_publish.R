@@ -188,12 +188,14 @@
 #' A put's VersionId, read from its reply; refused when there is none.
 #'
 #' The reply is `--output text` of `[VersionId,ETag]`: one line, tab-separated.
-#' A bucket without versioning answers `None`, which would pin nothing.
+#' Only such a line is read (stderr is in `out` too, and a stray line must not
+#' be taken for a version). A bucket without versioning answers `None`, which
+#' would pin nothing.
 #' @param r One result of `.lnk_publish_run()` for a put call.
 #' @return The VersionId.
 #' @noRd
 .lnk_publish_put_version <- function(r) {
-  line <- utils::tail(r$out[nzchar(trimws(r$out))], 1L)
+  line <- utils::tail(r$out[grepl("^[^\t]+\t", r$out)], 1L)
   v <- if (length(line) == 0L) "" else trimws(strsplit(line, "\t")[[1]][1])
   if (is.na(v) || !nzchar(v) || v %in% c("None", "null")) {
     stop(sub("^put ", "", r$label), " has no VersionId in its put reply",

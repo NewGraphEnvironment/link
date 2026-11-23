@@ -40,7 +40,7 @@ map), 231.3 s; versions from the replies, 0.3 s; the rest, 8 s. On m1 the pool
 makes a full publish **8.9 times faster**. The republish of an unchanged tree
 skipped all 753 files and 482 per-group parts (one listing), re-put the 108 parts
 and the dependency map, and named the per-group parts' versions from one
-`list-object-versions` of `barriers/` and `barrier_overrides/`.
+`list-object-versions` each of `barriers/` and `barrier_overrides/`.
 
 ## The two prefixes hold the same thing
 

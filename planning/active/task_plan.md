@@ -63,7 +63,7 @@ Settled by reading the code, not owner forks:
 
 ## Owed at the end (reported, done after merge)
 
-- [ ] rtj: the scheduled runs swap to image `254953701` (tfvars and `WORKER_TFVARS`), a provincial run goes out on it, and image `228350154` is deleted once that run publishes (NewGraphEnvironment/rtj#434).
+- [ ] The cloud image swap this waited on, in the infrastructure repository (its own issue): the scheduled runs move to the new image, a provincial run goes out on it, and the old image is deleted once that run publishes.
 - [ ] Every host re-snapshots (`snapshot_bcfp.sh --force`) so its `cabd.dams` is in the standard layout before the next multi-host run.
 - [ ] Whether the pre-run gate must run again for this release: `R/lnk_publish.R` is mapped `none`, and `snapshot_bcfp*.sh` and `habitat_publish.R` are outside `PRETEST_LINK_PATHS` (`data-raw/pretest.R:109`), but `DESCRIPTION` changes (`parallel` in `Imports`, the version). Run `pretest_check.R` through `study_area_run.sh --preflight-only` before the next provincial run and re-run the gate if it refuses.
 - [ ] The next real PUBLISH records its time against #488's 53.5 min (and, under Open decision 4b, is the first measurement).

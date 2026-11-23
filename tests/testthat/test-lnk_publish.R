@@ -116,6 +116,8 @@ test_that("LNK_PUBLISH_JOBS is a whole number from 1 to 64, 8 when unset", {
   }
 })
 
+# R CMD check allows two worker processes (_R_CHECK_LIMIT_CORES_), so the pool
+# is tested at 2.
 test_that("the pool runs calls at most `jobs` at once and checks every result", {
   d <- stub_aws(sleep = "0.4")
   f <- file.path(d, "x.txt")
@@ -124,12 +126,11 @@ test_that("the pool runs calls at most `jobs` at once and checks every result", 
   calls <- lapply(sprintf("k/%02d", 1:8), function(k) {
     .lnk_publish_put_call("b", k, f, "text/plain", md5)
   })
-  res <- .lnk_publish_run(calls, jobs = 3L)
+  res <- .lnk_publish_run(calls, jobs = 2L)
   expect_length(res, 8L)
   lg <- stub_log(d)
   expect_identical(sort(lg$key), sprintf("k/%02d", 1:8))
-  expect_lte(max(lg$inflight), 3L)
-  expect_gte(max(lg$inflight), 2L)
+  expect_identical(max(lg$inflight), 2L)
   # results come back in the order of the calls, each with its reply's version
   v <- vapply(res, .lnk_publish_put_version, character(1))
   versions <- jsonlite::fromJSON(file.path(d, "versions.json"))
@@ -155,6 +156,11 @@ test_that("a put reply with no VersionId is refused", {
                "no VersionId")
   expect_identical(.lnk_publish_put_version(list(label = "put a/b", out = c("", "v1\t\"x\""))),
                    "v1")
+  # a stray stderr line after the reply is not a version
+  expect_identical(.lnk_publish_put_version(list(label = "put a/b",
+                                                 out = c("v1\t\"x\"", "a warning"))), "v1")
+  expect_error(.lnk_publish_put_version(list(label = "put a/b", out = "a warning")),
+               "no VersionId")
 })
 
 test_that("a listing reads every row, and an empty one is empty", {
@@ -207,7 +213,7 @@ publish_tree <- function(env = parent.frame(), n_parts = 6L, n_gp = 4L) {
   root
 }
 
-run_publish <- function(root, jobs = "3") {
+run_publish <- function(root, jobs = "2") {
   script <- publish_script()
   out <- withr::with_envvar(
     c(LNK_PUBLISH = "1", LNK_PUBLISH_ALLOW = "a test tree", LNK_PUBLISH_JOBS = jobs),
@@ -231,8 +237,7 @@ test_that("PUBLISH puts every part on the pool and the manifest only after them 
   expect_identical(nrow(man), 1L)
   expect_identical(nrow(rest), 10L)
   expect_gt(man$start, max(rest$end))
-  expect_lte(max(rest$inflight), 3L)
-  expect_gte(max(rest$inflight), 2L)
+  expect_identical(max(rest$inflight), 2L)
   # no head-object per key: one for the live manifest, none for parts
   expect_identical(sum(lg$op == "head-object"), 1L)
   # the manifest names each part's version as the stub answered its put
@@ -242,7 +247,7 @@ test_that("PUBLISH puts every part on the pool and the manifest only after them 
   for (p in c(pub$parts, pub$group_parts)) {
     expect_identical(p$version_id, versions[[paste0("habitat/fwa/v1/", p$key)]], info = p$key)
   }
-  expect_match(r$out, "put 0 new files, 6 parts, 4 of 4 per-group parts \\(3 at once\\)")
+  expect_match(r$out, "put 0 new files, 6 parts, 4 of 4 per-group parts \\(2 at once\\)")
   expect_match(r$out, "min in all")
 })
 
