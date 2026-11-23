@@ -128,6 +128,11 @@ test_that("a changed internal signature fails and is named (#504)", {
   expect_length(check(function(a, b, c, d = 1) NULL), 0L)
   expect_identical(check(function(a, b, c, d) NULL),
                    ".frs_f(want: a, b, c; have: a, b, c, d)")
+  # an object that is not a closure is a mismatch, not a pass
+  ns <- new.env()
+  ns$.frs_f <- 1
+  expect_identical(.lnk_fresh_mismatched_internal_formals(ns, want),
+                   ".frs_f(want: a, b, c; have: not a closure)")
   # absent: reported by missing_internal, not here
   expect_length(.lnk_fresh_mismatched_internal_formals(new.env(), want), 0L)
 })

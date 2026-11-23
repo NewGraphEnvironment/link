@@ -239,10 +239,14 @@ lnk_preflight_fresh <- function(required = .lnk_fresh_required(),
   for (fn in names(required)) {
     if (!exists(fn, envir = ns, inherits = FALSE)) next
     obj <- get(fn, envir = ns)
-    if (!is.function(obj)) next
+    want <- required[[fn]]
+    if (!is.function(obj) || is.primitive(obj)) {
+      out <- c(out, sprintf("%s(want: %s; have: not a closure)", fn,
+                            paste(want, collapse = ", ")))
+      next
+    }
     fm <- formals(obj)
     have <- names(fm)
-    want <- required[[fn]]
     extra <- fm[setdiff(seq_along(have), seq_along(want))]
     no_default <- vapply(extra, identical, logical(1), quote(expr = ))
     if (!identical(utils::head(have, length(want)), want) || any(no_default)) {
