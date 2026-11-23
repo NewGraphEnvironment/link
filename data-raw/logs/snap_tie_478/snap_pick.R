@@ -73,6 +73,10 @@ q2 <- function(tbl, id, blk) q(gsub("%2$s", id, gsub("%3$s", tbl, gsub("%4$s", b
 counts <- data.frame(
   label = label,
   src_sha = system2("git", c("-C", src, "rev-parse", "--short=8", "HEAD"), stdout = TRUE),
+  # the code under R/ and inst/ that load_all() read, against that commit
+  src_dirty = length(system2("git", c("-C", src, "status", "--porcelain",
+                                      "--untracked-files=no", "--", "R", "inst",
+                                      "DESCRIPTION"), stdout = TRUE)) > 0L,
   fresh = as.character(packageVersion("fresh")),
   pscis_rows = q("SELECT count(*) AS n FROM whse_fish.pscis_assessment_svw")$n,
   cand5_rows = q("SELECT count(*) AS n FROM %s.pscis_stream_candidates")$n,

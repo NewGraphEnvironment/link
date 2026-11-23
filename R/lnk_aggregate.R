@@ -62,7 +62,9 @@
 #'
 #' The barrier totals subtract, from a crossing's total, the totals of the
 #' barriers upstream of it that have no other barrier between it and them
-#' (a barrier at the crossing's own id is not its own upstream barrier).
+#' (a barrier at the crossing's own id is not its own upstream barrier). Of
+#' two barriers within 1 m on one stream, the one with the higher measure is
+#' upstream of the other, so the habitat above the pair is subtracted once.
 #'
 #' @examples
 #' \dontrun{
@@ -325,7 +327,11 @@ lnk_aggregate <- function(conn,
 #' Species-independent, so built once. `lnk_agg_up` holds each point's
 #' barriers upstream, measured as bcfishpass measures upstream (the 10-argument
 #' `fwa_upstream`, equivalents in, 1 m); a barrier is immediate when no other
-#' barrier upstream of the point lies below it. The set difference is one hash
+#' barrier upstream of the point lies below it. Two barriers within 1 m on one
+#' stream are each upstream of the other under that test, so the higher
+#' measure (then the higher id) is taken as the upstream one: the habitat above
+#' the pair is subtracted once. bcfishpass counts neither as upstream of the
+#' other. The set difference is one hash
 #' join, where a NOT EXISTS over the pair table ran for minutes on BULK.
 #' @noRd
 .lnk_aggregate_barrier_pairs <- function(conn) {
@@ -348,7 +354,13 @@ lnk_aggregate <- function(conn,
              a.blue_line_key, a.downstream_route_measure,
              ra.wscode_ltree, ra.localcode_ltree,
              b.blue_line_key, b.downstream_route_measure,
-             rb.wscode_ltree, rb.localcode_ltree, true, 1)")
+             rb.wscode_ltree, rb.localcode_ltree, true, 1)
+       -- the 1 m tolerance makes two barriers within 1 m of each other on one
+       -- stream each upstream of the other; order them, higher measure (then
+       -- higher id) upstream, or the EXCEPT drops both
+       AND NOT (b.blue_line_key = a.blue_line_key
+                AND abs(b.downstream_route_measure - a.downstream_route_measure) <= 1
+                AND (b.downstream_route_measure, b.pt_id) < (a.downstream_route_measure, a.pt_id))")
   .lnk_db_execute(conn, "ANALYZE pg_temp.lnk_agg_up")
   .lnk_db_execute(conn, "DROP TABLE IF EXISTS pg_temp.lnk_agg_imm")
   .lnk_db_execute(conn, "

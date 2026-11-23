@@ -129,6 +129,36 @@ test_that("lnk_points_snap refuses an id column the table does not have", {
   mockery::expect_called(m$snap, 0)
 })
 
+test_that("lnk_points_snap refuses a table it cannot resolve", {
+  m <- snap_mocks(character(0))
+  expect_error(run_snap(m, "x.missing", "y.out", id_col = "stream_crossing_id"),
+               "was not found", fixed = TRUE)
+  mockery::expect_called(m$snap, 0)
+})
+
+test_that("lnk_points_snap snaps a pg_temp table (resolved, not matched by name)", {
+  conn <- skip_if_no_db()
+  has <- DBI::dbGetQuery(conn,
+    "SELECT to_regclass('whse_basemapping.fwa_stream_networks_sp') IS NOT NULL AS f")$f
+  skip_if(!isTRUE(has), "no FWA streams")
+  DBI::dbExecute(conn, "DROP SCHEMA IF EXISTS zz_test_snap478 CASCADE")
+  withr::defer(DBI::dbExecute(conn, "DROP SCHEMA IF EXISTS zz_test_snap478 CASCADE"))
+  DBI::dbExecute(conn, "CREATE SCHEMA zz_test_snap478")
+  # a point on the first segment of a real stream
+  DBI::dbExecute(conn, "
+    CREATE TEMP TABLE pts478 AS
+    SELECT 1 AS site_id, ST_LineInterpolatePoint(ST_GeometryN(ST_Force2D(geom), 1), 0.5) AS geom
+      FROM whse_basemapping.fwa_stream_networks_sp
+     WHERE watershed_group_code = 'ADMS' AND edge_type = 1000
+       AND localcode_ltree IS NOT NULL
+     ORDER BY linear_feature_id LIMIT 1")
+  lnk_points_snap(conn, "pg_temp.pts478", "zz_test_snap478.snapped",
+                  id_col = "site_id", snap_tolerance = 10)
+  got <- DBI::dbGetQuery(conn, "SELECT site_id, distance_to_stream FROM zz_test_snap478.snapped")
+  expect_identical(nrow(got), 1L)
+  expect_lt(got$distance_to_stream, 0.01)
+})
+
 test_that("lnk_points_snap validates argument shapes", {
   conn <- structure(list(), class = "DBIConnection")
   expect_error(lnk_points_snap("not a conn", "a.b", "c.d", "id"))

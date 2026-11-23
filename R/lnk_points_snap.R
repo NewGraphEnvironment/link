@@ -120,13 +120,18 @@ lnk_points_snap <- function(conn, table_in, table_out, id_col,
   # Fail loud if the input table has columns that collide with the snap
   # output projection: `pts.*` would otherwise produce a duplicate-name
   # error from CREATE TABLE AS.
+  # Resolved as the snap's own FROM resolves it (case folding, pg_temp), not
+  # by the literal name, which information_schema would need spelled exactly.
   in_cols <- DBI::dbGetQuery(conn, sprintf(
-    "SELECT column_name
-       FROM information_schema.columns
-      WHERE table_schema = %s AND table_name = %s;",
-    DBI::dbQuoteString(conn, parts[1]),
-    DBI::dbQuoteString(conn, parts[2])
+    "SELECT attname AS column_name
+       FROM pg_attribute
+      WHERE attrelid = to_regclass(%s) AND attnum > 0 AND NOT attisdropped;",
+    DBI::dbQuoteString(conn, table_in)
   ))$column_name
+  if (length(in_cols) == 0L) {
+    stop(sprintf("table_in %s was not found (or has no columns).", table_in),
+         call. = FALSE)
+  }
   snap_cols <- c("linear_feature_id", "snapped_blue_line_key",
                  "downstream_route_measure", "wscode_ltree",
                  "localcode_ltree", "watershed_group_code", "gnis_name",

@@ -58,7 +58,7 @@ Against bcfishpass run 148 (`v0.7.15-51-g3bd2824c`, 2026-11-17), with link's `bc
 
 **Habitat upstream of each crossing (#321).** `lnk_aggregate()` against `bcfishpass.crossings_upstream_habitat`, per main-stem crossing (bcfishpass reports no other) and species, on the 9,145 crossings both hold (`distribution.csv`, `per_crossing.csv`). link's rearing is `rearing_km + rearing_lake_connection_km`, because bcfishpass counts lake connection lines in rearing.
 
-- **96 to 100 % of crossings are within 0.1 km** in every species and metric of both groups; in ADMS every metric rounds to 100 %, with no crossing more than 2.1 km apart except in sockeye spawning (12.8 km at most).
+- **96 to 100 % of crossings are within 0.1 km** in every species and metric of both groups; in ADMS every metric rounds to 100 %, with no crossing more than 2.1 km apart except in sockeye spawning (12.8 km at most) and pink spawning, which link places none of (8.3 km).
 - **Totals over all crossings** agree within 1.5 % except sockeye (ADMS spawning 302.7 against 327.1 km; BULK spawning 1,102 against 1,496 and rearing 5,100 against 4,662, the parked BULK SK difference of the group parity above) and two species link places none of: ADMS pink spawning (0 against 8.4 km) and BULK chum spawning (0 against 1.1).
 - **Below the next barriers upstream** runs higher in BULK (BT rearing 36,383 against 34,483 km): `lnk_aggregate()` stops at the barriers its table holds, here BULK's own, while bcfishpass's set is province-wide, so a crossing whose next barrier upstream is in MORR keeps MORR's habitat.
 

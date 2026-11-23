@@ -89,8 +89,9 @@ test_that("lnk_aggregate counts tributaries, not the main stem below, and stops 
   blk <- len$blue_line_key[len$linear_feature_id == ids[["up"]]]
 
   # Crossing 1 on dn, between dn's start and the junction; crossing 2 on an
-  # unrelated stream (nothing upstream); a barrier on up just above the
-  # junction (also crossing 3).
+  # unrelated stream (nothing upstream); two barriers on up just above the
+  # junction, 0.5 m apart (3, also a crossing, below 4). Within 1 m each is
+  # upstream of the other under fwa_upstream's tolerance.
   DBI::dbExecute(conn, sprintf("
     CREATE TABLE %1$s.crossings AS
     SELECT * FROM (VALUES
@@ -98,12 +99,13 @@ test_that("lnk_aggregate counts tributaries, not the main stem below, and stops 
       (2, 360886221, 10::double precision),
       (3, %2$d, %4$.17g::double precision)) v(aggregated_crossings_id, blue_line_key,
                                                downstream_route_measure)",
-    s, as.integer(blk), ds_dn + 2, ds_up + 1))
+    s, as.integer(blk), ds_dn + 2, ds_up + 0.5))
   DBI::dbExecute(conn, sprintf("
     CREATE TABLE %1$s.barriers AS
-    SELECT 3 AS barriers_anthropogenic_id, %2$d AS blue_line_key,
-           %3$.17g::double precision AS downstream_route_measure",
-    s, as.integer(blk), ds_up + 1))
+    SELECT * FROM (VALUES (3, %2$d, %3$.17g::double precision),
+                          (4, %2$d, %4$.17g::double precision))
+      v(barriers_anthropogenic_id, blue_line_key, downstream_route_measure)",
+    s, as.integer(blk), ds_up + 0.5, ds_up + 1))
 
   suppressMessages(lnk_aggregate(conn, paste0(s, ".crossings"), schema = s,
                                  to = paste0(s, ".up"), config = "test",
@@ -123,16 +125,19 @@ test_that("lnk_aggregate counts tributaries, not the main stem below, and stops 
   expect_equal(num(got$spawning_km[1]), num(L[[as.character(ids[["up"]])]]) / 1000)
   expect_equal(num(got$rearing_km[1]), num(L[[as.character(ids[["t"]])]]) / 1000)
   expect_equal(num(got$rearing_stream_km[1]), num(got$rearing_km[1]))
-  # below the barrier: up's spawning is upstream of the barrier (within 1 m
-  # of its start), the tributary joins below it
+  # below the barriers: up's spawning is upstream of barrier 3 (within 1 m
+  # of its start), the tributary joins below it. Only barrier 3 is
+  # immediate: 4 lies above it, so up is subtracted once
   expect_equal(num(got$spawning_belowupstrbarriers_km[1]), 0)
   expect_equal(num(got$rearing_belowupstrbarriers_km[1]), num(got$rearing_km[1]))
   # 2: nothing upstream, zeros not a missing row
   expect_equal(num(unlist(got[2, 4:8])), rep(0, 5))
-  # 3, the barrier itself: up only, and no barrier above it
+  # 3, the lower barrier: up only; barrier 4, 0.5 m above it, holds up too,
+  # so nothing lies between them
   expect_equal(num(got$spawning_km[3]), num(L[[as.character(ids[["up"]])]]) / 1000)
   expect_equal(num(got$rearing_km[3]), 0)
-  expect_equal(num(got$spawning_belowupstrbarriers_km[3]), num(got$spawning_km[3]))
+  expect_equal(num(got$spawning_belowupstrbarriers_km[3]), 0)
+  expect_true(all(num(unlist(got[, 7:8])) >= 0))
 })
 
 test_that("lnk_aggregate refuses a crossing id that is not unique", {
