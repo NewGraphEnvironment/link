@@ -1,2 +1,2 @@
-"wsg","species_code","old_sha","old_dirty","new_sha","n_crossings","n_new_spawning_more","n_new_rearing_more","old_spawning_total_km","new_spawning_total_km","old_rearing_total_km","new_rearing_total_km"
-"BULK","CH","5be4fb32",FALSE,"4717a77d",5577,186,365,4201.2,22996.1,4851.9,33498.4
+"wsg","species_code","old_sha","old_dirty","new_sha","new_dirty","n_crossings","n_new_spawning_more","n_new_rearing_more","old_spawning_total_km","new_spawning_total_km","old_rearing_total_km","new_rearing_total_km"
+"BULK","CH","5be4fb32",FALSE,"4717a77d",FALSE,5577,186,365,4201.2,22996.1,4851.9,33498.4
