@@ -3,7 +3,7 @@
 Consolidates four barrier families from the per-WSG working schema
 (`<schema>.crossings`, `<schema>.gradient_barriers_raw`,
 `<schema>.falls`, `<schema>.barriers_subsurfaceflow`) into one
-`<schema>.barriers` table matching the cols_barriers shape used by the
+`<schema>.barriers` table matching the `cols_barriers` shape used by the
 persistent province-wide `<persist_schema>.barriers`. Each row carries a
 pre-computed `blocks_species text[]` predicate that
 [`lnk_pipeline_access()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_access.md)

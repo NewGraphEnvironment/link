@@ -64,6 +64,11 @@ lnk_pipeline_mapping_code(
   [DBI::DBIConnection](https://dbi.r-dbi.org/reference/DBIConnection-class.html).
   Required only when `to` is supplied; ignored otherwise.
 
+- presence:
+
+  `NULL` (the default) or an `lnk_presence` object. A species it marks
+  absent emits `""` in its token column.
+
 - species_resident:
 
   Character. Species using the resident flavor of

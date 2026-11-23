@@ -8,9 +8,10 @@ spawn and rear on a stream network, and which of that habitat fish can
 reach. Current models rate habitat from stream gradient, channel width
 and discharge, resolve access past natural barriers such as falls and
 steep gradients, and record the road and rail crossings and dams that
-sit below. Its value is flexibility: every rule and threshold is a row
-in a config, so a model can be changed, run beside another, checked
-against fish observations and traced back to the rules that produced it.
+sit below. Its value is flexibility: every fish habitat definition and
+threshold is a row in a config, so a model can be changed, run beside
+another, checked against fish observations and traced back to the
+habitat definitions that produced it.
 
 ![Map of the Parsnip River watershed group with stream reaches coloured
 by Arctic grayling spawning, rearing and access, and by the barrier type
@@ -40,7 +41,8 @@ through [fwapg](https://github.com/smnorris/fwapg), set up as for
 
 ## Example
 
-A model is a config, and its rules are tables you can read and edit:
+A model is a config, and its habitat definitions are tables you can read
+and edit:
 
 ``` r
 

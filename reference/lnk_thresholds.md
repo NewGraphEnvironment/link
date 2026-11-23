@@ -39,8 +39,10 @@ named list of metric thresholds (numeric values keyed by metric name).
 
 ## Details
 
-Thresholds control how `lnk_score_severity()` classifies crossings. The
-default values reflect BC provincial fish passage assessment criteria:
+Thresholds control how
+[`lnk_score()`](https://newgraphenvironment.github.io/link/reference/lnk_score.md)
+classifies crossings. The default values reflect BC provincial fish
+passage assessment criteria:
 
 - High severity:
 
@@ -87,7 +89,7 @@ th_bt$high$outlet_drop
 # How thresholds plug into scoring (the integration point)
 if (FALSE) { # \dontrun{
 conn <- lnk_db_conn()
-lnk_score_severity(conn, "working.crossings",
+lnk_score(conn, "working.crossings",
   thresholds = lnk_thresholds(high = list(outlet_drop = 0.8)))
 } # }
 ```

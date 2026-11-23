@@ -29,7 +29,7 @@ lnk_source(
 - crossings:
 
   Character. Schema-qualified scored crossings table (output of
-  `lnk_score_severity()`).
+  [`lnk_score()`](https://newgraphenvironment.github.io/link/reference/lnk_score.md)).
 
 - label:
 
@@ -39,7 +39,9 @@ lnk_source(
 - label_col:
 
   Character. Column to read labels from (default: `"severity"` — the
-  column `lnk_score_severity()` creates).
+  column
+  [`lnk_score()`](https://newgraphenvironment.github.io/link/reference/lnk_score.md)
+  creates).
 
 - label_map:
 
@@ -74,7 +76,7 @@ if (FALSE) { # \dontrun{
 conn <- lnk_db_conn()
 
 # Step 1: Score crossings with link
-lnk_score_severity(conn, "working.crossings")
+lnk_score(conn, "working.crossings")
 
 # Step 2: Produce break source
 src <- lnk_source(conn, "working.crossings")

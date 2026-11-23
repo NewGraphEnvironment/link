@@ -66,7 +66,7 @@ conn <- lnk_db_conn(dbname = "fishpass", host = "db.example.com")
 
 # Use with other lnk_* functions
 conn <- lnk_db_conn()
-lnk_score_severity(conn, "working.crossings")
+lnk_score(conn, "working.crossings")
 
 DBI::dbDisconnect(conn)
 } # }

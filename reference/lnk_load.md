@@ -2,7 +2,8 @@
 
 Read one or more correction CSVs, validate their structure, and write
 them to a PostgreSQL table. This is step one of the override pipeline:
-**load** -\> `lnk_override_validate()` -\> `lnk_override_apply()`.
+**load** -\>
+[`lnk_override()`](https://newgraphenvironment.github.io/link/reference/lnk_override.md).
 
 ## Usage
 
@@ -62,7 +63,7 @@ lnk_load(
 ## Value
 
 The destination table name (invisibly), for piping into
-`lnk_override_validate()` or `lnk_override_apply()`.
+[`lnk_override()`](https://newgraphenvironment.github.io/link/reference/lnk_override.md).
 
 ## Details
 
@@ -119,10 +120,8 @@ lnk_load(conn,
            "data/overrides/2025_field.csv"),
   to   = "working.overrides_modelled")
 
-# Then validate and apply:
-lnk_override_validate(conn, "working.overrides_modelled",
-  "working.crossings")
-lnk_override_apply(conn, "working.crossings",
+# Then find orphans and duplicates:
+lnk_override(conn, "working.crossings",
   "working.overrides_modelled")
 } # }
 ```

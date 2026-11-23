@@ -98,6 +98,12 @@ lnk_pipeline_access(
   for species marked `FALSE`. Default empty list assumes all species
   present (no -9 codes emitted).
 
+- presence:
+
+  `NULL` (the default) or an `lnk_presence` object. When given, it
+  overrides `wsg_presence`: absent species get `access_<sp> = -9` and
+  their SQL is skipped.
+
 - barrier_sources:
 
   Named list. Each name is an arbitrary source tag (e.g.

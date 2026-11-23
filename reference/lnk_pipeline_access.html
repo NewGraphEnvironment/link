@@ -139,6 +139,11 @@ group's own records here under <code>pipeline: observation_upstream: group_gated
 empty list assumes all species present (no -9 codes emitted).</p></dd>
 
 
+<dt id="arg-presence">presence<a class="anchor" aria-label="anchor" href="#arg-presence"></a></dt>
+<dd><p><code>NULL</code> (the default) or an <code>lnk_presence</code> object. When
+given, it overrides <code>wsg_presence</code>: absent species get <code>access_&lt;sp&gt; = -9</code> and their SQL is skipped.</p></dd>
+
+
 <dt id="arg-barrier-sources">barrier_sources<a class="anchor" aria-label="anchor" href="#arg-barrier-sources"></a></dt>
 <dd><p>Named list. Each name is an arbitrary source
 tag (e.g. <code>"anthropogenic"</code>, <code>"pscis"</code>, <code>"dams"</code>,

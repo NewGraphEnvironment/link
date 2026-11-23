@@ -52,7 +52,7 @@ lnk_pipeline_access() queries via WHERE 'BT' = ANY(blocks_species)."><meta prope
     <p>Consolidates four barrier families from the per-WSG working schema
 (<code>&lt;schema&gt;.crossings</code>, <code>&lt;schema&gt;.gradient_barriers_raw</code>, <code>&lt;schema&gt;.falls</code>,
 <code>&lt;schema&gt;.barriers_subsurfaceflow</code>) into one <code>&lt;schema&gt;.barriers</code>
-table matching the cols_barriers shape used by the persistent
+table matching the <code>cols_barriers</code> shape used by the persistent
 province-wide <code>&lt;persist_schema&gt;.barriers</code>. Each row carries a
 pre-computed <code>blocks_species text[]</code> predicate that
 <code><a href="lnk_pipeline_access.html">lnk_pipeline_access()</a></code> queries via <code>WHERE 'BT' = ANY(blocks_species)</code>.</p>

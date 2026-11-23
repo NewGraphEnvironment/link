@@ -59,6 +59,12 @@ lnk_preflight_vintage(
   `NULL`) means "not consulted" and leaves the statistics to decide. A
   data frame with no row for a table makes that table `unstamped`.
 
+- heads:
+
+  A data frame with `table_name` and `live_etag`: the live ETag of each
+  stamped table's source object. Defaults to a HEAD request per stamped
+  table; `NULL` means "not consulted". Tests pass it directly.
+
 - quiet:
 
   Suppress the human-readable report.
