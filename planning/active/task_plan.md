@@ -46,7 +46,7 @@ Review B4, G1, G2 and S3 changed this phase: the renderer lives in `R/`, no fall
 - [x] Add `link,^inst/extdata/configs/README\.md$,none,documentation` to `data-raw/pretest_inputs.csv`, plus a row for any new `R/` file. `test-pretest.R` must stay green.
 - [x] Switch `data-raw/build_rules.R` to `pkgload::load_all()` on the source tree.
 - [x] Link the README from `lnk_rules_build()`'s roxygen (`strict`).
-- [ ] Link it from RUNBOOK §7 (with Phase 7's RUNBOOK edits).
+- [x] Link it from RUNBOOK §7 (with Phase 7's RUNBOOK edits).
 
 ## Phase 3: residence from `dimensions.csv` (#189)
 
@@ -62,7 +62,7 @@ Review G3, G4 and G6 changed this phase: the bundles touched, the `cfg = NULL` d
   - a missing value stops.
 - [x] Prove no mapping code moves. On `fresh_default`'s persisted tables, run `lnk_mapping_code()` for ADMS and PARS (PARS holds GR, the one non-bcfishpass species `default` classifies) into scratch tables, once with the old sets and once with the helper's, and compare digests. Record the result in `data-raw/logs/residence_189/`.
 - [x] `log_dimensions` gains the new columns by `ALTER TABLE` at the next init (`R/lnk_log.R:505-555`). Check that a test covers it.
-- [ ] Act on Open decision 6. Record the fresh-side outcome on #189: fresh builds no mapping code, so `parameters_fresh.csv` needs no residence column.
+- [x] Act on Open decision 6 (#512 filed; #189's body says fresh needs no change). Record the fresh-side outcome on #189: fresh builds no mapping code, so `parameters_fresh.csv` needs no residence column.
 
 ## Phase 4: fresh's copy of the rules stays current (#129)
 
@@ -93,8 +93,8 @@ Review G10 changed this phase: "every bundle" means the three that `build_rules.
 
 ## Phase 6: the gate's closures and issue bodies
 
-- [ ] #212, #316 and #86: act on Open decisions 1 to 3. Close each with the reason, or carry its work, and edit its body to say which.
-- [ ] Edit the #75, #129, #189 and #327 bodies where the work changed their scope: #75's path and README covering every dictionary, and #189's split under decision 6.
+- [x] #212, #316 and #86: act on Open decisions 1 to 3. Close each with the reason, or carry its work, and edit its body to say which.
+- [x] Edit the #75, #129 and #189 bodies (#327's waits for Phase 1's numbers) where the work changed their scope: #75's path and README covering every dictionary, and #189's split under decision 6.
 
 ## Phase 7: release
 
@@ -108,7 +108,7 @@ Review G10 changed this phase: "every bundle" means the three that `build_rules.
 - [ ] If Phase 1 adopts the exception, every `default` group re-models at the next provincial run (move 17).
 - [ ] `config_hash` moves for `default`, `bcfishpass`, and the three bundles that extend `default`. The cost is near nil, since an `R/` change already refuses readers.
 - [ ] Under Open decision 4's recommended option, the owner ticks fresh's Actions setting, the fresh PR merges, and fresh releases its refreshed sample.
-- [ ] Under Open decision 6's recommended option, the issue for #189's remainder is filed, naming move 8.
+- [x] Under Open decision 6's recommended option, the issue for #189's remainder is filed, naming move 8 (#512).
 
 ## Validation
 
