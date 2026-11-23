@@ -63,11 +63,11 @@ None. Answered by the owner 2026-11-23, all as recommended (moved to the decisio
 ## Phase 4: `state_clean.sh --tables=` (#181)
 
 - [x] Decision 3 answered (local by default, `--hosts=`)
-- [ ] Parse `--tables=schema.table,...`; refuse an empty value and any entry outside `^[a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*$`; combinable with `--schemas=`
-- [ ] Skip step 1 (the kill step, `:87-97`: `kill -9` of matching local processes, `pkill` on M1 and every cypher) under `--tables=`, and refuse while a `study_area_run.sh` is live (review, blocker): a surgical drop during a run would end its legs
-- [ ] Drop each listed table (`DROP TABLE IF EXISTS … CASCADE`) on the hosts decision 3 names, with no snapshot reload; check each host's exit status instead of the unconditional "✓ schemas dropped" after `wait` (`:146`), for `--schemas=` too
-- [ ] Header says which hosts it reaches and drops the unread `/tmp/cy_ips.env` claim
-- [ ] Tests with stubbed `psql`, `ssh`, `ps`, `kill` and `pkill` (so no test kills a real process): a valid list, an invalid entry, an empty value, the combined form, a stubbed `psql` exiting 1 that fails the run; one live smoke on a scratch table in local fwapg. Reconcile with #181's M4 + M1 smoke under decision 3
+- [x] Parse `--tables=schema.table,...`; refuse an empty value and any entry outside `^[a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*$`; combinable with `--schemas=`
+- [x] Skip step 1 (the kill step, `:87-97`: `kill -9` of matching local processes, `pkill` on M1 and every cypher) under `--tables=`, and refuse while a `study_area_run.sh` is live (review, blocker): a surgical drop during a run would end its legs
+- [x] Drop each listed table (`DROP TABLE IF EXISTS … CASCADE`) on the hosts decision 3 names, with no snapshot reload; check each host's exit status instead of the unconditional "✓ schemas dropped" after `wait` (`:146`), for `--schemas=` too
+- [x] Header says which hosts it reaches and drops the unread `/tmp/cy_ips.env` claim
+- [x] Tests with stubbed `psql`, `ssh`, `ps`, `kill` and `pkill` (so no test kills a real process): a valid list, an invalid entry, an empty value, the combined form, a stubbed `psql` exiting 1 that fails the run; one live smoke on a scratch table in local fwapg. Reconcile with #181's M4 + M1 smoke under decision 3
 
 ## Phase 5: Noun-first names (#166)
 
