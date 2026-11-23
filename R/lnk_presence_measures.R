@@ -128,6 +128,37 @@
   out
 }
 
+#' The measures, one row per record
+#'
+#' `.lnk_presence_measures()` gives a record one row per species it reads as
+#' (an alias counting as two species, `SST` as ST and RB, has two). A reader
+#' keyed on the record alone takes this instead: per record the row measured
+#' against a barrier set (`barrier_below` not NA) wins, then the first species
+#' in code order, and `species_read_as` lists every species the record reads
+#' as. Every other column is the record's own.
+#' @param meas Data frame from `.lnk_presence_measures()`.
+#' @return `meas` with one row per `observation_key` and `species_read_as`.
+#' @noRd
+.lnk_measures_per_record <- function(meas) {
+  stopifnot(all(c("observation_key", "species_code", "barrier_below") %in%
+                  names(meas)))
+  if (nrow(meas) == 0L) {
+    meas$species_read_as <- character(0)
+    return(meas)
+  }
+  key <- as.character(meas$observation_key)
+  as_all <- tapply(as.character(meas$species_code), key, function(s) {
+    paste(sort(unique(s), method = "radix"), collapse = ", ")
+  })
+  o <- order(key, is.na(meas$barrier_below), as.character(meas$species_code),
+             method = "radix")
+  out <- meas[o, , drop = FALSE]
+  out <- out[!duplicated(as.character(out$observation_key)), , drop = FALSE]
+  out$species_read_as <- as.character(as_all[as.character(out$observation_key)])
+  rownames(out) <- NULL
+  out
+}
+
 #' Which species' barriers each measured record species is tested against
 #'
 #' One row per record species: each of `species_barrier` against its own,

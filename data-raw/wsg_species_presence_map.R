@@ -216,9 +216,11 @@ b$popup <- paste0("<b>", b$barrier_source, "</b> ", nz(b$barrier_subtype),
 b_sf <- sf::st_as_sf(b, coords = c("lon", "lat"), crs = 4326)
 
 err <- merge(data.frame(observation_key = known_err), got$pts, by = "observation_key")
-err <- merge(err, meas[, c("observation_key", "species_code", "watershed_group_code")],
-             by = "observation_key")
-err$popup <- paste0("<b>known data error</b>: ", err$species_code, " in ",
+# One point per known error: an alias record has a measures row per species.
+err <- merge(err, .lnk_measures_per_record(meas)[
+  , c("observation_key", "species_read_as", "watershed_group_code")],
+  by = "observation_key")
+err$popup <- paste0("<b>known data error</b>: ", err$species_read_as, " in ",
                     err$watershed_group_code, "<br>key ", err$observation_key)
 err_sf <- sf::st_as_sf(err, coords = c("lon", "lat"), crs = 4326)
 

@@ -319,7 +319,10 @@ utils::write.csv(ord(cm_out), file.path(dir_out, "measures.csv"),
 excl_all <- loaded[["observation_exclusions"]]
 errs <- excl_all[excl_all$data_error %in% c(TRUE, "t"),
                  c("observation_key", "notes")]
-recall <- merge(errs, meas, by = "observation_key", all.x = TRUE)
+# One row per known error: an alias record has a measures row per species.
+recall <- merge(errs, .lnk_measures_per_record(meas),
+                by = "observation_key", all.x = TRUE)
+stopifnot(!anyDuplicated(recall$observation_key))
 recall <- recall[order(recall$watershed_group_code, recall$species_code,
                        recall$observation_key, method = "radix"), ]
 utils::write.csv(recall[, c("observation_key", "watershed_group_code",
