@@ -43,10 +43,11 @@ psql "host=localhost port=63333 dbname=bcfishpass user=newgraph" \
 
 Local fwapg conn:
 `host=localhost port=5432 dbname=fwapg user=postgres password=postgres`.
-(M1’s `~/.Renviron` defaults `PG_*_SHARE` to the tunnel `:63333` — for
-the local build set
-[`Sys.setenv()`](https://rdrr.io/r/base/Sys.setenv.html) to `:5432` in
-R; see the m1-testing pattern in `fresh/CLAUDE.md`.) Then build:
+([`lnk_db_conn()`](https://newgraphenvironment.github.io/link/reference/lnk_db_conn.md)
+with no arguments reads `PG*`, else `PG_*_SHARE`, as
+[`fresh::frs_db_conn()`](https://newgraphenvironment.github.io/fresh/reference/frs_db_conn.html)
+does (#288), and on some hosts one of those names the bcfishpass tunnel
+`:63333`: pass all five fields for the local build.) Then build:
 `lnk_pipeline_run(conn, "PARS", cfg, loaded, schema, mapping_code = TRUE)`.
 
 ## 1. The big picture
@@ -2489,6 +2490,32 @@ the thresholds.
   table when cfg reads a pair, and a log whose pairs differ. So a schema
   built before \#364 cannot be validated under a bundle with a pair
   until it is re-modelled.
+- **Keyed on the parent line too (fresh 0.54.0, \#452).** fresh’s
+  near-river table carries each segment’s `linear_feature_id` and its
+  predicate matches on it beside `(id_segment, watershed_group_code)`
+  (fresh#293), so a shared table holding another job’s rows at a
+  colliding `id_segment` cannot pass a segment. The persisted table
+  carries the column too, last, outside the primary key (the persist
+  holds one build per group).
+  [`lnk_persist_init()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_init.md)
+  adds it to a table made before it and fills it from `<schema>.streams`
+  on the segment key, in one transaction, once: a table that already has
+  it is not touched and takes no lock. That first call takes an ACCESS
+  EXCLUSIVE lock and rewrites every row, so on `fresh_default`, `fresh`
+  and `fresh_default_minimal` it is run on its own at a quiet time, not
+  left to a worker’s first group. The validator passes
+  `near_river_lfid = TRUE` and, when cfg reads a pair, refuses a table
+  without the column or with a NULL in a scored group (an unmigrated
+  host’s rows, consolidated in).
+- **A variants base from before the pin cannot be reused.** A working
+  schema a fresh 0.52.0 build left has no `linear_feature_id` on its
+  classify target `streams_habitat`; fresh 0.55.1’s classify
+  (`.frs_habitat_target()`) adds the column and then refuses the NULL
+  rows it finds there (`.frs_null_key_guard()`), and
+  `habitat_variants_build.R` hashes the working rows as whole text
+  (`working_habitat_digest`), so a base digest recorded before the pin
+  cannot match. Rebuild the bases with `--step=base` after installing
+  fresh 0.55.1.
 - **The frozen bundles** (`default_extrabreaks`, `default_rearbreaks`)
   carry no near-river columns. `audit_configs.R` reads that as no pair,
   not a stale copy, and compares their rules with the inert

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.86.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.87.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,7 +61,7 @@
 <span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a><span class="co">#    Host aliases and credentials are infrastructure — see rtj, not here.</span></span>
 <span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a><span class="ex">psql</span> <span class="st">"host=localhost port=63333 dbname=bcfishpass user=newgraph"</span> <span class="dt">\</span></span>
 <span id="cb1-19"><a href="#cb1-19" tabindex="-1"></a>  <span class="at">-c</span> <span class="st">"SELECT model_run_id, model_version FROM bcfishpass.log ORDER BY 1 DESC LIMIT 1;"</span></span></code></pre></div>
-<p>Local fwapg conn: <code>host=localhost port=5432 dbname=fwapg user=postgres password=postgres</code>. (M1’s <code>~/.Renviron</code> defaults <code>PG_*_SHARE</code> to the tunnel <code>:63333</code> — for the local build set <code><a href="https://rdrr.io/r/base/Sys.setenv.html" class="external-link">Sys.setenv()</a></code> to <code>:5432</code> in R; see the m1-testing pattern in <code>fresh/CLAUDE.md</code>.) Then build: <code>lnk_pipeline_run(conn, "PARS", cfg, loaded, schema, mapping_code = TRUE)</code>.</p>
+<p>Local fwapg conn: <code>host=localhost port=5432 dbname=fwapg user=postgres password=postgres</code>. (<code><a href="reference/lnk_db_conn.html">lnk_db_conn()</a></code> with no arguments reads <code>PG*</code>, else <code>PG_*_SHARE</code>, as <code><a href="https://newgraphenvironment.github.io/fresh/reference/frs_db_conn.html" class="external-link">fresh::frs_db_conn()</a></code> does (#288), and on some hosts one of those names the bcfishpass tunnel <code>:63333</code>: pass all five fields for the local build.) Then build: <code>lnk_pipeline_run(conn, "PARS", cfg, loaded, schema, mapping_code = TRUE)</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="id_1-the-big-picture">1. The big picture<a class="anchor" aria-label="anchor" href="#id_1-the-big-picture"></a></h2>
@@ -976,6 +976,10 @@ Never the receiving river downstream. <code>mad_m3s_source</code> names the tier
 <strong>What reads discharge.</strong> <code>.lnk_discharge_read_rules()</code> asks fresh’s resolver (<code>.frs_near_river_specs()</code>, through <code>.lnk_near_river_pairs()</code>) whether any pair measures by discharge under <code>cw</code>, or any rule carries <code>mad:</code>. Under <code>model</code> a <code>cw</code> group measures rivers by channel width, which fwapg carries on every river-polygon row, so <code>default</code> needs no discharge fill for its pairs.</li>
 <li>
 <strong>Persisted and logged.</strong> <code>&lt;schema&gt;.streams_near_river</code> keeps the walked distances, keyed by segment and pair. <code>&lt;schema&gt;.log.near_river</code> records each WSG’s pairs as <code>measure:threshold:distance_max</code>, <code>;</code>-joined, <code>""</code> for none. The validator re-tests near-river predicates against the persisted table. It refuses a schema with no table when cfg reads a pair, and a log whose pairs differ. So a schema built before #364 cannot be validated under a bundle with a pair until it is re-modelled.</li>
+<li>
+<strong>Keyed on the parent line too (fresh 0.54.0, #452).</strong> fresh’s near-river table carries each segment’s <code>linear_feature_id</code> and its predicate matches on it beside <code>(id_segment, watershed_group_code)</code> (fresh#293), so a shared table holding another job’s rows at a colliding <code>id_segment</code> cannot pass a segment. The persisted table carries the column too, last, outside the primary key (the persist holds one build per group). <code><a href="reference/lnk_persist_init.html">lnk_persist_init()</a></code> adds it to a table made before it and fills it from <code>&lt;schema&gt;.streams</code> on the segment key, in one transaction, once: a table that already has it is not touched and takes no lock. That first call takes an ACCESS EXCLUSIVE lock and rewrites every row, so on <code>fresh_default</code>, <code>fresh</code> and <code>fresh_default_minimal</code> it is run on its own at a quiet time, not left to a worker’s first group. The validator passes <code>near_river_lfid = TRUE</code> and, when cfg reads a pair, refuses a table without the column or with a NULL in a scored group (an unmigrated host’s rows, consolidated in).</li>
+<li>
+<strong>A variants base from before the pin cannot be reused.</strong> A working schema a fresh 0.52.0 build left has no <code>linear_feature_id</code> on its classify target <code>streams_habitat</code>; fresh 0.55.1’s classify (<code>.frs_habitat_target()</code>) adds the column and then refuses the NULL rows it finds there (<code>.frs_null_key_guard()</code>), and <code>habitat_variants_build.R</code> hashes the working rows as whole text (<code>working_habitat_digest</code>), so a base digest recorded before the pin cannot match. Rebuild the bases with <code>--step=base</code> after installing fresh 0.55.1.</li>
 <li>
 <strong>The frozen bundles</strong> (<code>default_extrabreaks</code>, <code>default_rearbreaks</code>) carry no near-river columns. <code>audit_configs.R</code> reads that as no pair, not a stale copy, and compares their rules with the inert <code>near_river: false</code> removed.</li>
 </ul></div>
