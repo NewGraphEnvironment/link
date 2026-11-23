@@ -50,7 +50,7 @@ None open.
 
 ## Phase 5: The live resolve tests use the gated connection (#222)
 
-- [ ] `tests/testthat/test-lnk_wsg_resolve.R:129-167`: the two closure tests pass `conn = skip_if_no_db()` and skip when that connection has no `whse_basemapping.fwa_downstream()` (the gate can fall back to `lnk_db_conn()`, `tests/testthat/setup.R:28-30`; corrected at the resume: `public.wsg_outlet` was retired by fresh 0.33.0 and dropped from m1 on 2026-08-28, so a gate on it would skip everywhere; closure mode reads only the routine); the province-mode test drops its skip (province mode returns before any connection).
+- [x] `tests/testthat/test-lnk_wsg_resolve.R:129-167`: the two closure tests pass `conn = skip_if_no_db()` and skip when that connection has no `whse_basemapping.fwa_downstream()` (the gate can fall back to `lnk_db_conn()`, `tests/testthat/setup.R:28-30`; corrected at the resume: `public.wsg_outlet` was retired by fresh 0.33.0 and dropped from m1 on 2026-08-28, so a gate on it would skip everywhere; closure mode reads only the routine); the province-mode test drops its skip (province mode returns before any connection).
 - [ ] Prove it: with the local fwapg up and `PG*` pointed at an unreachable host, the closure tests pass on the gated connection.
 
 ## Phase 6: Verify the pin moved nothing but the column
