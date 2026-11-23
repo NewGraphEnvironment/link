@@ -78,10 +78,10 @@ None. Answered by the owner 2026-11-23, all as recommended (moved to the decisio
 
 ## Phase 6: Release
 
-- [ ] NEWS entry (0.89.0: drivers refuse without a config, so a minor bump), naming the retired scripts, the new refusals and schema guards, the decision block, `--tables=`, and that the pre-run gate's owed run is unchanged
-- [ ] `CLAUDE.md` status block for this release
-- [ ] `devtools::test()` (local: the data-raw tests skip in CI), `lintr::lint_package()` per file and class against `origin/main`, `devtools::check()`
-- [ ] `/code-check branch`; version bump last
+- [x] NEWS entry (0.89.0: drivers refuse without a config, so a minor bump), naming the retired scripts, the new refusals and schema guards, the decision block, `--tables=`, and that the pre-run gate's owed run is unchanged
+- [x] `CLAUDE.md` status block for this release
+- [x] `devtools::test()` (local: the data-raw tests skip in CI), `lintr::lint_package()` per file and class against `origin/main`, `devtools::check()`
+- [x] `/code-check branch`; version bump last
 
 ## Owed at the end (reported, done after merge)
 
@@ -90,9 +90,9 @@ None. Answered by the owner 2026-11-23, all as recommended (moved to the decisio
 
 ## Validation
 
-- [ ] Tests pass
-- [ ] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
+- [x] Tests pass (local devtools::test(); data-raw tests skip in CI)
+- [x] `/code-check branch`: 3 rounds, ended on an enumeration (review-verdict.md)
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
 How each change is proved: Phase 1 by a repo-wide grep showing no live reference to a retired script and the test suite unchanged; Phase 2 by the new test (each driver refuses with no config, the three guarded drivers refuse a non-`bcfishpass` config with no schema, and a restored default fails it) and one `study_area_run.sh --preflight-only` printing the decision block, with and without `--focal`; Phase 3 by a test of the label and `run_uid` function, plus one standalone model of a small group in a scratch schema reading its `log` row; Phase 4 by stubbed tests (no real process touched) and one live drop of a scratch table; Phase 5 by a grep showing no reference to an old name outside historical records.
