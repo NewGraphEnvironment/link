@@ -55,6 +55,11 @@ test_that("a pre-0.35.0 frs_habitat_classify signature is caught (#286)", {
     NULL
   }
   ns$frs_habitat_predicates <- function(sp_params) NULL
+  # fresh 0.54.0's frs_db_conn, before the connect timeout (#288)
+  ns$frs_db_conn <- function(dbname = NULL, host = NULL, port = NULL,
+                             user = NULL, password = NULL) {
+    NULL
+  }
   # fresh 0.46.0's frs_network_features, before the existence walk (#394)
   ns$frs_network_features <- function(conn, segments, features,
                                       segment_id_col, feature_id_col,
@@ -65,9 +70,11 @@ test_that("a pre-0.35.0 frs_habitat_classify signature is caught (#286)", {
   ns$frs_order_child <- function(conn, table, habitat, species, label,
                                  parent_order_min, child_order_min,
                                  child_order_max, distance_max, verbose) NULL
-  expected <- c("frs_habitat_classify(params_method)",
+  expected <- c("frs_db_conn(connect_timeout)",
+                "frs_habitat_classify(params_method)",
                 "frs_habitat_predicates(model)",
                 "frs_habitat_predicates(near_river_table)",
+                "frs_habitat_predicates(near_river_lfid)",
                 "frs_network_features(result)",
                 "frs_order_child(channel_width_max)",
                 "frs_order_child(gradient_max)")
