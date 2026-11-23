@@ -55,9 +55,10 @@
 #'
 #' Alias codes read as the species the bundle's pooling tracker counts them
 #' as in the record's group (`aliases`, from `.lnk_record_aliases()`), as the
-#' presence check and the pipeline read them (link#470). In the zones, which
-#' carry no group, an alias is folded only where it counts as one species in
-#' every group (the tracker's province rows), as each species it counts as.
+#' presence check and the pipeline read them (link#470); an alias counting
+#' as two species gives its record a row as each. In the zones, which carry
+#' no group, an alias is folded only where it counts as a species in every
+#' group (the tracker's province rows), as each species it counts as.
 #'
 #' @param conn A DBI connection to a database holding `bcfishobs`, FWA and
 #'   `fresh_default.barriers`.
@@ -100,8 +101,8 @@
   tmp <- function(name, df) {
     DBI::dbWriteTable(conn, name, df, temporary = TRUE, overwrite = TRUE)
   }
-  # Fold aliases in the zones as in the records, where an alias counts as
-  # one species wherever it is listed.
+  # Fold aliases in the zones as in the records, into each species an alias
+  # counts as in every group.
   z <- zones[, c("species_code", "code50")]
   one <- .lnk_record_aliases_everywhere(aliases)
   folded <- merge(z, one, by.x = "species_code", by.y = "species_obs")
@@ -132,16 +133,18 @@
 #'
 #' `.lnk_presence_measures()` gives a record one row per species it reads as
 #' (an alias counting as two species, `SST` as ST and RB, has two). A reader
-#' keyed on the record alone takes this instead: per record the row measured
-#' against a barrier set (`barrier_below` not NA) wins, then the first species
-#' in code order, and `species_read_as` lists every species the record reads
-#' as. Every other column is the record's own.
+#' keyed on the record alone takes this instead, and names the species it is
+#' about: per record the row whose species comes first in `prefer` wins, then
+#' the first in code order. The species-dependent columns (`species_code`,
+#' `barrier_below`, `n_class_above`, `rearing_lake_ha`, `in_hist_zone`) are
+#' that row's; `species_read_as` lists every species the record reads as.
 #' @param meas Data frame from `.lnk_presence_measures()`.
+#' @param prefer Character vector of species codes, most preferred first.
 #' @return `meas` with one row per `observation_key` and `species_read_as`.
 #' @noRd
-.lnk_measures_per_record <- function(meas) {
-  stopifnot(all(c("observation_key", "species_code", "barrier_below") %in%
-                  names(meas)))
+.lnk_measures_per_record <- function(meas, prefer) {
+  stopifnot(all(c("observation_key", "species_code") %in% names(meas)),
+            is.character(prefer), length(prefer) > 0L, !anyNA(prefer))
   if (nrow(meas) == 0L) {
     meas$species_read_as <- character(0)
     return(meas)
@@ -150,8 +153,9 @@
   as_all <- tapply(as.character(meas$species_code), key, function(s) {
     paste(sort(unique(s), method = "radix"), collapse = ", ")
   })
-  o <- order(key, is.na(meas$barrier_below), as.character(meas$species_code),
-             method = "radix")
+  rank <- match(as.character(meas$species_code), prefer)
+  rank[is.na(rank)] <- length(prefer) + 1L
+  o <- order(key, rank, as.character(meas$species_code), method = "radix")
   out <- meas[o, , drop = FALSE]
   out <- out[!duplicated(as.character(out$observation_key)), , drop = FALSE]
   out$species_read_as <- as.character(as_all[as.character(out$observation_key)])

@@ -183,17 +183,17 @@ test_that("the barrier walk reads the mapped species, and the pool follows it", 
   expect_false(grepl("o.species_code = ANY (b.blocks_species)", s, fixed = TRUE))
 })
 
-test_that("the per-record measures keep one row per record, the measured one first", {
+test_that("the per-record measures keep one row per record, the preferred species first", {
   m <- data.frame(observation_key = c("k1", "k1", "k2"),
                   species_code = c("RB", "ST", "CH"),
-                  barrier_below = c(NA, "FALLS", NA),
+                  barrier_below = c("FALLS", "FALLS", NA),
                   counting = TRUE, stringsAsFactors = FALSE)
-  out <- .lnk_measures_per_record(m)
+  out <- .lnk_measures_per_record(m, prefer = "ST")
   expect_equal(out$observation_key, c("k1", "k2"))
   expect_equal(out$species_code, c("ST", "CH"))
   expect_equal(out$species_read_as, c("RB, ST", "CH"))
-  # with both rows measured, the first species in code order
-  m$barrier_below[1] <- "FALLS"
-  expect_equal(.lnk_measures_per_record(m)$species_code, c("RB", "CH"))
-  expect_equal(nrow(.lnk_measures_per_record(m[0, ])), 0L)
+  # a species not in prefer falls back to code order
+  expect_equal(.lnk_measures_per_record(m, prefer = "CH")$species_code, c("RB", "CH"))
+  expect_equal(nrow(.lnk_measures_per_record(m[0, ], prefer = "ST")), 0L)
+  expect_error(.lnk_measures_per_record(m))
 })

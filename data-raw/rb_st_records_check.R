@@ -143,9 +143,9 @@ rec <- q("
   FROM pg_temp.rs_rec r
   LEFT JOIN pg_temp.rs_block k USING (observation_key)")
 # One row per record: an alias counting as two species (SST as ST and RB)
-# has a measures row per species, and every column kept here is the
-# record's own.
-m <- .lnk_measures_per_record(meas)[
+# has a measures row per species. Keep its ST row, the species the
+# steelhead barrier test is about; both rows carry that barrier.
+m <- .lnk_measures_per_record(meas, prefer = "ST")[
   , c("observation_key", "species_code", "counting", "yr", "elevation_m",
       "barrier_below", "major_drainage")]
 names(m)[names(m) == "species_code"] <- "species_read"
