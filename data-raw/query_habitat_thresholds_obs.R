@@ -371,12 +371,15 @@ avail <- bind_rows(lapply(species, function(sp) {
                  AND s.edge_type IN (1000, 1100, 2000, 2300) THEN 'stream'
                 ELSE 'other' END AS pred_set,
            s.gradient, s.channel_width,
-           sum(s.length_metre) / 1000 AS km
+           -- exact: a double sum takes its last bits from the plan (#356)
+           sum(s.length_metre::numeric) / 1000 AS km
     FROM %2$s.streams s
     JOIN %2$s.streams_habitat_%3$s h USING (id_segment, watershed_group_code)
     LEFT JOIN whse_basemapping.fwa_waterbodies wb ON wb.waterbody_key = s.waterbody_key
     WHERE h.accessible AND s.watershed_group_code = ANY($1)
-    GROUP BY 1, 2, 3, 4", sp, schema, tolower(sp)),
+    GROUP BY 1, 2, 3, 4
+    -- the R sums below add in row order, so fix it
+    ORDER BY 2, 3 NULLS LAST, 4 NULLS LAST, 5", sp, schema, tolower(sp)),
     params = list(paste0("{", paste(wsgs, collapse = ","), "}")))
 })) |> filter(pred_set != "other")
 
