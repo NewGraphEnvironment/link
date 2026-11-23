@@ -161,3 +161,24 @@ test_that("the measure story says when a group holds no barrier rows, and is emp
   empty <- data.frame(n_counting = NA_integer_)
   expect_equal(.lnk_presence_measure_story(empty), "")
 })
+
+test_that("a record species can be measured against another species' barriers", {
+  b <- .lnk_presence_barrier_species(c("CH", "ST"))
+  expect_equal(b$species_code, c("CH", "ST"))
+  expect_equal(b$barrier_species, c("CH", "ST"))
+  b <- .lnk_presence_barrier_species(c("CH", "ST"), c(RB = "ST"))
+  expect_equal(b$species_code, c("CH", "ST", "RB"))
+  expect_equal(b$barrier_species, c("CH", "ST", "ST"))
+  expect_error(.lnk_presence_barrier_species("CH", c(RB = "ST")), "not in species_barrier")
+  expect_error(.lnk_presence_barrier_species(c("CH", "ST"), c(CH = "ST")), "already")
+  expect_error(.lnk_presence_barrier_species("ST", c("ST")), "named")
+  expect_error(.lnk_presence_barrier_species("ST", c(RB = "ST", RB = "ST")), "named")
+})
+
+test_that("the barrier walk reads the mapped species, and the pool follows it", {
+  s <- paste(.lnk_presence_measures_sql(1950L, 2026L), collapse = "\n")
+  expect_match(s, "JOIN pg_temp.pm_barsp m ON m.species_code = o.species_code", fixed = TRUE)
+  expect_match(s, "m.barrier_species = ANY (b.blocks_species)", fixed = TRUE)
+  expect_match(s, "JOIN pg_temp.pm_pools p ON p.species_code = d.barrier_species", fixed = TRUE)
+  expect_false(grepl("o.species_code = ANY (b.blocks_species)", s, fixed = TRUE))
+})
