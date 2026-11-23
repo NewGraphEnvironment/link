@@ -41,13 +41,19 @@
 #     difference of its own;
 #   - a variant marked `equals_bundle` has exactly that bundle's thresholds.
 #
+# A base built under fresh 0.52.0 or earlier cannot be reused under fresh
+# >= 0.54.0 (link#481, RUNBOOK §7): its working streams_habitat has no
+# linear_feature_id, which the new classify adds and then refuses the NULL
+# rows of, and the working digest it recorded hashes the old rows. Rebuild
+# with --step=base.
+#
 # Where the time goes (link#404): <out>/variant_timing.csv holds seconds per
 # step for every pass (classify, connect, the working digest, persist, the
 # access copy and ANALYZE, the gate, the persisted digests), which sum to the
 # "done in" line, plus the discharge join before it and the base run's model
 # and recompute per WSG, outside that total.
 #
-#   Rscript data-raw/habitat_variants_build.R \
+#   Rscript data-raw/habitat_variants_build.R --base=<bundle> \
 #     [--variants=data-raw/habitat_score/variants.csv] \
 #     [--roles=data-raw/habitat_score/wsg_roles.csv] \
 #     [--wsgs=BULL]            focal subset (pre-flight); default: every
@@ -133,9 +139,9 @@ if (!grepl("^[a-z][a-z0-9_]*_$", prefix)) {
 dir_out <- opt("out", file.path("data-raw", "logs", "habitat_score_284"))
 # The bundle the variants are generated from and the base is modelled with
 # (link#300; #284 and #302 used `default`).
-base_bundle <- opt("base", "default")
+base_bundle <- opt("base", "")
 if (!grepl("^[a-z][a-z0-9_]*$", base_bundle)) {
-  stop("--base must name a shipped bundle", call. = FALSE)
+  stop("config is required: --base=<bundle> must name a shipped bundle", call. = FALSE)
 }
 # Groups of one variant's pass run at once (link#406); 1 is the serial loop.
 jobs <- opt("jobs", "1")

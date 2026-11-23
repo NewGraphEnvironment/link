@@ -13,7 +13,7 @@ Lean alternative to the 5-host `provincial_run_runbook.md` for running
 > `rtj/scripts/gis/projects/<name>/project.yml`) is not its **model scope** (the
 > WSGs its report analyses, `wsg_code` in the reporting repo) — Peace is 8 field
 > vs 16 model. Conflating the two cost an hour. Full table in
-> `research/study_areas.md`. Reuses the
+> `research/study_area_scope_and_funders.md`. Reuses the
 proven per-WSG build + cypher lifecycle but is **tunnel-free** (compare =
 local bcfp snapshot, no `:63333`) and **M1-as-dispatcher** (no M4). Built for
 link#175. Companion: `provincial_run_runbook.md` (shared mechanics),
@@ -25,13 +25,14 @@ link#175. Companion: `provincial_run_runbook.md` (shared mechanics),
 cd ~/Projects/repo/link
 # largest area on the dispatcher (fast/free M1); smaller areas on the cyphers
 bash data-raw/study_area_run.sh \
+  --config=<bundle> [--schema=<schema>] \
   --cy-workspaces=job1,job2 \
   --focal=<Fraser focal csv>  \   # -> dispatcher (M1)
   --focal=<Peace focal csv>   \   # -> cy1 (job1)
   --focal=<Skeena focal csv>      # -> cy2 (job2)
 ```
 
-Focal lists + study-area definitions: [`research/study_areas.md`](study_areas.md).
+Scope and funders: [`study_area_scope_and_funders.md`](study_area_scope_and_funders.md). Host buckets and components (generated): [`study_areas.md`](study_areas.md).
 `--focal` count MUST equal `1 + N(--cy-workspaces)`; first = dispatcher, rest =
 cyphers in order. Dispatcher-only (no cyphers): omit `--cy-workspaces`, pass one
 `--focal`. Pre-req: dispatcher has `fresh.streams_vw_bcfp`
@@ -161,15 +162,15 @@ misses. Evidence: `data-raw/logs/partial_readers_274/`.
 
 ## Cypher operational gotchas
 
-The tunnel-free M1-dispatch runner tripped over things the older `wsgs_run_host.R`
-+ `research/provincial_run_runbook.md` already solved. The worst (2026-05-25): a
+The tunnel-free M1-dispatch runner tripped over things the older (retired) `wsgs_run_host.R`
+path had solved. The worst (2026-05-25): a
 species-less closure WSG (LEUT) errored "No species resolved for AOI" → `|| exit 1`
 → driver FATAL → the trap's `cypher_down` **burned the cyphers with their
 un-consolidated data** — a whole run's Peace + Skeena gone, self-inflicted (the
 driver's own trap, not external destruction).
 
 - **Always species-filter the WSG set** to bundle-species presence (link#157,
-  `wsgs_run_host.R:88` pattern) — closure pulls in unmodelable WSGs.
+  as `study_area_wsgs.R` does) — closure pulls in unmodelable WSGs.
 - **Per-WSG soft-fail; never abort a host before consolidate** — one bad WSG must
   become a compare gap, not total data loss.
 - **Cyphers checkout `main` by default** → pass `CYPHER_PREP_BRANCH=<branch>` AND
@@ -177,8 +178,7 @@ driver's own trap, not external destruction).
 - **Wait for sshd before scp** to a fresh droplet (`cypher_up` returns pre-sshd).
 - **Cyphers cost ~$0.06/hr each** — "minimize idle" means don't leave them up for
   hours, not shave minutes; don't over-engineer early-burn.
-- **Read the records first** (`RUNBOOK.md`, `research/provincial_run_runbook.md`,
-  `data-raw/wsgs_run_host.R`) before re-deriving orchestration.
+- **Read the records first** (`RUNBOOK.md`, `research/provincial_run_runbook.md`) before re-deriving orchestration.
 
 ### Correctness knob: post-consolidate recompute
 

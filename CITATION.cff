@@ -9,16 +9,16 @@ type: software
 license: MIT
 title: 'link: Develop, Test and Communicate Intrinsic Habitat and Connectivity Models
   for the BC Freshwater Atlas Stream Network'
-version: 0.86.0
+version: 0.88.0
 doi: 10.5281/zenodo.23264990
 abstract: 'Tools for developing, testing and communicating intrinsic habitat models
   on stream networks: where each fish species could spawn and rear, and which of that
   habitat fish can reach. Current models rate habitat from stream gradient, channel
   width and discharge, resolve access past natural barriers, and record the road and
-  rail crossings and dams below each reach. Every rule and threshold is a row in a
-  config, so models can be changed, compared, checked against fish observations and
-  traced to the rules that produced them. Runs on the British Columbia Freshwater
-  Atlas through ''fresh''. Under active development.'
+  rail crossings and dams below each reach. Every fish habitat definition and threshold
+  is a row in a config, so models can be changed, compared, checked against fish observations
+  and traced to the habitat definitions that produced them. Runs on the British Columbia
+  Freshwater Atlas through ''fresh''. Under active development.'
 authors:
 - family-names: Irvine
   given-names: Allan
@@ -34,8 +34,8 @@ preferred-citation:
     email: al@newgraphenvironment.com
     orcid: https://orcid.org/0000-0002-3495-2128
     affiliation: New Graph Environment Ltd.
-  version: 0.86.0
-  date-released: '2026-11-19'
+  version: 0.88.0
+  date-released: '2026-11-23'
   url: https://newgraphenvironment.github.io/link/
   repository-code: https://github.com/NewGraphEnvironment/link
   license: MIT
@@ -45,7 +45,7 @@ preferred-citation:
     name: New Graph Environment Ltd.
 repository-code: https://github.com/NewGraphEnvironment/link
 url: https://newgraphenvironment.github.io/link/
-date-released: '2026-11-19'
+date-released: '2026-11-23'
 contact:
 - family-names: Irvine
   given-names: Allan

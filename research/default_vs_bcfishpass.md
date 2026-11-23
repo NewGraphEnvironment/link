@@ -1,5 +1,7 @@
 # default vs bcfishpass — per-WSG comparison
 
+**Verification:** none yet. Written before this header existed and not checked against the code since; read its claims as of when it was written.
+
 link ships two config bundles today: `"bcfishpass"` (validation: reproduces bcfishpass exactly for regression) and `"default"` (NewGraph method, intentionally diverges). This doc captures the per-WSG per-species comparison and the biological rationale for each divergence.
 
 Companion to `research/bcfishpass_comparison.md` (which covers link vs bcfishpass on the bcfishpass bundle, i.e. reproduction fidelity). This doc covers the default-vs-bcfishpass method-level comparison.

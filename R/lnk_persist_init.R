@@ -214,6 +214,12 @@ cols_barrier_override_evidence <- c(
 #' build used, rather than walking again. One named vector drives the DDL
 #' ([lnk_persist_init()]) and the INSERT projection
 #' ([lnk_pipeline_persist()]).
+#'
+#' `linear_feature_id` is the segment's parent FWA line, which fresh 0.54.0
+#' (fresh#293) adds to its table and keys the predicate's match on (#452).
+#' It sits outside the primary key: the persist holds one build per group, so
+#' `(id_segment, watershed_group_code)` names one segment. A table created
+#' before it gains the column in [lnk_persist_init()].
 #' @noRd
 cols_streams_near_river <- c(
   id_segment           = "integer NOT NULL",
@@ -221,7 +227,8 @@ cols_streams_near_river <- c(
   measure              = "text NOT NULL",
   threshold            = "double precision NOT NULL",
   distance_max         = "double precision NOT NULL",
-  dist_m               = "double precision"
+  dist_m               = "double precision",
+  linear_feature_id    = "bigint"
 )
 
 #' Validate that an existing target table doesn't carry stale DDL
@@ -646,6 +653,7 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
         "distance_max"))))
   .lnk_index_create(conn, have_idx, "streams_near_river_wsg_idx",
     sprintf("%s.streams_near_river (watershed_group_code)", schema))
+  .lnk_near_river_lfid_migrate(conn, schema)
 
   # Long-form habitat view (link#187). UNION ALL across per-species
   # `streams_habitat_<sp>` tables — emits (id_segment, watershed_group_code,
@@ -672,4 +680,46 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
   .lnk_log_create_tables(conn, schema)
 
   invisible(conn)
+}
+
+
+#' Give a near-river table built before fresh 0.54.0 its `linear_feature_id`
+#'
+#' A `streams_near_river` created before the column (#452) gains it once,
+#' filled from `<schema>.streams` on `(id_segment, watershed_group_code)`.
+#' That is sound because a build's persist replaces a group's near-river rows
+#' together with its streams, so each row's segment is the streams row at the
+#' same key. The add and the fill run in one transaction, so a failed fill
+#' leaves no half-migrated table. A table that already holds the column, as
+#' the catalog reports it, is not touched and takes no lock (#369); the first
+#' call on a large schema takes an ACCESS EXCLUSIVE lock and rewrites every
+#' row, so it is run on its own at a quiet time, not left to a modelling
+#' worker's first group. A row whose segment is missing from `streams` stays
+#' NULL, and the validator refuses a scored group holding one.
+#'
+#' A catalog that names none of the table's columns (an unreadable read,
+#' [.lnk_schema_columns()]) leaves the table as it is: a persist then names
+#' the column in its INSERT and fails loudly if it is missing.
+#'
+#' @return Invisibly, the number of rows filled (0 when nothing was done).
+#' @noRd
+.lnk_near_river_lfid_migrate <- function(conn, schema) {
+  have <- .lnk_schema_columns(conn, schema)
+  have <- have$column_name[have$table_name == "streams_near_river"]
+  if (length(have) == 0L || "linear_feature_id" %in% have) {
+    return(invisible(0L))
+  }
+  n <- 0L
+  .lnk_db_transaction(conn, {
+    .lnk_log_align_columns(conn, schema, "streams_near_river",
+                           cols_streams_near_river["linear_feature_id"], have)
+    n <- .lnk_db_execute(conn, sprintf(
+      "UPDATE %1$s.streams_near_river nr
+          SET linear_feature_id = st.linear_feature_id
+         FROM %1$s.streams st
+        WHERE st.id_segment = nr.id_segment
+          AND st.watershed_group_code = nr.watershed_group_code
+          AND nr.linear_feature_id IS NULL", schema))
+  })
+  invisible(as.integer(n))
 }

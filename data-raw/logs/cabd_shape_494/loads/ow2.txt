@@ -1,0 +1,5 @@
+cols: ogc_fid:integer, geom:geometry(Point,4326), cabd_id:character varying, use_pollution_code:integer, maintenance_last:date, use_fish:character varying, height_m:d...
+pos(geom)=2 ncols=113
+ogc_fid: 2593 1 2593
+md5: 6f7f44c007945545d5a8bf2cb91461d3
+typesig: d709b8a7ecd4f76a1d39aa43a86250aa

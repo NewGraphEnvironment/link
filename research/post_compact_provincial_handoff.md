@@ -1,5 +1,7 @@
 # Post-compact provincial run handoff
 
+**Date opened:** 2026-05-25 · **Status:** HISTORICAL, a dated record kept for its evidence; it is not revised. What is known now is in [`study_area_run.md`](study_area_run.md).
+
 Read this first if you're a fresh Claude session and the user asks you to run the full provincial parity model. Written 2026-05-13 after shipping v0.36.0 (link#162) and validating methodology on 5 WSGs. Survives compaction so you have everything you need to fire the run autonomously through the happy path.
 
 ## What v0.36.0 is

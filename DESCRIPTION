@@ -1,8 +1,8 @@
 Package: link
 Title: Develop, Test and Communicate Intrinsic Habitat and Connectivity
     Models for the BC Freshwater Atlas Stream Network
-Version: 0.86.0
-Date: 2026-11-19
+Version: 0.89.0
+Date: 2026-11-23
 Authors@R: c(
     person("Allan", "Irvine", , "al@newgraphenvironment.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-3495-2128",
@@ -15,9 +15,9 @@ Description: Tools for developing, testing and communicating intrinsic
     and rear, and which of that habitat fish can reach. Current models
     rate habitat from stream gradient, channel width and discharge,
     resolve access past natural barriers, and record the road and rail
-    crossings and dams below each reach. Every rule and threshold is a row
+    crossings and dams below each reach. Every fish habitat definition and threshold is a row
     in a config, so models can be changed, compared, checked against fish
-    observations and traced to the rules that produced them. Runs on the
+    observations and traced to the habitat definitions that produced them. Runs on the
     British Columbia Freshwater Atlas through 'fresh'. Under active
     development.
 License: MIT + file LICENSE
@@ -30,9 +30,10 @@ Imports:
     crate (>= 0.0.2),
     DBI,
     digest,
-    fresh (>= 0.52.0),
+    fresh (>= 0.55.1),
     httr,
     jsonlite,
+    parallel,
     RPostgres,
     tibble,
     tidyr,
@@ -41,7 +42,7 @@ Imports:
     yaml
 Remotes:
     NewGraphEnvironment/crate,
-    NewGraphEnvironment/fresh@v0.52.0,
+    NewGraphEnvironment/fresh@v0.55.1,
     NewGraphEnvironment/gq,
     NewGraphEnvironment/wet@v0.4.7
 Suggests:

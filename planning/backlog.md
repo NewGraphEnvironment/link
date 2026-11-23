@@ -14,6 +14,12 @@ before this file and so never ticked); fresh's releases (0.54.0 on 2026-11-20, 0
 knowledge#139 (still open); crate's snapshot contract issue (crate#66, open); soul's `research_check.sh` (25
 files flagged, folded into #279) · four umbrellas filed: #499, #500, #501, #502; #474 closed
 
+**Verified:** 2026-11-23 against 84 open issues · **Produced by:** a read of the one open issue the file did
+not place (#504) and its comments; #504's premise against `origin/main` (87140608) and move 13's branch;
+fresh's 0.56.0 release and NewGraphEnvironment/fresh#328 and #329 (open); the open members of finished moves
+(#279, #402, #236, #334, #270); the research check (19 files flagged: 6 grown, 10 undated, 3 on dated
+historical records) · one umbrella filed for move 18; two research issues filed from #279; #279 closed
+
 How to use this file: `/backlog-sweep` writes it. Take the first move in **Moves** that is not
 ticked and not **waiting**; `/planning-init <umbrella>` plans it, one phase per batch, one PR.
 A move that waits only on other moves is `open`, with them in `waits on`; `**waiting**` is for
@@ -34,13 +40,13 @@ counts them): run `/backlog-sweep` again, the backlog is not finished.
 |---|---|---|---|---|---|---|
 | - [x] 1 | #469 | 1: the parent gradient and the grad tokens (4 issues) | done: https://github.com/NewGraphEnvironment/link/pull/486 | — | — | — |
 | - [x] 2 | #470 | 2, 3: which records count, what each lift rests on (7 issues) | done: https://github.com/NewGraphEnvironment/link/pull/495 | — | — | — |
-| - [ ] 13 | #481 | 20: the next fresh pin (3 issues) | open: start here (fresh 0.54.0 shipped 2026-11-20) | A | — | opus |
-| - [ ] 14 | #499 | 21, 22: primitive tables in one shape, a parallel publish (3 issues) | open | B | — | opus |
-| - [ ] 3 | #471 | 4: docs, research files, and a check that fails on warnings (5 issues) | open | C | — | sonnet |
+| - [x] 13 | #481 | 20: the next fresh pin (3 issues) | done: https://github.com/NewGraphEnvironment/link/pull/505 | A | — | opus |
+| - [x] 14 | #499 | 21, 22: primitive tables in one shape, a parallel publish (3 issues) | done: https://github.com/NewGraphEnvironment/link/pull/506 | B | — | opus |
+| - [x] 3 | #471 | 4: docs, research files, and a check that fails on warnings (5 issues) | done: https://github.com/NewGraphEnvironment/link/pull/503 | C | — | sonnet |
 | - [x] 4 | #472 | 5: `default`'s presence table as a copy plus an overlay (4 issues) | done: https://github.com/NewGraphEnvironment/link/pull/498 | — | — | — |
 | - [x] 5 | #473 | 6, 7: the export contract, one-group runs that read downstream (6 issues) | done: https://github.com/NewGraphEnvironment/link/pull/496 | — | — | — |
 | - [x] 6 | #474 | 8, 9: what a run stamps and checks before launch, how primitives load (10 issues) | done: https://github.com/NewGraphEnvironment/link/pull/485 | — | — | — |
-| - [ ] 7 | #475 | 10: drivers (6 issues) | open | B | 14 | opus then sonnet |
+| - [x] 7 | #475 | 10: drivers (6 issues) | done: https://github.com/NewGraphEnvironment/link/pull/513 | B | 14 | opus then sonnet |
 | - [ ] 8 | #476 | 11: the rules builder and `dimensions.csv` (7 issues) | open | C | 3 | opus |
 | - [ ] 9 | #477 | 12, 13: mapping codes as rules, the persist and run API (8 issues) | open | A | 3, 7, 8, 13 | opus |
 | - [ ] 10 | #478 | 14, 15: snapping, habitat upstream of each crossing (6 issues) | open | C | 3 | opus |
@@ -48,7 +54,8 @@ counts them): run `/backlog-sweep` again, the backlog is not finished.
 | - [ ] 12 | #480 | 17, 18, 19: thresholds from knowledge's table, MAD everywhere, the PARS vignette (7 issues) | **waiting** on knowledge#139's decision of which method sets link's flow numbers | C | 3, 11, 16 | opus |
 | - [ ] 15 | #500 | 23: load an export's input snapshots (1 issue) | **waiting** on crate's self-describing table snapshot contract (crate#66) | B | 14 | opus |
 | - [ ] 16 | #501 | 24: rainbow trout back in `default`, the presence review's last rows (2 issues) | open | D | — | opus |
-| - [ ] 17 | #502 | 25: province-wide builds at the new tokens (1 issue) | **waiting** on the operator's word for the provincial runs | C | 3, 13, 14, 16 | opus |
+| - [ ] 17 | #502 | 25: province-wide builds at the new tokens (1 issue) | **waiting** on the operator's word for the provincial runs | C | 3, 13, 14, 16, 18 | opus |
+| - [ ] 18 | #507 | 26: fresh's internals pinned by argument, at fresh 0.56.0 (1 issue) | open | A | 7, 13, 14 | opus |
 
 Rows are in the order to take them (moves 13 and 14 first since 2026-11-22); a move's number is its name.
 
@@ -90,6 +97,7 @@ built and knowledge#120 reads it.
 | 23 | #500 | load an export's input snapshots: #491 | 1 | crate#66's contract; the crate release pinned | after batch 21 settles the table layout the loader writes into |
 | 24 | #501 | rainbow trout back in `default`: #497, #402 | 2 | how a rainbow trout record is told from steelhead; the pending rows | one record rule, one overlay, one `acc` row, before the provincial runs |
 | 25 | #502 | province-wide builds at the new tokens: #490 | 1 | the run decisions; whether move 11's `acc` row goes first | the parent-gradient build needs `default` and `default_minimal` at one `acc` |
+| 26 | #507 | fresh's internals by argument: #504 | 1 | formals link passes or full signatures; before or after fresh#329 | one pin bump to fresh 0.56.0 and one pre-run gate pay for both |
 
 ### 1. The parent gradient and the grad tokens
 
@@ -145,7 +153,7 @@ on link's own lifts rather than re-implementing `lnk_barrier_overrides()`.
 
 ### 4. Docs, research files, and a check that fails on warnings
 
-- [ ] Carried by move 3, #471
+- [x] Carried by move 3, #471 (merged in https://github.com/NewGraphEnvironment/link/pull/503)
 
 **Touches:** `README.md`, `CLAUDE.md`, `data-raw/study_area_buckets.R`, `.github/workflows/R-CMD-check.yaml`, `tests/testthat/test-lnk_pipeline_prepare.R`; the 12 files whose code lines R CMD check flags as non-ASCII and the 3 with undocumented arguments (measured 2026-11-22): `R/lnk_access.R`, `R/lnk_barrier_overrides.R`, `R/lnk_compare_mapping_code.R`, `R/lnk_compare_rollup.R`, `R/lnk_crossings_union.R`, `R/lnk_pipeline_load.R`, `R/lnk_pipeline_prepare.R`, `R/lnk_pipeline_pscis_build.R`, `R/lnk_rules_build.R`, `R/lnk_stamp.R`, `R/lnk_wsg_downstream_check.R`, `R/lnk_wsg_resolve.R`, `R/lnk_pipeline_access.R`, `R/lnk_pipeline_mapping_code.R`, `R/lnk_preflight_vintage.R`; the research index and the 25 flagged files (the 9 dated run records are named in #279's body, and no other move touches them): `research/README.md`, `research/habitat_thresholds.md`, `research/study_area_run.md`, `research/bcfp_segmentation_parity.md`, `research/bcfishpass_parity.md`, `research/bcfishpass_comparison.md`, `research/bcfp_compare_mapping_code.md`, `research/accessible_km_divergence.md`, `research/bcfishpass_methodology.md`, `research/bcfp_table_map.md`, `research/bcfp_view_column_coding.md`, `research/default_vs_bcfishpass.md`, `research/dimensions_audit.md`, `research/provincial_run_runbook.md`, `research/rule_flexibility.md`, `research/study_area_scope_and_funders.md`, `research/study_areas.md`, `research/post_compact_provincial_handoff.md`
 
@@ -232,7 +240,7 @@ on a host proves it.
 
 ### 10. Drivers
 
-- [ ] Carried by move 7, #475
+- [x] Carried by move 7, #475 (merged in https://github.com/NewGraphEnvironment/link/pull/513)
 
 **Touches:** `data-raw/README.md`, `data-raw/state_clean.sh`, `data-raw/wsgs_dispatch.sh`, `data-raw/wsgs_run_host.R`, `data-raw/wsg_run_one.R`, `data-raw/study_area_run.sh`, `RUNBOOK.md`, and the argument handling of about 15 other drivers under data-raw
 
@@ -369,7 +377,7 @@ the Parsnip, side by side). Touches `data-raw/wsg_vignette_data.R`, `vignettes/`
 
 ### 20. The next fresh pin
 
-- [ ] Carried by move 13, #481
+- [x] Carried by move 13, #481 (merged in https://github.com/NewGraphEnvironment/link/pull/505)
 
 **Touches:** `R/lnk_persist_init.R`, `R/lnk_pipeline_persist.R`, `R/lnk_habitat_validate.R`, `DESCRIPTION`, `R/lnk_db_conn.R`, `tests/testthat/test-lnk_wsg_resolve.R`
 
@@ -385,7 +393,7 @@ tag it pins.
 
 ### 21. Primitive tables in one shape
 
-- [ ] Carried by move 14, #499
+- [x] Carried by move 14, #499 (merged in https://github.com/NewGraphEnvironment/link/pull/506)
 
 **Touches:** `data-raw/snapshot_bcfp.sh`, `R/lnk_artifact.R`, `RUNBOOK.md`
 
@@ -398,7 +406,7 @@ tables differ the same way. A cloud image swap in the infrastructure repository 
 
 ### 22. Publish in parallel, and the public read
 
-- [ ] Carried by move 14, #499
+- [x] Carried by move 14, #499 (merged in https://github.com/NewGraphEnvironment/link/pull/506)
 
 **Touches:** `data-raw/habitat_publish.R`, `R/lnk_scenario_export.R`, `RUNBOOK.md`
 
@@ -446,6 +454,22 @@ each bundle first, and every host's primitives are re-snapshotted. Gate: the ope
 decisions stated per run; whether move 11's `acc` row goes in first. knowledge waits on it: knowledge#220
 lists this build as member 2 of its publish umbrella.
 
+### 26. fresh's internals pinned by argument, at fresh 0.56.0
+
+- [ ] Carried by move 18, #507
+
+**Touches:** `R/lnk_preflight_fresh.R`, `tests/testthat/test-lnk_preflight_fresh.R`, `DESCRIPTION`, `RUNBOOK.md`, `data-raw/pretest_inputs.csv`
+
+#504 (the pre-flight checks that `.frs_run_connectivity`, `.frs_habitat_models`, `.frs_near_river_specs`
+and `.frs_sql_num` exist but not their arguments; pin the formals link passes, as it already does for
+exports, have the callsite drift guard report `getFromNamespace()` sites, and run the pre-run gate when the
+pin moves). fresh's side is NewGraphEnvironment/fresh#329 (a contract test on the same four internals) and
+NewGraphEnvironment/fresh#328 (link's tests on every fresh pull request), both open. Decided at the sweep's
+go (2026-11-23): this move bumps the pin to fresh 0.56.0, whose new refusals (a network with no watershed
+group; an `id_segment` overlay join without `watershed_group_code`) reach link's calls of
+`frs_habitat_overlay()` and `frs_cluster()`. Gate: which formals to pin; before or after fresh#329. One pin
+bump and one pre-run gate. It lands before move 17, so the provincial builds run at the pinned fresh.
+
 ## Singles
 
 - #203: a globally unique `id_segment` re-models every persist schema and changes the export key; fresh#231 and fresh#218 hold fresh's half.
@@ -467,6 +491,7 @@ lists this build as member 2 of its publish umbrella.
 
 ## Closed and transferred
 
+- #279: superseded by #508 (consolidate the six grown research files) and #509 (re-verify and date the ten undated ones), which carry its two open asks; PR #503 (move 3) did the rest; closed 2026-11-23.
 - #474: superseded by PR #485 (0.82.0), move 6's release, which fixed every member but #270 (now a single); closed 2026-11-22.
 - #444: superseded by PR #457 (0.79.0), which built `streams_parent` on all 241 groups, every acceptance line ticked (knowledge#120 ticked the first on 2026-11-05). Follow-ups #462, #463.
 - #439: no consequence now; the minimal run and the `default` run it readied hosts for ran on fresh 0.52.0 with both verifiers passing. The worker's refused token moves to #269 (batch 8).

@@ -2,7 +2,7 @@
 #'
 #' Read one or more correction CSVs, validate their structure, and write
 #' them to a PostgreSQL table. This is step one of the override pipeline:
-#' **load** -> [lnk_override_validate()] -> [lnk_override_apply()].
+#' **load** -> [lnk_override()].
 #'
 #' Override CSVs represent hand-reviewed crossing corrections accumulated
 #' across field seasons and imagery review. Each row says "this crossing's
@@ -26,7 +26,7 @@
 #'   table. If `FALSE`, append to an existing table.
 #'
 #' @return The destination table name (invisibly), for piping into
-#'   [lnk_override_validate()] or [lnk_override_apply()].
+#'   [lnk_override()].
 #'
 #' @details
 #' **Fail fast:** structure is validated before any data is written. Missing
@@ -69,10 +69,8 @@
 #'            "data/overrides/2025_field.csv"),
 #'   to   = "working.overrides_modelled")
 #'
-#' # Then validate and apply:
-#' lnk_override_validate(conn, "working.overrides_modelled",
-#'   "working.crossings")
-#' lnk_override_apply(conn, "working.crossings",
+#' # Then find orphans and duplicates:
+#' lnk_override(conn, "working.crossings",
 #'   "working.overrides_modelled")
 #' }
 #'

@@ -1,5 +1,7 @@
 # Provincial parity — link 0.35.0 (2026-05-11)
 
+**Date opened:** 2026-05-11 · **Status:** HISTORICAL, a dated record kept for its evidence; it is not revised. What is known now is in [`bcfishpass_parity.md`](bcfishpass_parity.md).
+
 **Run**: 2026-05-11 20:10:53 → 22:05:39 PDT (**1h 54min wall**)
 **Hardware**: M4 Max (local) + M1 (Allans MacBook Pro via tailnet) + cypher (DigitalOcean droplet via reserved IP <host>)
 **Software**: link 0.35.0 (sha 8f8c7b6 + #157 dispatch fix), fresh 0.31.0, bcfp reference `bcfishpass@v0.7.14-125-g6e9cf1c` via tunnel `db_newgraph`

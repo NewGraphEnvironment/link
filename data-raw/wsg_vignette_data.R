@@ -198,19 +198,27 @@ named_streams <- sf::st_zm(named_streams, drop = TRUE)
 
 # --- context basemapping from the db_newgraph full catalog (63333) ------------
 # reserves / parks / roads / railways are absent from the FWA-only local
-# subset. Pull them the way flooded + the Peace report do. lnk_db_conn(), not
-# fresh::frs_db_conn(): from fresh 0.36.0 the latter reads PG* before
-# PG_*_SHARE, which on a machine with both set is the local fwapg, not the
-# tunnel this needs (#286).
+# subset. Pull them the way flooded + the Peace report do. The PG_*_SHARE
+# values are passed as arguments: lnk_db_conn() reads PG* before PG_*_SHARE
+# (as fresh::frs_db_conn() does, #288), which on a machine with both set is the
+# local fwapg, not the tunnel this needs (#286).
 boundary_wkt <- sf::st_as_text(sf::st_union(sf::st_geometry(boundary)))
 intersect_clause <- function(geom_col = "geom") {
   sprintf("ST_Intersects(%s, ST_GeomFromText('%s', 3005))", geom_col, boundary_wkt)
 }
 
-conn_ctx <- try(lnk_db_conn(), silent = TRUE)
+share <- Sys.getenv(c("PG_DB_SHARE", "PG_HOST_SHARE", "PG_PORT_SHARE",
+                     "PG_USER_SHARE", "PG_PASS_SHARE"))
+conn_ctx <- if (all(nzchar(share[1:4]))) {
+  try(lnk_db_conn(dbname = share[[1]], host = share[[2]],
+                  port = as.integer(share[[3]]), user = share[[4]],
+                  password = share[[5]]), silent = TRUE)
+} else {
+  structure("PG_*_SHARE not set", class = "try-error")
+}
 context_layers <- list()
 if (inherits(conn_ctx, "try-error") || is.null(conn_ctx)) {
-  message("[wsg_vignette_data] lnk_db_conn() unavailable — context layers ",
+  message("[wsg_vignette_data] the PG_*_SHARE tunnel is unavailable — context layers ",
           "(reserves/parks/roads/railways) skipped. Bring up the 63333 ",
           "db_newgraph tunnel to ship them (soul/skills/db-newgraph).")
 } else {

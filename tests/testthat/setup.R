@@ -14,7 +14,7 @@ test_crossings_csv <- function() {
 }
 
 # Skip helper for DB-dependent tests
-# Tries local Docker fwapg first (writable), then PG_*_SHARE env vars.
+# Tries local Docker fwapg first (writable), then lnk_db_conn() (PG*, else PG_*_SHARE).
 # Also checks write permission — read-only connections skip.
 skip_if_no_db <- function() {
   # Try local Docker first (fresh/docker setup)
@@ -24,7 +24,7 @@ skip_if_no_db <- function() {
                    user = "postgres", password = "postgres"),
     error = function(e) NULL
   )
-  # Fall back to lnk_db_conn (PG_*_SHARE env vars)
+  # Fall back to lnk_db_conn() (PG* env vars, else PG_*_SHARE)
   if (is.null(conn)) {
     conn <- tryCatch(lnk_db_conn(), error = function(e) NULL)
   }

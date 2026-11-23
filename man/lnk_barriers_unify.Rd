@@ -41,7 +41,7 @@ blocks_species column references.}
 Consolidates four barrier families from the per-WSG working schema
 (\verb{<schema>.crossings}, \verb{<schema>.gradient_barriers_raw}, \verb{<schema>.falls},
 \verb{<schema>.barriers_subsurfaceflow}) into one \verb{<schema>.barriers}
-table matching the \link{cols_barriers} shape used by the persistent
+table matching the \code{cols_barriers} shape used by the persistent
 province-wide \verb{<persist_schema>.barriers}. Each row carries a
 pre-computed \verb{blocks_species text[]} predicate that
 \code{\link[=lnk_pipeline_access]{lnk_pipeline_access()}} queries via \verb{WHERE 'BT' = ANY(blocks_species)}.

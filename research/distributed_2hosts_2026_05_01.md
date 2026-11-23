@@ -1,5 +1,7 @@
 # 2-host distributed parity run — link#53 first-cut baseline
 
+**Date opened:** 2026-05-01 · **Status:** HISTORICAL, a dated record kept for its evidence; it is not revised. What is known now is in [`study_area_run.md`](study_area_run.md).
+
 **Date**: 2026-05-01 08:12–08:18 PDT
 **Versions**: link 0.21.0, fresh 0.26.0, bcfishpass 440bc1e
 **Hosts**: M4 Max + M1 over Tailscale, both with local Docker fwapg :5432 + bcfp tunnel :63333

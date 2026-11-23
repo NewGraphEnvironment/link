@@ -100,7 +100,7 @@ lnk_pipeline_load <- function(conn, aoi, cfg, loaded, schema) {
   crossings_path <- system.file("extdata", "crossings.csv",
                                  package = "fresh")
   if (!nzchar(crossings_path)) {
-    stop("fresh package crossings.csv not found — is fresh installed?",
+    stop("fresh package crossings.csv not found \u2014 is fresh installed?",
          call. = FALSE)
   }
 

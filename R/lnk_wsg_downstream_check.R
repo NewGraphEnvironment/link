@@ -408,7 +408,7 @@
        JOIN pg_namespace ns ON ns.oid = p.pronamespace
       WHERE ns.nspname = 'whse_basemapping' AND p.proname = 'fwa_downstream'")$n
   if (as.integer(n) == 0L) {
-    stop("fwapg routine `whse_basemapping.fwa_downstream` not found — the ",
+    stop("fwapg routine `whse_basemapping.fwa_downstream` not found \u2014 the ",
          "downstream guard cannot verify anything. Install fwapg, or set ",
          "LNK_GUARD_DOWNSTREAM=ignore deliberately.", call. = FALSE)
   }
@@ -496,7 +496,7 @@ lnk_wsg_downstream_check <- function(conn, aoi, cfg, loaded,
   on_fail <- match.arg(on_fail)
   if (is.logical(override)) {
     if (isTRUE(override)) {
-      stop("override must be a written justification, not TRUE — it is ",
+      stop("override must be a written justification, not TRUE \u2014 it is ",
            "recorded in the run log and read later by whoever inherits this ",
            "network", call. = FALSE)
     }
@@ -575,7 +575,7 @@ lnk_wsg_downstream_check <- function(conn, aoi, cfg, loaded,
   }
 
   if (!is.na(override)) {
-    note <- sprintf("%s guard(override): %s — %s",
+    note <- sprintf("%s guard(override): %s \u2014 %s",
                     .lnk_guard_tag(unloaded), brief("", ""), trimws(override))
     message(msg)
     message("[guard] OVERRIDE accepted, recorded in the run log: ", trimws(override))
@@ -653,13 +653,13 @@ lnk_wsg_downstream_check <- function(conn, aoi, cfg, loaded,
                              at_dams = "", at_groups = "") {
   parts <- character(0)
   if (length(unloaded)) {
-    parts <- c(parts, sprintf("%d downstream group(s) with no FWA streams loaded%s — %s",
+    parts <- c(parts, sprintf("%d downstream group(s) with no FWA streams loaded%s \u2014 %s",
                               length(unloaded), at_groups,
                               paste(unloaded, collapse = ", ")))
   }
   if (nrow(dams) > 0L) {
     parts <- c(parts, sprintf(
-      "%d unmodelled downstream dam(s)%s — %s", nrow(dams), at_dams,
+      "%d unmodelled downstream dam(s)%s \u2014 %s", nrow(dams), at_dams,
       paste(sprintf("%s(%d)", wsgs_missing,
                     as.integer(table(dams$watershed_group_code)[wsgs_missing])),
             collapse = ", ")))
@@ -674,7 +674,7 @@ lnk_wsg_downstream_check <- function(conn, aoi, cfg, loaded,
                                unloaded = character(0)) {
   if (length(unloaded)) {
     load <- paste0(
-      sprintf(paste0("%s BLOCKED (link#464) — %d watershed group(s) on %s's ",
+      sprintf(paste0("%s BLOCKED (link#464) \u2014 %d watershed group(s) on %s's ",
                      "downstream flow path have no FWA streams in this ",
                      "database: %s.\n\n"),
               aoi, length(unloaded), aoi, paste(unloaded, collapse = ", ")),
@@ -695,7 +695,7 @@ lnk_wsg_downstream_check <- function(conn, aoi, cfg, loaded,
                         dams$passability_status_code),
                 collapse = "\n")
   paste0(
-    sprintf("%s BLOCKED (link#227) — %d blocking dam(s) on %s's downstream flow path have not been modelled yet.\n\n",
+    sprintf("%s BLOCKED (link#227) \u2014 %d blocking dam(s) on %s's downstream flow path have not been modelled yet.\n\n",
             aoi, nrow(dams), aoi),
     "link computes accessibility by reading ALREADY-PERSISTED downstream barriers.\n",
     sprintf("Running %s now would mark segments accessible that are in fact dammed off, and exit 0.\n\n", aoi),
@@ -703,17 +703,17 @@ lnk_wsg_downstream_check <- function(conn, aoi, cfg, loaded,
     sprintf("  unmodelled blocking dams downstream of %s:\n%s\n", aoi, rows),
     if (length(first)) sprintf("  model these first, DS-first: %s\n",
                                paste(first, collapse = ", ")) else "",
-    "\nFix — pick one:\n",
+    "\nFix \u2014 pick one:\n",
     if (length(first)) sprintf(
       paste0("  1. Model the downstream WSGs first:\n",
              "       for w in %s; do ",
-             "Rscript data-raw/wsg_run_one.R $w <config>; done\n"),
+             "LNK_SCHEMA=<schema> LNK_RUN_LABEL=<label> Rscript data-raw/wsg_run_one.R $w <config>; done\n"),
       paste(first, collapse = " ")) else "",
     sprintf(paste0("  2. Model %s now and settle access after they land:\n",
-                   "       Rscript data-raw/wsg_recompute_one.R %s <config>\n"),
+                   "       LNK_SCHEMA=<schema> LNK_RUN_LABEL=<label> Rscript data-raw/wsg_recompute_one.R %s <config>\n"),
             aoi, aoi),
     "  3. Override, if those dams are known passable / remediated / irrelevant.\n",
     "     Recorded in the run log and surfaced by lnk_log_read():\n",
-    sprintf("       LNK_GUARD_DOWNSTREAM_NOTE=\"...\" Rscript data-raw/wsg_run_one.R %s <config>\n", aoi)
+    sprintf("       LNK_GUARD_DOWNSTREAM_NOTE=\"...\" LNK_SCHEMA=<schema> LNK_RUN_LABEL=<label> Rscript data-raw/wsg_run_one.R %s <config>\n", aoi)
   )
 }

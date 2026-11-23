@@ -1,5 +1,7 @@
 # Parallelising the post-consolidate recompute — what was measured
 
+**Date opened:** 2026-09-01 · **Status:** HISTORICAL, a dated record kept for its evidence; it is not revised. What is known now is in [`recompute_cost.md`](recompute_cost.md).
+
 **2026-09-01, link#250, v0.48.0.** Dispatcher m1, local docker `fwapg`
 (Docker VM 6 CPUs of the host's 10), persist schema `fresh`.
 **Revised 2026-10-26 (#260):** "Where the remaining time actually is": its line reference, candidate 1 (measured) and candidate 2 (where its floor binds).

@@ -1,5 +1,7 @@
 # Study areas: funders, and the two scopes that get conflated
 
+**Verification:** none yet. Written before this header existed and not checked against the code since; read its claims as of when it was written.
+
 Migrated from machine-local memory 2026-09-01 so every machine has it.
 Assembled 2026-08-31 by reading each GIS project's own AOI layer against
 `whse_basemapping.fwa_watershed_groups_poly` — "not invented" — which is why it

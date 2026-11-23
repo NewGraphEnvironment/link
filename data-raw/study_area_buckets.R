@@ -20,8 +20,7 @@
 # focal WSGs share a component iff their closures intersect. Each component
 # is then resolved through `lnk_wsg_resolve()` for the species filter and
 # the downstream-first order, and the components are packed onto hosts by
-# greedy LPT (longest processing time first) — the same algorithm
-# wsgs_dispatch.sh uses, with a component rather than a single WSG as the
+# greedy LPT (longest processing time first) — with a component rather than a single WSG as the
 # indivisible atom.
 #
 # The atom (link#361): a component, or a single group.
@@ -49,7 +48,7 @@
 #
 # Usage:
 #   [LNK_LOAD=loadall] Rscript data-raw/study_area_buckets.R \
-#     [--hosts=4] [--config=bcfishpass] [--focal=A,B,C] [--atom=component|group] \
+#     [--hosts=4] --config=<bundle> [--focal=A,B,C] [--atom=component|group] \
 #     [--minutes-schema=<persist schema>] [--host-speeds=1,1,1,1] [--workers=0]
 #     [--host-names=m4,cloud,cloud,cloud] [--speeds-state=<tsv>] [--plan-out=<tsv>] [--write]
 #
@@ -90,7 +89,13 @@ arg_val <- function(flag, default) {
   sub(paste0("^", flag, "="), "", hit[1])
 }
 n_hosts <- as.integer(arg_val("--hosts", "4"))
-config  <- arg_val("--config", "bcfishpass")
+config  <- arg_val("--config", "")
+if (!nzchar(config)) {
+  message("study_area_buckets.R: --config is required. Name a bundle from inst/extdata/configs/ ",
+          "(bcfishpass and default both resolve to schema 'fresh'; any bundle ",
+          "but bcfishpass needs an explicit LNK_SCHEMA).")
+  quit(status = 2)
+}
 minutes_schema <- arg_val("--minutes-schema", "")
 minutes_exclude <- toupper(trimws(strsplit(arg_val("--minutes-exclude", ""), ",")[[1]]))
 minutes_exclude <- minutes_exclude[nzchar(minutes_exclude)]
@@ -232,9 +237,9 @@ focal <- if (nzchar(focal_arg)) {
 }
 focal <- sort(unique(focal[nzchar(focal)]))
 
-# Explicit local docker fwapg — lnk_db_conn()'s env defaults land on the
-# :63333 bcfp tunnel, a different database with a different load state
-# (#222). Same reasoning as study_area_wsgs.R.
+# Explicit local docker fwapg — lnk_db_conn()'s env defaults (PG*, else
+# PG_*_SHARE) can land on the :63333 bcfp tunnel, a different database with a
+# different load state (#222). Same reasoning as study_area_wsgs.R.
 conn <- DBI::dbConnect(RPostgres::Postgres(), host = "localhost", port = 5432,
                        dbname = "fwapg", user = "postgres", password = "postgres")
 on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
@@ -643,22 +648,9 @@ if (do_write) {
   wr("")
   wr("## Scope, and who funds what")
   wr("")
-  wr("Two scopes exist and are easy to conflate — it cost an hour on 2026-08-31.")
-  wr("**Field scope** is the WSGs a GIS/Mergin project's AOI covers, recorded in")
-  wr("`rtj/scripts/gis/projects/<name>/project.yml`. **Model scope** is the WSGs a")
-  wr("report analyses, recorded as `wsg_code` in the reporting repo. They")
-  wr("legitimately differ: the entire FWCP Peace region is modelled, while only")
-  wr("the project WSGs go into the GIS.")
-  wr("")
-  wr("| area | funder | field (rtj) | model (reporting repo) |")
-  wr("|---|---|---|---|")
-  wr("| Peace | **FWCP** | 8 | 16 |")
-  wr("| Fraser | **HCTF** (provincial) | 10 | 8 (may be stale) |")
-  wr("| Skeena | **HCTF** (provincial) | not yet in rtj | 5 |")
-  wr("| Columbia / nelson | - | 3 | - |")
-  wr("")
-  wr("Only Peace is FWCP. Calling all three \"the FWCP study areas\" was an error")
-  wr("carried in several docs until 2026-08-31.")
+  wr("Field scope, model scope and who funds each area are in")
+  wr("[`study_area_scope_and_funders.md`](study_area_scope_and_funders.md),")
+  wr("which is hand-maintained and holds the one table.")
   wr("")
   # Computed, not typed: the modelable count depends on the config's species
   # (217 under `bcfishpass`, 241 under `default`, link#246).

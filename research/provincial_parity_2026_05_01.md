@@ -1,5 +1,7 @@
 # Provincial parity baseline — link 0.20.0
 
+**Date opened:** 2026-05-01 · **Status:** HISTORICAL, a dated record kept for its evidence; it is not revised. What is known now is in [`bcfishpass_parity.md`](bcfishpass_parity.md).
+
 **Run**: 2026-04-30 21:55 → 2026-05-01 02:50 PDT (4h 55min wall clock)
 **Hardware**: Apple M4 Max, 16 cores, 128 GB RAM, single host
 **Software**: link 0.20.0 (sha 7210baf), fresh 0.25.0, bcfishpass 440bc1e (2026-04-28)

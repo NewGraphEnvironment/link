@@ -4,6 +4,8 @@ Experimental package — breaking all the time and loving the learning curve. St
 
 > **Read [`RUNBOOK.md`](RUNBOOK.md) first.** It is the durable mental model of the barrier → access → mapping_code machinery (what feeds what, where each rule lives, the gotchas). This `CLAUDE.md` carries conventions + status; the RUNBOOK carries the *mechanics*. Don't re-derive the system from source each session — read the runbook, and update it in-commit when the mechanics change.
 
+The settled findings behind the methods (what is known, with provenance and the files that index it) are in [`research/README.md`](research/README.md); cite an individual research file only where a rule depends on it.
+
 ## Repository Context
 
 **Repository:** NewGraphEnvironment/link
@@ -14,6 +16,48 @@ Experimental package — breaking all the time and loving the learning curve. St
 ## Status (2026-11-09) — the open issues are batched into moves: `planning/backlog.md` (#468)
 
 **Take the next move from `planning/backlog.md`** (`bash <soul>/skills/_shared/backlog_moves.sh next planning/backlog.md`; `/compact-prep` names it): 13 moves, umbrellas #469–#481, each planned with one `/planning-init <umbrella>` and landed in one PR, ticked by `/gh-pr-merge`. Moves 12 and 13 wait on knowledge#139's flow-method decision and fresh 0.54.0. A link issue knowledge waits on says so in its batch section. A new issue joins the open move whose batches touch its files; run `/backlog-sweep` again when one fits none. Record: `planning/archive/2026-11-issue-468-backlog-pass/`.
+
+## Status (2026-11-23) — drivers need an explicit config; a standalone run is labelled; the legacy `wsgs_*` path is retired (#475, 0.89.0)
+
+**Backlog move 7 (#475) lands as one release: #278, #281, #181, #166; #179 and #110 close as retired.** Every `data-raw/` driver refuses to run without a config, the three that write persist tables also refuse a non-`bcfishpass` bundle with no `LNK_SCHEMA`, `study_area_run.sh` prints a decisions block before its first write, a standalone `wsg_run_one.R` / `wsg_recompute_one.R` needs `LNK_RUN_LABEL` (its `run_uid` stays NULL, so PUBLISH still refuses it), and `state_clean.sh --tables=` drops named tables locally (or on `--hosts=`). The nine legacy scripts are deleted. Mechanics: RUNBOOK §8d and the single-group path in §8c. Tests: `test-driver_config.R`, `test-state_clean.R` (local only; `data-raw/` skips in CI).
+
+**Owed:** the pre-run gate runs before the next provincial run (this voids any record). Hosts and jobs calling a retired script or omitting a config move to `study_area_run.sh --config=`.
+
+**Facts not worth re-deriving:**
+- **A mutant R driver that accepts a config models for real** against the local fwapg: the mutation proof for the config refusals runs only on the shell drivers.
+- **`state_clean.sh` needs bash 5** (associative arrays); macOS `/bin/bash` 3.2 fails at `declare -A`.
+- **Every verb-first script is cited by path** from research, archives, tests or the weekly workflow, so none was renamed.
+
+## Status (2026-11-23) — `cabd.dams` loads in one layout on every host; PUBLISH runs on a pool (#499, 0.88.0)
+
+**Backlog move 14 (#499) lands as one release: #494 and #488; #334's public read stays open (owner, 2026-11-22).** `snapshot_bcfp.sh` loads CABD through `cabd_load()` (`data-raw/snapshot_bcfp_lib.sh`): the API into `cabd.dams_load`, then `cabd.dams` rebuilt as `ogc_fid, geom`, CABD's fields, key and index, in one transaction, so every host's content md5 agrees and, while CABD returns the same dams, matches the reload layout's recorded `6f7f44c0…`. PUBLISH (`data-raw/habitat_publish.R`, helpers `.lnk_publish_run()` / `.lnk_publish_list()` in `R/lnk_publish.R`) checks from one listing, puts on a PSOCK pool of `LNK_PUBLISH_JOBS` (default 8), takes versions from the put replies and one `list-object-versions` per per-group directory, and checks every result before the manifest. Mechanics: RUNBOOK §6d, "How PUBLISH talks to S3"; §8d, "An API primitive loads in one column layout". Evidence: `data-raw/logs/cabd_shape_494/`, `data-raw/logs/publish_parallel_488/`.
+
+**Owed:**
+- Every host re-snapshots (`snapshot_bcfp.sh --force`) before the next multi-host run; a host loaded before 0.88.0 keeps whichever layout its first load gave it.
+- The cloud image swap this waited on (the infrastructure repository's own issue): the scheduled runs move to the new image, a provincial run goes out on it, and the old image is deleted once that run publishes.
+- The next real PUBLISH (the operator's word) records its minutes against #488's 53.5 on a cloud host.
+- #334's public read: the infrastructure change after the budget and anomaly alerts.
+- The pre-run gate is not voided by this release alone (`DESCRIPTION` and `R/lnk_publish.R` map `none`; the snapshot and publish scripts are outside `PRETEST_LINK_PATHS`); it still owes its run from earlier releases.
+
+**Facts not worth re-deriving:**
+- **#494's cause was not "whether the table existed":** the first ogr2ogr load into a database (the one that creates `ogr_system_tables`) lays a table out `geom` last, every later load `geom` second, `OGR_TRUNCATE` or not. A load after `DROP TABLE` comes out `geom` second, so a scratch database that has had one GDAL load cannot show the defect: use a new database, or a stub that builds a geom-last staging table.
+- **ogr2ogr's drop under `-overwrite` takes a dependent view with it silently** (exit 0); `cabd_load()` drops without `CASCADE` first.
+- **One `aws` call on m1 is about 0.55 s, 0.33 of it start-up** (#488's 2.4 s was a cloud host). A full publish of the published tree: 36.5 min serially, 4.1 min on the pool, 1.9 min republishing an unchanged tree.
+- **The PSOCK worker function must carry no link namespace:** `.lnk_publish_aws()` uses base R only and is sent with a global environment.
+- **A stub `aws` written for concurrency needs a lock on any file its calls share** (`flock`): the first stub raced on its versions file and failed one run in two.
+
+## Status (2026-11-23) — fresh 0.55.1; the near-river table keeps fresh's key; one connection resolver (#481, 0.87.0)
+
+**Backlog move 13 (#481) lands as one release: the fresh pin v0.52.0 → v0.55.1, #452, #288 and #222.** `streams_near_river` carries `linear_feature_id` (fresh 0.54.0, fresh#293), which `lnk_persist_init()` adds and fills from `streams` once; the validator passes `near_river_lfid = TRUE` and, when cfg reads a pair, refuses a missing column or NULL. `lnk_db_conn()` delegates to `fresh::frs_db_conn()` (arguments, `PG*`, then `PG_*_SHARE`). The live resolve tests use the gated connection. No output or token moves (36 table-group digests, `data-raw/logs/fresh_pin_481/`). Mechanics: RUNBOOK §7, "Keyed on the parent line too".
+
+**Owed:** fresh 0.55.1 into each host's shared library (m1's holds 0.53.0, installed 2026-11-16) and a re-prep; `lnk_persist_init()` once per host on `fresh_default`, `fresh`, `fresh_default_minimal` at a quiet time (an ACCESS EXCLUSIVE rewrite); the pre-run gate before the next provincial run; the variants bases rebuilt with `--step=base`. A fresh issue (its deprecation message fires with every argument explicit) is drafted, not filed.
+
+**Facts not worth re-deriving:**
+- **m1's colima VM can lose its guest network while still "Running"** (2026-11-21 ~20:46 PDT: ssh and 5432 refused, the guest agent still syncing time). `colima stop && colima start` fixes it; `LIMA_HOME=~/.colima/_lima limactl list` sees the VM.
+- **On m1 `~/.Renviron` sets `PGHOST`, and wins over an exported one,** so redirect `PG*` from inside R (`Sys.setenv()`) to test a connection path.
+- **fresh's reach from `wsg_run_one.R` is 19 files at v0.55.1** (`frs_db_conn.R` joined through `lnk_db_conn()`).
+- **`public.wsg_outlet` is retired** (fresh 0.33.0); closure mode reads only `whse_basemapping.fwa_downstream()`. The parked plan's gate on the table would have skipped everywhere.
+- **Measure before and after a pin from scratch libraries** (`R CMD INSTALL -l <lib> <tag worktree>`, `R_LIBS=<lib>`, `FRESH_GIT_SHA` for the stamp): the shared library stays put for other sessions.
 
 ## Status (2026-11-18) — default's presence table is bcfishpass's copy plus an overlay; link's own exclusions; presence groups in the bundle (#472, 0.86.0)
 
@@ -1331,13 +1375,13 @@ link is connectivity-system agnostic. Column names are configurable parameters w
 
 ## Database Connection
 
-Uses `PG_*_SHARE` env vars (Docker fwapg) with fallback to standard `PG*` vars. From fresh 0.36.0 `frs_db_conn()` reads them the other way round (`PG*` first), so on a machine that sets both the two connect to different databases (#286). DB is needed for match/score/habitat functions that operate via SQL. The override loading and validation can work with any PostgreSQL.
+`lnk_db_conn()` connects through `fresh::frs_db_conn()` (since 0.87.0, #288), so the two resolve alike: explicit arguments, then the standard `PG*` variables, then `PG_*_SHARE` only when no `PG*` is set (deprecated by fresh, which says so once per session unless every field is given), never mixed, with fresh's 10 s connect timeout and TCP keepalives. Before 0.87.0 link read `PG_*_SHARE` first, so on a machine setting both a bare `lnk_db_conn()` and a bare `frs_db_conn()` reached different databases (#286). DB is needed for match/score/habitat functions that operate via SQL. The override loading and validation can work with any PostgreSQL.
 
 ```r
-conn <- lnk_db_conn()  # reads PG_DB_SHARE, PG_HOST_SHARE, etc.
+conn <- lnk_db_conn()  # PG* variables, else PG_*_SHARE
 ```
 
-**Local docker fwapg (dev / parity work).** `lnk_db_conn()` with no args reads `PG_*_SHARE`, which may point at the bcfp reference DB — the wrong DB for the `fresh.*` persist. For local-docker work pass explicit args: `lnk_db_conn(dbname="fwapg", host="localhost", port=5432L, user="postgres", password="postgres")`. Bring it up from fresh's `docker/` directory with `docker compose up -d db`. The local DB holds the local `fresh.*` persist + `working_<wsg>` schemas + `fresh.streams_vw_bcfp`; the bcfp reference DB holds `bcfishpass.*`, no `fresh.*`.
+**Local docker fwapg (dev / parity work).** `lnk_db_conn()` with no args reads whatever the environment names (`PG*`, else `PG_*_SHARE`), which may be the bcfp reference DB — the wrong DB for the `fresh.*` persist. For local-docker work pass explicit args: `lnk_db_conn(dbname="fwapg", host="localhost", port=5432L, user="postgres", password="postgres")`. Bring it up from fresh's `docker/` directory with `docker compose up -d db`. The local DB holds the local `fresh.*` persist + `working_<wsg>` schemas + `fresh.streams_vw_bcfp`; the bcfp reference DB holds `bcfishpass.*`, no `fresh.*`.
 
 **Join persisted `fresh.*` on the full PK** `(id_segment, watershed_group_code)` — `id_segment` is NOT globally unique across WSGs in the consolidated persist, so a bare `id_segment` join fans out cartesian (#203). Length lives on `streams`, not `streams_access` / `streams_habitat_<sp>`.
 
@@ -1372,7 +1416,7 @@ Note: `<owner>/<repo>@<sha>` references a commit; this does **not** trigger GitH
 
 ### Core
 - `lnk_thresholds(csv, high, moderate, low)` — configurable severity thresholds. Ships BC defaults. CSV or inline override. Feeds into `lnk_score()`.
-- `lnk_db_conn()` — PostgreSQL connection factory. `PG_*_SHARE` then `PG*` env vars.
+- `lnk_db_conn()` — PostgreSQL connection factory, through `fresh::frs_db_conn()`: arguments, then `PG*`, then `PG_*_SHARE` (#288).
 - `lnk_config(name_or_path)` — load a config **manifest**: paths (`cfg$rules`, `cfg$dimensions`), file declarations (`cfg$files`), pipeline knobs (`cfg$pipeline`), provenance metadata. **Manifest-only — no parsed CSVs.** Cheap to call. Configs may declare `extends:` to inherit from another config. Ships with `"bcfishpass"` and `"default"` variants under `inst/extdata/configs/<name>/`.
 - `lnk_load_overrides(cfg)` — materialize the data files declared in `cfg$files`. Returns named list of canonical-shape tibbles. Entries with `source` + `canonical_schema` dispatch through `crate::crt_ingest()`; others fall through to local reads dispatched on path extension. Adding a new source family is a config edit + crate registration — no link R code change.
 
@@ -1811,8 +1855,9 @@ waiting when it is not. Pick the instrument by how many answers you need:
 | a value you must have before the next step | a **foreground** call, so the blocking is explicit |
 | a long job that notifies when it exits | `Bash(run_in_background)` with the command as plain foreground text: no `&`, no `nohup` |
 
-A repeated `sleep N; grep` suits none of them. **Tell: if you are about to spawn a second
-waiter for the same thing, the first was the wrong shape.**
+A repeated `sleep N; grep` suits none of them. **Every background loop has a deadline**
+(`timeout 6h …`, or a count), never a `pgrep -f` gate. **Tell: if you are about to spawn a
+second waiter for the same thing, the first was the wrong shape.**
 
 **An `until` waiter over `ssh` to a Mac exits 0 whatever the remote command did:** gate on
 what it prints (`code-check-shell.md`, "Over Tailscale SSH to a Mac, `ssh` exits 0").
@@ -1822,14 +1867,12 @@ own state in a foreground call before reporting it done, against a marker only t
 can produce: clear it at launch, or check it is newer than a stamp touched at launch
 (`code-check.md`, "A wrapper's exit is not the work"), never a string grepped out of a log.
 
-A `Monitor` filter must match the failure states too: silence looks like "still running", so a
-happy-path-only grep stays quiet through a crash.
+A `Monitor` filter must match failure states too: silence reads as "still running".
 
-**Never end a backgrounded call's command with a trailing `&`.** With nothing in the same
-command waiting on it, a `run_in_background` call's wrapper exits at once, so the notification
-reports **exit 0** whatever the job then does. Pick one mechanism from the table, never two.
+**Never end a backgrounded call's command with a trailing `&`.** Nothing in it waits on the
+job, so the call's wrapper exits at once and notifies **exit 0** whatever the job then does. Pick one mechanism from the table, never two.
 
-*20 lines of evidence for this rule are in `conventions/agent-operations.md`.*
+*22 lines of evidence for this rule are in `conventions/agent-operations.md`.*
 
 ### Don't edit files a long-running suite is still reading
 
@@ -1897,14 +1940,13 @@ precondition. If a result must precede the next step, run it synchronously
 
 *8 lines of evidence for this rule are in `conventions/agent-operations.md`.*
 
-### When your own queue is empty, offer backlog work for the wait
+### When your own queue is empty, wait; a new move starts elsewhere
 
-With nothing of the task left while a review or a long run is in flight, offer 2 or 3 queued
-pieces (`planning/backlog.md`, `umbrella.sh next`) sized to the wait, in one phone-answerable
-question, safest first: read-only, issue work in our repos, a park in its own worktree. None
-edits the checkout the run reads. Each class is asked until the answer ledger promotes it (§4).
+With nothing of the task left while a review or a long run is in flight, wait or finish without
+asking, and name the free moves (`planning/backlog.md`, `umbrella.sh next`) in the report. A
+waiting session starts none; a move starts in a fresh session.
 
-*3 lines of evidence for this rule are in `conventions/agent-operations.md`.*
+*7 lines of evidence for this rule are in `conventions/agent-operations.md`.*
 
 ### Don't trust status
 
@@ -2159,9 +2201,9 @@ ends in a question mark, with no approved plan, gets an answer and a one-line of
 work, not the first commit toward it. To explain something, be short and concrete: a worked
 example beats a taxonomy. **The mandate starts at plan approval.**
 
-**When an answer settles a plan or moves an issue's scope, end with one offer** to write it into
-#N's body as `## Plan` / `## Decisions` (a fold names both issues), and edit the body once
-agreed: the next session reads the body, not this conversation.
+**When the owner agrees a plan or a scope change about an open issue, write it into #N's body**
+as `## Plan` / `## Decisions` (a fold names both issues) and say so in the reply: the next
+session reads the body, not this conversation.
 
 *6 lines of evidence for this rule are in `conventions/agent-operations.md`.*
 
@@ -2170,26 +2212,28 @@ agreed: the next session reads the body, not this conversation.
 A decision that permanently shapes stored data — a key, an identifier, a schema
 choice, a deprecation shim versus a hard rename — is the user's, and it goes to the
 **plan gate**, batched, as two or three concrete options with the recommended one
-first and the consequence stated, including a word or field an upstream contract lacks. Found mid-run, it is still not the agent's to decide:
-ask it the same way — options, recommendation first, phone-answerable — commit, and
-continue on the phases that do not depend on it while the answer is outstanding
-(`planning.md`, "When Something Keeps Failing" — escalating is not stopping).
+first and the consequence stated, including a word or field an upstream contract lacks. Found mid-run, it is still the user's:
+ask it the same way, commit, and continue on the phases that do not depend on it
+(`planning.md`, "When Something Keeps Failing": escalating is not stopping).
 
 In plan mode, ask the "this changes what I build" forks together before `ExitPlanMode`.
-Mechanism is never a question (§2), nor is anything with a conventional default: pick it, say
-so, move on.
+**Ask only a real fork** (stored data, a post outside our repos, a machine change, a merge, scope
+and priority); do anything else and report it. A question opens with what is happening (what
+started, where, what it does first) and a link to catch up from, then the options.
 
-*4 lines of evidence for this rule are in `conventions/agent-operations.md`.*
+*8 lines of evidence for this rule are in `conventions/agent-operations.md`.*
 
 ### Record the owner's answers; promote a class only on the record
 
 A hook (`settings/hooks/answers_log.py`) records each `AskUserQuestion`; record a question
-asked in prose with its `--manual` form. `/backlog-sweep` in soul proposes a class with a run
-of approvals and no refusal as a standing authorization. The classes this section reserves
-(stored data, posting outside our repos, machine changes, merges) are never proposed, and work
-under a promoted class is still reported. The coordinator's gated merge is not a promotion.
+asked in prose with its `--manual` form. `/backlog-sweep` in soul proposes a class after 5
+recommended answers in a row; an issue writes an accepted one here. The real forks above,
+scope included, are never proposed; work under a promoted class is still reported. The coordinator's gated merge is not a promotion.
 
-*2 lines of evidence for this rule are in `conventions/agent-operations.md`.*
+**Promoted 2026-11-22: mechanism** (decide it, name it in the report; one reaching upstream
+is still asked) **and idle-work** (§2).
+
+*4 lines of evidence for this rule are in `conventions/agent-operations.md`.*
 
 ### Never post outside our own repos without approval
 
@@ -2207,33 +2251,36 @@ our name, indexed at once, and cannot be unpublished.
 
 ### Upstream, we are guests: fork first, offer an issue, disclose AI
 
-We build on other people's work: gratitude and humility in every step that touches it.
-Maintainers may read anything we write about their code, so describe what we saw rather than
-diagnose their design, offer rather than propose (no imperative, a polite one included), and leave them every road to lead.
+We build on other people's work, with gratitude and humility. Maintainers may read anything
+we write about their code: describe what we saw rather than diagnose their design, offer
+rather than propose (no imperative, a polite one included), and leave them every road to lead.
 
-- **Fix on our fork the same day,** one concern per branch from upstream's default branch,
-  no planning files and no `#N` in its commits, the draft in a fork issue labelled
-  `upstream-draft`. Pin our packages to the fork's integration branch until upstream holds
-  every fix on it, their way.
+- **The finding session captures; a fork session fixes.** The finder files the reprex, versions,
+  exact lines and whether it blocks as an `upstream-draft` stub on our fork (in soul if none; the `upstream` track queues them),
+  never opens the fork, and files nothing that would not help their other users. The fork
+  session fixes, does the homework and drafts: one concern per branch from upstream's default
+  branch, no planning files, no `#N` in commits, no whitespace-only hunks (Edit drops trailing
+  spaces). Only a blocking defect is fixed the same day, the finder pinning the fork's
+  integration branch until upstream holds every fix.
 - **Upstream gets a short issue that offers:** thanks, a reprex, the options as we see them,
-  and a pull request if it helps. Send one when asked, or first only where outside pull
-  requests are routinely merged. One open item per maintainer, timed around their load.
-- **A fix of a few lines goes in the issue as its reviewed diff** (about 20 lines), introduced as what we tested, fork branch and test linked, pull request on offer. Only the version that survived `/code-check` goes inline. A larger fix is described, linked and offered. Where AI-assisted contributions are unwelcome, send no diff either.
-- **About 200 words besides an inline diff, no SRED line.** A design change goes in as a question.
-- **Say plainly that Claude Code helped,** in a sentence from the `upstream-draft` on, and offer
-  an `Assisted-by` reword in the pull request unless the maintainer has already merged a Claude
-  co-authored commit (check their log). Where AI-assisted contributions are unwelcome, send no code.
+  and a pull request if it helps; about 200 words besides an inline diff, no SRED line, a design
+  change as a question. Send one when asked, or first only where outside pull requests are
+  routinely merged. One open item per repo, timed around the maintainers' load.
+- **Smallest first, written their way.** When they ask for more, send the smallest fix alone
+  and offer the rest one at a time. Match their merged commits; leave their changelog to them
+  where their log shows they write it.
+- **A fix of a few lines (about 20) goes in the issue as its reviewed diff,** as what we tested, branch and test linked, pull request on offer; only the version that survived `/code-check`. A larger fix is described, linked and offered.
+- **Say plainly that Claude Code helped,** from the `upstream-draft` on, and offer an
+  `Assisted-by` reword in the pull request unless they have merged a Claude co-authored commit
+  (check their log). Where AI help is unwelcome, send no code.
 - **Never ping by accident:** in our repos' issues and pull requests an upstream item is
-  backticked, never a URL, link or bare `#N` (a fork's reached upstream's once), unless the user
-  wants the ping; commit messages name none, even backticked. An edit cannot take a ping
-  back. In a fork checkout `gh` targets upstream, so pass `--repo` for our fork.
-- **Homework before, notes after:** who contributes, stated policy, AI use, current load,
-  response pace, kept in soul's `research/upstream-projects.md`, revised after every reply,
-  merge or silence.
-- Raise upstream only what would help their other users. If a maintainer would rather not
-  hear from us, keep the fork or move on.
+  backticked, never a URL, link or bare `#N`, unless the user wants the ping; commit messages
+  name none. In a fork checkout `gh` targets upstream: pass
+  `--repo` for our fork.
+- **Homework before, notes after:** who contributes, policy, AI use, load, pace, kept in
+  soul's `research/upstream-projects.md`, revised after every reply.
 
-*33 lines of evidence for this rule are in `conventions/agent-operations.md`.*
+*37 lines of evidence for this rule are in `conventions/agent-operations.md`.*
 
 ### Credit Claude; a session link only on a cloud PR in a private repo
 
@@ -2314,19 +2361,15 @@ When a message to the user names an issue or a PR, make the number a link:
 When a dependency or an external API misbehaves, or its contract lacks a concept you need,
 surface it and ask rather than coding around it: a workaround hides the defect from whoever
 could fix it, and most such dependencies are **first-party**, so a local patch leaves the bug
-for every other consumer. Same instinct as `newgraph.md`'s "install missing packages, don't
-workaround", applied to a *broken* dependency.
+for every other consumer.
 
 **How to apply:** first check an installed package is current (`check_pkg_stale.sh`, then our
 package's tag and `main`, a CRAN package's CRAN) and state the versions beside the diagnosis.
 Then reproduce it minimally, file an issue in the owning repo with the
-repro and the exact lines (a third party's: a fork issue first, above), report it, and carry on if it is not blocking. The rule is
-*do not hide it*, not *do not continue*.
+repro and the exact lines (a third party's: a fork stub, above), report it, and carry on if it is not blocking: *do not hide it*, not *do not continue*.
 
 **A gap is a change request:** file it with the contract's owner before coining a name, and
 bring the choice to the plan gate. Tell: you are explaining why your names are not the contract's.
-
-At design time the same holds for scope: `newgraph.md`, "A first-party package's current scope is not a design constraint".
 
 *17 lines of evidence for this rule are in `conventions/agent-operations.md`.*
 
@@ -3936,7 +3979,8 @@ behaviour **in terms of the package's own inputs and conditions**. Our machines,
 ports, local env files and private repos stay out, with the two exceptions below. Check
 where the text lands before you draft it, naming the destination: with no argument, `gh`
 reports the repo the session stands in, which reads private when you file from a private
-repo into a public one.
+repo into a public one. A `pre-public` repo (`.claude/visibility`) is held to it from its
+first commit.
 
 ```bash
 gh repo view <owner>/<repo> --json nameWithOwner,visibility --jq '"\(.nameWithOwner): \(.visibility)"'
@@ -4222,7 +4266,8 @@ source showed it fine.
 Same family as the cross-reference gotcha already noted for vignettes (`\@ref(fig:…)` compiling
 to a literal): bookdown output formats do not carry all of bookdown's machinery through pkgdown,
 and each missing piece fails quietly in its own way. Verify anything structural — footnotes,
-cross-references, numbered captions — against the built page the first time you use it.
+cross-references — against the built page the first time you use it. Numbered captions
+are not on the site at all: `r-packages.md`, Vignettes, says why and what `as_is` costs.
 
 ## Tables in an article: a footnote goes through kableExtra on an HTML kable
 
@@ -4836,32 +4881,27 @@ At least one vignette showing the full pipeline on real data:
 
 What a vignette says, and in what order, is `writing.md`.
 
-**Output format:** Use `bookdown::html_vignette2` (not
-`rmarkdown::html_vignette`) for figure numbering. Requires `bookdown` in
-Suggests and chunks must have `fig.cap` / `caption =` for numbered
-figures and tables.
+**Output format:** Use `bookdown::html_vignette2`, with `bookdown` in Suggests and
+`fig.cap` / `caption =` on chunks. It numbers captions in the
+installed vignette (R CMD check, `rmarkdown::render()`), **not on the pkgdown site**, which
+renders articles through its own `html_document` and prints them unnumbered.
+`pkgdown: as_is: true` restores site numbering but drops every htmlwidget's scripts (DT,
+leaflet, mapgl, plotly), so an article with a widget does not use it.
 
-**Gotcha — cross-references don't resolve in vignettes.** `Table \@ref(tab:foo)`
-and `Figure \@ref(fig:foo)` markers compile to a literal `\@ref(...)` in
-the rendered HTML rather than a numbered link. Bookdown's cross-ref
-machinery isn't fully wired through `html_vignette2` under pkgdown.
-Use natural language instead — "the table below", "the floodplain map",
-"the parameter table" — and let the captions speak for themselves. If
-you need real numbered cross-refs, use `bookdown::html_document2`
-(matches the cd-style report-appendix pattern) and accept that the
-output is no longer a true package vignette.
+**Gotcha: `Table \@ref(tab:foo)` and `Figure \@ref(fig:foo)` compile to a literal `\@ref(...)`
+on the site.** Write prose that holds either way ("the table below") and let the captions speak. For real
+cross-refs use `bookdown::html_document2` and accept that it is no longer a true package vignette.
 
 **Vignettes that need external resources (DB, API, STAC):** Do NOT use
-the `.Rmd.orig` pre-knit pattern — it breaks `bookdown` figure numbering
-because knitr evaluates chunks during pre-knit and emits `![](path)`
-markdown that bookdown can't number.
+the `.Rmd.orig` pre-knit pattern: knitr evaluates the chunks during
+pre-knit and emits `![](path)` markdown that bookdown can't number in the installed vignette.
 
 Instead, separate data generation from presentation:
 1. `data-raw/vignette_data.R` — runs the queries, saves results as `.rds`
    to `inst/testdata/` (or `inst/vignette-data/`)
 2. Vignette loads `.rds` files, all chunks run live during pkgdown build
 3. A comment in the vignette's setup chunk names the script: `# data from data-raw/script.R`
-4. bookdown controls all chunks — figure numbers, cross-refs work
+4. bookdown controls all chunks, so the installed vignette's captions number
 
 Then keep the vignette and its bundle true as both move:
 
@@ -4976,9 +5016,10 @@ exclusions: list(
 - `usethis::use_pkgdown()`, then the site URL in `_pkgdown.yml`'s `url:` and in DESCRIPTION's `URL` beside the repo (`URL: https://github.com/OWNER/PKG, https://owner.github.io/PKG/`): `pkgdown::check_pkgdown()` aborts without either
 - `usethis::use_directory("dev")` — reproducible setup script
 - `usethis::use_directory("data-raw")` — data generation scripts
-- Hex sticker: copy soul's `templates/make_hexsticker.R` to `data-raw/`
+- Hex sticker: copy soul's `templates/make_hexsticker.R` to `data-raw/` (a repo named `stac_<type>_bc` gets the catalogue layout, `stac` / icon / `<type> bc`, which `Rscript data-raw/make_hexsticker.R <type>` also draws)
 - CI: copy soul's `templates/R-CMD-check.yaml` and `templates/pkgdown.yaml` (callers of `NewGraphEnvironment/flows`) to `.github/workflows/`
 - Set GitHub Pages to serve from `gh-pages` branch
+- Bound for public: `/claude-md-init --pre-public` first
 
 ### dev/dev.R
 

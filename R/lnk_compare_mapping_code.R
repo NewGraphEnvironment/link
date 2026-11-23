@@ -234,7 +234,7 @@ lnk_compare_mapping_code <- function(conn, aoi, cfg,
   if (nrow(joined) == 0L) {
     if (isTRUE(ref_empty_is_na) && nrow(bcfp_mc) == 0L) {
       warning(sprintf(
-        "reference has 0 rows for %s — not modelled there; returning NA stats.",
+        "reference has 0 rows for %s \u2014 not modelled there; returning NA stats.",
         aoi), call. = FALSE)
       return(do.call(rbind, lapply(species, function(sp) {
         tibble::tibble(wsg = aoi, species = sp, total_segs = 0L,

@@ -1,5 +1,7 @@
 # accessible_km divergence — high-threshold species (BT / ST / CT-DV-RB)
 
+**Verification:** none yet. Written before this header existed and not checked against the code since; read its claims as of when it was written.
+
 **Status:** RESOLVED + ROOT-CAUSED (2026-07-03) — mechanism is **segmentation
 granularity**: link's streams don't break at gradient barriers because the break source
 `gradient_barriers_minimal` is the `frs_barriers_minimal()` downstream-most reduction

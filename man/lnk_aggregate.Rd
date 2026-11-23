@@ -77,7 +77,7 @@ link reads fresh's output to compute per-crossing rollups.
 conn <- lnk_db_conn()
 
 # Score crossings
-lnk_score_severity(conn, "working.crossings")
+lnk_score(conn, "working.crossings")
 
 # Compute upstream habitat from fresh output
 lnk_aggregate(conn,

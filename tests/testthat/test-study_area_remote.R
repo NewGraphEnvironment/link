@@ -334,7 +334,7 @@ run_driver <- function(...) {
     mustWork = FALSE
   )
   testthat::skip_if_not(file.exists(drv), "data-raw/study_area_run.sh absent")
-  out <- suppressWarnings(system2(hosts_bash(), c(shQuote(drv), ...),
+  out <- suppressWarnings(system2(hosts_bash(), c(shQuote(drv), "--config=bcfishpass", ...),
     stdout = TRUE, stderr = TRUE
   ))
   list(out = paste(out, collapse = "\n"), status = attr(out, "status") %||% 0L)

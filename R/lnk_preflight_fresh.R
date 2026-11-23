@@ -113,7 +113,8 @@ lnk_preflight_fresh <- function(required = .lnk_fresh_required(),
 .lnk_fresh_required <- function() {
   c("frs_barriers_minimal", "frs_break_apply", "frs_break_find",
     "frs_candidates_pick",
-    "frs_col_generate", "frs_col_join", "frs_habitat_classify",
+    "frs_col_generate", "frs_col_join", "frs_db_conn",
+    "frs_habitat_classify",
     "frs_habitat_overlay", "frs_habitat_predicates", "frs_network_features",
     "frs_order_child",
     "frs_params", "frs_wsg_drainage", "frs_wsg_outlets")
@@ -126,7 +127,12 @@ lnk_preflight_fresh <- function(required = .lnk_fresh_required(),
 # release (#299), and frs_habitat_predicates(near_river_table) in 0.41.0
 # (fresh#259), which the validator passes the persisted near-river table
 # through (#364). 0.41.0 and 0.42.0 export the same formals; only the
-# Imports floor tells the inheriting release apart.
+# Imports floor tells the inheriting release apart. fresh 0.54.0 (fresh#293)
+# made frs_habitat_predicates(near_river_lfid) required whenever
+# near_river_table is given, keying the near-river join on linear_feature_id
+# (#452).
+# R/lnk_db_conn.R: frs_db_conn(connect_timeout), the bound of fresh 0.55.0
+# (fresh#305), which lnk_db_conn() passes through (#288).
 # R/lnk_pipeline_classify.R: frs_order_child(channel_width_max, gradient_max),
 # passed when a rear rule's bypass sets width_known_below_min (#326).
 # R/lnk_pipeline_access.R: frs_network_features(result), the existence walk
@@ -135,8 +141,10 @@ lnk_preflight_fresh <- function(required = .lnk_fresh_required(),
 # (#401). A new value of an existing argument is invisible to this check, so
 # only the Imports floor guards it.
 .lnk_fresh_required_formals <- function() {
-  list(frs_habitat_classify = "params_method",
-       frs_habitat_predicates = c("model", "near_river_table"),
+  list(frs_db_conn = "connect_timeout",
+       frs_habitat_classify = "params_method",
+       frs_habitat_predicates = c("model", "near_river_table",
+                                  "near_river_lfid"),
        frs_network_features = "result",
        frs_order_child = c("channel_width_max", "gradient_max"))
 }

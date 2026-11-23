@@ -6,16 +6,22 @@
 # top_pattern_count). Run on the dispatcher AFTER consolidate. No tunnel,
 # no PG_PASS_SHARE, no :63333 — a single local connection per WSG.
 #
-# Usage: [LNK_LOAD=loadall] Rscript study_area_compare.R <out.csv> <WSG1,WSG2,...> [config]
+# Usage: [LNK_LOAD=loadall] Rscript study_area_compare.R <out.csv> <WSG1,WSG2,...> <config>
 
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) < 2L) {
-  stop("usage: study_area_compare.R <out.csv> <wsgs-csv> [config]", call. = FALSE)
+  stop("usage: study_area_compare.R <out.csv> <wsgs-csv> <config>", call. = FALSE)
 }
 out_csv <- args[1]
 wsgs    <- toupper(strsplit(args[2], ",")[[1]])
 wsgs    <- wsgs[nzchar(wsgs)]
-config  <- if (length(args) >= 3L && nzchar(args[3])) args[3] else "bcfishpass"
+config  <- if (length(args) >= 3L && nzchar(args[3])) args[3] else ""
+if (!nzchar(config)) {
+  message("study_area_compare.R: config is required. Name a bundle from inst/extdata/configs/ ",
+          "(bcfishpass and default both resolve to schema 'fresh'; any bundle ",
+          "but bcfishpass needs an explicit LNK_SCHEMA).")
+  quit(status = 2)
+}
 
 if (identical(Sys.getenv("LNK_LOAD"), "loadall")) {
   suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
