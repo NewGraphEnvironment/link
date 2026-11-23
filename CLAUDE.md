@@ -17,6 +17,20 @@ The settled findings behind the methods (what is known, with provenance and the 
 
 **Take the next move from `planning/backlog.md`** (`bash <soul>/skills/_shared/backlog_moves.sh next planning/backlog.md`; `/compact-prep` names it): 13 moves, umbrellas #469–#481, each planned with one `/planning-init <umbrella>` and landed in one PR, ticked by `/gh-pr-merge`. Moves 12 and 13 wait on knowledge#139's flow-method decision and fresh 0.54.0. A link issue knowledge waits on says so in its batch section. A new issue joins the open move whose batches touch its files; run `/backlog-sweep` again when one fits none. Record: `planning/archive/2026-11-issue-468-backlog-pass/`.
 
+## Status (2026-11-23) — rainbow trout back in `default`; steelhead records count as RB; the presence review's last rows outside KO (#501, 0.90.0)
+
+**Backlog move 16 (#501) lands as one release: #497 and #402 close.** `default`'s `species_pooling.csv` counts `ST`, `SST` and `WST` records as RB where RB is marked present (province rows), and an RB record never as ST; `species_modelled.csv` models RB again (KO stays paused). The second presence review added BT in nine groups and DV in VICT, removed RB in LPRO and UPET, kept four cells absent, and sent six native-range cells to #515; KO's 138 rows wait for #432. Tokens: `default`, `default_tuned`, `default_parent` `cut-full-top-3 acc-v7`; `default_minimal` `cut-min acc-v7`. Mechanics: RUNBOOK §7, "The record rule" and "Pausing a species". Evidence: `data-raw/logs/rb_st_497/`, `data-raw/logs/presence_check_501/`, `data-raw/logs/rb_return_501/`.
+
+**Owed:** every `default` group re-models at the next provincial run (move 17, #502) to `acc-v7`, then `streams_parent` is rebuilt (`streams_parent_build.R --verify`) and #490's steps name the new tokens. The pre-run gate runs again first (`R/`, `inst/extdata/`, `pretest_inputs.csv` changed). Post the knowledge#148 note (drafted in the PR body). m1 keeps scratch schemas `fresh_rb501_main`, `fresh_rb501_paused`, `fresh_rb501_ship` until the merge; drop them after.
+
+**Facts not worth re-deriving:**
+- **An alias may count as two species.** `.lnk_record_aliases()` keeps a row per target, so the presence check and `.lnk_presence_measures()` give such a record a row per species: key on (record, species), never on the record alone. The zones fold an alias into every species it counts as in every group.
+- **A steelhead record counted as RB takes RB's date floor (none):** undated and pre-1990 ST records cut and set RB's code 2; the lift's `>= 1900-01-01` still drops undated ones.
+- **RB lifts are built even while RB is paused** (every `parameters_fresh` row lifts), so the record rule moved them before the unpause: LKEL 9 → 14, 6 on steelhead records.
+- **"Steelhead-reachable" in `rb_st_497` is geometry:** no unlifted natural ST barrier below, read from the 2026-11-03 build's lifts (`acc-v5`); it ignores dams and whether steelhead live in the drainage.
+- **With RB modelled, `ct_dv_rb` promotion cuts at RB's barriers in 16 groups whose RB cell is empty** (LPRO joined them when its RB cell was removed); the record rule reads the cell as written, so no RB record there cuts or lifts.
+- **No group holds only paused species now;** the seven that did (BRID, GRNL, LEUT, LNRS, MURT, PITR, UISR) all mark RB.
+
 ## Status (2026-11-23) — drivers need an explicit config; a standalone run is labelled; the legacy `wsgs_*` path is retired (#475, 0.89.0)
 
 **Backlog move 7 (#475) lands as one release: #278, #281, #181, #166; #179 and #110 close as retired.** Every `data-raw/` driver refuses to run without a config, the three that write persist tables also refuse a non-`bcfishpass` bundle with no `LNK_SCHEMA`, `study_area_run.sh` prints a decisions block before its first write, a standalone `wsg_run_one.R` / `wsg_recompute_one.R` needs `LNK_RUN_LABEL` (its `run_uid` stays NULL, so PUBLISH still refuses it), and `state_clean.sh --tables=` drops named tables locally (or on `--hosts=`). The nine legacy scripts are deleted. Mechanics: RUNBOOK §8d and the single-group path in §8c. Tests: `test-driver_config.R`, `test-state_clean.R` (local only; `data-raw/` skips in CI).

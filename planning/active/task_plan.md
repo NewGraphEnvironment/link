@@ -134,7 +134,7 @@ Outcome: the re-run seeded FINA ST, MFRA BT, UFRT ST, TUTR RB and UFRT RB; the o
   - `R/lnk_pipeline_species.R:50` example, then `devtools::document()` (`man/lnk_pipeline_species.Rd`);
   - `research/output_vocabulary.md:33`;
   - RUNBOOK §7, "Pausing a species": `default` pauses KO only. With RB modelled, a group with CT or DV marked present and no RB cell breaks streams at RB's barriers with no RB lifts (`ct_dv_rb`; 17 groups at #501, LPRO added by its RB removal). Done.
-- [ ] Version 0.90.0 in `DESCRIPTION` (main reached 0.89.0 after the park), a `NEWS.md` entry, and a `CLAUDE.md` status block (what moved, what is owed, facts not worth re-deriving).
+- [x] Version 0.90.0 in `DESCRIPTION` (main reached 0.89.0 after the park), a `NEWS.md` entry, and a `CLAUDE.md` status block (what moved, what is owed, facts not worth re-deriving).
 
 ## Phase 5: Verify on builds (#497)
 
