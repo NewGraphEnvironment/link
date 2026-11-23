@@ -25,6 +25,7 @@ link#175. Companion: `provincial_run_runbook.md` (shared mechanics),
 cd ~/Projects/repo/link
 # largest area on the dispatcher (fast/free M1); smaller areas on the cyphers
 bash data-raw/study_area_run.sh \
+  --config=<bundle> [--schema=<schema>] \
   --cy-workspaces=job1,job2 \
   --focal=<Fraser focal csv>  \   # -> dispatcher (M1)
   --focal=<Peace focal csv>   \   # -> cy1 (job1)

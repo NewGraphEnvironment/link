@@ -27,7 +27,7 @@ run_sh_driver <- function(name, args = character(), env = character()) {
   testthat::skip_if_not(nzchar(bash), "no bash >= 5.1 found")
   out <- suppressWarnings(system2(
     bash, c(shQuote(driver_path(name)), args),
-    stdout = TRUE, stderr = TRUE, env = env))
+    stdout = TRUE, stderr = TRUE, env = c("LNK_SCHEMA=", "LNK_RUN_LABEL=", env)))
   list(out = paste(out, collapse = "\n"), status = attr(out, "status") %||% 0L)
 }
 
@@ -61,6 +61,9 @@ test_that("parity_crosssection.R needs LNK_CONFIG, and LNK_SCHEMA for a non-bcfi
   r <- run_r_driver("parity_crosssection.R", env = "LNK_CONFIG=")
   expect_gt(r$status, 0L)
   expect_match(r$out, "config is required", fixed = TRUE)
+  r <- run_r_driver("parity_crosssection.R", env = "LNK_CONFIG=default")
+  expect_gt(r$status, 0L)
+  expect_match(r$out, "LNK_SCHEMA is required", fixed = TRUE)
 })
 
 test_that("the persist-writing drivers refuse a non-bcfishpass config with no LNK_SCHEMA", {
