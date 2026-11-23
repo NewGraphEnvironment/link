@@ -100,11 +100,14 @@
   # lnk_points_snap with num_features > 1 returns one row per (PSCIS,
   # candidate-stream) pair. Output columns: pts.* + linear_feature_id,
   # snapped_blue_line_key, downstream_route_measure, wscode_ltree,
-  # localcode_ltree, distance_to_stream, geom_snapped.
+  # localcode_ltree, watershed_group_code, gnis_name, distance_to_stream,
+  # candidate_rank, geom_snapped. Placeholder (999.*) streams are never
+  # candidates (link#313).
   lnk_points_snap(  # nolint: object_usage_linter
     conn,
     table_in       = pscis_table,
     table_out      = paste0(s, ".pscis_stream_candidates"),
+    id_col         = "stream_crossing_id",
     snap_tolerance = snap_tolerance,
     num_features   = as.integer(snap_num_features)
   )
@@ -129,6 +132,10 @@
       c.linear_feature_id,
       c.snapped_blue_line_key AS blue_line_key,
       c.downstream_route_measure,
+      -- the pick's tie keys (link#478): whether the snapped point is the
+      -- segment's upstream end, and the segment's own raw start
+      ST_LineLocatePoint(str.geom, c.geom_snapped) = 1 AS snap_at_segment_end,
+      str.downstream_route_measure AS segment_downstream_route_measure,
       c.distance_to_stream,
       c.wscode_ltree,
       c.localcode_ltree,
@@ -523,11 +530,22 @@
 
 # ORDER BY for Step 4's per-PSCIS pick, after `DISTINCT ON
 # (stream_crossing_id)`. The first two terms are bcfp's 04_pscis.sql; the
-# rest break the ties bcfp leaves to encounter order (link#277). After Step
-# 3b a PSCIS keeps at most one modelled crossing per blue line, so the
-# remaining ties are between rows with none (the ones Steps 3 and 3b
-# cleared), which differ only in `modelled_xing_dist`. Rows still tied after
-# the last term share every column the pick passes on (measured, link#367).
+# rest break the ties bcfp leaves to encounter order (link#277). A point
+# nearest to a vertex two segments share is at exactly the same distance
+# from both. Measures resolve `[downstream, upstream)`, so the tie goes to
+# the segment that starts at the vertex: first a candidate whose snapped
+# point is not its segment's upstream end (`snap_at_segment_end`), then the
+# higher raw segment start (`segment_downstream_route_measure`; not the
+# whole-metre `downstream_route_measure`, on which two segments meeting at a
+# whole metre round equal), then the lower `linear_feature_id`. On one
+# stream this is fwapg's rule (fwa_indexpoint) and fresh's snap order;
+# across two streams, where fwapg's "higher measure" means nothing, the
+# stream starting at the vertex wins. bcfp ends on `linear_feature_id`
+# alone (link#478). After Step 3b a PSCIS keeps at most one modelled
+# crossing per blue line, so the remaining ties are between rows with none
+# (the ones Steps 3 and 3b cleared), which differ only in
+# `modelled_xing_dist`. Rows still tied after the last term share every
+# column the pick passes on (measured, link#367).
 .lnk_pscis_pick_order <- c(
   "name_score DESC",
   paste0(
@@ -535,6 +553,8 @@
     "THEN distance_to_stream - (distance_to_stream * 0.1) ",
     "ELSE distance_to_stream END ASC"
   ),
+  "snap_at_segment_end ASC",
+  "segment_downstream_route_measure DESC",
   "linear_feature_id ASC",
   "modelled_xing_dist ASC",
   "modelled_crossing_id ASC NULLS LAST"
