@@ -41,7 +41,7 @@ counts them): run `/backlog-sweep` again, the backlog is not finished.
 | - [x] 1 | #469 | 1: the parent gradient and the grad tokens (4 issues) | done: https://github.com/NewGraphEnvironment/link/pull/486 | — | — | — |
 | - [x] 2 | #470 | 2, 3: which records count, what each lift rests on (7 issues) | done: https://github.com/NewGraphEnvironment/link/pull/495 | — | — | — |
 | - [x] 13 | #481 | 20: the next fresh pin (3 issues) | done: https://github.com/NewGraphEnvironment/link/pull/505 | A | — | opus |
-| - [ ] 14 | #499 | 21, 22: primitive tables in one shape, a parallel publish (3 issues) | open | B | — | opus |
+| - [x] 14 | #499 | 21, 22: primitive tables in one shape, a parallel publish (3 issues) | done: https://github.com/NewGraphEnvironment/link/pull/506 | B | — | opus |
 | - [x] 3 | #471 | 4: docs, research files, and a check that fails on warnings (5 issues) | done: https://github.com/NewGraphEnvironment/link/pull/503 | C | — | sonnet |
 | - [x] 4 | #472 | 5: `default`'s presence table as a copy plus an overlay (4 issues) | done: https://github.com/NewGraphEnvironment/link/pull/498 | — | — | — |
 | - [x] 5 | #473 | 6, 7: the export contract, one-group runs that read downstream (6 issues) | done: https://github.com/NewGraphEnvironment/link/pull/496 | — | — | — |
@@ -393,7 +393,7 @@ tag it pins.
 
 ### 21. Primitive tables in one shape
 
-- [ ] Carried by move 14, #499
+- [x] Carried by move 14, #499 (merged in https://github.com/NewGraphEnvironment/link/pull/506)
 
 **Touches:** `data-raw/snapshot_bcfp.sh`, `R/lnk_artifact.R`, `RUNBOOK.md`
 
@@ -406,7 +406,7 @@ tables differ the same way. A cloud image swap in the infrastructure repository 
 
 ### 22. Publish in parallel, and the public read
 
-- [ ] Carried by move 14, #499
+- [x] Carried by move 14, #499 (merged in https://github.com/NewGraphEnvironment/link/pull/506)
 
 **Touches:** `data-raw/habitat_publish.R`, `R/lnk_scenario_export.R`, `RUNBOOK.md`
 
