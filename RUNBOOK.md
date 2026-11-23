@@ -184,8 +184,8 @@ candidate whose snapped point is not its segment's upstream end, then the higher
 raw segment start, then the lower `linear_feature_id`. On one stream that is
 fwapg's rule (`fwa_indexpoint`) and fresh's snap order. Across two streams fwapg's
 "higher measure" means nothing: it put one lower Fraser barrier dam (Crescent
-Slough) at the top end of an unnamed line, blocking 7,892 km instead of 15
-segments, and the start test keeps it at the slough's mouth. The whole-metre
+Slough) at the top end of an unnamed line, blocking 7,892 km instead of 7.7,
+and the start test keeps it at the slough's mouth. The whole-metre
 measure is never the tie key: two segments meeting at a whole metre round equal on
 it. bcfishpass's `04_pscis.sql` ends on `linear_feature_id` alone, so this is a
 departure. The snap's own `candidate_rank` (fresh's order) is not read by the

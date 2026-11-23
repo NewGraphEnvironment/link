@@ -64,7 +64,7 @@ Against bcfishpass run 148 (`v0.7.15-51-g3bd2824c`, 2026-11-17), with link's `bc
 
 **The defect it fixes.** `main`'s `lnk_aggregate()` summed only the crossing's own stream above it. On the same build, summed over every crossing: ADMS chinook spawning 774.5 km against 1,349.5 over the network, rearing 827.5 against 1,562.3; BULK chinook spawning 4,201 against 22,996, rearing 4,852 against 33,498 (`defect_adms.csv`, `defect_bulk.csv`).
 
-**Cost.** Eight species take 1.2 minutes on ADMS and 1.3 on BULK (3,608 and 5,537 main-stem crossings). The first version computed each crossing's immediate barriers upstream once per species, with a `NOT EXISTS` over the pair table, and took 15.4 minutes on ADMS and 91.5 on BULK; building the pairs once, with one `EXCEPT`, gives row-for-row the same table.
+**Cost.** Eight species take 0.13 minutes on ADMS and 0.3 on BULK, over 3,615 and 5,577 crossings and their barriers (`stamp.csv`). The first version computed each crossing's immediate barriers upstream once per species, with a `NOT EXISTS` over the pair table, and took 15.4 minutes on ADMS and 91.5 on BULK (`stamp.csv` as committed in `4cf02d7a`); building the pairs once, with one `EXCEPT`, gave row-for-row the same table (28,920 ADMS and 44,616 BULK rows, compared in the session that made the change, before the 1 m and overlap fixes; the comparison was not kept).
 
 ## What moved at v0.78.0 (2026-11-02, #440)
 

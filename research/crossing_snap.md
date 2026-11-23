@@ -16,7 +16,7 @@ On one stream this is fwapg's rule for `fwa_indexpoint()` (NewGraphEnvironment/f
 
 fwapg orders a tie by the higher `downstream_route_measure`. Two segments of one stream meeting at a vertex: the upper one starts where the lower ends, so the higher measure is the segment starting there. Across two streams the comparison means nothing.
 
-On the CABD dams it moved one barrier dam (`94dec15b…`, Delta, 49.105 N 123.072 W). CABD names its waterbody Crescent Slough. It is 15.4 m from a vertex where the slough's first segment (blue line 356326465, a 17 m connector, code `100.005065`) starts and a Fraser side channel (blue line 355991966, edge 1350, code `100`) ends. Under the lower id it sat at the slough's mouth, with 15 segments upstream. Under fwapg's rule it went to the side channel's top end, and because that line carries the Fraser's own code, 17,656 segments (7,892 km) of the lower Fraser counted as upstream of it. The start test keeps it at the slough's mouth, and agrees with fwapg's rule on all 49 same-stream dam ties.
+On the CABD dams it moved one barrier dam (`94dec15b…`, Delta, 49.105 N 123.072 W). CABD names its waterbody Crescent Slough. It is 15.4 m from a vertex where the slough's first segment (blue line 356326465, a 17 m connector, code `100.005065`) starts and a Fraser side channel (blue line 355991966, edge 1350, code `100`) ends. Under the lower id it sat at the slough's mouth, with 16 segments (7.7 km) upstream. Under fwapg's rule it went to the side channel's top end, and because that line carries the Fraser's own code, 17,657 segments (7,892 km) of the lower Fraser counted as upstream of it (`claims.sql`, `claims.txt`; the measure-aware `fwa_upstream`, equivalents in, 1 m). The start test keeps it at the slough's mouth, and agrees with fwapg's rule on all 49 same-stream dam ties.
 
 ## What moved, province-wide
 
@@ -32,7 +32,7 @@ All 19,905 PSCIS assessments and 2,554 CABD dams, snapped and picked at main (`5
 | picks on a stream with a tied candidate | 33 | 33 |
 | dams snapped | 2,554 | 2,554 |
 
-- **14 PSCIS picks change.** The 11 that sat on a placeholder line: 8 now have no pick (no other candidate passes the scores), 3 move to a real stream (KHOR 807, GRAI 1467, LILL 63483). Three move 1 m up to the segment starting at their vertex (NASR 20, SHUL 3703, NIMP 101956). 17,363 are unchanged, with distances equal to 1.6e-10 m (fresh measures distance to the segment, link measured it to the snapped point).
+- **14 PSCIS picks change.** The 11 that sat on a placeholder line: 8 now have no pick (each had only that one candidate within 150 m, and now has none), 3 move to a real stream (KHOR 807, GRAI 1467, LILL 63483). Three move 1 m up to the segment starting at their vertex (NASR 20, SHUL 3703, NIMP 101956). 17,363 are unchanged, with distances equal to 1.6e-10 m (fresh measures distance to the segment, link measured it to the snapped point).
 - **17 dams change segment**, each on the same stream to the segment starting at its vertex, the measure moving under 1 mm. 50 dams tie: 49 on one stream, one across two (the Crescent Slough dam, which stays).
 - **Tie counts do not change** because they count candidates, not picks: what changes is which tied segment wins.
 
@@ -60,5 +60,5 @@ link places stored measures with `FWA_LocateAlong`: `lnk_barriers_unify()` throu
 
 - **A whole-metre measure never misses**, before or after: the snap's measure stays below a head's top.
 - **The head case is real for barriers and decisive for the threshold script.** Every capped upper locate failed before (its `gradient_w100` was NULL for each such record); 21 still fail after, not classified here.
-- **The barrier misses left after** sit, 10 of 14, in FWA's gap between consecutive segments under any rounding; `.lnk_sql_locate()`'s fallback places them. The other 4 are not classified.
+- **The barrier misses left after** sit, 10 of 14, in FWA's gap between consecutive segments under any rounding (`claims.txt`); `.lnk_sql_locate()`'s fallback places them. The other 4 are not classified.
 - **Live tests** (`tests/testthat/test-lnk_fwapg_gate.R`, gate in `helper-fwapg.R`, ported from fresh): a stored measure at Willow River's top is located by `FWA_LocateAlong` itself, and the threshold script's form finds a point there. Without the migration they skip, naming it (3 skip, 3 pass); under `LNK_FWAPG_TRIAL` with both files they pass, asserting the red side on a plain connection (7 pass, 1 skip); under `LNK_FWAPG_CURRENT=true` with no trial they fail (4 fail).
