@@ -7,7 +7,7 @@
 #
 # 1. Refuses unless the library's fresh is the version the step names, then
 #    waits until no other client has run a query on the database for five
-#    consecutive minutes, or an hour has passed.
+#    consecutive minutes, or QUIET_MAX_MIN minutes (default 60) have passed.
 # 2. `default` into fresh_pin507_<step>: ADMS, BULK.
 #    `bcfishpass` into fresh_pin507_bcfp_<step>: ADMS.
 # Each group from <worktree> by wsg_run_one.R under load_all with
@@ -39,7 +39,8 @@ printf 'step\tconfig\twsg\tstart_utc\tend_utc\texit\tload_start\tload_end\n' > "
 
 echo "[run] $(stamp) waiting for a quiet database"
 quiet=0; waited=0
-while [ "$quiet" -lt 5 ] && [ "$waited" -lt 60 ]; do
+QUIET_MAX_MIN="${QUIET_MAX_MIN:-60}"
+while [ "$quiet" -lt 5 ] && [ "$waited" -lt "$QUIET_MAX_MIN" ]; do
   n=$(psqlq "SELECT count(*) FROM pg_stat_activity WHERE datname = 'fwapg'
              AND state <> 'idle' AND backend_type = 'client backend'
              AND pid <> pg_backend_pid()") || n=1

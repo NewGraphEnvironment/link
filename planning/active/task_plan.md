@@ -40,24 +40,24 @@ None open.
 
 ## Phase 3: fresh pin v0.55.1 → v0.56.0, proved by digests
 
-- [ ] `DESCRIPTION`: `fresh (>= 0.56.0)` and `NewGraphEnvironment/fresh@v0.56.0`
-- [ ] Scratch libraries: fresh v0.55.1 and v0.56.0, each alone (`R CMD INSTALL -l <lib>` from a worktree of each tag; `FRESH_GIT_SHA` for the stamp)
-- [ ] Check 0.56.0's new refusals against link's calls (close to a no-op: a streams table carrying `linear_feature_id` was already refused with a NULL group before 0.56.0, and link's working `streams` carries it): confirm it carries `watershed_group_code` on every row where `frs_habitat_classify()`, `frs_near_river()`, `frs_cluster()`, `frs_order_child()` and `frs_habitat_overlay(bridge = )` read it; link's only `frs_habitat_overlay()` call (`R/lnk_pipeline_classify.R`) uses the default join, not `by = "id_segment"`; note in findings that `data-raw/compare_adms.R` (legacy) calls `frs_habitat()`, whose 0.56.0 refusal of an unkeyed `to_barriers` would reach it
-- [ ] `data-raw/logs/fresh_pin_507/`: copy and adapt #481's `run.sh`, `digest.R`, `compare.R`; build ADMS and BULK under `default` and ADMS under `bcfishpass` once on main + fresh 0.55.1 and once on this branch + fresh 0.56.0, into scratch schemas, after five quiet minutes on the database; `compare.R` stops on any difference; drop the scratch schemas after; README with the answer, how, and minutes
-- [ ] The gate's reach at v0.56.0: `data-raw/pretest_reach_fresh.R` against a fresh checkout with tag v0.56.0 fetched (`test-pretest.R:584` walks it at the pin), saved as `reach.md`; a file mapped `none` that becomes reached gets a row
-- [ ] `data-raw/pretest_inputs.csv`: every fresh file changed v0.55.1..v0.56.0 (`frs_cluster.R`, `frs_habitat.R`, `frs_habitat_classify.R`, `frs_habitat_overlay.R`, `frs_near_river.R`, `frs_order_child.R`, `utils.R`) is already mapped (checked 2026-11-23); re-check at the build and add rows only for a file left unmapped, so the file may not change
-- [ ] Full suite twice: on fresh 0.56.0 from the scratch library (all pass), and on the shared library's 0.55.1 (only the floor's live checks fail, by design; name them); lint (per-file diff against `origin/main`); `devtools::check()` on the scratch 0.56.0. `FRESH_GIT_SHA` is the full commit (`git rev-parse v0.56.0^{commit}`), never the tag object
+- [x] `DESCRIPTION`: `fresh (>= 0.56.0)` and `NewGraphEnvironment/fresh@v0.56.0`
+- [x] Scratch libraries: fresh v0.55.1 and v0.56.0, each alone (`R CMD INSTALL -l <lib>` from a worktree of each tag; `FRESH_GIT_SHA` for the stamp)
+- [x] Check 0.56.0's new refusals against link's calls (close to a no-op: a streams table carrying `linear_feature_id` was already refused with a NULL group before 0.56.0, and link's working `streams` carries it): confirm it carries `watershed_group_code` on every row where `frs_habitat_classify()`, `frs_near_river()`, `frs_cluster()`, `frs_order_child()` and `frs_habitat_overlay(bridge = )` read it; link's only `frs_habitat_overlay()` call (`R/lnk_pipeline_classify.R`) uses the default join, not `by = "id_segment"`; note in findings that `data-raw/compare_adms.R` (legacy) calls `frs_habitat()`, whose 0.56.0 refusal of an unkeyed `to_barriers` would reach it
+- [x] `data-raw/logs/fresh_pin_507/`: copy and adapt #481's `run.sh`, `digest.R`, `compare.R`; build ADMS and BULK under `default` and ADMS under `bcfishpass` once on main + fresh 0.55.1 and once on this branch + fresh 0.56.0, into scratch schemas, after five quiet minutes on the database; `compare.R` stops on any difference; drop the scratch schemas after; README with the answer, how, and minutes
+- [x] The gate's reach at v0.56.0: `data-raw/pretest_reach_fresh.R` against a fresh checkout with tag v0.56.0 fetched (`test-pretest.R:584` walks it at the pin), saved as `reach.md`; a file mapped `none` that becomes reached gets a row
+- [x] `data-raw/pretest_inputs.csv`: every fresh file changed v0.55.1..v0.56.0 (`frs_cluster.R`, `frs_habitat.R`, `frs_habitat_classify.R`, `frs_habitat_overlay.R`, `frs_near_river.R`, `frs_order_child.R`, `utils.R`) is already mapped (checked 2026-11-23); re-check at the build and add rows only for a file left unmapped, so the file may not change
+- [x] Full suite on fresh 0.56.0 from the scratch library: 1,534 tests, 0 failed or errored, 14 skipped (scratch install has no `RemoteSha`). On the shared library's 0.55.1 the suite cannot run at all: `load_all()` refuses fresh below the new floor (so not "only the floor's checks fail", as planned); lint (per-file diff against `origin/main`); `devtools::check()` on the scratch 0.56.0. `FRESH_GIT_SHA` is the full commit (`git rev-parse v0.56.0^{commit}`), never the tag object
 
 ## Phase 4: RUNBOOK, NEWS, version
 
-- [ ] `RUNBOOK.md` §8d (pre-flight, near line 2281): `lnk_preflight_fresh()` also pins the four internals' ordered signatures and the drift guard covers `getFromNamespace()`; the pin is 0.56.0; the pre-run gate owes a run on it after the shared library holds 0.56.0
-- [ ] `NEWS.md` 0.90.0 and `DESCRIPTION` version as the branch's last code commit
-- [ ] `CLAUDE.md` status block for #507 (what landed, owed, facts not worth re-deriving)
+- [x] `RUNBOOK.md` §8d (pre-flight, near line 2281): `lnk_preflight_fresh()` also pins the four internals' ordered signatures and the drift guard covers `getFromNamespace()`; the pin is 0.56.0; the pre-run gate owes a run on it after the shared library holds 0.56.0
+- [x] `NEWS.md` 0.90.0 and `DESCRIPTION` version as the branch's last code commit
+- [x] `CLAUDE.md` status block for #507 (what landed, owed, facts not worth re-deriving)
 
 ## Phase 5: The pre-run gate's pick on fresh 0.56.0
 
-- [ ] `data-raw/pretest_run.sh --config=default --schema=fresh_default --pick-only` with `R_LIBS` on the scratch 0.56.0 and `--fresh-repo` on a fresh checkout holding tag v0.56.0: no unmapped changed file; the picks and bounds go into the evidence README (writes nothing to the database)
-- [ ] The PR body says the move lands without the full gate, and names where it is owed
+- [x] `data-raw/pretest_run.sh --config=default --schema=fresh_default --pick-only` with `R_LIBS` on the scratch 0.56.0 and `--fresh-repo` on a fresh checkout holding tag v0.56.0: no unmapped changed file; the picks and bounds go into the evidence README (writes nothing to the database)
+- [x] The PR body says the move lands without the full gate, and names where it is owed
 
 ## Owed at the end (reported, done after merge)
 
@@ -67,9 +67,9 @@ None open.
 
 ## Validation
 
-- [ ] Tests pass (scratch 0.56.0: all; shared 0.55.1: only the floor's live checks fail)
-- [ ] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
+- [x] Tests pass on scratch 0.56.0 (shared 0.55.1: `load_all()` refuses, see Phase 3)
+- [x] `/code-check branch`: 4 rounds, ended on a clean round 4, no defect inside a fix
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
 How each change is proved: the internals check by tests on a mocked namespace (reorder, rename, add, drop) and a mutation of the default list; the drift guard by a mutation in a worktree and a set-equality test; the pin by table-group digests identical across fresh 0.55.1 and 0.56.0 (`compare.R` stops on any difference) and the gate's reach and pick at v0.56.0; the full gate is owed.

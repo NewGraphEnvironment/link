@@ -41,3 +41,13 @@ Start Phase 1 and run every phase to the PR (/code-check branch, /planning-archi
 /gh-pr-push). This message is the resume instruction that starts the run-to-PR
 mandate; the merge stays with me.
 ```
+
+## Session 2026-11-23 (resume, build)
+
+- Nothing moved on main since the park; the owner's 0.56.0 decision moved into the plan's decisions.
+- Phase 1 (304c7e72): internals pinned by ordered signature; mutation proof red on 3 tests.
+- Phase 2 (a4f75802): `getFromNamespace()` drift guard; mutation proof red in a worktree.
+- Phase 3 (ad2381c1, 565e4478): fresh v0.56.0 pinned; reach unchanged (19 files), map unchanged; suite and `devtools::check()` on scratch 0.56.0 (0 errors, 0 warnings, 5 notes, one of them ours and fixed); builds in `data-raw/logs/fresh_pin_507/`.
+- Phase 5: the gate's pick at 565e4478 (`pick_20261123_183614/`), no unmapped file.
+- `/code-check branch`: round 1 one fragile finding (compare.R did not check the groups were built; 702aafff), round 2 clean, round 3 one fragile (a non-closure at an internal's name passed; 83072945), round 4 clean.
+- The first build job waited 60 min for a quiet database (another session's statements, one 3.8 h old) and then crawled; stopped at 19:24 UTC, its orphaned backend cancelled, and relaunched with `QUIET_MAX_MIN=0`: minutes carry that load, digests do not.
