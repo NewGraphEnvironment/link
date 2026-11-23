@@ -25,13 +25,13 @@ sc_run <- function(args, ps_out = "", psql_rc = 0L, env = parent.frame()) {
   stub("ps", c(sprintf('printf "%%s\\n" "%s"', ps_out)))
   for (n in c("kill", "pkill", "xargs", "tofu")) stub(n, sprintf('echo "%s $*" >> %s', n, rec))
   out <- suppressWarnings(system2(
-    hosts_bash(), c(shQuote(sc_script()), shQuote(unlist(strsplit(args, " ", fixed = TRUE)))), stdout = TRUE, stderr = TRUE,
+    hosts_bash(),
+    c(shQuote(sc_script()), shQuote(unlist(strsplit(args, " ", fixed = TRUE)))),
+    stdout = TRUE, stderr = TRUE,
     env = c(sprintf("PATH=%s:%s", bin, Sys.getenv("PATH")))))
   list(out = paste(out, collapse = "\n"), status = attr(out, "status") %||% 0L,
        calls = if (file.exists(rec)) readLines(rec) else character())
 }
-`%||%` <- function(a, b) if (is.null(a)) b else a
-
 test_that("--tables= drops each listed table on the local host only, and kills nothing", {
   r <- sc_run("--tables=fresh_default.streams_parent,fresh.scratch_a")
   expect_equal(r$status, 0L)
@@ -44,7 +44,8 @@ test_that("--tables= drops each listed table on the local host only, and kills n
 
 test_that("--tables= refuses an empty value and an entry that is not schema.table", {
   e <- sc_run("--tables=")
-  expect_gt(e$status, 0L); expect_match(e$out, "requires at least one")
+  expect_gt(e$status, 0L)
+  expect_match(e$out, "requires at least one")
   for (bad in c("streams", "a.b.c", "Fresh.t", "fresh.t;drop", "fresh.t'x")) {
     r <- sc_run(paste0("--tables=", bad))
     expect_gt(r$status, 0L, label = bad)

@@ -31,8 +31,6 @@ run_sh_driver <- function(name, args = character(), env = character()) {
   list(out = paste(out, collapse = "\n"), status = attr(out, "status") %||% 0L)
 }
 
-`%||%` <- function(a, b) if (is.null(a)) b else a
-
 test_that("each R driver with no config exits non-zero and says the config is required", {
   cases <- list(
     list("wsg_run_one.R", "DEAD"),
