@@ -30,10 +30,6 @@ Asked after Phase 1's numbers (`data-raw/logs/rb_st_497/`):
 So the literature issue carries CRYL RB, TUTR RB, TURN ST, CLRH CT and DUNC CT; filed as #515 with UFRT RB added (Phase 3).
 9. **KO's 138 rows go to a new issue, #516** (owner, 2026-11-23): decision 6 had handed them to #432, which is closed. Their `issue` reads `#516`, and #402 closes.
 
-## Open decisions
-
-None open. Write any fork met from here under this heading.
-
 ## The forks as drafted at the park
 
 Kept as the record of what was asked; the answers are above.
@@ -161,8 +157,8 @@ Outcome: the re-run seeded FINA ST, MFRA BT, UFRT ST, TUTR RB and UFRT RB; the o
 
 ## Phase 6: Hand off and close (#497, #402)
 
-- [ ] Edit the bodies of #497 and #402 to what was decided and shipped (edited, not appended). The PR closes #497, and #402 as Open decision 6 settles.
-- [ ] Draft the knowledge#148 note in the PR body: which records now count as rainbow trout and as steelhead, the rule's rows, and the Phase 1 log. It is posted after the merge (below).
+- [x] Edit the bodies of #497 and #402 to what was decided and shipped (edited, not appended). The PR closes #497, and #402 as Open decision 6 settles.
+- [x] Draft the knowledge#148 note in the PR body: which records now count as rainbow trout and as steelhead, the rule's rows, and the Phase 1 log. It is posted after the merge (below).
 
 ## Owed at the end (reported, done after merge)
 
@@ -174,8 +170,8 @@ Outcome: the re-run seeded FINA ST, MFRA BT, UFRT ST, TUTR RB and UFRT RB; the o
 
 - [x] Tests pass
 - [x] `/code-check` clean, once over the branch with `/code-check branch`: 4 rounds, ended on round 4's enumeration (`review-verdict.md`) *(review: commits in Phases 2 and 3 leave the token pins red until Phase 4, so the per-commit gate cannot assume green)*
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
 
 How each change is proved:
 - **The record rule:** unit tests on the species map, the lift and the digest, and Phase 1's independent SQL count for three groups.
