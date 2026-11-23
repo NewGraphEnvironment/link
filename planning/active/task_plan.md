@@ -6,56 +6,25 @@ Batch 11 of `planning/backlog.md`: #75, #86, #129, #189, #212, #316, #327. Gate 
 
 ## Decided at the gate
 
-- 2026-11-22: there was no plan gate in this pane. `/coordinator` dispatched this `park review` (claim `dispatch:link_476`, `GATE=coordinator`), so the plan gate is the coordinator's, on the pushed review. The owner has decided nothing below. The forks are under `## Open decisions`, each with a recommendation.
-- The launch carried no context block.
-- A Plan review ran before the baseline (`planning/active/review-plan.md`). Its corrections are folded in below, and each phase says what the review changed.
-- Mechanism (mine): link's top-level sample (`inst/extdata/parameters_habitat_rules.yaml`) is built from `default`'s dimensions and thresholds. `inst/extdata/parameters_habitat_dimensions.csv` stays a shipped file, but `build_rules.R` writes it as a copy of `default/dimensions.csv`, and a test holds the two identical. No file is removed, so no shim is needed.
-- Mechanism (mine): `data-raw/build_rules.R` runs `pkgload::load_all()` on the source tree, as `regen_provenance.R` does, not the installed `link::` (review G1).
-- Mechanism (mine): each phase that edits a tracked bundle file updates its provenance checksums in the same commit (review G4, O2). A regenerated `rules.yaml` is committed only where its body changed, since the `# Generated:` date moves on every run (review G10).
+- 2026-11-22: there was no plan gate in this pane. `/coordinator` dispatched this `park review` (claim `dispatch:link_476`, `GATE=coordinator`), so the plan gate is the coordinator's, on the pushed review. The owner has decided nothing below. The forks are under `- 2026-11-23, at the resume (owner, all the recommended option):
+  1. #212: close. bcfishpass upstream models no GR, and GR rows would move segmentation away from bcfishpass's.
+  2. #316: decline and close on the 2026-10-22 measurement.
+  3. #86: close, naming what the sha256 checks and the weekly sync do not cover.
+  4. #129: a weekly workflow in fresh pulls link's sample and keeps one never-auto-merged PR open. The owner ticks fresh's "Allow GitHub Actions to create and approve pull requests". fresh's fallback becomes `default`'s rules on fresh's thresholds.
+  5. #189: spawn-only is derived from `rear_no_fw`; no new column.
+  6. #189: this PR reads residence where persisted mapping codes are built; the exported functions and the smoke test go to a new issue homed in move 9 (#477).
+  7. #327: a band expecting fewer than 10 locations under `--floor=expected` declines.
+- 2026-11-23, at the resume, main moved since the park (0.86.1 to 0.88.0): fresh is pinned at v0.55.1 (installed on m1, `RemoteSha 29e7aa13`), so Phase 1 runs on it and builds a new base (a base built under fresh 0.52.0 cannot be reused, `habitat_variants_build.R` header). The release bumps 0.88.0 to 0.89.0. `pretest_inputs.csv` moved one fresh row only; Phase 2's new rows are unaffected.
 
 ## Open decisions
 
-Ask decisions 1 to 7 at the resume, before Phase 1, in one question set. Decision 8 waits for Phase 1's numbers. The recommended option is listed first in each.
-
-1. **#212: close it, or add GR to the `bcfishpass` bundle?**
-   - **Close (recommended).** KO and RB are paused, so only GR is left. bcfishpass upstream models no grayling (no `load_habitat_linear_gr.sql` at `smnorris/bcfishpass` main, 2026-11-22), so a GR row would be written by link, and the bundle exists to check against bcfishpass. GR's 0.15 access gradient would add cuts. Of the 83 groups where GR is present, 70 hold no salmon to supply 0.15 cuts already (`presence_groups.csv` promotes CH, CM, CO, PK and SK together). In the other 13, GR's lifts are its own (`R/lnk_pipeline_prepare.R:767-772`). So segmentation would move away from bcfishpass's, which #326 matched, in at least 70 and possibly all 83 groups. Comparison B also needs a link-vs-link compare that does not exist.
-   - **GR rows in `bcfishpass`.** Add a dimensions row and a `parameters_fresh` row, add `acc-bcfp-6` to `vocabulary.csv` at the release version and retire `acc-bcfp-5`, bump the version in the PR, and re-model `fresh`.
-   - **A thin bundle `bcfishpass_gr` (`extends: bcfishpass`).** Comparison B would get GR, and parity would stay where it is. It is a new bundle, token and schema, with no compare built yet.
-2. **#316: decline and close it on the 2026-10-22 measurement, or adopt?**
-   - **Decline (recommended).** 15,484 km of 1200 / 1400 lines lie in wetlands (`fresh_default`, by `waterbody_key`), and 97 % of them have no width. Through the stream door, at most 156 km would become BT rearing province-wide. That figure is BT only: the door would apply to every species with `rear_wetland_flow = stream`. Admitting the lines with `thresholds: false`, as lakes are, would rear about 15,000 km on lines with no width or gradient evidence.
-   - **Stream-door form.** Add 1200 / 1400 to the wetland-flow rule, and re-model `default`.
-   - **Free form.** `thresholds: false` on the W polygon rule.
-3. **#86: close it, or build row-count checks?**
-   - **Close (recommended).** `lnk_config_verify()` checks every provenance file's sha256. Since #429 the weekly sync compares the `bcfishpass` and `default` copies byte for byte with bcfishpass's published CSVs at the rebuild SHA, so their row counts match those files. What it does not cover:
-     - the April copies in `default_extrabreaks` and `default_rearbreaks`, which are never synced and resolve no token, so they cannot run;
-     - a reference database whose load filters rows.
-     The closing comment says both.
-   - **Row counts.** Implement `lnk_config_audit()` (crate `crt_schema_audit()` first) as the issue scopes it.
-4. **#129: where does the copy to fresh run, and what does fresh's fallback become?**
-   - **A weekly workflow in fresh pulls link's sample (recommended).** It needs one setting changed by the owner: fresh's Actions permissions read `default_workflow_permissions: read, can_approve_pull_request_reviews: false` (2026-11-22). "Allow GitHub Actions to create and approve pull requests" must be ticked there, or `gh pr create` with `GITHUB_TOKEN` fails. It needs no secret, since link is public. It keeps one PR open on a fixed branch, which it force-pushes, and it never auto-merges.
-   - **link pushes a `repository_dispatch` on change.** This is what the issue proposes. The owner would create a fine-grained token with write access to fresh and store it as a link secret. Neither repo holds a secret today.
-   - **Either way, fresh's fallback changes.** Today's sample and `default/rules.yaml` differ:
-     - the 1050 / 1150 lines for BT, CH, ST, WCT and RB move from a free W rule to the stream test;
-     - CO loses `thresholds: false`;
-     - SK gains `lake_adjacent: false`.
-     fresh runs the sample on its own thresholds, which have no CH `rear_river_*` pair and differ in MAD ranges. So fresh's fallback becomes "`default`'s rules on fresh's thresholds", not `default`. The owner accepts that, or keeps the sample as it is.
-   - A PR opened with `GITHUB_TOKEN` starts no fresh CI, so its body says to run R-CMD-check by hand.
-5. **#189: is `spawn_only` its own column, or read from `rear_no_fw`?**
-   - **Derive it from `rear_no_fw` (recommended).** In both `default` and `bcfishpass`, `rear_no_fw = yes` holds exactly for CM and PK, the spawn-only species. A second column would be a second statement of one fact.
-   - **A `spawn_only` column, as #189 asks,** with a test that it agrees with `rear_no_fw`.
-6. **#189: wire residence into the exported functions too, or file the rest?**
-   - **File the rest as its own issue, naming move 8 (recommended).** This PR reads residence from the bundle where persisted mapping codes are built (`.lnk_mapping_code_persist()`). Under the backlog rule, the other half of #189's acceptance goes to a new issue: `lnk_mapping_code()` and `lnk_pipeline_mapping_code()` deriving their sets from a bundle, and the custom-species smoke test. That issue's home is move 9 (#477), which touches the same files.
-   - **Do all of #189 here.** That changes the exported functions' signatures in this PR.
-7. **#327: what decides adoption, fixed before scoring?** Under #364's floor of record (`--floor=expected`), a band expecting fewer than 10 locations decides nothing. PARS has 552 measured order-1 widths, so the BT band may be underpowered.
-   - **An underpowered band declines (recommended).** `default` keeps declining the exception, now with a recorded reason.
-   - **An underpowered band adopts for bcfishpass parity.** The exception mirrors what the `bcfishpass` config already does.
 8. **#327, asked after Phase 1's numbers: adopt the exception in `default`, or decline?** If it is adopted, every `default` group re-models at the next provincial run (move 17). It reaches no output token: the species set does not change (see Phase 1).
 
 ## Phase 1: measure the order-1 exception in `default` (#327), first
 
 Review B1, A4 and AC5 changed this phase: the arms, the groups, its place first, and a fixed environment.
 
-- [ ] Run the build from a separate `git worktree` at the baseline commit. The harness needs a clean tree that nothing edits while it runs (`habitat_variants_build.R:96-97, 156`). Install fresh at the `DESCRIPTION` pin (v0.52.0) in a scratch library, or stamp the installed version, which is 0.53.0 here.
+- [ ] Run the build from a separate `git worktree` at the baseline commit. The harness needs a clean tree that nothing edits while it runs (`habitat_variants_build.R:96-97, 156`). fresh is at the `DESCRIPTION` pin (v0.55.1) on m1; stamp it.
 - [ ] Find and cite why fwapg models no order-1 width (Thorley & Irvine 2021b; the channel width memo, attachment 2 of `fish_passage_parsnip_2021_reporting`) through the Zotero skills, or record that it was not found.
 - [ ] Write `data-raw/habitat_score/variants_327.csv` and `wsg_roles_327.csv`. A `dims` variant edits one species' row, so each arm is one row per species:
   - BT's bypass on PARS, PCEA and FINA (the Peace closure). #324 found the exception moves BT there, and these groups hold no CH, CO or ST. PARS has been in-sample for BT in every earlier roles file, so the roles file states its roles and why.
