@@ -1,5 +1,7 @@
 ## Status update (2026-05-11)
 
+**Verification:** none yet. Written before this header existed and not checked against the code since; read its claims as of when it was written.
+
 The three mechanisms identified at the bottom of this doc as "Open work" have been addressed:
 
 | Original gap | Resolution |

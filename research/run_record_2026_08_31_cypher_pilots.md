@@ -1,5 +1,7 @@
 # Does the v0.47.0 orchestration work on a real cypher? — 2026-08-31
 
+**Date opened:** 2026-08-31 · **Status:** HISTORICAL, a dated record kept for its evidence; it is not revised. What is known now is in [`study_area_run.md`](study_area_run.md).
+
 First run record under the shape proposed in
 an internal issue.
 Logs: `data-raw/logs/study_area_run/20260831_*`.

@@ -1,5 +1,7 @@
 # Provincial parity — link 0.36.0 (2026-05-12 → 13)
 
+**Date opened:** 2026-05-12 · **Status:** HISTORICAL, a dated record kept for its evidence; it is not revised. What is known now is in [`bcfishpass_parity.md`](bcfishpass_parity.md).
+
 **Run**: 2026-05-12 22:22 PDT → 2026-05-12 23:55 PDT (resume after Phase 7 bcfp-not-modeled fix). Wall 1h 32m 16s.
 **Hardware**: M4 Max (local) + M1 (Allans MacBook Pro via tailnet) + 3× cypher droplets (job1/job2/job3 via DO + tofu workspaces)
 **Software**: link 0.36.0 (link#162 Phases 1–7 + hardening; sha 531e881), fresh 0.31.0, bcfp reference `bcfishpass@v0.7.14-141-g05057f9` (`model_run_id 122`, rebuilt 2026-05-12 20:28 PDT)

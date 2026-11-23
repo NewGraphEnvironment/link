@@ -6,7 +6,7 @@
 
 > Develop, test and communicate intrinsic habitat and connectivity models for the BC Freshwater Atlas stream network
 
-link is a tool for building models of where each fish species could spawn and rear on a stream network, and which of that habitat fish can reach. Current models rate habitat from stream gradient, channel width and discharge, resolve access past natural barriers such as falls and steep gradients, and record the road and rail crossings and dams that sit below. Its value is flexibility: every rule and threshold is a row in a config, so a model can be changed, run beside another, checked against fish observations and traced back to the rules that produced it.
+link is a tool for building models of where each fish species could spawn and rear on a stream network, and which of that habitat fish can reach. Current models rate habitat from stream gradient, channel width and discharge, resolve access past natural barriers such as falls and steep gradients, and record the road and rail crossings and dams that sit below. Its value is flexibility: every fish habitat definition and threshold is a row in a config, so a model can be changed, run beside another, checked against fish observations and traced back to the habitat definitions that produced it.
 
 <img src="man/figures/readme-pars.png" alt="Map of the Parsnip River watershed group with stream reaches coloured by Arctic grayling spawning, rearing and access, and by the barrier type below each reach" width="100%" />
 
@@ -24,7 +24,7 @@ link runs against a PostgreSQL database holding the BC Freshwater Atlas through 
 
 ## Example
 
-A model is a config, and its rules are tables you can read and edit:
+A model is a config, and its habitat definitions are tables you can read and edit:
 
 ```r
 library(link)

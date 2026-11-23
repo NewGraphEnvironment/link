@@ -1,7 +1,7 @@
 # research
 
 What is known about link's methods and inputs, kept current so it does not have to be
-re-derived. Each topic file carries its provenance in the line under its heading.
+re-derived. Each topic file carries its provenance in the line under its heading: `**Verified:**` where the file was checked against the code, `**Verification:** none yet` where it was not, and `**Status:** HISTORICAL` on a dated record, which names the topic file that holds what is known now.
 Committed logs under `data-raw/logs/` hold the raw measurements. The PWF archives under
 `planning/archive/` hold the story of the issue that produced each file.
 
@@ -67,3 +67,8 @@ The parity files here are the history of [`bcfishpass_parity.md`](bcfishpass_par
 | [`distributed_2hosts_2026_05_01.md`](distributed_2hosts_2026_05_01.md) | First 2-host distributed parity run |
 | [`run_record_2026_08_31_cypher_pilots.md`](run_record_2026_08_31_cypher_pilots.md) | v0.47.0 orchestration on a real cypher |
 | [`post_compact_provincial_handoff.md`](post_compact_provincial_handoff.md) | Provincial run handoff notes |
+
+## Related work
+
+- [fresh](https://github.com/NewGraphEnvironment/fresh): the network engine link drives; its own `research/` holds the engine-side measurements.
+- [bcfishpass](https://github.com/smnorris/bcfishpass): the method the access model follows, and the reference `bcfishpass_parity.md` scores against.

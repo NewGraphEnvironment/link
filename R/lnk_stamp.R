@@ -214,7 +214,7 @@ format.lnk_stamp <- function(x, type = c("markdown", "text"), ...) {
 
 .lnk_stamp_markdown <- function(x) {
   lines <- c(
-    paste0("## Run stamp — ", x$config_name),
+    paste0("## Run stamp \u2014 ", x$config_name),
     "",
     sprintf("- AOI: `%s`", x$run$aoi %||% "(none)"),
     sprintf("- Started: %s",

@@ -91,7 +91,7 @@ lnk_wsg_resolve <- function(cfg, loaded, wsgs = NULL, expand = TRUE,
 
   wp <- loaded$wsg_species_presence
   if (is.null(wp) || !nrow(wp)) {
-    stop("loaded$wsg_species_presence is missing or empty — ",
+    stop("loaded$wsg_species_presence is missing or empty \u2014 ",
          "did `lnk_load_overrides(cfg)` populate it?", call. = FALSE)
   }
   # Paused species count (#432): a group where only they are present is still

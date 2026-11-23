@@ -61,6 +61,9 @@
 #'   load stamps. Defaults to reading `conn`; `NULL` (the default when `conn`
 #'   is `NULL`) means "not consulted" and leaves the statistics to decide.
 #'   A data frame with no row for a table makes that table `unstamped`.
+#' @param heads A data frame with `table_name` and `live_etag`: the live
+#'   ETag of each stamped table's source object. Defaults to a HEAD request
+#'   per stamped table; `NULL` means "not consulted". Tests pass it directly.
 #' @param quiet Suppress the human-readable report.
 #'
 #' @return Invisibly, a list with `ok`, `vintage`, `stale`, `absent`,

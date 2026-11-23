@@ -149,7 +149,7 @@
         AS modelled_xing_dist_instream,
       -- name_score: stream-name match scoring per bcfp 02_pscis_streams_150m.sql L101-105.
       -- Note: bcfp's TRIB-exclusion clause uses `e.name_trimmed` (derived from gnis_name
-      -- with suffix stripping). We use UPPER(gnis_name) directly — the TRIB clause is
+      -- with suffix stripping). We use UPPER(gnis_name) directly - the TRIB clause is
       -- only triggered when PSCIS stream_name contains 'TRIB', not symmetric, so the
       -- effect is identical for the common case.
       CASE

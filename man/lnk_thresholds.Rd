@@ -30,7 +30,7 @@ sensible BC fish passage defaults. Override via CSV or inline arguments
 for project-specific tuning.
 }
 \details{
-Thresholds control how \code{\link[=lnk_score_severity]{lnk_score_severity()}} classifies crossings. The
+Thresholds control how \code{\link[=lnk_score]{lnk_score()}} classifies crossings. The
 default values reflect BC provincial fish passage assessment criteria:
 
 \describe{
@@ -67,7 +67,7 @@ th_bt$high$outlet_drop
 # How thresholds plug into scoring (the integration point)
 \dontrun{
 conn <- lnk_db_conn()
-lnk_score_severity(conn, "working.crossings",
+lnk_score(conn, "working.crossings",
   thresholds = lnk_thresholds(high = list(outlet_drop = 0.8)))
 }
 

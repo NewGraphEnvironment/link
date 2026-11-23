@@ -18,13 +18,13 @@ lnk_source(
 table validation).}
 
 \item{crossings}{Character. Schema-qualified scored crossings table
-(output of \code{\link[=lnk_score_severity]{lnk_score_severity()}}).}
+(output of \code{\link[=lnk_score]{lnk_score()}}).}
 
 \item{label}{Character. Static label for all rows (mutually exclusive
 with \code{label_col}).}
 
 \item{label_col}{Character. Column to read labels from (default:
-\code{"severity"} — the column \code{\link[=lnk_score_severity]{lnk_score_severity()}} creates).}
+\code{"severity"} — the column \code{\link[=lnk_score]{lnk_score()}} creates).}
 
 \item{label_map}{Named character vector. Keys are link severity levels,
 values are fresh break labels. Default maps high -> blocked,
@@ -59,7 +59,7 @@ The map translates between domains.
 conn <- lnk_db_conn()
 
 # Step 1: Score crossings with link
-lnk_score_severity(conn, "working.crossings")
+lnk_score(conn, "working.crossings")
 
 # Step 2: Produce break source
 src <- lnk_source(conn, "working.crossings")

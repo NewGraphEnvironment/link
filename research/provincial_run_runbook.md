@@ -1,5 +1,7 @@
 # Provincial run runbook
 
+**Verification:** none yet. Written before this header existed and not checked against the code since; read its claims as of when it was written.
+
 End-to-end checklist for a 5-host distributed provincial parity run. The
 golden-path sequence is **archive → smoke → full → verify → burn**. Skipping any
 step risks wasted compute or wasted DO spend; the orchestrator's tests (#162
