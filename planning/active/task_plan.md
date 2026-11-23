@@ -8,43 +8,28 @@ Members, one phase each besides the pin and the proof: #452 (`cols_streams_near_
 
 ## Decided at the gate
 
-No plan gate in this pane: `/coordinator` dispatched this as a `park review` (soul#928), so the coordinator's plan gate, or the owner, decides `## Open decisions`. Taken here as mechanism or convention, with the Plan review's corrections (`review-plan.md`):
+No plan gate in this pane: `/coordinator` dispatched this as a `park review` (soul#928), so the coordinator's plan gate, or the owner, decides `## Open decisions
 
-- **Pin fresh v0.55.1, floor 0.55.1.** `test-lnk_preflight_fresh.R:162-170` holds the `Imports:` floor equal to the `Remotes:` tag (review B1; the draft's 0.55.0 floor would fail it). fresh NEWS 0.52.0 → 0.55.1: 0.53.0 keys `to_streams` on `linear_feature_id`; 0.54.0 (fresh#293) adds `linear_feature_id` to the classify target and its `_near_river` table, keys their deletes and joins on it, and requires `frs_habitat_predicates(near_river_lfid)` with `near_river_table`; 0.55.0 (fresh#305) bounds `frs_db_conn()`; 0.55.1 changes fresh's tests only. Nine fresh `R/` files changed, none added, all already mapped in `data-raw/pretest_inputs.csv`.
-- **The shared R library stays on fresh 0.52.0 until after the merge.** Every `load_all()`, test, check, lint and pretest reach from Phase 2 on runs with `R_LIBS=<scratch lib>` holding fresh 0.55.1 alone (`load_all()` refuses a fresh below the floor; other sessions on the host read the shared library). The shared install is owed after merge (review O1, O2).
-- **`frs_habitat_classify(wsg_code)` stays NULL.** A group code would turn the variants harness's one-species re-classify into a whole-group delete of every species (review, checked fine).
-- **The persisted column is `linear_feature_id bigint`, appended last** (fresh's type on both its targets; persisted `streams` holds `bigint`), outside the primary key: the persist holds one build per group.
-- **No output token moves unless the after-build differs.** A difference stops the work and goes to the owner as a vocabulary question.
+None open.
 
-## Open decisions
+## Decided by the owner, 2026-11-22
 
-Ask these before the phase that needs them (Phase 3 needs 2, Phase 4 needs 1).
-
-1. **#288, the backlog's gate: which variables both connection helpers read.**
-   - (a, recommended) `lnk_db_conn()` delegates to `fresh::frs_db_conn()`: explicit args, then `PG*`, then `PG_*_SHARE` (deprecated), never mixed, plus fresh 0.55.0's 10 s connect timeout and keepalives.
-   - (b) link mirrors fresh's resolver in its own code, without the timeouts.
-   - (c) keep `PG_*_SHARE` first and only correct the docs.
-
-   What (a) and (b) change: on a host that sets both groups, a bare `lnk_db_conn()` reaches the `PG*` target. Bare calls: `data-raw/wsg_vignette_data.R:210` (which wants the tunnel and says so at `:201-205`; it would get explicit `PG_*_SHARE` arguments), `R/lnk_wsg_resolve.R:129` (closure mode with no `conn`), `vignettes/pars-habitat-connectivity.Rmd:196` (not evaluated) and three scripts under `data-raw/logs/` (left as records). With no environment at all the default moves from `postgres@localhost:5432/postgis` to libpq's. Under (a), fresh prints its deprecation message once per process wherever `PG_*_SHARE` is set and no `PG*` is, even with all five arguments explicit, so every `wsg_run_one.R` and `wsg_recompute_one.R` process on such a host prints it unless link silences it for a fully explicit call (recommended).
-2. **#452's stored data: what the persisted `streams_near_river` holds for rows written before the column, and what the validator passes.**
-   - (a, recommended) `lnk_persist_init()` adds the column once where the catalog lacks it and backfills it from `<schema>.streams` on `(id_segment, watershed_group_code)` (`WHERE linear_feature_id IS NULL`); sound because persist replaces a group's near-river pairs with its streams. The validator passes `near_river_lfid = TRUE`, the predicate the build used, after refusing a scored schema whose table lacks the column or holds a NULL in the scored groups (a host consolidated in before migrating).
-   - (b) add it nullable, no backfill; rows fill as groups re-model; the validator passes `TRUE` only when the scored groups hold no NULL, else `FALSE`.
-   - (c) add the column to mirror fresh, and the validator always passes `FALSE` (the #452 comment: correct while the table holds one build per group, which it does). No backfill, no NULL risk; the re-test is not literally the build's predicate.
-
-   Under (a) the first `lnk_persist_init()` on `fresh_default`, `fresh` and `fresh_default_minimal` takes an ACCESS EXCLUSIVE lock and rewrites every row; when and on which hosts that runs is the owner's (an explicit owed step at a quiet time, recommended, not a modelling worker's first group).
+1. **#288: `lnk_db_conn()` delegates to `fresh::frs_db_conn()`** (option a): explicit args, then `PG*`, then `PG_*_SHARE` (deprecated), never mixed, with fresh 0.55.0's connect timeout and keepalives; link silences fresh's deprecation message for a fully explicit call; `data-raw/wsg_vignette_data.R` passes explicit `PG_*_SHARE` arguments.
+2. **#452: add the column, backfill, pass TRUE** (option a): `lnk_persist_init()` adds `linear_feature_id` once where the catalog lacks it and backfills it from `<schema>.streams` on `(id_segment, watershed_group_code)` (`WHERE linear_feature_id IS NULL`); the validator passes `near_river_lfid = TRUE` after refusing a scored schema whose table lacks the column or holds a NULL in the scored groups. The province schemas' migration is an owed step after merge, at a quiet time.
+3. **m1's database:** its colima VM lost its guest network at about 2026-11-21 20:46 PDT (ssh and 5432 refused, guest agent still syncing time); restart colima on m1 and build there.
 
 ## Phase 1: Baseline at fresh 0.52.0 (before any install)
 
 - [ ] Confirm the host is quiet (no other session modelling ADMS or BULK: `lnk_pipeline_run()` drops `working_<wsg>`).
-- [ ] From a worktree of `origin/main` (link 0.86.0, shared library's fresh 0.52.0), model ADMS and BULK under `default` into scratch `fresh_pin481_before`, and ADMS under `bcfishpass` into `fresh_pin481_bcfp_before`; `LNK_GUARD_DOWNSTREAM=ignore` with its `_NOTE`, the same in both arms. ADMS holds `near_river` rows under CH's `wetland_flow` scope. Record each group's minutes.
+- [ ] From a worktree of `origin/main` (link 0.86.0, with `R_LIBS` on a scratch library holding fresh 0.52.0 alone: the shared library holds 0.53.0, installed 2026-11-16), model ADMS and BULK under `default` into scratch `fresh_pin481_before`, and ADMS under `bcfishpass` into `fresh_pin481_bcfp_before`; `LNK_GUARD_DOWNSTREAM=ignore` with its `_NOTE`, the same in both arms. ADMS holds `near_river` rows under CH's `wetland_flow` scope. Record each group's minutes.
 - [ ] Digest every persisted table per group by named columns: `streams`, `streams_habitat_<sp>`, `barriers`, `barrier_overrides`, `barrier_override_evidence`, `streams_access`, `streams_mapping_code`, `streams_near_river` (`consolidate_persist_core`, `data-raw/schema_consolidate.R:240`), to `data-raw/logs/fresh_pin_481/before/`, with `lnk_stamp()`.
-- [ ] Install fresh v0.55.1 alone into a scratch library (`R CMD INSTALL -l <lib>` from a worktree of the tag; not `pak`). Confirm `packageVersion("fresh", lib.loc = <lib>)` is 0.55.1 and the shared library still holds 0.52.0. It writes no `RemoteSha`, so the after-arm sets `FRESH_GIT_SHA` to the v0.55.1 commit for its stamps.
+- [x] Install fresh v0.55.1 alone into a scratch library (`R CMD INSTALL -l <lib>` from a worktree of the tag; not `pak`). Confirm `packageVersion("fresh", lib.loc = <lib>)` is 0.55.1 and the shared library still holds 0.52.0. It writes no `RemoteSha`, so the after-arm sets `FRESH_GIT_SHA` to the v0.55.1 commit for its stamps.
 
 ## Phase 2: The pin and the preflight
 
-- [ ] `DESCRIPTION`: `fresh (>= 0.55.1)`, `Remotes: NewGraphEnvironment/fresh@v0.55.1`.
-- [ ] `.lnk_fresh_required_formals()` (`R/lnk_preflight_fresh.R`): `frs_habitat_predicates` adds `near_river_lfid`, the comment naming fresh 0.54.0 (fresh#293). Under Open decision 1 (a): `frs_db_conn` joins `.lnk_fresh_required()` (the drift guard at `test-lnk_preflight_fresh.R:124-136` fails without it), and any argument passed through joins the formals.
-- [ ] `test-lnk_preflight_fresh.R` and `test-pretest.R`'s reach checks pass under `R_LIBS`, with fresh's reach walked at v0.55.1.
+- [x] `DESCRIPTION`: `fresh (>= 0.55.1)`, `Remotes: NewGraphEnvironment/fresh@v0.55.1`.
+- [x] `.lnk_fresh_required_formals()` (`R/lnk_preflight_fresh.R`): `frs_habitat_predicates` adds `near_river_lfid`, the comment naming fresh 0.54.0 (fresh#293). Under Open decision 1 (a): `frs_db_conn` joins `.lnk_fresh_required()` (the drift guard at `test-lnk_preflight_fresh.R:124-136` fails without it), and any argument passed through joins the formals.
+- [x] `test-lnk_preflight_fresh.R` and `test-pretest.R`'s reach checks pass under `R_LIBS` (43 and 152 passed); fresh's reach at v0.55.1 is walked in Phase 4, once `lnk_db_conn()` calls fresh.
 
 ## Phase 3: `streams_near_river` mirrors fresh's table (#452)
 
