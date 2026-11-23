@@ -111,13 +111,13 @@ lnk_preflight_fresh <- function(required = .lnk_fresh_required(),
 # (measured 2026-08-30: 21 distinct symbols mentioned, 12 genuinely called).
 # `.lnk_fresh_callsites()` below is the drift guard that keeps this honest.
 .lnk_fresh_required <- function() {
-  c("frs_barriers_minimal", "frs_break_apply", "frs_break_find",
+  c("frs_aggregate", "frs_barriers_minimal", "frs_break_apply", "frs_break_find",
     "frs_candidates_pick",
     "frs_col_generate", "frs_col_join", "frs_db_conn",
     "frs_habitat_classify",
     "frs_habitat_overlay", "frs_habitat_predicates", "frs_network_features",
     "frs_order_child",
-    "frs_params", "frs_wsg_drainage", "frs_wsg_outlets")
+    "frs_params", "frs_point_snap", "frs_wsg_drainage", "frs_wsg_outlets")
 }
 
 # Arguments link passes that older fresh releases do not accept. The call
@@ -131,6 +131,9 @@ lnk_preflight_fresh <- function(required = .lnk_fresh_required(),
 # made frs_habitat_predicates(near_river_lfid) required whenever
 # near_river_table is given, keying the near-river join on linear_feature_id
 # (#452).
+# R/lnk_points_snap.R: frs_point_snap(to, col_id, col_geom, col_blk), the
+# table form of fresh 0.40.0, and R/lnk_aggregate.R: frs_aggregate(where),
+# which lnk_aggregate() refines the walk through (#478).
 # R/lnk_db_conn.R: frs_db_conn(connect_timeout), the bound of fresh 0.55.0
 # (fresh#305), which lnk_db_conn() passes through (#288).
 # R/lnk_pipeline_classify.R: frs_order_child(channel_width_max, gradient_max),
@@ -146,7 +149,9 @@ lnk_preflight_fresh <- function(required = .lnk_fresh_required(),
        frs_habitat_predicates = c("model", "near_river_table",
                                   "near_river_lfid"),
        frs_network_features = "result",
-       frs_order_child = c("channel_width_max", "gradient_max"))
+       frs_order_child = c("channel_width_max", "gradient_max"),
+       frs_aggregate = c("where", "to"),
+       frs_point_snap = c("to", "col_id", "col_geom", "col_blk"))
 }
 
 # "fn(arg)" for each required formal the namespace does not provide. A

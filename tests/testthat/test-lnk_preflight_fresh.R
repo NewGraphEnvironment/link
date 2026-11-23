@@ -70,6 +70,11 @@ test_that("a pre-0.35.0 frs_habitat_classify signature is caught (#286)", {
   ns$frs_order_child <- function(conn, table, habitat, species, label,
                                  parent_order_min, child_order_min,
                                  child_order_max, distance_max, verbose) NULL
+  # fresh 0.39.0's frs_point_snap, one point at a time (#478); frs_aggregate
+  # has taken `where` and `to` since before link pinned fresh
+  ns$frs_point_snap <- function(conn, x, y, srid, tolerance, num_features) NULL
+  ns$frs_aggregate <- function(conn, points, features, metrics, id_col,
+                               direction, where, to, overwrite) NULL
   expected <- c("frs_db_conn(connect_timeout)",
                 "frs_habitat_classify(params_method)",
                 "frs_habitat_predicates(model)",
@@ -77,13 +82,16 @@ test_that("a pre-0.35.0 frs_habitat_classify signature is caught (#286)", {
                 "frs_habitat_predicates(near_river_lfid)",
                 "frs_network_features(result)",
                 "frs_order_child(channel_width_max)",
-                "frs_order_child(gradient_max)")
+                "frs_order_child(gradient_max)",
+                "frs_point_snap(to)", "frs_point_snap(col_id)",
+                "frs_point_snap(col_geom)", "frs_point_snap(col_blk)")
   expect_identical(
     .lnk_fresh_missing_formals(ns, .lnk_fresh_required_formals()), expected)
   # And a function that is absent altogether reports its arguments too.
   expect_identical(
     .lnk_fresh_missing_formals(new.env(), .lnk_fresh_required_formals()),
-    expected)
+    append(expected, c("frs_aggregate(where)", "frs_aggregate(to)"),
+           after = which(expected == "frs_order_child(gradient_max)")))
 })
 
 test_that("required formals name functions in the required export set", {
