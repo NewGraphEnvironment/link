@@ -1363,3 +1363,11 @@ test_that("no log table's primary key includes watershed_group_code", {
     expect_false("watershed_group_code" %in% s$pk, info = s$table)
   }
 })
+
+test_that("an existing log_dimensions gains residence by ADD COLUMN (#189)", {
+  expect_true("residence" %in% names(.lnk_cols_log_dimensions()))
+  sql <- capture_ddl(.lnk_log_create_tables(NULL, "s"))
+  expect_gt(length(grep(
+    "ALTER TABLE s\\.log_dimensions ADD COLUMN IF NOT EXISTS residence text",
+    sql)), 0L)
+})

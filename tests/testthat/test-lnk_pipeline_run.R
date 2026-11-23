@@ -347,7 +347,8 @@ test_that("a group with only paused species is built with no habitat (#432)", {
     lnk_presence = m_noop,
     lnk_barriers_views = m_noop, lnk_pipeline_access = note("access"),
     lnk_habitat_gate = note("gate"),
-    .lnk_mapping_code_persist = function(conn, schema, aoi, species, presence) {
+    .lnk_mapping_code_persist = function(conn, schema, aoi, species, presence,
+                                         cfg = NULL) {
       calls <<- c(calls, paste0("mapping_code:", length(species)))
       invisible(NULL)
     },

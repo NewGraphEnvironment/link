@@ -52,16 +52,16 @@ Review B4, G1, G2 and S3 changed this phase: the renderer lives in `R/`, no fall
 
 Review G3, G4 and G6 changed this phase: the bundles touched, the `cfg = NULL` default, and the proof.
 
-- [ ] Add a `residence` column (`resident` / `anadromous`) to `default/dimensions.csv` and `bcfishpass/dimensions.csv` only. `default_extrabreaks` and `default_rearbreaks` resolve no token and cannot run, so the helper's fallback covers them. Fill it with today's sets: BT, WCT, KO, CT, DV, RB and GR are resident; CH, CM, CO, PK, SK and ST are anadromous. Spawn-only follows Open decision 5, from `rear_no_fw` or a `spawn_only` column plus an agreement test. Update both bundles' provenance in the same commit.
-- [ ] Add dictionary rows for the new columns, and regenerate the README.
-- [ ] A helper, `.lnk_species_residence(cfg, species)`, reads them. It stops on a modelled species with no residence value. Where a bundle lacks the column, it falls back to today's sets.
-- [ ] `.lnk_mapping_code_persist(..., cfg = NULL)`, where `NULL` means today's sets. That keeps the mock in `test-lnk_pipeline_run.R:350` and the old `rerun.R` scripts working. Pass `cfg` from `lnk_pipeline_run()` and `data-raw/wsg_recompute_one.R`, and update the mock's formals.
-- [ ] Tests:
+- [x] Add a `residence` column (`resident` / `anadromous`) to `default/dimensions.csv` and `bcfishpass/dimensions.csv` only. `default_extrabreaks` and `default_rearbreaks` resolve no token and cannot run, so the helper's fallback covers them. Fill it with today's sets: BT, WCT, KO, CT, DV, RB and GR are resident; CH, CM, CO, PK, SK and ST are anadromous. Spawn-only follows Open decision 5, from `rear_no_fw` or a `spawn_only` column plus an agreement test. Update both bundles' provenance in the same commit.
+- [x] Add dictionary rows for the new columns, and regenerate the README.
+- [x] A helper, `.lnk_species_residence(cfg, species)`, reads them. It stops on a modelled species with no residence value. Where a bundle lacks the column, it falls back to today's sets.
+- [x] `.lnk_mapping_code_persist(..., cfg = NULL)`, where `NULL` means today's sets. That keeps the mock in `test-lnk_pipeline_run.R:350` and the old `rerun.R` scripts working. Pass `cfg` from `lnk_pipeline_run()` and `data-raw/wsg_recompute_one.R`, and update the mock's formals.
+- [x] Tests:
   - the helper reproduces today's sets for `default` and `bcfishpass`;
   - a bundle copy with CT set to anadromous gives CT the anadromous barrier token;
   - a missing value stops.
-- [ ] Prove no mapping code moves. On `fresh_default`'s persisted tables, run `lnk_mapping_code()` for ADMS and PARS (PARS holds GR, the one non-bcfishpass species `default` classifies) into scratch tables, once with the old sets and once with the helper's, and compare digests. Record the result in `data-raw/logs/residence_189/`.
-- [ ] `log_dimensions` gains the new columns by `ALTER TABLE` at the next init (`R/lnk_log.R:505-555`). Check that a test covers it.
+- [x] Prove no mapping code moves. On `fresh_default`'s persisted tables, run `lnk_mapping_code()` for ADMS and PARS (PARS holds GR, the one non-bcfishpass species `default` classifies) into scratch tables, once with the old sets and once with the helper's, and compare digests. Record the result in `data-raw/logs/residence_189/`.
+- [x] `log_dimensions` gains the new columns by `ALTER TABLE` at the next init (`R/lnk_log.R:505-555`). Check that a test covers it.
 - [ ] Act on Open decision 6. Record the fresh-side outcome on #189: fresh builds no mapping code, so `parameters_fresh.csv` needs no residence column.
 
 ## Phase 4: fresh's copy of the rules stays current (#129)

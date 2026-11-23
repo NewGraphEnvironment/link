@@ -6,7 +6,7 @@ Each section documents the columns of one bundle file, from `dictionary_<file>.c
 
 ## `dimensions`
 
-From `dictionary_dimensions.csv`: 36 columns.
+From `dictionary_dimensions.csv`: 37 columns.
 
 | column | type | group | applies_to | default_when_absent | description | emits | related |
 |---|---|---|---|---|---|---|---|
@@ -45,6 +45,7 @@ From `dictionary_dimensions.csv`: 36 columns.
 | rear_wetland_ha_min | numeric | threshold | rear | no fallback (no fresh column) | Per-species minimum wetland area (ha) for both wetland rear rules (the stream rule still admits mainlines in smaller wetlands). It sets wetland_ha_min on the W polygon rule and also turns the 1050/1150 carve-out into a W rule carrying the same floor, emitted after the polygon rule so the polygon rule stays fresh's first W rule (#311). From fresh 0.38.0 the floor gates `rearing` as well as `wetland_rearing` (fresh#237). Blank means no floor; with no floor, or with rear_wetland_polygon = no, the carve-out stays unfloored. fresh has no wetland threshold column, so this is the only source. | wetland_ha_min on the W polygon rule; waterbody_type: W + wetland_ha_min on the 1050/1150 carve-out | - |
 | rear_lake_connected_distance_max | numeric | connected_rules | rear | empty | Metres. When set, the species' first rear `waterbody_type: L` rule carries requires_connected: spawning + connected_distance_max, so fresh keeps a lake in the lake_rearing bucket only where same-species spawning lies on it, or within this distance downstream of it, or within this distance upstream traced down mainstem lines (fresh#240). The bucket reads fwa_lakes_poly only (fresh v0.39.0), so a reservoir is never lake_rearing and the distance never applies to one. Blank = every lake passing the area test. Must be > 0. Refused for a species with spawn_requires_connected = rearing (SK, KO: circular). Only the bucket is filtered; lake line km in `rearing` follow the rearing cluster pass. | requires_connected: spawning + connected_distance_max on the first rear L rule | #310, fresh#240 |
 | rear_wetland_connected_distance_max | numeric | connected_rules | rear | empty | Metres. Same as rear_lake_connected_distance_max for the first rear `waterbody_type: W` rule (the polygon rule, not the floored 1050/1150 rule after it) and the wetland_rearing bucket. | requires_connected: spawning + connected_distance_max on the first rear W rule | #310, fresh#240 |
+| residence | character | mapping_code | both | the sets coded before #189: CH, CM, CO, PK, SK and ST anadromous, every other species resident | resident or anadromous: which barrier token a species' persisted mapping code reads (DAM / barrier class for residents, the anadromous form for the rest), read by .lnk_species_residence() (#189). Required for every modelled species once the column is present; a bundle without it keeps the sets coded before #189. Spawn-only species are those with rear_no_fw = yes, not a column of their own. | - | rear_no_fw |
 | notes | character | free_form | - | empty | Free-form notes per species - biology references, citations, NGE-vs-bcfishpass deltas, TODO lifelines. Not consumed by lnk_rules_build. | - | - |
 
 ## `parameters_fresh`

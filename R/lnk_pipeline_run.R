@@ -404,7 +404,8 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
   # on flags the gate blanked (link#349).
   if (isTRUE(mapping_code)) {
     .lnk_mapping_code_persist(conn, schema = tn$schema, aoi = aoi,
-                              species = active_species, presence = pres)
+                              species = active_species, presence = pres,
+                              cfg = cfg)
   }
 
   if (isTRUE(cleanup_working)) {
