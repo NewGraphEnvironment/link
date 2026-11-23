@@ -72,8 +72,8 @@ Settled by reading the code, not owner forks:
 ## Validation
 
 - [x] Tests pass (6,265; the one failing test is #493 on main too)
-- [ ] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
+- [x] `/code-check` clean (once over the branch: 3 rounds, ended on round 3's enumeration of 44 items; `review-verdict.md`)
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
 Verification, per change: the `cabd.dams` load is proved by md5 and column order across three starting states on one saved CABD response, with the defect restored to show the check fires; PSCIS by two loads' md5; the parallel publish by the stub-`aws` ordering and failure tests (with the defect restored), and by one measured publish of one root with identical keys and md5s both ways; `devtools::test()`, `lintr` compared per file against main, and `devtools::check()` before release.
