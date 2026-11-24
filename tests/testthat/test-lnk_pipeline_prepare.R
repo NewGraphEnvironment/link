@@ -1478,3 +1478,104 @@ test_that("every reader of the exclusions goes through the one rule", {
                            txt)), info = f)
   }
 })
+
+# -- copies of one barrier (link#386) ---------------------------------------
+
+test_that("every control row is staged, whatever group it is filed under (#386)", {
+  written <- NULL
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) invisible(NULL)
+  )
+  local_mocked_bindings(
+    dbWriteTable = function(conn, name, value, ...) {
+      if (identical(name@name[["table"]], "barriers_definite_control")) {
+        written <<- value
+      }
+      invisible(TRUE)
+    },
+    .package = "DBI"
+  )
+  ctrl <- data.frame(
+    blue_line_key = c(356364485L, 356364114L),
+    downstream_route_measure = c(67492, 212049),
+    barrier_type = c("GRADIENT", "FALLS"),
+    barrier_ind = c("f", "f"),
+    watershed_group_code = c("LSAL", "THOM"),
+    stringsAsFactors = FALSE)
+  .lnk_pipeline_prep_load_aux("mock-conn", aoi = "SALR",
+    loaded = list(user_barriers_definite_control = ctrl), schema = "w_salr")
+  expect_equal(nrow(written), 2L)
+  expect_setequal(written$watershed_group_code, c("LSAL", "THOM"))
+})
+
+test_that("a control row filed under another group prunes and locks at its position (#386, DB)", {
+  conn <- skip_if_no_db()
+  s <- paste0("zz_lnk_t386_ctrl_", Sys.getpid())
+  DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", s))
+  DBI::dbExecute(conn, sprintf("CREATE SCHEMA %s", s))
+  withr::defer(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", s)))
+  # SALR scans the Salmon River (356364485) whole; LSAL owns 67492 and files
+  # the control. Filed under LSAL, it must still prune SALR's copy and lock
+  # SALR's lift there.
+  ctrl <- data.frame(
+    blue_line_key = c(356364485L, 356364485L),
+    downstream_route_measure = c(67492, 70000),
+    barrier_type = c("GRADIENT", "GRADIENT"),
+    barrier_ind = c("f", "t"),
+    watershed_group_code = c("LSAL", "LSAL"),
+    stringsAsFactors = FALSE)
+  .lnk_pipeline_prep_load_aux(conn, aoi = "SALR",
+    loaded = list(user_barriers_definite_control = ctrl), schema = s)
+  DBI::dbExecute(conn, sprintf(
+    "CREATE TABLE %s.gradient_barriers_raw AS
+     SELECT * FROM (VALUES (356364485, 67492.17::double precision, 1500, 'gradient'),
+                           (356364485, 70000.4::double precision, 1500, 'gradient'))
+       v(blue_line_key, downstream_route_measure, gradient_class, label)", s))
+  local_mocked_bindings(frs_break_find = function(...) invisible(NULL),
+                        .package = "fresh")
+  .lnk_pipeline_prep_gradient(conn, aoi = "SALR",
+    loaded = list(user_barriers_definite_control = ctrl), schema = s)
+  left <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT downstream_route_measure FROM %s.gradient_barriers_raw", s))
+  expect_equal(left$downstream_route_measure, 70000.4)
+  # The TRUE row locks: lnk_barrier_overrides() reads the staged table.
+  locked <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT count(*)::int AS n FROM %s.barriers_definite_control
+      WHERE barrier_ind::boolean AND watershed_group_code = 'LSAL'", s))$n
+  expect_equal(locked, 1L)
+})
+
+test_that("each gradient position gets exactly one owner, in the overlap and the gap (#386, DB)", {
+  conn <- skip_if_no_db()
+  s <- paste0("zz_lnk_t386_own_", Sys.getpid())
+  DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", s))
+  DBI::dbExecute(conn, sprintf("CREATE SCHEMA %s", s))
+  withr::defer(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", s)))
+  seg <- DBI::dbGetQuery(conn,
+    "SELECT watershed_group_code, downstream_route_measure AS ds,
+            upstream_route_measure AS us
+       FROM whse_basemapping.fwa_stream_networks_sp
+      WHERE blue_line_key = 356364485
+        AND (downstream_route_measure < 200 OR
+             downstream_route_measure BETWEEN 124700 AND 124910)
+      ORDER BY downstream_route_measure")
+  # The facts the positions below rely on: a gap at the TABR / LSAL boundary
+  # and an overlap at the LSAL / SALR boundary.
+  skip_if(nrow(seg) != 4L || seg$us[1] >= seg$ds[2] || seg$us[3] <= seg$ds[4],
+          "FWA here no longer has the gap and overlap this test needs")
+  DBI::dbExecute(conn, sprintf(
+    "CREATE TABLE %s.gradient_barriers_raw AS
+     SELECT * FROM (VALUES (356364485, 67492.17::double precision),
+                           (356364485, 124906.769::double precision),
+                           (356364485, 149.2756::double precision))
+       v(blue_line_key, downstream_route_measure)", s))
+  .lnk_pipeline_prep_gradient_locate(conn, s)
+  got <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT downstream_route_measure AS m, watershed_group_code AS owner,
+            wscode_ltree IS NULL AS no_code
+       FROM %s.gradient_barriers_raw ORDER BY 1", s))
+  expect_equal(nrow(got), 3L)
+  expect_equal(got$owner, c("TABR", "LSAL", "LSAL"))
+  # The gap position keeps no code, as before; it still has an owner.
+  expect_equal(got$no_code, c(TRUE, FALSE, FALSE))
+})

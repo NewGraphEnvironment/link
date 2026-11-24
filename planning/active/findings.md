@@ -49,7 +49,17 @@ The umbrella's one comment is the dispatch claim. None of the five member issues
 
 The first three match #386's numbers from the 2026-10-26 build. The control counts are new. They are a planning probe on a build two `acc` rows old: Phase 1 re-measures and commits the script.
 
+## Phase 1 measurement (2026-11-24, `data-raw/logs/barrier_copies_386/`)
+
+- Only 259 lines touch more than one group, and every gradient position on them is held by every built group scanning them (1,224 positions, 3,087 rows). No position sits on a segment of a group the bundle does not model, and none on no persisted segment, so open decision 8's fallback holder is unused on this build (implemented anyway, O8).
+- The one disagreement is LSAL's Salmon River control row (67492, GRADIENT f), filed under its owner and defeated by SALR's and TABR's copies and their lifts.
+- The 7 control rows filed under a non-owner are FALLS f with no natural row within 1 m: inert before and after.
+- bcfishpass applies controls by position and files gradient barriers under the segment's group (`barriers_gradient.sql` @ `3bd2824`).
+- `frs_break_find()` reads only FWA per line (vertex gradients over 100 m), so every scanner finds the same positions, up to cross-host float rounding at a class edge.
+
 ## Errors Encountered
 
 | Error | Resolution |
 |-------|------------|
+| psql `\copy ... TO :'var'` does not interpolate variables | `COPY (...) TO STDOUT \g :var`; for `FROM`, build the `\copy` line in a variable and run it |
+| `column reference "blue_line_key" is ambiguous` in unify's gradient branch once the holder join was added (caught by the live test) | qualify every column of that branch with `g.` |

@@ -3,12 +3,17 @@ cfg_fixture <- function() {
 }
 
 loaded_fixture <- function() {
+  spp <- c("BT", "CH", "CM", "CO", "PK", "SK", "ST", "WCT")
+  presence <- data.frame(watershed_group_code = c("PARS", "LSAL", "SALR", "TABR"),
+                         stringsAsFactors = FALSE)
+  for (sp in tolower(spp)) presence[[sp]] <- "t"
   list(
     parameters_fresh = data.frame(
-      species_code        = c("BT", "CH", "CM", "CO", "PK", "SK", "ST", "WCT"),
+      species_code        = spp,
       access_gradient_max = c(0.25, 0.15, 0.15, 0.15, 0.15, 0.15, 0.20, 0.20),
       stringsAsFactors = FALSE
-    )
+    ),
+    wsg_species_presence = presence
   )
 }
 
@@ -166,13 +171,13 @@ test_that("lnk_barriers_unify derives gradient blocks_species per class from par
   # access_gradient_max <= 0.15 -> CH/CM/CO/PK/SK. BT (0.25),
   # ST/WCT (0.20) are NOT blockers at this class.
   expect_match(sql,
-               "WHEN gradient_class = 1500 THEN ARRAY\\['CH', 'CM', 'CO', 'PK', 'SK'\\]")
+               "WHEN g\\.gradient_class = 1500 THEN ARRAY\\['CH', 'CM', 'CO', 'PK', 'SK'\\]")
 
   # At class 2500 (threshold 0.25), all species with access_gradient_max
   # <= 0.25 block — that's everything in our fixture (BT, ST, WCT join
   # the salmon set).
   expect_match(sql,
-               "WHEN gradient_class = 2500 THEN ARRAY\\['BT', 'CH', 'CM', 'CO', 'PK', 'SK', 'ST', 'WCT'\\]")
+               "WHEN g\\.gradient_class = 2500 THEN ARRAY\\['BT', 'CH', 'CM', 'CO', 'PK', 'SK', 'ST', 'WCT'\\]")
 })
 
 test_that("lnk_barriers_unify validates argument shapes", {
@@ -270,4 +275,61 @@ test_that(".lnk_sql_locate() refuses a bare column name (#326)", {
   expect_error(.lnk_sql_locate("g.blue_line_key", "downstream_route_measure"),
                "downstream_route_measure")
   expect_type(.lnk_sql_locate("g.blue_line_key", "1153.64"), "character")
+})
+
+# -- one holder per gradient position (link#386) ------------------------------
+
+test_that("a group holds only the gradient positions it owns (#386, DB)", {
+  conn <- skip_if_no_db()
+  s <- paste0("zz_lnk_t386_unify_", Sys.getpid())
+  DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", s))
+  DBI::dbExecute(conn, sprintf("CREATE SCHEMA %s", s))
+  withr::defer(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", s)))
+  # The Salmon River (356364485) runs TABR (0 to 149 m), LSAL, then SALR from
+  # 124906.77; every one of them scans it whole. 67492.17 sits on LSAL,
+  # 124906.769 in the LSAL / SALR overlap (LSAL by the pick), 200000 on SALR.
+  for (t in c("falls", "barriers_definite")) {
+    DBI::dbExecute(conn, sprintf(
+      "CREATE TABLE %s.%s (blue_line_key integer,
+         downstream_route_measure double precision, watershed_group_code text)",
+      s, t))
+  }
+  DBI::dbExecute(conn, sprintf(
+    "CREATE TABLE %s.crossings (aggregated_crossings_id text,
+       watershed_group_code text, crossing_source text,
+       crossing_feature_type text, barrier_status text,
+       linear_feature_id bigint, blue_line_key integer, watershed_key integer,
+       downstream_route_measure double precision, wscode_ltree ltree,
+       localcode_ltree ltree, geom geometry(Point, 3005))", s))
+  DBI::dbExecute(conn, sprintf(
+    "CREATE TABLE %s.gradient_barriers_raw AS
+     SELECT * FROM (VALUES (356364485, 67492.17::double precision, 1500, 'gradient'),
+                           (356364485, 124906.769::double precision, 1500, 'gradient'),
+                           (356364485, 200000.5::double precision, 1500, 'gradient'))
+       v(blue_line_key, downstream_route_measure, gradient_class, label)", s))
+  .lnk_pipeline_prep_gradient_locate(conn, s)
+  held <- function(aoi, loaded = loaded_fixture()) {
+    lnk_barriers_unify(conn, aoi = aoi, cfg = cfg_fixture(), loaded = loaded,
+                       schema = s)
+    DBI::dbGetQuery(conn, sprintf(
+      "SELECT downstream_route_measure AS m FROM %s.barriers
+        WHERE barrier_source = 'GRADIENT' ORDER BY 1", s))$m
+  }
+  expect_equal(held("LSAL"), c(67492.17, 124906.769))
+  expect_equal(held("SALR"), 200000.5)
+  expect_equal(held("TABR"), numeric(0))
+  # An owner the bundle does not model: its positions fall to the
+  # lowest-coded modelled group scanning the line.
+  no_lsal <- loaded_fixture()
+  no_lsal$wsg_species_presence <-
+    no_lsal$wsg_species_presence[no_lsal$wsg_species_presence$watershed_group_code != "LSAL", ]
+  expect_equal(held("SALR", no_lsal), c(67492.17, 124906.769, 200000.5))
+  expect_equal(held("TABR", no_lsal), numeric(0))
+})
+
+test_that(".lnk_sql_gradient_held() refuses a group the bundle does not model (#386)", {
+  expect_error(.lnk_sql_gradient_held("w.gradient_barriers_raw", "g", "PARS", "BULK"),
+               "not among the groups the bundle models")
+  expect_error(.lnk_sql_gradient_held("w.gradient_barriers_raw", "g", "PARS", character(0)),
+               "non-empty")
 })
