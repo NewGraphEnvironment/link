@@ -115,8 +115,8 @@ Review G10 changed this phase: "every bundle" means the three that `build_rules.
 ## Validation
 
 - [x] Tests pass
-- [ ] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
+- [x] `/code-check branch`: 3 rounds, ended on an enumeration (`review-verdict.md`)
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
 How each change is proved:

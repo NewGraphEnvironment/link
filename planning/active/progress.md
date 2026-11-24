@@ -52,3 +52,11 @@ Start Phase 1 and run every phase to the PR (/code-check branch, /planning-archi
 /gh-pr-push). This message is the resume instruction that starts the run-to-PR
 mandate; the merge stays with me.
 ```
+
+## Session 2026-11-23 (resume, m1)
+
+- Merged origin/main twice (0.88.0 at the resume, 0.91.0 before release); fresh 0.56.0 installed on m1 for main's pin.
+- Decisions 1 to 8 answered (all the recommended option). Phases 1 to 7 landed: dictionaries render and validate (#75), residence from dimensions.csv (#189, rest in #512), the sample from `default` and fresh PR #332's sync workflow (#129), the order-1 exception scored and declined (#327), #212 / #316 / #86 closed by decision.
+- Phase 1's build took 706.5 min (KLUM 363, FRCN 200); its first score was refused by the validator, which led to `log_variant_pass()` in the harness and a backfill.
+- Tests 1,553: 0 failed (6 warnings, also on main). check(): 0 errors, 0 warnings, 3 notes (all on main). `/code-check branch`: round 1 clean; round 2, two fragile README findings; round 3, a defect inside round 2's escaping fix; ended on an enumeration (888 cells through cmark-gfm).
+- Commits: 06fddf28..HEAD on this branch.
