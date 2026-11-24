@@ -25,6 +25,9 @@
 #   6j. evidence judged (groups at 0.84.0)          -> expect PASS (link#434)
 #   6k.  ... one lift's evidence deleted            -> expect FAIL
 #   6l.  ... an evidence row beside no lift          -> expect FAIL
+#   6m. one holder judged (groups at HOLDER_FROM)    -> expect PASS (link#386)
+#   6n.  ... a second judged group holds a gradient row -> expect FAIL
+#   6o.  ... an override beside no natural barrier of its own -> expect FAIL
 #
 # Nothing durable is mutated: every case runs against a SCRATCH SCHEMA holding a
 # copy of the run's rows, so the real persist is never touched at all. Not a
@@ -34,7 +37,10 @@
 # Usage:
 #   bash data-raw/study_area_verify_negative.sh [run_uid] [source-schema]
 #
-# With no run_uid the most recent labelled run is used.
+# With no run_uid the most recent labelled run is used. HOLDER_FROM (default
+# 0.93.0) is the link version from which the one-holder check judges a group
+# (study_area_verify.sql's -v holder_from); a proof build made before the
+# release passes HOLDER_FROM=0.0.0.
 
 set -euo pipefail
 
@@ -642,6 +648,120 @@ SQL
   fi
   "${PSQL[@]}" >/dev/null <<SQL
 DROP TABLE IF EXISTS ${SCRATCH}.ev_held;
+DROP TABLE ${SCRATCH}.barrier_overrides;
+DROP TABLE ${SCRATCH}.barrier_override_evidence;
+SQL
+fi
+
+# --- 6m/6n/6o. one holder per position (link#386) ---------------------------
+# The run's barriers, overrides and evidence are copied for the groups the
+# check judges: each group's newest finished build of the run at HOLDER_FROM or
+# later. A run with no such group is skipped (reported, not counted). 6m must
+# PASS and must say it judged at least one group; 6n (a gradient row a second
+# judged group also holds) and 6o (an override and its evidence beside no
+# natural barrier of the group's own) must FAIL.
+HOLDER_FROM="${HOLDER_FROM:-0.93.0}"
+case "$HOLDER_FROM" in
+  [0-9]*.[0-9]*.[0-9]*) ;;
+  *) echo "FATAL: HOLDER_FROM must be a version a.b.c (got '$HOLDER_FROM')" >&2; exit 1 ;;
+esac
+HJUDGED="SELECT watershed_group_code FROM (
+           SELECT DISTINCT ON (watershed_group_code) watershed_group_code, link_version
+             FROM ${SCRATCH}.log WHERE date_end IS NOT NULL
+            ORDER BY watershed_group_code, date_end DESC) l
+          WHERE (string_to_array(link_version, '.'))[1:3]::int[]
+                >= (string_to_array('${HOLDER_FROM}', '.'))[1:3]::int[]"
+N_HOLD=$("${PSQL[@]}" -c "SELECT count(*) FROM (${HJUDGED}) j")
+if [ "$N_HOLD" = "0" ]; then
+  echo "  ⊘ 6m-6o. SKIPPED: no group of run $RUN_UID was built at $HOLDER_FROM or"
+  echo "       later; the check leaves it unjudged (not counted)."
+else
+  "${PSQL[@]}" >/dev/null <<SQL
+CREATE TABLE ${SCRATCH}.barriers AS
+  SELECT * FROM ${SRC_SCHEMA}.barriers
+   WHERE watershed_group_code IN (${HJUDGED});
+CREATE TABLE ${SCRATCH}.barrier_overrides AS
+  SELECT * FROM ${SRC_SCHEMA}.barrier_overrides
+   WHERE watershed_group_code IN (${HJUDGED});
+CREATE TABLE ${SCRATCH}.barrier_override_evidence AS
+  SELECT * FROM ${SRC_SCHEMA}.barrier_override_evidence
+   WHERE watershed_group_code IN (${HJUDGED});
+SQL
+  if run_verify -v expected_n="$N_WSG" -v holder_from="$HOLDER_FROM" &&
+     grep -Eq "judged [1-9][0-9]* group" "$VERIFY_LOG"; then
+    echo "  ✓ 6m. one holder judged ($N_HOLD group(s)) -> PASS (as expected)"
+  else
+    echo "  ✗ 6m. one holder judged       -> FAILED or judged nothing, but should have passed."
+    show_verify
+    fails=$((fails + 1))
+  fi
+  H_ROW=$("${PSQL[@]}" -c "SELECT b.id_barrier || '|' || b.watershed_group_code || '|' || o.watershed_group_code
+                             FROM ${SCRATCH}.barriers b
+                             JOIN (${HJUDGED}) o ON o.watershed_group_code <> b.watershed_group_code
+                            WHERE b.barrier_source = 'GRADIENT'
+                            ORDER BY 1 LIMIT 1")
+  if [ -z "$H_ROW" ]; then
+    echo "  ⊘ 6n. SKIPPED: fewer than two judged groups, or no gradient row."
+    fails=$((fails + 1))
+  else
+    IFS='|' read -r H_ID H_FROM H_TO <<< "$H_ROW"
+    "${PSQL[@]}" >/dev/null -c "INSERT INTO ${SCRATCH}.barriers
+        SELECT id_barrier || '-neg6n', '${H_TO}', barrier_source, barrier_subtype,
+               passability, blocks_species, linear_feature_id, blue_line_key,
+               watershed_key, downstream_route_measure, wscode_ltree,
+               localcode_ltree, geom
+          FROM ${SCRATCH}.barriers
+         WHERE id_barrier = '${H_ID}' AND watershed_group_code = '${H_FROM}'"
+    if run_verify -v expected_n="$N_WSG" -v holder_from="$HOLDER_FROM"; then
+      echo "  ✗ 6n. $H_TO also holds $H_FROM's gradient row -> PASSED, but should have FAILED."
+      show_verify
+      fails=$((fails + 1))
+    else
+      echo "  ✓ 6n. $H_TO also holds $H_FROM's gradient row -> FAIL (as expected)"
+    fi
+    "${PSQL[@]}" >/dev/null -c "DELETE FROM ${SCRATCH}.barriers WHERE id_barrier LIKE '%-neg6n'"
+  fi
+  # A position 10 km past the end of the line's highest barrier row of the
+  # group, so no natural barrier of the group's own sits within 1 m of it.
+  O_ROW=$("${PSQL[@]}" -c "SELECT watershed_group_code || '|' || blue_line_key || '|' ||
+                                  (max(downstream_route_measure) + 10000)::bigint
+                             FROM ${SCRATCH}.barriers
+                            WHERE watershed_group_code IN (${HJUDGED})
+                            GROUP BY watershed_group_code, blue_line_key
+                            ORDER BY 1 LIMIT 1")
+  if [ -z "$O_ROW" ]; then
+    echo "  ⊘ 6o. SKIPPED: no barrier row in a judged group."
+    fails=$((fails + 1))
+  else
+    IFS='|' read -r O_W O_BLK O_DRM <<< "$O_ROW"
+    # The evidence row comes too, so the lift-against-evidence check (6j-6l)
+    # agrees and only the one-holder check can fail the run.
+    "${PSQL[@]}" >/dev/null <<SQL
+INSERT INTO ${SCRATCH}.barrier_overrides (blue_line_key, downstream_route_measure,
+                                          species_code, watershed_group_code)
+VALUES (${O_BLK}, ${O_DRM}, 'NEG6O', '${O_W}');
+INSERT INTO ${SCRATCH}.barrier_override_evidence (blue_line_key,
+  downstream_route_measure, species_code, watershed_group_code, evidence, evidence_key)
+VALUES (${O_BLK}, ${O_DRM}, 'NEG6O', '${O_W}', 'habitat', 'neg6o');
+SQL
+    if run_verify -v expected_n="$N_WSG" -v holder_from="$HOLDER_FROM"; then
+      echo "  ✗ 6o. $O_W override beside no barrier of its own -> PASSED, but should have FAILED."
+      show_verify
+      fails=$((fails + 1))
+    elif grep -q "no natural barrier of its own" "$VERIFY_LOG"; then
+      echo "  ✓ 6o. $O_W override beside no barrier of its own -> FAIL (as expected)"
+    else
+      echo "  ✗ 6o. $O_W override beside no barrier of its own -> FAILED, but on another check."
+      show_verify
+      fails=$((fails + 1))
+    fi
+    "${PSQL[@]}" >/dev/null <<SQL
+DELETE FROM ${SCRATCH}.barrier_overrides WHERE species_code = 'NEG6O';
+DELETE FROM ${SCRATCH}.barrier_override_evidence WHERE species_code = 'NEG6O';
+SQL
+  fi
+  "${PSQL[@]}" >/dev/null <<SQL
+DROP TABLE ${SCRATCH}.barriers;
 DROP TABLE ${SCRATCH}.barrier_overrides;
 DROP TABLE ${SCRATCH}.barrier_override_evidence;
 SQL
