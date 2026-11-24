@@ -321,7 +321,7 @@ script, `research/bcfishpass_parity.md`. No gate. One live parity against bcfish
 
 ### 16. What blocks access at a barrier
 
-- [ ] Carried by move 11, #479
+- [ ] Carried by move 11, #479: #386, #236 and #341. #201 and #83 split out to one new issue, filed from the draft in #479's archived plan once the owner has read its body. The candidate second BT lift rule is #520.
 
 **Touches:** `R/lnk_barriers_unify.R`, `R/lnk_barriers_views.R`, `R/lnk_barriers_emit.R`, `R/lnk_pipeline_access.R`, `R/lnk_pipeline_prepare.R`, `R/lnk_barrier_overrides.R`, `inst/extdata/configs/default/parameters_fresh.csv`, `data-raw/study_area_verify.sql`, `inst/extdata/vocabulary.csv`, and a new barrier rules table
 

@@ -10,4 +10,11 @@ ADMS's evidence by rule, working and persisted alike (`prove_ADMS_working.csv`, 
 
 ## What the candidate rule would add (`measure.R`)
 
-See `candidate_default.csv` once run: per proof group, BT lifts under the own rule and those the candidate adds, working and held.
+On the AFTER-386 `default` proof build's kept working schemas (`w386ad_*`), with `observations_province` rebuilt and dropped per group, `lnk_barrier_overrides()` run with each species' own rule and with the candidate added (`candidate_default.csv`):
+
+| group | BT lifts, own rule | added by the candidate | of those, beside a barrier the group holds |
+|---|---|---|---|
+| ADMS | 34 | 2 | 2 |
+| TABR, LSAL, SALR, ELKR, BULK, UPCE, PCEA, LPCE, FINA, PARS | 0 to 200 | 0 | 0 |
+
+Two lifts in eleven groups. Where salmon reach a BT barrier on these groups, BT records already lift it, or the salmon records are below two. Whether `default` adopts the rule is a follow-up issue, which would measure it province-wide.

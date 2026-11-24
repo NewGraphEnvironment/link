@@ -56,3 +56,13 @@ Start Phase 1 and run every phase to the PR (/code-check branch, /planning-archi
 /gh-pr-push). This message is the resume instruction that starts the run-to-PR
 mandate; the merge stays with me.
 ```
+
+## Session 2026-11-24 (resume, m1)
+
+- Nothing moved on main since the park; the plan stood. The eight gate decisions were already in #479's body; the resume asked 1, 2, 4 and 5 again and got the same answers (folded as O1 to O8).
+- Phase 1 (#386): measurement and bcfishpass read (`b53ed40d`), verify checks and docs (`bd47d1ee`), lone-group measurement (`c0e6c1ed`).
+- Phase 2 (#236): mechanism (`fd02c24f`), proof through prepare and persist (`c0e6c1ed`), candidate counts (2 lifts in 11 groups), follow-up #520 filed.
+- Phase 3 (#341): rules table (`a2f5aeb1`), `column` renamed `column_name` after a live failure (`fa82adb0`), compare on ADMS and BULK.
+- Phase 4: vocabulary (`8da6815d`), proofs: BEFORE / AFTER-386 diffs clean on both bundles, FINAL equals AFTER-386 (bcfishpass), verify and its negative cases on FINAL.
+- Proof builds: two default builds stalled in the near-river walk under other sessions' load (#487 shape); cancelled and rerun one at a time with a 20 min bound and a retry. The recompute's downstream post-condition fails for ELKR by design (downstream groups outside the set).
+- bcfishpass parity against the reference: not re-scored. The bcfishpass bundle's accessible and observed km did not move on any proof group (no access value changed), so parity cannot have moved; the full re-score is owed at the provincial run.

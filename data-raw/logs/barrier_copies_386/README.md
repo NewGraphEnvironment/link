@@ -29,3 +29,18 @@ The 7 control rows filed under a non-owner are all `FALLS` with `barrier_ind` fa
 Every control row on a line several groups scan, with what each group holds beside it, is `control_multi_group_lines.csv`.
 
 bcfishpass applies its control table by position, with no group filter, and files each gradient barrier under the group of the segment it sits on (`model/01_access/sql/barriers_gradient.sql` at `smnorris/bcfishpass@3bd2824`: `LEFT OUTER JOIN bcfishpass.user_barriers_definite_control p ON b.blue_line_key = p.blue_line_key AND abs(b.downstream_route_measure - p.downstream_route_measure) < 1`, `s.watershed_group_code` from the joined segment).
+
+## Before and after on 11 groups (`diff_bcfishpass/`, `diff_default/`)
+
+`build.R` built TABR, LSAL, SALR, ADMS, ELKR, BULK, UPCE, PCEA, LPCE, FINA and PARS under both bundles at `c7abea13` (BEFORE, 0.92.0), `bd47d1ee` (AFTER-386) and `8da6815d` (FINAL), each build in its own persist schema and its own working schemas, then the recompute pass over every group (2026-11-24, m1; other sessions' R jobs loaded the database, so minutes are not comparable). ELKR's downstream groups (LARL, KOTL, BULL) are outside the set, so its recompute's downstream post-condition fails after the recompute commits; the driver notes it and goes on. `diff.R` keys barriers by source, line, measure and subtype, overrides by line, measure and species, and stops on any change outside its categories.
+
+| bundle | gradient rows removed (non-owner copy / owned outside the set / control) | override rows removed (same) | segments cut differently | access or habitat values moved | lifts lost |
+|---|---|---|---|---|---|
+| `bcfishpass` | 118 (11 / 105 / 2) | 81 (63 / 4 / 14) | 0 | 0 | 0 |
+| `default` | 118 (11 / 105 / 2) | 114 (90 / 8 / 16) | 0 | 0 | 0 |
+
+**FINAL against AFTER-386** (`final_equal.R`, `final_equal_*.csv`): every persisted model table digests equal per group (the evidence table on AFTER-386's columns, FINAL's rows with `lift_rule` `own` or `habitat`), and `barrier_rule_id` sits on exactly the crossings the status predicate selects in every group's kept working schema.
+
+**The verify check on FINAL** (`bcfishpass`, `-v holder_from=0.0.0`, ELKR's proof recompute row closed with a note) judges 11 groups and passes; `verify_negative_final_bcfishpass.txt` holds the negative cases, every one answering as it should (6a and 6c are skipped and counted as failures by design on a one-host run).
+
+**A one-group run** (`onegroup.sql` after `measure.sql`, `before_fresh_default/onegroup_*.csv`): of the 1,864 non-owner copies, 72 lay below segments of the group holding them; the rest are on no downstream path of their holder.
