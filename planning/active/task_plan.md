@@ -121,7 +121,7 @@ Review changed: the token decisions are the owner's (C2), what "equal" compares 
 - [x] `research/barrier_rules.md` (new, with the header line and a row in `research/README.md`): what is known about copies, lift rules, the rule compare and the recompute finding. `research/bcfishpass_parity.md` only if parity moved.
 - [x] `CLAUDE.md` status block for 0.93.0 (owed, facts not worth re-deriving) and its function lists.
 - [ ] `devtools::document()`, lint compared per file against `origin/main`, `devtools::test()`, `devtools::check()`, `pkgdown::check_pkgdown()`.
-- [ ] `/code-check branch`, fixes as follow-up commits.
+- [x] `/code-check branch`, fixes as follow-up commits (3 rounds and an enumeration; `review-round1..3.md`, `review-enumeration.md`, `review-verdict.md`).
 - [x] `planning/backlog.md`: batch 16's carry line names the split issue (O1) and the BT-rule follow-up (O3).
 - [ ] `NEWS.md` and `DESCRIPTION` to 0.93.0 as the last commit.
 
@@ -137,7 +137,7 @@ Review changed: the token decisions are the owner's (C2), what "equal" compares 
 ## Validation
 
 - [ ] Tests pass
-- [ ] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
+- [x] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
