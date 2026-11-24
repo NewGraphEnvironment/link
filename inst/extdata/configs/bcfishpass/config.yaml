@@ -20,6 +20,9 @@ files:
   # date, so the two read the same records (link#426).
   parameters_fresh:
     path: parameters_fresh.csv
+  parameters_barrier_rules:
+    path: parameters_barrier_rules.csv
+    read_as: text
   parameters_habitat_thresholds:
     path: parameters_habitat_thresholds.csv
   parameters_habitat_method:
@@ -128,6 +131,11 @@ pipeline:
       gradient_max: 0.05
 
 provenance:
+  parameters_barrier_rules.csv:
+    source: link (hand-authored; link#341). Which crossings are human-made barriers, as rules; not csv-synced
+    synced: '2026-11-24'
+    checksum: sha256:f801b1003ea61dd94a78713bdf8e7553342769f7580153753caaa34a3e5a2a08
+    shape_checksum: sha256:2f0bca6d45d51554b474561183c80e0303d038fbbf170bc667ef9544f1babc7f
   presence_groups.csv:
     source: link (hand-authored; link#292). The species groups lnk_presence() promotes presence by; bcfishpass's wsg_salmon and wsg_ct_dv_rb
     synced: '2026-11-18'

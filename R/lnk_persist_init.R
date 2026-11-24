@@ -512,7 +512,8 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
                               force_recreate = force_recreate)
   for (tbl in c("log", "log_input", "log_parameters_fresh",
                 "log_parameters_habitat_thresholds", "log_dimensions",
-                "log_parameters_barrier_lifts")) {
+                "log_parameters_barrier_lifts",
+                "log_parameters_barrier_rules")) {
     .lnk_validate_persist_table(conn, schema = schema, table = tbl,
                                 force_recreate = force_recreate)
   }

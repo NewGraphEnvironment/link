@@ -20,6 +20,8 @@ loaded_fixture <- function() {
 test_that("lnk_barriers_unify emits a UNION of anthropogenic + gradient + falls", {
   captured <- character(0)
   m_query <- mockery::mock(data.frame(x = integer(0)))  # subsurface absent
+  local_mocked_bindings(
+    .lnk_sql_barrier_selected = function(...) "barrier_status IN ('BARRIER', 'POTENTIAL')")
   m_quote_str <- mockery::mock(DBI::SQL("'working_pars'"), cycle = TRUE)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
@@ -71,6 +73,8 @@ test_that("lnk_barriers_unify emits a UNION of anthropogenic + gradient + falls"
 test_that("lnk_barriers_unify includes subsurface_flow when staging table present", {
   captured <- character(0)
   m_query <- mockery::mock(data.frame(x = 1L))  # subsurface present
+  local_mocked_bindings(
+    .lnk_sql_barrier_selected = function(...) "barrier_status IN ('BARRIER', 'POTENTIAL')")
   m_quote_str <- mockery::mock(DBI::SQL("'working_pars'"), cycle = TRUE)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
@@ -101,6 +105,8 @@ test_that("lnk_barriers_unify includes subsurface_flow when staging table presen
 test_that("lnk_barriers_unify emits a USER_DEFINITE branch from barriers_definite", {
   captured <- character(0)
   m_query <- mockery::mock(data.frame(x = integer(0)))  # subsurface absent
+  local_mocked_bindings(
+    .lnk_sql_barrier_selected = function(...) "barrier_status IN ('BARRIER', 'POTENTIAL')")
   m_quote_str <- mockery::mock(DBI::SQL("'working_pars'"), cycle = TRUE)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
@@ -143,6 +149,8 @@ test_that("lnk_barriers_unify emits a USER_DEFINITE branch from barriers_definit
 test_that("lnk_barriers_unify derives gradient blocks_species per class from parameters_fresh", {
   captured <- character(0)
   m_query <- mockery::mock(data.frame(x = integer(0)))
+  local_mocked_bindings(
+    .lnk_sql_barrier_selected = function(...) "barrier_status IN ('BARRIER', 'POTENTIAL')")
   m_quote_str <- mockery::mock(DBI::SQL("'working_pars'"), cycle = TRUE)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
@@ -213,7 +221,8 @@ test_that("no branch calls FWA_LocateAlong() in its SELECT list (#326)", {
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
       captured <<- c(captured, sql); invisible(NULL)
-    }
+    },
+    .lnk_sql_barrier_selected = function(...) "barrier_rule_id IS NOT NULL"
   )
   with_mocked_bindings(
     dbGetQuery = mockery::mock(data.frame(x = 1L)),  # subsurface present

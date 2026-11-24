@@ -59,7 +59,8 @@ and unblocks any regional run.
 Source families + \code{blocks_species} semantics:
 \itemize{
 \item \strong{Anthropogenic} (\verb{barrier_source IN ('PSCIS','CABD','MODELLED_CROSSINGS')},
-from \verb{<schema>.crossings WHERE barrier_status IN ('BARRIER','POTENTIAL')}):
+from \verb{<schema>.crossings} where the bundle's barrier rules select the
+crossing, \code{barrier_rule_id} not NULL; link#341):
 blocks all 8 species. \code{crossing_source} is mapped through verbatim,
 keeping the \code{MODELLED_CROSSINGS} value (vs. lossy normalization to
 \code{MODELLED}).

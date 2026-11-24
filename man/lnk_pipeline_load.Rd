@@ -48,11 +48,10 @@ observation-only points.
 The \code{barrier_status} column on \verb{<schema>.crossings} is the
 bcfishpass-parity label — \verb{\{PASSABLE, POTENTIAL, BARRIER, UNKNOWN\}}
 — derived from PSCIS field \code{current_barrier_result_code} plus the
-override CSV. It is distinct from \code{severity} produced by
-\code{\link[=lnk_score]{lnk_score()}} (link's own culvert-geometry scoring; high / moderate
-/ low). Both can coexist on the same crossings row: \code{barrier_status}
-for parity comparisons against bcfp, \code{severity} for link-specific
-metrics and break-source label translation via \code{\link[=lnk_source]{lnk_source()}}.
+override CSV. Which crossings count as human-made barriers is a
+separate question, answered by the bundle's barrier rules
+(\code{parameters_barrier_rules.csv}, link#341), which may read this
+status or the assessment's measurements.
 
 Falls, user-identified definite barriers, observation exclusions,
 and habitat classification CSVs are loaded by

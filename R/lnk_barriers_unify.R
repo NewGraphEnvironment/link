@@ -20,7 +20,8 @@
 #' Source families + `blocks_species` semantics:
 #'
 #' - **Anthropogenic** (`barrier_source IN ('PSCIS','CABD','MODELLED_CROSSINGS')`,
-#'   from `<schema>.crossings WHERE barrier_status IN ('BARRIER','POTENTIAL')`):
+#'   from `<schema>.crossings` where the bundle's barrier rules select the
+#'   crossing, `barrier_rule_id` not NULL; link#341):
 #'   blocks all 8 species. `crossing_source` is mapped through verbatim,
 #'   keeping the `MODELLED_CROSSINGS` value (vs. lossy normalization to
 #'   `MODELLED`).
@@ -161,7 +162,7 @@ lnk_barriers_unify <- function(conn, aoi, cfg, loaded,
   )
 
   # Universal-block array for natural barriers and anthropogenic
-  # passability IN ('BARRIER', 'POTENTIAL') — all 8 species blocked.
+  # crossings the barrier rules select (link#341) — all species listed.
   all_species_arr <- sprintf(
     "ARRAY[%s]::text[]",
     paste(sprintf("'%s'", species), collapse = ", ")
@@ -197,9 +198,10 @@ lnk_barriers_unify <- function(conn, aoi, cfg, loaded,
       localcode_ltree,
       ST_Force2D(geom)::geometry(Point, 3005) AS geom
     FROM %2$s.crossings
-    WHERE barrier_status IN ('BARRIER', 'POTENTIAL')
+    WHERE %3$s
       AND blue_line_key = watershed_key",
-    all_species_arr, schema)  # nolint: indentation_linter
+    all_species_arr, schema,
+    .lnk_sql_barrier_selected(conn, schema))  # nolint: indentation_linter
 
   # Source 2: gradient. id_barrier = 'GRADIENT-' || row_number(), numbered
   # over the rows this group holds. gradient_barriers_raw covers the whole of

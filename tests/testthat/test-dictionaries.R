@@ -246,7 +246,7 @@ declaring <- function(stem) {
 }
 
 for (stem in c("species_pooling", "species_groups", "species_modelled",
-              "presence_groups")) {
+              "presence_groups", "parameters_barrier_rules")) {
   test_that(sprintf("dictionary_%s has the expected shape", stem), {
     d <- dict_read(stem)
     expect_true(all(c("column", "type", "group", "owner", "consumed_by",
