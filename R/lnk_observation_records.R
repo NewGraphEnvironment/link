@@ -73,6 +73,11 @@
     if (is.null(m)) return(empty)
   }
 
+  # Every lift rule is read here too, so its refusals (a mixed floor under
+  # lift_floor among them) reach every reader of the record rule, the
+  # vocabulary's included, before a run opens (link#236).
+  if (!is.null(loaded$parameters_fresh)) .lnk_lift_rules(cfg, loaded)
+
   m$date_min <- as.Date(NA)
   if (identical(.lnk_observation_record_date(cfg), "lift_floor")) {
     pf <- loaded$parameters_fresh
@@ -82,32 +87,8 @@
            "with species_code and observation_date_min", call. = FALSE)
     }
     key <- toupper(trimws(pf$species_code))
-    raw <- trimws(as.character(pf$observation_date_min))
-    raw[raw %in% c("", "NA")] <- NA
-    floor <- as.Date(raw)
-    if (any(!is.na(raw) & is.na(floor))) {
-      stop("parameters_fresh observation_date_min is not a date: ",
-           paste(raw[!is.na(raw) & is.na(floor)], collapse = ", "),
-           call. = FALSE)
-    }
-    # A lift counts the rows of every species its list names, each already
-    # held to its own floor, and then applies its own floor again
-    # (lnk_barrier_overrides()). A list mixing floors would silently take the
-    # stricter one, so it is refused.
-    thr <- suppressWarnings(as.numeric(pf$observation_threshold %||%
-                                         rep(NA, nrow(pf))))
-    for (i in which(!is.na(thr) & thr > 0)) {
-      lst <- as.character(pf$observation_species[i])
-      lst <- if (is.na(lst)) key[i] else toupper(trimws(strsplit(lst, ";")[[1]]))
-      f <- floor[match(lst, key)]
-      own <- floor[i]
-      same <- (is.na(f) & is.na(own)) | (!is.na(f) & !is.na(own) & f == own)
-      if (!all(same)) {
-        stop("observation_record_date: lift_floor: ", key[i], "'s lift counts ",
-             paste(lst[!same], collapse = ", "), ", whose date floor differs ",
-             "from its own; give them one floor", call. = FALSE)
-      }
-    }
+    floor <- .lnk_date_col(pf$observation_date_min,
+                           "parameters_fresh observation_date_min")
     # first row per species, as the pipeline reads parameters_fresh
     m$date_min <- floor[match(m$species_code, key)]
   }

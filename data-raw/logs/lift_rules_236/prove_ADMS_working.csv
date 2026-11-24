@@ -1,0 +1,16 @@
+"species_code","lift_rule","evidence","lifts","rows"
+"BT","own","observation",34,34
+"BT","salmon","observation",3,8
+"CH","habitat","habitat",11,15
+"CH","own","observation",3,8
+"CM","habitat","habitat",11,15
+"CM","own","observation",3,8
+"CO","habitat","habitat",11,15
+"CO","own","observation",3,8
+"PK","habitat","habitat",11,15
+"PK","own","observation",3,8
+"RB","own","observation",312,2561
+"SK","habitat","habitat",11,15
+"SK","own","observation",3,8
+"ST","habitat","habitat",11,15
+"ST","own","observation",3,8

@@ -1,0 +1,2 @@
+"rule_id","applies_to","source_table","column_name","operator","value","species","outcome"
+"status","*","crossings","barrier_status","in","BARRIER;POTENTIAL","*","barrier"

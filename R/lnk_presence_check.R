@@ -44,12 +44,16 @@
 #'   `NULL` if not known. Decides what promotion does for an absent cell: it
 #'   breaks the streams at a modelled species' barriers
 #'   (`.lnk_pipeline_prep_minimal()`) and does nothing for any other.
+#' @param cfg The bundle's config, or `NULL`. Read only for the lift rules'
+#'   refusals (`.lnk_lift_rules()`); `NULL` reads them as a bundle with no
+#'   `observation_record_date` setting.
 #' @return A data frame, one row per group and species column.
 #' @noRd
 .lnk_presence_check <- function(records, loaded, n_min = 1L, year_min = 1950L,
                                 year_recent = 1990L,
                                 year_now = as.integer(format(Sys.Date(), "%Y")),
-                                regions = NULL, species_modelled = NULL) {
+                                regions = NULL, species_modelled = NULL,
+                                cfg = NULL) {
   need <- c("observation_key", "watershed_group_code", "species_code",
             "observation_date", "source", "source_ref")
   miss <- setdiff(need, names(records))
@@ -246,15 +250,19 @@
   notes[!is.na(notes) & !nzchar(notes)] <- NA_character_
   cells$group_notes <- notes[match(cells$watershed_group_code, wsgs)]
 
+  # Which species' lifts read a species' records: every lift rule
+  # (`.lnk_lift_rules()`, link#236), each species' parameters_fresh row and any
+  # further rule.
   pf <- loaded$parameters_fresh
   cells$lift_readers <- NA_character_
   pf_cols <- c("species_code", "observation_species")
   if (is.data.frame(pf) && all(pf_cols %in% names(pf))) {
-    obs_sp <- pf$observation_species
+    lr <- .lnk_lift_rules(cfg, loaded)
+    obs_sp <- lr$observation_species
     reads <- strsplit(ifelse(is.na(obs_sp), "", obs_sp), ";", fixed = TRUE)
     readers <- vapply(sp_all, function(s) {
-      hit <- vapply(reads, function(x) s %in% trimws(x), logical(1))
-      codes(pf$species_code[hit])
+      hit <- vapply(reads, function(x) s %in% toupper(trimws(x)), logical(1))
+      codes(unique(lr$species_code[hit]))
     }, character(1))
     cells$lift_readers <- unname(readers[cells$species_code])
   }

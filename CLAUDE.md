@@ -17,6 +17,21 @@ The settled findings behind the methods (what is known, with provenance and the 
 
 **Take the next move from `planning/backlog.md`** (`bash <soul>/skills/_shared/backlog_moves.sh next planning/backlog.md`; `/compact-prep` names it): 13 moves, umbrellas #469–#481, each planned with one `/planning-init <umbrella>` and landed in one PR, ticked by `/gh-pr-merge`. Moves 12 and 13 wait on knowledge#139's flow-method decision and fresh 0.54.0. A link issue knowledge waits on says so in its batch section. A new issue joins the open move whose batches touch its files; run `/backlog-sweep` again when one fits none. Record: `planning/archive/2026-11-issue-468-backlog-pass/`.
 
+## Status (2026-11-24, later) — one holder per barrier position; several lift rules per species; barrier rules as config (#479, 0.93.0)
+
+**Backlog move 11 (#479) lands as one release: #386, #236 and #341; #201 and #83 split out.** Every control row applies by position; a gradient barrier is held only by the group owning its segment (`.lnk_pipeline_prep_locate()`, `.lnk_sql_gradient_held()`), with overrides and evidence beside a barrier the group holds (`.lnk_sql_override_held()`). `.lnk_lift_rules()` reads each species' `parameters_fresh` row plus a bundle's `parameters_barrier_lifts.csv`; evidence names its `lift_rule` (in the key). `parameters_barrier_rules.csv` is evaluated into `crossings.barrier_rule_id` (`.lnk_barrier_rules_apply()`), read by the four barrier sets. `lnk_thresholds()`, `lnk_score()`, `lnk_source()` removed. Tokens: `default`, `default_tuned`, `default_parent` `cut-full-top-5 acc-v8`; `default_minimal` `cut-min-2 acc-v8`; `bcfishpass` `cut-full-ssf-all-4 acc-bcfp-6`; `grad-parent-2`. Mechanics: RUNBOOK §2a, §5 ("Several lift rules", "One holder per position"), §7, §8c, §8d. Write-up: `research/barrier_rules.md`. Evidence: `data-raw/logs/barrier_copies_386/`, `data-raw/logs/lift_rules_236/`, `data-raw/logs/barrier_rules_341/`.
+
+**Owed:** every group re-models at the next provincial run (tokens moved), after the pre-run gate (`R/`, `inst/extdata/`, `pretest_inputs.csv` changed); `lnk_persist_init()` once per host on each persist schema at a quiet time (the evidence key migration takes ACCESS EXCLUSIVE) before any consolidate into it; the scheduler's move to the owner rule once every group is at 0.93.0; the #201 + #83 issue filed from the draft in this move's archived plan once the owner has read it; #341's body narrowed to what stays open; #520 (adopt or reject the second BT lift rule). m1 keeps scratch schemas `fresh_386_{before,after,final}_{default,bcfp}` and working schemas `w386{bd,bb,ad,ab,fd,fb}_*` until the merge; drop them after.
+
+**Facts not worth re-deriving:**
+- **Only 259 FWA lines touch more than one group,** and every gradient position on them was held by every built scanner (1,224 positions, up to 13 holders). Copies never differed in subtype or species; the one disagreement was LSAL's Salmon River control (67492, GRADIENT f) defeated by SALR's and TABR's copies.
+- **The 7 control rows filed under a non-owner are FALLS f with no natural row within 1 m:** fresh's `falls.csv` already leaves those falls out, so they were inert before and after.
+- **On eleven proof groups, both bundles, the only changes were removed copies:** no segment, access or habitat value moved, no lift lost; FINAL digests equal to AFTER-386 in every persisted table.
+- **`column` is a Postgres reserved word:** a log snapshot table built from a dictionary row of that name failed `lnk_persist_init()`; a test checks every log column against `pg_get_keywords()`.
+- **A scratch copy of `barriers` needs the persisted table's GiST and btree indexes,** or `lnk_access()`'s walk scans it (BULK sat 16 min on one statement).
+- **`wsg_recompute_one.R`'s downstream check is a post-condition after the recompute commits:** a proof set leaving a group's downstream groups out fails it by design.
+- **Measured against outlet drop above 0.6 m or slope times length above 120,** most PSCIS crossings the province calls barriers are neither (BULK: 779 of 1,564 leave the barrier set in place of the status), so the status reads more than those two measurements.
+
 ## Status (2026-11-24) — crossings snap by one rule; habitat upstream of each crossing over the network (#478, 0.92.0)
 
 **Backlog move 10 (#478) lands as one release: #313, #314, #383 (snapping) and #321, #232, #356 (habitat upstream of each crossing).** `lnk_points_snap()` wraps `fresh::frs_point_snap()` (required `id_col`), so no crossing snaps to a `999.*` placeholder; the PSCIS pick and the CABD dam snap give a shared-vertex tie to the segment that **starts** there (not at its own upstream end, then higher start, then lower id): fwapg's rule on one stream, and the stream starting at the vertex across two. `cut-full-top-4` / `cut-full-ssf-all-3` replace `cut-full-top-3` (#501's) and `cut-full-ssf-all-2` (same specs). `lnk_aggregate()` is rebuilt on `fresh::frs_aggregate()` (breaking): per crossing and species over the whole network, bcfishpass's `fwa_upstream(..., true, 1)`, long table to `to`, below-barrier totals. Mechanics: RUNBOOK's PSCIS-pick paragraph, "Snapping and ties". Write-ups: `research/crossing_snap.md`, `research/bcfishpass_parity.md` ("Crossings, and habitat upstream of each crossing"). Evidence: `data-raw/logs/snap_tie_478/`, `data-raw/logs/crossings_upstream_478/`, `data-raw/logs/crossings_parity_232/`.
@@ -1452,7 +1467,6 @@ Note: `<owner>/<repo>@<sha>` references a commit; this does **not** trigger GitH
 ## Exported Functions
 
 ### Core
-- `lnk_thresholds(csv, high, moderate, low)` — configurable severity thresholds. Ships BC defaults. CSV or inline override. Feeds into `lnk_score()`.
 - `lnk_db_conn()` — PostgreSQL connection factory, through `fresh::frs_db_conn()`: arguments, then `PG*`, then `PG_*_SHARE` (#288).
 - `lnk_config(name_or_path)` — load a config **manifest**: paths (`cfg$rules`, `cfg$dimensions`), file declarations (`cfg$files`), pipeline knobs (`cfg$pipeline`), provenance metadata. **Manifest-only — no parsed CSVs.** Cheap to call. Configs may declare `extends:` to inherit from another config. Ships with `"bcfishpass"` and `"default"` variants under `inst/extdata/configs/<name>/`.
 - `lnk_load_overrides(cfg)` — materialize the data files declared in `cfg$files`. Returns named list of canonical-shape tibbles. Entries with `source` + `canonical_schema` dispatch through `crate::crt_ingest()`; others fall through to local reads dispatched on path extension. Adding a new source family is a config edit + crate registration — no link R code change.
@@ -1464,8 +1478,8 @@ Note: `<owner>/<repo>@<sha>` references a commit; this does **not** trigger GitH
 ### Match family
 - `lnk_match(conn, sources, distance)` — generic N-way matcher on `blue_line_key` + `downstream_route_measure`. Bidirectional 1:1 dedup (closest match wins both directions). Where filters isolated in subqueries. Optional `xref_csv` for hand-curated GPS corrections.
 
-### Score family
-- `lnk_score(conn, crossings, method)` — `method = "severity"` for biological impact classification (high/moderate/low). `method = "rank"` for weighted multi-criteria prioritization. Threshold-driven, NULL-safe, column-agnostic.
+### Barrier rules
+- Which crossings are human-made barriers is the bundle's `parameters_barrier_rules.csv` (#341): evaluated in `lnk_pipeline_crossings()` into `crossings.barrier_rule_id` (`.lnk_barrier_rules_apply()`), read by the four barrier sets. Further observation-lift rules per species are `parameters_barrier_lifts.csv` (#236), read with each species' `parameters_fresh` row by `.lnk_lift_rules()`. `lnk_thresholds()`, `lnk_score()` and `lnk_source()` were removed in 0.93.0.
 
 ### Rules family
 - `lnk_rules_build(csv, to, edge_types)` — transforms a species habitat dimensions CSV into the rules YAML format consumed by `frs_habitat()`. Two CSVs: newgraph defaults (`inst/extdata/parameters_habitat_dimensions.csv`) and bcfishpass comparison variant (`inst/extdata/configs/bcfishpass/dimensions.csv`).
@@ -1491,22 +1505,13 @@ Six-phase bcfishpass-reproducing pipeline, driven by `lnk_config()` + `lnk_load_
 - `lnk_parity_annotate(rollup, taxonomy, to, tolerance)` — annotates a parity rollup against `research/bcfp_divergence_taxonomy.yml`. Tags each row with `taxonomy_id, class, mechanism, status, refs`. Unmatched rows: `UNEXPLAINED | WITHIN_TOLERANCE | NOT_APPLICABLE`.
 
 ### Bridge to fresh
-- `lnk_source(conn, crossings, label_col, label_map)` — returns `list(table, label_col, label_map)` that plugs directly into `frs_habitat(break_sources = list(...))`. `label_map` translates link severity → fresh access labels (`high → blocked`, `moderate → potential`).
 - `lnk_aggregate(conn, crossings, schema, to, config, species, col_id, barriers)` — per crossing and species, the habitat upstream over the whole network (the crossing's stream above it and every tributary, across groups), from a persist schema's `streams` and `streams_habitat_<sp>` (#478, #321). `fresh::frs_aggregate()` refined by bcfishpass's measure-aware `fwa_upstream(..., true, 1)`; exact numeric sums; zeros where nothing is upstream. Writes a long table to `to` (`config`, `species_code`, `spawning_km`, `rearing_km` with connectors out, the stream / lake / wetland split, `rearing_lake_connection_km`), plus `*_belowupstrbarriers_km` given a `barriers` table (to the next human-made barriers upstream). Barriers outside the table (another group's) do not stop the walk.
 
 ## Integration with fresh
 
 ```r
-# link scores crossings
-lnk_load(conn, csv = "overrides.csv", to = "working.fixes")
-lnk_override(conn, "working.crossings", "working.fixes")
-lnk_score(conn, "working.crossings")
-
-# link produces break source spec
-src <- lnk_source(conn, "working.crossings")
-
-# fresh consumes it — zero translation
-frs_habitat(conn, "MORR", break_sources = list(src))
+# link builds the group's crossings; its barrier rules say which are barriers
+lnk_pipeline_crossings(conn, "MORR", cfg, loaded, "working_morr")
 
 # link reads fresh output for per-crossing rollup: per species, over the network
 lnk_aggregate(conn, "working_morr.crossings", schema = "fresh_default",
@@ -1514,11 +1519,11 @@ lnk_aggregate(conn, "working_morr.crossings", schema = "fresh_default",
               barriers = "working_morr.barriers_anthropogenic")
 ```
 
-The data flows both directions: link → fresh (scored crossings as break sources) and fresh → link (habitat classification for upstream rollup).
+The data flows both directions: link → fresh (crossings and barriers as break sources) and fresh → link (habitat classification for upstream rollup).
 
 ## fresh Break Source Label Convention
 
-When link produces a break source via `lnk_source()`, the label values control how fresh treats each point:
+When link hands fresh a break source, the label values control how fresh treats each point (`lnk_pipeline_classify()` labels crossings from their status):
 
 | Label | What fresh does |
 |-------|----------------|
@@ -1532,10 +1537,8 @@ When link produces a break source via `lnk_source()`, the label values control h
 `frs_habitat()` and `frs_habitat_classify()` accept `label_block` (default `"blocked"`). This controls which break labels restrict access:
 
 ```r
-# link scores crossings with severity labels
-src <- lnk_source(conn, "working.crossings",
-  label_col = "severity",
-  label_map = c("high" = "blocked", "moderate" = "potential"))
+# a break source: a table and its label column
+src <- list(table = "working.crossings", label_col = "label")
 
 # Conservative: both high and moderate block
 frs_habitat(conn, "BULK",
@@ -1572,7 +1575,7 @@ The same steps replicate what bcfishpass does, for any `watershed_group_code`:
 2. Load overrides from `bcfishpass/data/` CSVs, filter to WSG
 3. `lnk_load()` → `lnk_override()` (validate + apply)
 4. Get PSCIS via `bcdata::bcdc_get_data()`, match with `lnk_match()` (+ xref CSV)
-5. `lnk_score()` → `lnk_source()` → `frs_habitat()`
+5. `lnk_pipeline_crossings()` (barrier rules) → `frs_habitat()`
 6. Falls as `list(table = "working.falls", label = "blocked")`
 
 To run the entire province: loop over watershed groups. Or pass any AOI with `species` for sub-basin work.

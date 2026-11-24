@@ -54,13 +54,18 @@ count unless this flag says otherwise. Habitat confirmations
 (\code{habitat} argument) are higher-trust than observations — they bypass
 the control table entirely, for all species.}
 
-\item{params}{Data frame with per-species parameters. Must have columns:
-\code{species_code}, \code{observation_threshold}, \code{observation_date_min},
+\item{params}{Data frame of lift rules, one row per rule. Must have
+columns: \code{species_code}, \code{observation_threshold}, \code{observation_date_min},
 \code{observation_buffer_m}, \code{observation_species}. Optional column
 \code{observation_control_apply} (logical) — when TRUE, the \code{control} table
-blocks overrides for this species; when FALSE/NA/missing, the species
+blocks overrides for this rule; when FALSE/NA/missing, the rule
 ignores control. Bcfishpass defaults: TRUE for CH/CM/CO/PK/SK/ST,
-FALSE for BT/WCT. See \code{configs/bcfishpass/parameters_fresh.csv}.}
+FALSE for BT/WCT. See \code{configs/bcfishpass/parameters_fresh.csv}.
+Optional column \code{rule} names each rule (link#236): a species may have
+several, and a barrier is lifted where any one of them is met (the
+records of two rules never add together). Without it every row is rule
+\code{own}, so a \code{parameters_fresh.csv}-shaped table lifts as it always has.
+Habitat lifts run once per species, on its \code{own} row's species list.}
 
 \item{cols_index}{Character vector. Column names to index on the
 barriers table for \code{fwa_upstream()} performance. Indexes are created
@@ -74,8 +79,10 @@ species and evidence record. An observation lift lists every record that
 met the rule (\code{observation_key}, the code it is filed under, its date
 and group); a habitat lift lists each confirming habitat row. Every row
 carries the rule as applied (\code{observation_threshold},
-\code{observation_date_min}, \code{observation_species}, \code{observation_buffer_m}).
-\code{NULL} (default) writes none.}
+\code{observation_date_min}, \code{observation_species}, \code{observation_buffer_m})
+and its name in \code{lift_rule} (\code{habitat} for a habitat lift), so a record
+counted under two rules has a row for each. \code{NULL} (default) writes
+none.}
 
 \item{verbose}{Logical. Report counts.}
 }

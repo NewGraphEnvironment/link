@@ -1,0 +1,20 @@
+measure,value
+lines touching more than one group,259
+gradient rows on those lines,3087
+gradient positions on those lines,1224
+positions held by more than one group,1224
+most holders of one position,13
+rows held by a group that does not own the position,1864
+positions whose copies differ in subtype,0
+positions whose copies differ in blocks_species,0
+"(position, built scanner) pairs with no row within 1 m",1
+positions with such a missing scanner,1
+positions whose owner holds no row,1
+  of which the owner is built in the schema,1
+  of which the owner does not scan the line,0
+positions on no persisted segment,0
+rows at positions on no persisted segment,0
+override positions on multi-group lines,141
+  held by more than one group,101
+  whose species sets differ between holders,0
+  whose owner holds none,1

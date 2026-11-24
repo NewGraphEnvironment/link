@@ -227,8 +227,14 @@ if (length(active) > 0L) {
 # modelled and consolidated, so the guard MUST pass; a failure here means the
 # consolidate genuinely dropped a downstream group and this WSG's access is
 # built on barriers that never landed.
+  # LNK_GUARD_DOWNSTREAM_NOTE, a written reason, lets a deliberate partial run
+  # (a scratch build of a few groups) through and records it, as at model
+  # time: from 0.93.0 the check also names groups on the downstream lines that
+  # hold no barrier rows (link#386), which such a run lacks by construction.
+  note <- Sys.getenv("LNK_GUARD_DOWNSTREAM_NOTE", "")
   g <- lnk_wsg_downstream_check(conn, aoi = wsg, cfg = cfg, loaded = loaded,
-                                on_fail = "error")
+                                on_fail = "error",
+                                override = if (nzchar(trimws(note))) note else NA_character_)
   # The check's own seconds, beside the recompute's (link#461).
   cat(sprintf("[wsg_recompute_one] %s downstream check %s in %.1f s\n",
               wsg, g$status, g$elapsed_s))

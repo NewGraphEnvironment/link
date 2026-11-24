@@ -1,3 +1,13 @@
+#' A yes/no cell read as TRUE: TRUE, "TRUE", "true", "t", "yes", "y" or "1"
+#'
+#' The dictionaries type these columns `yes_no`, and bundles write them either
+#' way; `as.logical("yes")` is NA, which would read a "yes" as no.
+#' @noRd
+.lnk_flag_true <- function(x) {
+  if (is.logical(x)) return(isTRUE(x))
+  tolower(trimws(as.character(x))) %in% c("true", "t", "yes", "y", "1")
+}
+
 #' Build barrier override list from evidence sources
 #'
 #' Processes fish observations, habitat confirmations, and control tables
@@ -38,13 +48,18 @@
 #'   count unless this flag says otherwise. Habitat confirmations
 #'   (`habitat` argument) are higher-trust than observations — they bypass
 #'   the control table entirely, for all species.
-#' @param params Data frame with per-species parameters. Must have columns:
-#'   `species_code`, `observation_threshold`, `observation_date_min`,
+#' @param params Data frame of lift rules, one row per rule. Must have
+#'   columns: `species_code`, `observation_threshold`, `observation_date_min`,
 #'   `observation_buffer_m`, `observation_species`. Optional column
 #'   `observation_control_apply` (logical) — when TRUE, the `control` table
-#'   blocks overrides for this species; when FALSE/NA/missing, the species
+#'   blocks overrides for this rule; when FALSE/NA/missing, the rule
 #'   ignores control. Bcfishpass defaults: TRUE for CH/CM/CO/PK/SK/ST,
 #'   FALSE for BT/WCT. See `configs/bcfishpass/parameters_fresh.csv`.
+#'   Optional column `rule` names each rule (link#236): a species may have
+#'   several, and a barrier is lifted where any one of them is met (the
+#'   records of two rules never add together). Without it every row is rule
+#'   `own`, so a `parameters_fresh.csv`-shaped table lifts as it always has.
+#'   Habitat lifts run once per species, on its `own` row's species list.
 #' @param cols_index Character vector. Column names to index on the
 #'   barriers table for `fwa_upstream()` performance. Indexes are created
 #'   `IF NOT EXISTS`. Default `c("blue_line_key", "wscode_ltree",
@@ -56,8 +71,10 @@
 #'   met the rule (`observation_key`, the code it is filed under, its date
 #'   and group); a habitat lift lists each confirming habitat row. Every row
 #'   carries the rule as applied (`observation_threshold`,
-#'   `observation_date_min`, `observation_species`, `observation_buffer_m`).
-#'   `NULL` (default) writes none.
+#'   `observation_date_min`, `observation_species`, `observation_buffer_m`)
+#'   and its name in `lift_rule` (`habitat` for a habitat lift), so a record
+#'   counted under two rules has a row for each. `NULL` (default) writes
+#'   none.
 #' @param verbose Logical. Report counts.
 #'
 #' @return Invisible data frame with override counts per species.
@@ -97,6 +114,13 @@ lnk_barrier_overrides <- function(conn,
                                    to,
                                    evidence = NULL,
                                    verbose = TRUE) {
+  # Each row is a rule; a table without names is one rule per row, `own`.
+  if (!"rule" %in% names(params)) params$rule <- rep("own", nrow(params))
+  params$rule <- as.character(params$rule)
+  if (anyNA(params$rule) || !all(grepl("^[A-Za-z0-9_.-]+$", params$rule))) {
+    stop("params$rule must name each rule with letters, digits, '_', '.' or '-'",
+         call. = FALSE)
+  }
   DBI::dbExecute(conn, sprintf("DROP TABLE IF EXISTS %s", to))
   if (!is.null(evidence)) {
     DBI::dbExecute(conn, sprintf("DROP TABLE IF EXISTS %s", evidence))
@@ -113,7 +137,8 @@ lnk_barrier_overrides <- function(conn,
         observation_threshold integer,
         observation_date_min date,
         observation_species text,
-        observation_buffer_m double precision
+        observation_buffer_m double precision,
+        lift_rule text NOT NULL
       )", evidence))
   }
   # The code a record is filed under: the observation tables the pipeline
@@ -141,15 +166,17 @@ lnk_barrier_overrides <- function(conn,
   has_obs_threshold <- !is.na(params$observation_threshold) &
     params$observation_threshold > 0
   species_to_process <- if (!is.null(habitat)) {
-    # All species in params when habitat table is available
-    params
+    # Every rule with a threshold, and every species' own row, which carries
+    # its habitat lift
+    params[has_obs_threshold | params$rule == "own", ]
   } else {
     params[has_obs_threshold, ]
   }
 
   if (nrow(species_to_process) == 0) {
     if (verbose) message("No species to process \u2014 no overrides")
-    return(invisible(data.frame(species_code = character(), n_overrides = integer())))
+    return(invisible(data.frame(species_code = character(), rule = character(),
+                                n_overrides = integer())))
   }
 
   # Index barriers table for fwa_upstream performance
@@ -176,14 +203,28 @@ lnk_barrier_overrides <- function(conn,
 
   for (i in seq_len(nrow(species_to_process))) {
     sp <- species_to_process$species_code[i]
+    rule <- species_to_process$rule[i]
     threshold <- as.integer(species_to_process$observation_threshold[i])
     if (is.na(threshold)) threshold <- 0L
-    date_min <- as.character(species_to_process$observation_date_min[i])
-    if (is.na(date_min)) date_min <- "1900-01-01"
+    # NA or blank is no floor (read.csv gives "" in a mixed column); anything
+    # else must be a date, since it is written into the SQL.
+    date_min <- trimws(as.character(species_to_process$observation_date_min[i]))
+    if (is.na(date_min) || !nzchar(date_min) || date_min == "NA") date_min <- "1900-01-01"
+    if (!grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", date_min) ||
+        is.na(as.Date(date_min, optional = TRUE))) {
+      stop("observation_date_min is not a date: ", date_min, call. = FALSE)
+    }
     buffer_m <- as.numeric(species_to_process$observation_buffer_m[i])
     if (is.na(buffer_m)) buffer_m <- 20
     obs_sp_str <- as.character(species_to_process$observation_species[i])
-    obs_sp_list <- if (is.na(obs_sp_str)) sp else trimws(strsplit(obs_sp_str, ";")[[1]])
+    # NA or blank (read.csv and read_as: text give "") means the row's own
+    # species, as the dictionaries and .lnk_lift_rules() read it; an empty list
+    # would build `IN ('')` and lift nothing.
+    # Upper-cased, as .lnk_lift_rules() reads the list and as records are coded.
+    obs_sp_list <- if (is.na(obs_sp_str)) character(0) else
+      toupper(trimws(strsplit(obs_sp_str, ";", fixed = TRUE)[[1]]))
+    obs_sp_list <- obs_sp_list[nzchar(obs_sp_list)]
+    if (length(obs_sp_list) == 0L) obs_sp_list <- sp
     obs_sp_sql <- paste0("'", obs_sp_list, "'", collapse = ", ")
 
     # Species-level opt-in for the control filter. bcfishpass applies control
@@ -192,7 +233,7 @@ lnk_barrier_overrides <- function(conn,
     # barriers (post-glacial headwater connectivity, no ocean-return
     # requirement), so their observations should still override.
     ctrl_apply_col <- species_to_process$observation_control_apply[i]
-    ctrl_apply <- isTRUE(as.logical(ctrl_apply_col))
+    ctrl_apply <- .lnk_flag_true(ctrl_apply_col)
 
     overrides_found <- 0L
 
@@ -276,7 +317,8 @@ lnk_barrier_overrides <- function(conn,
           "INSERT INTO %s
            SELECT DISTINCT o.blue_line_key, o.downstream_route_measure, '%s',
                   'observation', o.observation_key, o.species_code_recorded,
-                  o.observation_date, o.evidence_wsg, %d, '%s'::date, %s, %s
+                  o.observation_date, o.evidence_wsg, %d, '%s'::date, %s, %s,
+                  %s
            FROM pg_temp.lnk_bo_pairs o
            JOIN (SELECT blue_line_key, downstream_route_measure
                  FROM pg_temp.lnk_bo_pairs
@@ -286,7 +328,7 @@ lnk_barrier_overrides <- function(conn,
             AND l.downstream_route_measure = o.downstream_route_measure",
           evidence, sp, threshold, date_min,
           .lnk_quote_literal(paste(obs_sp_list, collapse = ";")),
-          buffer_m, threshold))
+          buffer_m, .lnk_quote_literal(rule), threshold))
       }
       DBI::dbExecute(conn, "DROP TABLE IF EXISTS pg_temp.lnk_bo_pairs")
     }
@@ -297,7 +339,9 @@ lnk_barrier_overrides <- function(conn,
     # time a reviewer has marked habitat as confirmed upstream of a
     # position, they have already considered the barrier's passability.
     # bcfishpass does the same: `hab_upstr` CTE has no control join.
-    if (!is.null(habitat)) {
+    # Once per species, on its own row's list: a further rule adds observation
+    # evidence, not habitat evidence (link#236).
+    if (!is.null(habitat) && identical(rule, "own")) {
       # Bcfishpass `user_habitat_classification.csv` shape (post-2026-04-26):
       # one row per (segment x species) with `spawning` and `rearing`
       # integer indicator columns. Any truthy indicator flags the row as
@@ -337,7 +381,8 @@ lnk_barrier_overrides <- function(conn,
                   concat_ws(':', h.species_code, h.blue_line_key,
                             h.downstream_route_measure, h.upstream_route_measure),
                   h.species_code, NULL::date, NULL::text,
-                  NULL::integer, NULL::date, %s, NULL::double precision
+                  NULL::integer, NULL::date, %s, NULL::double precision,
+                  'habitat'
            FROM %s b
            INNER JOIN %s h
              ON (lower(trim(h.spawning::text)) IN ('true', 't', '1') OR
@@ -360,11 +405,12 @@ lnk_barrier_overrides <- function(conn,
     }
 
     results[[length(results) + 1]] <- data.frame(
-      species_code = sp, n_overrides = overrides_found,
+      species_code = sp, rule = rule, n_overrides = overrides_found,
       stringsAsFactors = FALSE)
 
     if (verbose) {
-      message("  ", sp, ": ", overrides_found, " barriers overridden")
+      message("  ", sp, " (", rule, "): ", overrides_found,
+              " barriers overridden")
     }
   }
 

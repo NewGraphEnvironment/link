@@ -6,12 +6,14 @@ test_that("lnk_pipeline_crossings composes the five steps in order", {
   m_union <- mockery::mock(invisible(NULL))
   m_overrides <- mockery::mock(invisible(NULL))
   m_emit <- mockery::mock(invisible(NULL))
+  m_rules <- mockery::mock(invisible(0L))
 
   with_mocked_bindings(
     lnk_inputs_verify = m_verify,
     .lnk_pipeline_pscis_build = m_pscis_build,
     .lnk_crossings_union = m_union,
     .lnk_crossings_apply_overrides = m_overrides,
+    .lnk_barrier_rules_apply = m_rules,
     lnk_barriers_emit = m_emit,
     {
       result <- lnk_pipeline_crossings(
@@ -33,6 +35,12 @@ test_that("lnk_pipeline_crossings composes the five steps in order", {
   mockery::expect_called(m_union, 1)
   mockery::expect_called(m_overrides, 1)
   mockery::expect_called(m_emit, 1)
+  # The barrier rules run once, on the pipeline's crossings (link#341); with
+  # no rules table the built-in rule.
+  mockery::expect_called(m_rules, 1)
+  rules_args <- mockery::mock_args(m_rules)[[1]]
+  expect_equal(rules_args[[2]], "working_adms")
+  expect_equal(rules_args[[3]]$rule_id, "status")
 
   # lnk_inputs_verify gets the three required tables.
   required <- mockery::mock_args(m_verify)[[1]][[2]]
@@ -60,6 +68,7 @@ test_that("lnk_pipeline_crossings clamps snap_tolerance to >= 150", {
     .lnk_pipeline_pscis_build = m_pscis_build,
     .lnk_crossings_union = mockery::mock(invisible(NULL), cycle = TRUE),
     .lnk_crossings_apply_overrides = mockery::mock(invisible(NULL), cycle = TRUE),
+    .lnk_barrier_rules_apply = mockery::mock(invisible(0L), cycle = TRUE),
     lnk_barriers_emit = mockery::mock(invisible(NULL), cycle = TRUE),
     {
       # Caller-passed 200 > 150 → 200 wins.

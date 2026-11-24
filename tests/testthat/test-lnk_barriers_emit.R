@@ -1,5 +1,7 @@
 test_that("lnk_barriers_emit issues DROP + CREATE for all five tables", {
   conn <- structure(list(), class = "DBIConnection")
+  local_mocked_bindings(
+    .lnk_sql_barrier_selected = function(...) "barrier_status IN ('BARRIER', 'POTENTIAL')")
   m_quote <- mockery::mock(DBI::SQL("\"working_adms\""), cycle = TRUE)
   m_exec <- mockery::mock(1L, cycle = TRUE)
   with_mocked_bindings(
@@ -26,6 +28,8 @@ test_that("lnk_barriers_emit issues DROP + CREATE for all five tables", {
 
 test_that("lnk_barriers_emit anthropogenic filter matches bcfp semantics", {
   conn <- structure(list(), class = "DBIConnection")
+  local_mocked_bindings(
+    .lnk_sql_barrier_selected = function(...) "barrier_status IN ('BARRIER', 'POTENTIAL')")
   m_quote <- mockery::mock(DBI::SQL("\"s\""), cycle = TRUE)
   m_exec <- mockery::mock(1L, cycle = TRUE)
   with_mocked_bindings(
@@ -45,6 +49,8 @@ test_that("lnk_barriers_emit anthropogenic filter matches bcfp semantics", {
 
 test_that("lnk_barriers_emit pscis branch filters by crossing_source = 'PSCIS'", {
   conn <- structure(list(), class = "DBIConnection")
+  local_mocked_bindings(
+    .lnk_sql_barrier_selected = function(...) "barrier_status IN ('BARRIER', 'POTENTIAL')")
   m_quote <- mockery::mock(DBI::SQL("\"s\""), cycle = TRUE)
   m_exec <- mockery::mock(1L, cycle = TRUE)
   with_mocked_bindings(
@@ -64,6 +70,8 @@ test_that("lnk_barriers_emit pscis branch filters by crossing_source = 'PSCIS'",
 
 test_that("lnk_barriers_emit remediations branch is anthropogenic UNION REMEDIATED+PASSABLE", {
   conn <- structure(list(), class = "DBIConnection")
+  local_mocked_bindings(
+    .lnk_sql_barrier_selected = function(...) "barrier_status IN ('BARRIER', 'POTENTIAL')")
   m_quote <- mockery::mock(DBI::SQL("\"s\""), cycle = TRUE)
   m_exec <- mockery::mock(1L, cycle = TRUE)
   with_mocked_bindings(
@@ -85,6 +93,8 @@ test_that("lnk_barriers_emit remediations branch is anthropogenic UNION REMEDIAT
 
 test_that("lnk_barriers_emit validates argument shapes", {
   conn <- structure(list(), class = "DBIConnection")
+  local_mocked_bindings(
+    .lnk_sql_barrier_selected = function(...) "barrier_status IN ('BARRIER', 'POTENTIAL')")
   expect_error(lnk_barriers_emit("not a conn", "s"))
   expect_error(lnk_barriers_emit(conn, ""))
   expect_error(lnk_barriers_emit(conn, c("a", "b")))

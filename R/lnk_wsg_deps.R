@@ -9,10 +9,15 @@
 #'
 #' For every watershed group, every other group touching a blue line that
 #' carries a code which is an ancestor of, or equal to, one of the group's own
-#' codes. Complete by construction: gradient barriers are found along the whole
-#' of every line a group touches and persisted under its own code, an override
-#' is written at the group's own barrier positions, and every other barrier
-#' source is filtered to the group's own segments. It errs wide (a group can be
+#' codes. Complete by construction for any build: up to link 0.92.0 gradient
+#' barriers were persisted by every group scanning their line, and every other
+#' barrier source is filtered to the group's own segments. From 0.93.0 each
+#' gradient position is held by its owner alone (link#386; overrides and
+#' evidence beside the barrier a group holds; falls and user-definite rows by
+#' their files' groups, which own every one in `default`), so for a schema built
+#' wholly at 0.93.0 or later the narrower owner rule of
+#' `data-raw/recompute_deps.R` is complete too. The scheduler stays on this rule
+#' until a provincial run has rebuilt every group. It errs wide (a group can be
 #' listed whose rows lie upstream of the reader), because a walk that reads too
 #' little cannot be told from a right one. The outlet closure
 #' ([fresh::frs_wsg_drainage()]) is narrower than this and misses readers.

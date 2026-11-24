@@ -410,3 +410,60 @@ test_that("the delete writes a pair's numbers as fresh stores them (round 3)", {
   expect_match(del, "('discharge', 3::double precision", fixed = TRUE)
 })
 
+
+# -- one holder per position (link#386) -------------------------------------
+
+test_that("an override or evidence row persists only beside a natural barrier the group holds (#386, DB)", {
+  conn <- skip_if_no_db()
+  w <- paste0("zz_lnk_t386_pw_", Sys.getpid())
+  p <- paste0("zz_lnk_t386_pp_", Sys.getpid())
+  for (x in c(w, p)) {
+    DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", x))
+  }
+  DBI::dbExecute(conn, sprintf("CREATE SCHEMA %s", w))
+  withr::defer(for (x in c(w, p)) {
+    DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", x))
+  })
+  cfg <- lnk_config("bcfishpass")
+  cfg$pipeline$schema <- p
+  lnk_persist_init(conn, cfg, species = "BT")
+  DBI::dbExecute(conn, sprintf("CREATE TABLE %s.streams (LIKE %s.streams)", w, p))
+  DBI::dbExecute(conn, sprintf("CREATE TABLE %s.barriers (LIKE %s.barriers)", w, p))
+  DBI::dbExecute(conn, sprintf(
+    "CREATE TABLE %s.barrier_override_evidence (LIKE %s.barrier_override_evidence)", w, p))
+  DBI::dbExecute(conn, sprintf(
+    "ALTER TABLE %s.barrier_override_evidence DROP COLUMN watershed_group_code", w))
+  # LSAL holds a gradient barrier at 124906.6, just below SALR's first segment
+  # (124906.77), and a falls row at 50000; the user-definite row at 60000
+  # cannot be lifted. Its working overrides cover the whole line: the lift at
+  # 124907 (the barrier's rounded measure, on SALR's side of the boundary) is
+  # kept; the lifts at 200000 (a position SALR owns) and 60000 are not.
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.barriers (id_barrier, watershed_group_code, barrier_source,
+                              blue_line_key, downstream_route_measure)
+     VALUES ('GRADIENT-1', 'LSAL', 'GRADIENT', 356364485, 124906.6),
+            ('FALLS-1', 'LSAL', 'FALLS', 356364485, 50000),
+            ('USER_DEFINITE-1', 'LSAL', 'USER_DEFINITE', 356364485, 60000)", w))
+  DBI::dbExecute(conn, sprintf(
+    "CREATE TABLE %s.barrier_overrides AS
+     SELECT * FROM (VALUES (356364485, 124907::double precision, 'BT'),
+                           (356364485, 50000::double precision, 'BT'),
+                           (356364485, 200000::double precision, 'BT'),
+                           (356364485, 60000::double precision, 'BT'))
+       v(blue_line_key, downstream_route_measure, species_code)", w))
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.barrier_override_evidence
+       (blue_line_key, downstream_route_measure, species_code, evidence, evidence_key,
+        lift_rule)
+     SELECT blue_line_key, downstream_route_measure, species_code, 'observation', 'k1',
+            'own'
+       FROM %s.barrier_overrides", w, w))
+  lnk_pipeline_persist(conn, aoi = "LSAL", cfg = cfg, species = character(0),
+                       schema = w)
+  got <- function(t) DBI::dbGetQuery(conn, sprintf(
+    "SELECT downstream_route_measure AS m, watershed_group_code AS g
+       FROM %s.%s ORDER BY 1", p, t))
+  expect_equal(got("barrier_overrides")$m, c(50000, 124907))
+  expect_equal(got("barrier_overrides")$g, c("LSAL", "LSAL"))
+  expect_equal(got("barrier_override_evidence")$m, c(50000, 124907))
+})

@@ -1,0 +1,13 @@
+[build] default 20261124_386-after-default -> fresh_386_after_default at bd47d1ee (2026-11-24 18:15:00 UTC)
+Override validation: w386ad_tabr.pscis_fixes vs w386ad_tabr.crossings
+  Total overrides:  3
+  Valid (matched):  3
+  Orphans:          0
+  Duplicates:       0
+Updated 3 of 2880 rows (barrier_status)
+[build] TABR model done in 4.7 min
+[build] LSAL model done in 2.6 min
+Error: Failed to fetch row : FATAL:  terminating connection due to administrator command
+In addition: There were 15 warnings (use warnings() to see them)
+WARNING:  there is no transaction in progress
+Execution halted

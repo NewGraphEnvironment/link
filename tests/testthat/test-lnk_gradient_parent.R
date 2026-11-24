@@ -32,10 +32,12 @@ test_that("a gradient setting is checked when the manifest loads", {
 test_that("only default_parent resolves grad-parent, and only its grad differs from default", {
   par <- lnk_vocabulary_resolve(lnk_config("default_parent"))
   def <- lnk_vocabulary_resolve(lnk_config("default"))
-  expect_identical(par[["grad"]], "grad-parent")
+  expect_identical(par[["grad"]], "grad-parent-2")
   others <- c("cut", "acc", "flow")
   expect_identical(par[others], def[others])
   expect_identical(link:::.lnk_gradient_source(lnk_config("default")), "segment")
+  expect_identical(link:::.lnk_gradient_parent_cut("grad-parent-2"), "cut-min-2")
+  # a retired row still names its cut, for reading an older build
   expect_identical(link:::.lnk_gradient_parent_cut("grad-parent"), "cut-min")
   expect_error(link:::.lnk_gradient_parent_cut("grad-seg"), "names no parent cut")
 })

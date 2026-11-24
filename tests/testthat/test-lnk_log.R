@@ -201,7 +201,8 @@ test_that(".lnk_log_create_tables emits a CREATE TABLE for every spec", {
   sql <- capture_ddl(.lnk_log_create_tables(NULL, "fresh_test"))
   joined <- paste(sql, collapse = "\n")
   for (tbl in c("log", "log_recompute", "log_input", "log_parameters_fresh",
-                "log_parameters_habitat_thresholds", "log_dimensions")) {
+                "log_parameters_habitat_thresholds", "log_dimensions",
+                "log_parameters_barrier_lifts", "log_parameters_barrier_rules")) {
     expect_match(joined,
       sprintf("CREATE TABLE IF NOT EXISTS fresh_test\\.%s \\(", tbl))
   }
@@ -741,7 +742,7 @@ test_that(".lnk_log_run_start writes the output's vocabulary tokens", {
   vals <- regmatches(ins, gregexpr("'(cut|acc|grad|q)-[a-z0-9-]+'", ins))[[1]]
   expect_identical(cols[startsWith(cols, "token_")],
                    c("token_cut", "token_acc", "token_grad", "token_flow"))
-  expect_identical(vals, c("'cut-full-top-4'", "'acc-v7'", "'grad-seg'",
+  expect_identical(vals, c("'cut-full-top-5'", "'acc-v8'", "'grad-seg'",
                            "'q-wet-fill'"))
 })
 
@@ -1362,4 +1363,14 @@ test_that("no log table's primary key includes watershed_group_code", {
                 info = s$table)
     expect_false("watershed_group_code" %in% s$pk, info = s$table)
   }
+})
+
+test_that("no column a log snapshot table is built from is a reserved word (#341, DB)", {
+  # The DDL writes column names unquoted: a dictionary row named `column`
+  # failed lnk_persist_init() on a new schema.
+  conn <- skip_if_no_db()
+  reserved <- DBI::dbGetQuery(conn,
+    "SELECT word FROM pg_get_keywords() WHERE catcode = 'R'")$word
+  cols <- unlist(lapply(.lnk_log_specs(), function(s) names(s$cols)))
+  expect_length(intersect(tolower(cols), reserved), 0L)
 })

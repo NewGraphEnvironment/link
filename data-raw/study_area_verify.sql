@@ -83,6 +83,17 @@
 \set unpinned_ok ''
 \endif
 
+-- `-v holder_from=<version>`: the link version from which a group holds each
+-- barrier position alone (link#386). The one-holder checks in section 6 judge
+-- only the run's groups whose newest finished build is at this version or
+-- later, and print how many they judged: a schema part-way through the change
+-- still holds earlier builds' copies. A proof build made before the release
+-- logs the previous version, so its check passes `-v holder_from=0.0.0`.
+\if :{?holder_from}
+\else
+\set holder_from '0.93.0'
+\endif
+
 -- Resolve the run. coalesce + a scalar subquery so exactly one row always
 -- comes back: `\gset` against an empty result leaves the variable UNSET, and
 -- every later `:'run_uid'` would then break with an error about syntax rather
@@ -125,7 +136,8 @@ END $$;
 SELECT set_config('lnk.run_uid',     :'run_uid',     false) AS run_uid,
        set_config('lnk.schema',      :'schema',      false) AS schema,
        set_config('lnk.expected_n',  :'expected_n',  false) AS expected_n,
-       set_config('lnk.unpinned_ok', :'unpinned_ok', false) AS unpinned_ok
+       set_config('lnk.unpinned_ok', :'unpinned_ok', false) AS unpinned_ok,
+       set_config('lnk.holder_from', :'holder_from', false) AS holder_from
 \gset assert_
 
 \echo ''
@@ -425,6 +437,10 @@ DECLARE
   -- sibling this mechanism cites, lnk_wsg_downstream_check(override=), rejects
   -- a bare TRUE for the same reason -- the reason IS the control.
   v_unpin  text := nullif(btrim(current_setting('lnk.unpinned_ok')), '');
+  v_hfrom  int[] := (string_to_array(current_setting('lnk.holder_from'), '.'))[1:3]::int[];
+  n_judged int;
+  v_rulecol text;
+  n_dup    int;
   n_model  int;
   n_gap    int;
   n_open   int;
@@ -796,25 +812,99 @@ BEGIN
         'run %: % lifted barrier(s) where barrier_override_evidence and barrier_overrides disagree (%). Every lift must list what it rests on, and every listed lift must be a lift (link#434): re-model those groups under this run_uid.',
         v_run, n_ev, bad;
     END IF;
+    -- Per rule where the table names them (link#236, 0.93.0): only a rule
+    -- that met its threshold writes rows, so every (lift, rule) present must
+    -- reach that rule's threshold of distinct records. An older table has one
+    -- rule per species.
+    v_rulecol := CASE WHEN EXISTS (
+        SELECT 1 FROM information_schema.columns
+         WHERE table_schema = v_sch AND table_name = 'barrier_override_evidence'
+           AND column_name = 'lift_rule')
+      THEN ', lift_rule' ELSE '' END;
     EXECUTE format(
       $q$SELECT count(*),
                 coalesce(string_agg(DISTINCT watershed_group_code || ' ' || species_code,
                                     ', '), '')
            FROM (SELECT watershed_group_code, species_code, blue_line_key,
-                        downstream_route_measure,
+                        downstream_route_measure %2$s,
                         max(observation_threshold) AS thr,
                         count(DISTINCT evidence_key) AS n
                    FROM %1$I.barrier_override_evidence
                   WHERE evidence = 'observation'
                     AND watershed_group_code IN
                         (SELECT watershed_group_code FROM %1$I.log WHERE run_uid = $1)
-                  GROUP BY 1, 2, 3, 4) t
-          WHERE n < thr$q$, v_sch) INTO n_evthr, bad USING v_run;
+                  GROUP BY watershed_group_code, species_code, blue_line_key,
+                           downstream_route_measure %2$s) t
+          WHERE n < thr$q$, v_sch, v_rulecol) INTO n_evthr, bad USING v_run;
     IF n_evthr > 0 THEN
       RAISE EXCEPTION
-        'run %: % observation lift(s) list fewer records than their threshold (%) (link#434).',
+        'run %: % observation lift rule(s) list fewer records than their threshold (%) (link#434, link#236).',
         v_run, n_evthr, bad;
     END IF;
+  END IF;
+
+  -- One holder per barrier position (link#386). From `holder_from` on, a
+  -- group persists a gradient barrier only at a position on its own segments,
+  -- and an override or evidence row only beside a natural barrier it holds. So
+  -- among the judged groups (the run's, newest finished build at holder_from
+  -- or later) no two hold a gradient row at one line, measure and subtype, and
+  -- none holds an override or evidence row with no GRADIENT, FALLS or
+  -- SUBSURFACE_FLOW row of its own within 1 m. That the holder is the owner
+  -- needs FWA, which this file does not read: it is proved in the unit tests
+  -- and data-raw/logs/barrier_copies_386/.
+  IF to_regclass(format('%I.barriers', v_sch)) IS NULL THEN
+    RAISE NOTICE 'NOTE: no barriers table in %; one holder per position is not checked (link#386)', v_sch;
+  ELSE
+    EXECUTE format(
+      $q$CREATE TEMP TABLE lnk_verify_holders ON COMMIT DROP AS
+         SELECT watershed_group_code FROM (
+           SELECT DISTINCT ON (watershed_group_code) watershed_group_code, link_version
+             FROM %1$I.log
+            WHERE run_uid = $1 AND date_end IS NOT NULL
+            ORDER BY watershed_group_code, date_end DESC) l
+          WHERE (string_to_array(link_version, '.'))[1:3]::int[] >= $2$q$, v_sch)
+      USING v_run, v_hfrom;
+    SELECT count(*) INTO n_judged FROM lnk_verify_holders;
+    RAISE NOTICE 'one holder per position (link#386): judged % group(s) built at % or later',
+      n_judged, array_to_string(v_hfrom, '.');
+    EXECUTE format(
+      $q$SELECT count(*),
+                coalesce(string_agg(blue_line_key || ' ' || downstream_route_measure
+                                    || ' ' || holders, ', ' ORDER BY blue_line_key), '')
+           FROM (SELECT blue_line_key, downstream_route_measure, barrier_subtype,
+                        string_agg(watershed_group_code, '/' ORDER BY watershed_group_code) AS holders
+                   FROM %1$I.barriers
+                  WHERE barrier_source = 'GRADIENT'
+                    AND watershed_group_code IN (SELECT * FROM lnk_verify_holders)
+                  GROUP BY 1, 2, 3
+                 HAVING count(DISTINCT watershed_group_code) > 1) d$q$, v_sch)
+      INTO n_dup, bad;
+    IF n_dup > 0 THEN
+      RAISE EXCEPTION
+        'run %: % gradient position(s) held by more than one judged group (%). From % on, only the group owning a position holds it (link#386): re-model those groups under this run_uid.',
+        v_run, n_dup, left(bad, 500), array_to_string(v_hfrom, '.');
+    END IF;
+    FOREACH v_sp IN ARRAY ARRAY['barrier_overrides', 'barrier_override_evidence'] LOOP
+      CONTINUE WHEN to_regclass(format('%I.%I', v_sch, v_sp)) IS NULL;
+      EXECUTE format(
+        $q$SELECT count(*),
+                  coalesce(string_agg(DISTINCT o.watershed_group_code, ', '), '')
+             FROM %1$I.%2$I o
+            WHERE o.watershed_group_code IN (SELECT * FROM lnk_verify_holders)
+              AND NOT EXISTS (
+                SELECT 1 FROM %1$I.barriers b
+                 WHERE b.watershed_group_code = o.watershed_group_code
+                   AND b.blue_line_key = o.blue_line_key
+                   AND abs(b.downstream_route_measure - o.downstream_route_measure) < 1
+                   AND b.barrier_source IN ('GRADIENT', 'FALLS', 'SUBSURFACE_FLOW'))$q$,
+        v_sch, v_sp) INTO n_ev, bad;
+      IF n_ev > 0 THEN
+        RAISE EXCEPTION
+          'run %: % row(s) of % held by a judged group with no natural barrier of its own within 1 m (%). An override or its evidence belongs to the group holding the barrier (link#386): re-model those groups under this run_uid.',
+          v_run, n_ev, v_sp, bad;
+      END IF;
+    END LOOP;
+    DROP TABLE lnk_verify_holders;
   END IF;
 
   -- The bcfp pin, with the sanctioned-unpinned escape.

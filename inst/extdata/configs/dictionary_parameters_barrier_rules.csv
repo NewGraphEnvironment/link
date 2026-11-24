@@ -1,0 +1,12 @@
+column,type,group,owner,consumed_by,default_when_absent,description,related
+rule_id,character,key,link,R/lnk_barrier_rules.R,required,"The rule's name. Rows sharing a rule_id are ANDed into one rule; different rule_ids are ORed, so a crossing is a human-made barrier where any rule matches. Each crossing's matching rule_ids are written, sorted and joined with ';', to crossings.barrier_rule_id. Row order means nothing.",-
+applies_to,semicolon_list,scope,link,R/lnk_barrier_rules.R,required,"The crossing sources the row applies to: '*', or any of PSCIS, CABD, MODELLED_CROSSINGS. A row matches no crossing outside them, which is how a scenario replaces the province's result for assessed crossings and keeps the modelled type for the rest.",-
+source_table,character,condition,link,R/lnk_barrier_rules.R,required,"Where the row's column_name is read: crossings (the crossing row itself) or pscis_assessment (whse_fish.pscis_assessment_svw, joined on stream_crossing_id for a PSCIS crossing; its derived slope_length is culvert_slope times length_or_width). Any other value is refused.",column_name
+column_name,character,condition,link,R/lnk_barrier_rules.R,required,"The column compared. Refused when the source does not carry it.",source_table
+operator,character,condition,link,R/lnk_barrier_rules.R,required,"One of in, =, >, >=, <, <=, is_null, not_null. A NULL value matches only is_null.",value
+value,character,condition,link,R/lnk_barrier_rules.R,required unless is_null or not_null,"The value compared, typed by the column (a number for a numeric column) and quoted through DBI; for in, a ';'-separated list.",operator
+species,character,outcome,link,R/lnk_barrier_rules.R,required,"Which species the rule applies to. Only '*' is accepted until a rule can block a species; anything else is refused at load.",outcome
+outcome,character,outcome,link,R/lnk_barrier_rules.R,required,"What a match means. Only 'barrier' (a human-made barrier: barrier-below marks, mapping codes and per-crossing totals, never access) is accepted; anything else is refused at load.",species
+date,date,provenance,link,-,required,"When the row was added or last changed.",-
+source,character,provenance,link,-,required,"Where the rule comes from: an assessment protocol, a study, or an issue.",-
+notes,character,provenance,link,-,-,"Why the rule exists.",-
