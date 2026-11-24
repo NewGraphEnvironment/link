@@ -1569,7 +1569,7 @@ test_that("each gradient position gets exactly one owner, in the overlap and the
                            (356364485, 124906.769::double precision),
                            (356364485, 149.2756::double precision))
        v(blue_line_key, downstream_route_measure)", s))
-  .lnk_pipeline_prep_gradient_locate(conn, s)
+  .lnk_pipeline_prep_locate(conn, s)
   got <- DBI::dbGetQuery(conn, sprintf(
     "SELECT downstream_route_measure AS m, watershed_group_code AS owner,
             wscode_ltree IS NULL AS no_code

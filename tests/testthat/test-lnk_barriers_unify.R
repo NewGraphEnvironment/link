@@ -316,7 +316,7 @@ test_that("a group holds only the gradient positions it owns (#386, DB)", {
                            (356364485, 124906.769::double precision, 1500, 'gradient'),
                            (356364485, 200000.5::double precision, 1500, 'gradient'))
        v(blue_line_key, downstream_route_measure, gradient_class, label)", s))
-  .lnk_pipeline_prep_gradient_locate(conn, s)
+  .lnk_pipeline_prep_locate(conn, s)
   held <- function(aoi, loaded = loaded_fixture()) {
     lnk_barriers_unify(conn, aoi = aoi, cfg = cfg_fixture(), loaded = loaded,
                        schema = s)

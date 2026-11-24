@@ -348,7 +348,7 @@ lnk_barriers_unify <- function(conn, aoi, cfg, loaded,
 #' `.lnk_pipeline_prep_gradient()`'s `streams_blk`). One group holds it
 #' (link#386): its owner, the group of the segment it sits on
 #' (`gradient_barriers_raw.watershed_group_code`,
-#' `.lnk_pipeline_prep_gradient_locate()`). Where the owner would never hold it,
+#' `.lnk_pipeline_prep_locate()`). Where the owner would never hold it,
 #' because the bundle models no species in the owner or the owner does not scan
 #' the line, the lowest-coded modelled group scanning the line holds it instead,
 #' so no position is lost. Every scanning group computes the same holder from

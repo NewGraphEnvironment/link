@@ -486,7 +486,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
        ADD COLUMN IF NOT EXISTS wscode_ltree ltree,
        ADD COLUMN IF NOT EXISTS localcode_ltree ltree",
     schema))
-  .lnk_pipeline_prep_gradient_locate(conn, schema)
+  .lnk_pipeline_prep_locate(conn, schema)
 
   invisible(NULL)
 }
@@ -508,7 +508,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
 #' nearest the measure, in `.lnk_sql_locate()`'s order, so every position has
 #' exactly one owner and every group scanning the line computes the same one.
 #' @noRd
-.lnk_pipeline_prep_gradient_locate <- function(conn, schema) {
+.lnk_pipeline_prep_locate <- function(conn, schema) {
   .lnk_db_execute(conn, sprintf(
     "ALTER TABLE %s.gradient_barriers_raw
        ADD COLUMN IF NOT EXISTS wscode_ltree ltree,

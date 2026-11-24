@@ -484,5 +484,5 @@ test_that("an evidence table with the old key is migrated to lift_rule (#236, DB
         evidence_key, watershed_group_code)
      VALUES (2, 10, 'BT', 'observation', 'k2', 'AAAA')", s)), "null value")
   # A second init finds it done and changes nothing.
-  expect_false(.lnk_evidence_lift_rule_migrate(conn, s))
+  expect_false(.lnk_evidence_rule_migrate(conn, s))
 })

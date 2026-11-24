@@ -620,7 +620,7 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
     "CREATE TABLE IF NOT EXISTS %s.barrier_override_evidence (\n  %s\n)",
     schema, .lnk_cols_clause(cols_barrier_override_evidence,
                              .lnk_evidence_pk)))
-  .lnk_evidence_lift_rule_migrate(conn, schema)
+  .lnk_evidence_rule_migrate(conn, schema)
   .lnk_index_create(conn, have_idx, "barrier_override_evidence_wsg_idx",
     sprintf("%s.barrier_override_evidence (watershed_group_code)", schema))
 
@@ -707,7 +707,7 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
 #' A catalog naming none of the table's columns leaves it alone.
 #' @return Invisibly, TRUE when anything was changed.
 #' @noRd
-.lnk_evidence_lift_rule_migrate <- function(conn, schema) {
+.lnk_evidence_rule_migrate <- function(conn, schema) {
   have <- .lnk_schema_columns(conn, schema)
   have <- have$column_name[have$table_name == "barrier_override_evidence"]
   if (length(have) == 0L) return(invisible(FALSE))
