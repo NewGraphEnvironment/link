@@ -98,6 +98,26 @@
              "positive whole number: ", paste(k[bad_thr], collapse = ", "),
              call. = FALSE)
       }
+      # Read as the runner reads them: a blank date is no floor and anything
+      # else must parse; a yes/no cell is one of the spellings
+      # .lnk_flag_true() reads, or blank.
+      d <- .lnk_date_col(x$observation_date_min,
+                         "parameters_barrier_lifts observation_date_min")
+      x$observation_date_min <- ifelse(is.na(d), NA_character_, format(d))
+      bf <- trimws(as.character(x$observation_buffer_m))
+      ok_bf <- is.na(bf) | bf %in% c("", "NA") |
+        !is.na(suppressWarnings(as.numeric(bf)))
+      if (!all(ok_bf)) {
+        stop("parameters_barrier_lifts: observation_buffer_m must be a number ",
+             "or blank: ", paste(k[!ok_bf], collapse = ", "), call. = FALSE)
+      }
+      ca <- tolower(trimws(as.character(x$observation_control_apply)))
+      ok_ca <- is.na(ca) | ca %in% c("", "na", "true", "false", "t", "f", "yes",
+                                     "no", "y", "n", "1", "0")
+      if (!all(ok_ca)) {
+        stop("parameters_barrier_lifts: observation_control_apply must be yes/no ",
+             "or TRUE/FALSE: ", paste(k[!ok_ca], collapse = ", "), call. = FALSE)
+      }
       x <- x[order(x$species_code, x$rule, method = "radix"), , drop = FALSE]
       rules <- rbind(own, x)
       rules <- rules[order(match(rules$species_code, own$species_code),

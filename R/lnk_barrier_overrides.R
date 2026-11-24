@@ -1,3 +1,13 @@
+#' A yes/no cell read as TRUE: TRUE, "TRUE", "true", "t", "yes", "y" or "1"
+#'
+#' The dictionaries type these columns `yes_no`, and bundles write them either
+#' way; `as.logical("yes")` is NA, which would read a "yes" as no.
+#' @noRd
+.lnk_flag_true <- function(x) {
+  if (is.logical(x)) return(isTRUE(x))
+  tolower(trimws(as.character(x))) %in% c("true", "t", "yes", "y", "1")
+}
+
 #' Build barrier override list from evidence sources
 #'
 #' Processes fish observations, habitat confirmations, and control tables
@@ -196,16 +206,23 @@ lnk_barrier_overrides <- function(conn,
     rule <- species_to_process$rule[i]
     threshold <- as.integer(species_to_process$observation_threshold[i])
     if (is.na(threshold)) threshold <- 0L
-    date_min <- as.character(species_to_process$observation_date_min[i])
-    if (is.na(date_min)) date_min <- "1900-01-01"
+    # NA or blank is no floor (read.csv gives "" in a mixed column); anything
+    # else must be a date, since it is written into the SQL.
+    date_min <- trimws(as.character(species_to_process$observation_date_min[i]))
+    if (is.na(date_min) || !nzchar(date_min) || date_min == "NA") date_min <- "1900-01-01"
+    if (!grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", date_min) ||
+        is.na(as.Date(date_min, optional = TRUE))) {
+      stop("observation_date_min is not a date: ", date_min, call. = FALSE)
+    }
     buffer_m <- as.numeric(species_to_process$observation_buffer_m[i])
     if (is.na(buffer_m)) buffer_m <- 20
     obs_sp_str <- as.character(species_to_process$observation_species[i])
     # NA or blank (read.csv and read_as: text give "") means the row's own
     # species, as the dictionaries and .lnk_lift_rules() read it; an empty list
     # would build `IN ('')` and lift nothing.
+    # Upper-cased, as .lnk_lift_rules() reads the list and as records are coded.
     obs_sp_list <- if (is.na(obs_sp_str)) character(0) else
-      trimws(strsplit(obs_sp_str, ";", fixed = TRUE)[[1]])
+      toupper(trimws(strsplit(obs_sp_str, ";", fixed = TRUE)[[1]]))
     obs_sp_list <- obs_sp_list[nzchar(obs_sp_list)]
     if (length(obs_sp_list) == 0L) obs_sp_list <- sp
     obs_sp_sql <- paste0("'", obs_sp_list, "'", collapse = ", ")
@@ -216,7 +233,7 @@ lnk_barrier_overrides <- function(conn,
     # barriers (post-glacial headwater connectivity, no ocean-return
     # requirement), so their observations should still override.
     ctrl_apply_col <- species_to_process$observation_control_apply[i]
-    ctrl_apply <- isTRUE(as.logical(ctrl_apply_col))
+    ctrl_apply <- .lnk_flag_true(ctrl_apply_col)
 
     overrides_found <- 0L
 

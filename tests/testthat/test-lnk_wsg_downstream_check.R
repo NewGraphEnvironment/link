@@ -434,3 +434,37 @@ test_that("a group on the downstream lines holding no barrier rows refuses, name
     DBI::dbQuoteLiteral(conn, paste0("{", paste(deps[-1], collapse = ","), "}"))))
   expect_identical(lnk_wsg_downstream_check(conn, "BULK", cfg, loaded)$status, "pass")
 })
+
+test_that("a modelled group with no FWA streams here is named: its lines cannot be read (round 3)", {
+  local_mocked_bindings(
+    .lnk_require_fwa_downstream = function(conn) invisible(TRUE),
+    .lnk_wsg_fwa_unloaded = function(conn, wsgs) intersect(wsgs, "INGR"),
+    .lnk_dams_near_groups = function(conn, wsgs) NULL,
+    .lnk_wsg_line_deps = function(conn, aoi) character(0),
+    .lnk_wsg_unheld = function(conn, cfg, wsgs) character(0),
+    .lnk_dams_blocking_downstream = function(...) {
+      data.frame(dam_id = character(0), dam_name_en = character(0),
+                 watershed_group_code = character(0),
+                 passability_status_code = integer(0))
+    },
+    lnk_wsg_resolve = function(cfg, loaded, wsgs = NULL, ...) {
+      if (is.null(wsgs)) c("FINA", "INGR", "UPCE") else wsgs
+    })
+  local_mocked_bindings(frs_wsg_drainage = function(conn, wsg, outlets) c("FINA", "UPCE"),
+                        .package = "fresh")
+  r <- suppressMessages(lnk_wsg_downstream_check(fake_conn(), "FINA",
+    lnk_config("default"), list(), on_fail = "warn", outlets = stub_outlets()))
+  expect_identical(r$status, "warn")
+  expect_identical(r$wsgs_unheld, "INGR")
+  expect_error(lnk_wsg_downstream_check(fake_conn(), "FINA", lnk_config("default"),
+                                        list(), outlets = stub_outlets()),
+               "no FWA streams in this database")
+})
+
+test_that("the recompute's post-condition takes the written-reason override (round 3)", {
+  f <- testthat::test_path("..", "..", "data-raw", "wsg_recompute_one.R")
+  skip_if_not(file.exists(f), "data-raw not in this tree")
+  txt <- paste(readLines(f), collapse = "\n")
+  expect_match(txt, 'Sys.getenv("LNK_GUARD_DOWNSTREAM_NOTE", "")', fixed = TRUE)
+  expect_match(txt, "override = if \\(nzchar\\(trimws\\(note\\)\\)\\) note")
+})

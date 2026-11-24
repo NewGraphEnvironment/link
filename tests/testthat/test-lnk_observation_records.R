@@ -393,3 +393,21 @@ test_that("a rule name lnk_barrier_overrides() would refuse is refused at load (
              parameters_barrier_lifts = lifts_rr(rule = "salmon 2"))
   expect_error(.lnk_lift_rules(cfg_rr(), ld), "a rule name holds")
 })
+
+test_that("a further rule's blank date is no floor, a bad one refused, and yes/no reads (round 3)", {
+  ld <- function(...) list(parameters_fresh = pf_lift(),
+                           parameters_barrier_lifts = lifts_rr(...))
+  r <- .lnk_lift_rules(cfg_rr(), ld(observation_date_min = ""))
+  expect_true(is.na(r$observation_date_min[r$rule == "salmon"]))
+  expect_error(.lnk_lift_rules(cfg_rr(), ld(observation_date_min = "1990'; --")),
+               "is not a date")
+  expect_error(.lnk_lift_rules(cfg_rr(), ld(observation_control_apply = "maybe")),
+               "observation_control_apply must be")
+  expect_no_error(.lnk_lift_rules(cfg_rr(), ld(observation_control_apply = "yes")))
+})
+
+test_that("a further rule's buffer must be a number (enumeration)", {
+  ld <- list(parameters_fresh = pf_lift(),
+             parameters_barrier_lifts = lifts_rr(observation_buffer_m = "wide"))
+  expect_error(.lnk_lift_rules(cfg_rr(), ld), "observation_buffer_m must be")
+})

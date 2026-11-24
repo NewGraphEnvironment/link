@@ -551,3 +551,40 @@ test_that("a blank observation_species reads as the row's own species (round 1)"
   expect_match(joined, "o.species_code IN ('BT')", fixed = TRUE)
   expect_no_match(joined, "IN ('')", fixed = TRUE)
 })
+
+test_that("a blank date is no floor, a yes control applies, a bad date refuses (round 3)", {
+  captured <- character(0)
+  local_mocked_bindings(
+    dbExecute = function(conn, sql, ...) { captured <<- c(captured, sql); 1L },
+    dbGetQuery = function(conn, sql, ...) {
+      if (grepl("SELECT count", sql, ignore.case = TRUE)) return(data.frame(count = 0L))
+      data.frame(column_name = character(0))
+    },
+    .package = "DBI")
+  p <- .stub_params(control_apply = "yes"); p$observation_date_min <- ""
+  lnk_barrier_overrides("mock", barriers = "w.nb", observations = "w.obs",
+                        control = "w.ctrl", params = p, to = "w.bo", verbose = FALSE)
+  joined <- paste(captured, collapse = "\n")
+  expect_match(joined, "o.observation_date >= '1900-01-01'", fixed = TRUE)
+  expect_match(joined, "c.barrier_ind::boolean = true", fixed = TRUE)
+  p$observation_date_min <- "1990'; DROP TABLE x; --"
+  expect_error(lnk_barrier_overrides("mock", barriers = "w.nb", observations = "w.obs",
+                                     params = p, to = "w.bo", verbose = FALSE),
+               "is not a date")
+})
+
+test_that("a lower-case species list counts the upper-case records (enumeration)", {
+  captured <- character(0)
+  local_mocked_bindings(
+    dbExecute = function(conn, sql, ...) { captured <<- c(captured, sql); 1L },
+    dbGetQuery = function(conn, sql, ...) {
+      if (grepl("SELECT count", sql, ignore.case = TRUE)) return(data.frame(count = 0L))
+      data.frame(column_name = character(0))
+    },
+    .package = "DBI")
+  p <- .stub_params(); p$observation_species <- "bt; ch"
+  lnk_barrier_overrides("mock", barriers = "w.nb", observations = "w.obs",
+                        params = p, to = "w.bo", verbose = FALSE)
+  expect_match(paste(captured, collapse = "\n"), "o.species_code IN ('BT', 'CH')",
+               fixed = TRUE)
+})

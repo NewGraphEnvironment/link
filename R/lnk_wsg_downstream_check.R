@@ -474,8 +474,10 @@
 #' @return Invisibly, a list with `aoi`, `status`, `dams`, `wsgs_missing`
 #'   (groups holding unmodelled dams), `wsgs_unloaded` (downstream groups with
 #'   no FWA streams), `wsgs_unheld` (groups on its lines holding no barrier
-#'   rows), `note`, `elapsed_s` and `steps_s` (seconds per step: outlets,
-#'   fwa_downstream, closure, loaded, near, line_deps, holders, probe,
+#'   rows, and modelled groups with no FWA streams in the database, whose
+#'   lines the check cannot read), `note`, `elapsed_s` and `steps_s` (seconds per step: outlets,
+#'   fwa_downstream, closure, loaded, near, line_deps, holders, fwa_absent,
+#'   probe,
 #'   persisted).
 #' @family wsg
 #' @export
@@ -562,9 +564,17 @@ lnk_wsg_downstream_check <- function(conn, aoi, cfg, loaded,
   # group alone) must hold barrier rows in the schema; one that holds none is
   # a group whose barriers this walk would read as open. The outlet closure
   # misses them: a tributary group can own a stretch of the focal group's line.
+  # The line rule reads FWA, so on a database holding only some groups' FWA a
+  # tributary group whose streams are absent is invisible to it: every
+  # modelled group with no FWA streams here is named too, since this check
+  # cannot tell whether it touches the lines.
+  modelled <- suppressMessages(lnk_wsg_resolve(cfg, loaded, wsgs = NULL))
   deps <- step("line_deps", .lnk_wsg_line_deps(conn, aoi))
-  deps <- intersect(deps, suppressMessages(lnk_wsg_resolve(cfg, loaded, wsgs = NULL)))
+  deps <- intersect(deps, modelled)
   unheld <- step("holders", .lnk_wsg_unheld(conn, cfg, deps))
+  fwa_absent <- step("fwa_absent",
+                     .lnk_wsg_fwa_unloaded(conn, setdiff(modelled, c(aoi, unloaded))))
+  unheld <- sort(unique(c(unheld, fwa_absent)))
 
   dams <- step("probe", .lnk_dams_blocking_downstream(
     conn, aoi, loaded, outlets,
@@ -761,8 +771,10 @@ lnk_wsg_downstream_check <- function(conn, aoi, cfg, loaded,
                                unheld = character(0)) {
   if (length(unheld)) {
     held <- paste0(
-      sprintf(paste0("%s BLOCKED (link#386) \u2014 %d group(s) touching a line on %s's ",
-                     "downstream paths hold no barrier rows in this schema: %s.\n\n"),
+      sprintf(paste0("%s BLOCKED (link#386) \u2014 %d modelled group(s) touching a line on ",
+                     "%s's downstream paths hold no barrier rows in this schema, or ",
+                     "have no FWA streams in this database so the lines they touch ",
+                     "cannot be read: %s.\n\n"),
               aoi, length(unheld), aoi, paste(unheld, collapse = ", ")),
       "From link 0.93.0 a gradient barrier is persisted only by the group owning its\n",
       "segment, so the walk would read those groups' barriers as open.\n",
