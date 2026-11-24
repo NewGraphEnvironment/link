@@ -4,7 +4,7 @@
 
 What a barrier does to access is decided in three places. A gradient barrier, its lifts and their evidence are held by one group; a species' barrier is lifted where any of its observation-lift rules is met; and which crossings are human-made barriers is a rules table. Which barriers block which species (a dam for some species and not others) is not built: it is #201 and #83.
 
-## Copies of one barrier (#386)
+## Copies of one barrier
 
 A group finds gradient barriers along the whole of every line it has a segment of (`streams_blk`, edge type 6010 aside), because `fresh::frs_break_find()` reads each line whole. Until 0.93.0 every group scanning a line persisted every position on it.
 
@@ -30,13 +30,13 @@ The LSAL position moved nothing on these builds because every species modelled i
 
 The owner rule of `data-raw/recompute_deps.R` is complete for a schema built wholly at 0.93.0 or later. The scheduler stays on the line rule until a provincial run has rebuilt every group.
 
-## Several lift rules per species (#236)
+## Several lift rules per species
 
 `.lnk_lift_rules()` reads each species' `parameters_fresh.csv` row as rule `own` and a bundle's `parameters_barrier_lifts.csv` as further rules. A barrier is lifted where any rule is met, and the records of two rules never add together. Under `observation_record_date: lift_floor`, which `default` sets, one rule cannot mix date floors, so "BT on two salmon records since 1990" beside "BT on one BT record of any date" needs two rules.
 
 No shipped bundle declares a further rule. A scratch copy of `default` declaring the candidate (BT also lifts on two or more salmon or steelhead records since 1990) runs through prepare and persist on ADMS: rule `own` lifts 34 BT positions, rule `salmon` 3, of which 2 no other rule lifts (`lift_rules_236/prove_ADMS_*.csv`). On the eleven proof groups the candidate adds 2 BT lifts, both in ADMS (`lift_rules_236/candidate_default.csv`): where salmon reach a BT barrier there, BT records already lift it, or the salmon records are fewer than two. Whether `default` adopts it is a follow-up issue, which would measure it province-wide.
 
-## Which crossings are human-made barriers (#341)
+## Which crossings are human-made barriers
 
 `parameters_barrier_rules.csv` is evaluated once per group into `crossings.barrier_rule_id`. `default` and `bcfishpass` ship one row, the source's own status, which reproduces the barrier set exactly: on the proof builds the marker sits on the status set in every group, and every persisted table equals the build before the rules (`barrier_copies_386/final_equal_*.csv`).
 
