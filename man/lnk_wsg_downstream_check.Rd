@@ -37,13 +37,23 @@ A downstream group whose FWA streams this database does not hold hides
 every dam on it, so the check refuses it as it refuses an unmodelled dam
 and names it in \code{wsgs_unloaded} (link#464). Only dams within 65 m of the
 downstream groups' polygons are snapped, which leaves the answer as it was
-and keeps the check's cost to the path (link#461).}
+and keeps the check's cost to the path (link#461). From link 0.93.0 a
+gradient barrier is persisted only by the group owning its segment
+(link#386), so the check also refuses where a modelled group touching a line
+on \code{aoi}'s downstream paths (the line rule, for \code{aoi} alone) holds no rows in
+the schema's \code{barriers}, and names those groups in \code{wsgs_unheld}: a
+tributary group the outlet closure leaves out can own a stretch of \code{aoi}'s
+own line.}
 }
 \value{
 Invisibly, a list with \code{aoi}, \code{status}, \code{dams}, \code{wsgs_missing}
 (groups holding unmodelled dams), \code{wsgs_unloaded} (downstream groups with
-no FWA streams), \code{note}, \code{elapsed_s} and \code{steps_s} (seconds per step:
-outlets, fwa_downstream, closure, loaded, near, probe, persisted).
+no FWA streams), \code{wsgs_unheld} (groups on its lines holding no barrier
+rows, and modelled groups with no FWA streams in the database, whose
+lines the check cannot read), \code{note}, \code{elapsed_s} and \code{steps_s} (seconds per step: outlets,
+fwa_downstream, closure, loaded, near, line_deps, holders, fwa_absent,
+probe,
+persisted).
 }
 \description{
 link computes accessibility by reading the \strong{already-persisted} barriers of
