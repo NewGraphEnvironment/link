@@ -1,0 +1,115 @@
+08:06:18 base: default, 20 WSGs (focal ADMS,BULK,CHWK,FINA,PCEA,SQAM,PARS,CLWR) into score327_default
+08:11:30 base LFRA done in 5.2 min
+08:13:34 base LPCE done in 2.1 min
+08:21:37 base LSKE done in 8.1 min
+08:31:45 base SQAM done in 10.1 min
+08:36:05 base HARR done in 4.3 min
+14:39:02 base KLUM done in 362.9 min
+14:53:05 base UPCE done in 14.0 min
+15:17:40 base CHWK done in 24.6 min
+18:37:50 base FRCN done in 200.2 min
+18:44:03 base KISP done in 6.2 min
+18:51:08 base PCEA done in 7.1 min
+Override validation: working_score327_bulk.pscis_fixes vs working_score327_bulk.crossings
+  Total overrides:  589
+  Valid (matched):  521
+  Orphans:          68  <-- not found in crossings
+  Duplicates:       0
+Updated 521 of 5568 rows (barrier_status)
+19:02:56 base BULK done in 11.8 min
+19:05:32 base PARA done in 2.6 min
+19:10:32 base THOM done in 5.0 min
+19:13:20 base FINA done in 2.8 min
+19:19:34 base LNTH done in 6.2 min
+Override validation: working_score327_pars.pscis_fixes vs working_score327_pars.crossings
+  Total overrides:  3
+  Valid (matched):  3
+  Orphans:          0
+  Duplicates:       0
+Updated 3 of 3961 rows (barrier_status)
+19:28:21 base PARS done in 8.8 min
+19:31:41 base STHM done in 3.3 min
+19:34:48 base ADMS done in 3.1 min
+19:37:40 base CLWR done in 2.9 min
+19:37:55 recompute ADMS: streams_access unchanged
+19:38:11 recompute BULK: streams_access unchanged
+19:38:15 recompute CHWK: streams_access unchanged
+19:38:24 recompute FINA: streams_access unchanged
+19:38:36 recompute PCEA: streams_access unchanged
+19:38:52 recompute SQAM: streams_access unchanged
+19:39:10 recompute PARS: streams_access unchanged
+19:39:19 recompute CLWR: streams_access unchanged
+There were 50 or more warnings (use warnings() to see the first 50)
+19:39:19 variants: starting 4 workers
+starting worker pid=49657 on localhost:11984 at 19:39:19.219
+starting worker pid=49654 on localhost:11984 at 19:39:19.219
+starting worker pid=49656 on localhost:11984 at 19:39:19.219
+starting worker pid=49653 on localhost:11984 at 19:39:19.220
+19:39:20 variants: workers 49656:167217 49654:167220 49657:167218 49653:167219
+19:39:20 variant default into score327_default (ADMS,BULK,CHWK,FINA,PCEA,SQAM,PARS,CLWR), 4 jobs
+19:40:46 variant default PCEA steps (min): classify 0.22, connect 1.09, digest_working 0.00, digest_persist 0.00
+19:40:46 variant default PCEA done in 1.3 min (habitat e82d6799)
+19:41:34 variant default SQAM steps (min): classify 0.93, connect 1.23, digest_working 0.00, digest_persist 0.00
+19:41:34 variant default SQAM done in 2.2 min (habitat 75908f4e)
+19:42:23 variant default FINA steps (min): classify 0.43, connect 1.15, digest_working 0.00, digest_persist 0.00
+19:42:23 variant default FINA done in 1.6 min (habitat df758a02)
+19:42:26 variant default PARS steps (min): classify 0.85, connect 2.13, digest_working 0.00, digest_persist 0.00
+19:42:26 variant default PARS done in 3.0 min (habitat 197d53fd)
+19:42:32 variant default CLWR steps (min): classify 0.75, connect 0.19, digest_working 0.00, digest_persist 0.00
+19:42:32 variant default CLWR done in 0.9 min (habitat 1ee739bc)
+19:43:00 variant default CHWK steps (min): classify 0.27, connect 0.29, digest_working 0.00, digest_persist 0.00
+19:43:00 variant default CHWK done in 0.6 min (habitat 75694adb)
+19:43:18 variant default ADMS steps (min): classify 0.39, connect 0.50, digest_working 0.00, digest_persist 0.00
+19:43:18 variant default ADMS done in 0.9 min (habitat 270af9ab)
+19:45:40 variant default BULK steps (min): classify 1.41, connect 4.86, digest_working 0.00, digest_persist 0.00
+19:45:40 variant default BULK done in 6.3 min (habitat 81410414)
+19:45:40 variant default: 8 groups in 6.3 min at 4 jobs
+19:45:41 variant bt_order1 into score327_bt_order1 (ADMS,BULK,CHWK,FINA,PCEA,SQAM,PARS), 4 jobs
+19:46:20 variant bt_order1 SQAM steps (min): classify 0.09, connect 0.46, digest_working 0.00, persist 0.05, copy_access_analyze 0.01, gate 0.00, digest_persist 0.00
+19:46:20 variant bt_order1 SQAM done in 0.6 min (habitat 75908f4e)
+19:46:50 variant bt_order1 PCEA steps (min): classify 0.13, connect 0.86, digest_working 0.00, persist 0.08, copy_access_analyze 0.01, gate 0.00, digest_persist 0.00
+19:46:50 variant bt_order1 PCEA done in 1.1 min (habitat e82d6799)
+19:47:12 variant bt_order1 ADMS steps (min): classify 0.10, connect 0.20, digest_working 0.00, persist 0.03, copy_access_analyze 0.01, gate 0.00, digest_persist 0.00
+19:47:12 variant bt_order1 ADMS done in 0.3 min (habitat 365f62c3)
+19:47:20 variant bt_order1 CHWK steps (min): classify 0.03, connect 0.08, digest_working 0.00, persist 0.01, copy_access_analyze 0.01, gate 0.00, digest_persist 0.00
+19:47:20 variant bt_order1 CHWK done in 0.1 min (habitat 75694adb)
+19:47:38 variant bt_order1 FINA steps (min): classify 0.34, connect 0.86, digest_working 0.00, persist 0.06, copy_access_analyze 0.01, gate 0.00, digest_persist 0.00
+19:47:38 variant bt_order1 FINA done in 1.3 min (habitat df758a02)
+19:47:41 variant bt_order1 BULK steps (min): classify 0.50, connect 1.38, digest_working 0.00, persist 0.07, copy_access_analyze 0.01, gate 0.00, digest_persist 0.00
+19:47:41 variant bt_order1 BULK done in 2.0 min (habitat 945395ec)
+19:48:04 variant bt_order1 PARS steps (min): classify 0.74, connect 1.47, digest_working 0.00, persist 0.08, copy_access_analyze 0.01, gate 0.00, digest_persist 0.00
+19:48:04 variant bt_order1 PARS done in 2.3 min (habitat dadfb8b0)
+19:48:04 variant bt_order1: 7 groups in 2.4 min at 4 jobs
+19:48:04 variant ch_order1 into score327_ch_order1 (ADMS,BULK,CHWK,SQAM,CLWR), 4 jobs
+19:48:33 variant ch_order1 ADMS steps (min): classify 0.27, connect 0.14, digest_working 0.00, persist 0.03, copy_access_analyze 0.00, gate 0.00, digest_persist 0.00
+19:48:33 variant ch_order1 ADMS done in 0.4 min (habitat ec9598a1)
+19:48:52 variant ch_order1 CHWK steps (min): classify 0.21, connect 0.08, digest_working 0.00, persist 0.01, copy_access_analyze 0.01, gate 0.00, digest_persist 0.00
+19:48:52 variant ch_order1 CHWK done in 0.3 min (habitat 75694adb)
+19:49:00 variant ch_order1 CLWR steps (min): classify 0.73, connect 0.09, digest_working 0.00, persist 0.04, copy_access_analyze 0.01, gate 0.00, digest_persist 0.00
+19:49:00 variant ch_order1 CLWR done in 0.9 min (habitat 1ee739bc)
+19:49:10 variant ch_order1 SQAM steps (min): classify 0.62, connect 0.32, digest_working 0.00, persist 0.06, copy_access_analyze 0.01, gate 0.00, digest_persist 0.00
+19:49:10 variant ch_order1 SQAM done in 1.0 min (habitat 75908f4e)
+19:49:43 variant ch_order1 BULK steps (min): classify 0.58, connect 0.94, digest_working 0.00, persist 0.07, copy_access_analyze 0.01, gate 0.00, digest_persist 0.00
+19:49:43 variant ch_order1 BULK done in 1.6 min (habitat e979fca2)
+19:49:43 variant ch_order1: 5 groups in 1.6 min at 4 jobs
+19:49:43 variant st_order1 into score327_st_order1 (BULK,CHWK,SQAM), 4 jobs
+19:49:49 variant st_order1 CHWK steps (min): classify 0.03, connect 0.05, digest_working 0.00, persist 0.01, copy_access_analyze 0.00, gate 0.00, digest_persist 0.00
+19:49:49 variant st_order1 CHWK done in 0.1 min (habitat 75694adb)
+19:50:11 variant st_order1 SQAM steps (min): classify 0.08, connect 0.30, digest_working 0.00, persist 0.05, copy_access_analyze 0.01, gate 0.00, digest_persist 0.00
+19:50:11 variant st_order1 SQAM done in 0.4 min (habitat 75908f4e)
+19:51:01 variant st_order1 BULK steps (min): classify 0.18, connect 1.01, digest_working 0.00, persist 0.06, copy_access_analyze 0.01, gate 0.00, digest_persist 0.00
+19:51:01 variant st_order1 BULK done in 1.3 min (habitat 7333752e)
+19:51:01 variant st_order1: 3 groups in 1.3 min at 4 jobs
+19:51:01 variant ch_pair_both into score327_ch_pair_both (ADMS,BULK,CHWK,SQAM,CLWR), 4 jobs
+19:51:30 variant ch_pair_both ADMS steps (min): classify 0.26, connect 0.16, digest_working 0.00, persist 0.03, copy_access_analyze 0.00, gate 0.00, digest_persist 0.00
+19:51:30 variant ch_pair_both ADMS done in 0.4 min (habitat d65ec176)
+19:51:40 variant ch_pair_both CLWR steps (min): classify 0.46, connect 0.09, digest_working 0.00, persist 0.04, copy_access_analyze 0.01, gate 0.00, digest_persist 0.00
+19:51:40 variant ch_pair_both CLWR done in 0.6 min (habitat 17fe25f0)
+19:51:49 variant ch_pair_both CHWK steps (min): classify 0.22, connect 0.07, digest_working 0.00, persist 0.01, copy_access_analyze 0.01, gate 0.00, digest_persist 0.00
+19:51:49 variant ch_pair_both CHWK done in 0.3 min (habitat d12ce525)
+19:51:59 variant ch_pair_both SQAM steps (min): classify 0.55, connect 0.32, digest_working 0.00, persist 0.06, copy_access_analyze 0.01, gate 0.00, digest_persist 0.00
+19:51:59 variant ch_pair_both SQAM done in 0.9 min (habitat 5f045946)
+19:52:47 variant ch_pair_both BULK steps (min): classify 0.69, connect 0.97, digest_working 0.00, persist 0.06, copy_access_analyze 0.01, gate 0.00, digest_persist 0.00
+19:52:47 variant ch_pair_both BULK done in 1.7 min (habitat 06e67aae)
+19:52:47 variant ch_pair_both: 5 groups in 1.8 min at 4 jobs
+19:52:48 build all done in 706.5 min

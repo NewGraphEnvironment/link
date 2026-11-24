@@ -1032,11 +1032,44 @@ start_cluster <- function(n) {
   cl
 }
 
+# A variant schema's `log` row for one group (link#476). The validator reads
+# `<schema>.log` to learn which near-river pairs, discharge fill and source a
+# group was classified on, and a group with no row reads as a build that
+# walked no pair. A variant pass classifies with its own cfg on the base's
+# working streams, so its row records that cfg's values; the run's stamps stay
+# in the base schema's rows, and the pass's in built.csv. Before this, no
+# variant on a base carrying a near-river pair (default since #364) could be
+# scored.
+log_variant_pass <- function(conn, cfg, w, finished) {
+  sch <- cfg$pipeline$schema
+  when <- format(finished, "%Y-%m-%d %H:%M:%OS3%z")
+  dbExecute(conn, sprintf(
+    "DELETE FROM %s.log WHERE watershed_group_code = $1", sch),
+    params = list(w))
+  dbExecute(conn, sprintf(
+    "INSERT INTO %s.log (run_id, watershed_group_code, date_start, date_end,
+       config_name, link_sha, link_dirty, discharge_fill, discharge_source,
+       near_river, schema_persist, notes)
+     VALUES ($1, $2, $3::timestamptz, $3::timestamptz, $4, $5, $6, $7, $8,
+       $9, $10, $11)", sch),
+    params = list(
+      paste("variant", cfg$name, w, when, sep = ":"), w, when, cfg$name,
+      head_sha, length(dirty) > 0L,
+      .lnk_discharge_fill_applied(cfg, w), .lnk_discharge_source(cfg),
+      .lnk_near_river_logged(cfg, w), sch,
+      paste0("variant pass by data-raw/habitat_variants_build.R on ",
+             schema_of(base_variant), "'s segmentation")))
+  invisible(NULL)
+}
+
 # The record of one group's pass: built.csv once its checks passed, and its
 # rows in variant_timing.csv, stamped when the group finished (a cluster's
 # results are recorded only once every group has returned).
 record_pass <- function(v, sp, r) {
   record_built(v, r$watershed_group_code, built_at = r$finished)
+  if (!identical(v, base_variant)) {
+    log_variant_pass(conn, cfgs[[v]], r$watershed_group_code, r$finished)
+  }
   record_timing(v, r$watershed_group_code, sp, c(discharge_join = r$s_join, r$tm),
                 in_total = c(FALSE, rep(TRUE, length(r$tm))), load = r$load,
                 jobs = jobs, built_at = r$finished)

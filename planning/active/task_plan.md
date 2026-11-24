@@ -14,11 +14,12 @@ Batch 11 of `planning/backlog.md`: #75, #86, #129, #189, #212, #316, #327. Gate 
   5. #189: spawn-only is derived from `rear_no_fw`; no new column.
   6. #189: this PR reads residence where persisted mapping codes are built; the exported functions and the smoke test go to a new issue homed in move 9 (#477).
   7. #327: a band expecting fewer than 10 locations under `--floor=expected` declines.
+  8. #327 (asked with Phase 1's numbers): decline. Every order-1 band was underpowered (BT 21.4 km held out, 0 of 1.4 expected; CH 11.7 km, 0 of 0.8; ST 12.8 km, 0 of 1.1).
 - 2026-11-23, at the resume, main moved since the park (0.86.1 to 0.88.0): fresh is pinned at v0.55.1 (installed on m1, `RemoteSha 29e7aa13`), so Phase 1 runs on it and builds a new base (a base built under fresh 0.52.0 cannot be reused, `habitat_variants_build.R` header). The release bumps 0.88.0 to 0.89.0. `pretest_inputs.csv` moved one fresh row only; Phase 2's new rows are unaffected.
 
 ## Open decisions
 
-8. **#327, asked after Phase 1's numbers: adopt the exception in `default`, or decline?** If it is adopted, every `default` group re-models at the next provincial run (move 17). It reaches no output token: the species set does not change (see Phase 1).
+None.
 
 ## Phase 1: measure the order-1 exception in `default` (#327), first
 
@@ -30,10 +31,10 @@ Review B1, A4 and AC5 changed this phase: the arms, the groups, its place first,
   - BT's bypass on PARS, PCEA and FINA (the Peace closure). #324 found the exception moves BT there, and these groups hold no CH, CO or ST. PARS has been in-sample for BT in every earlier roles file, so the roles file states its roles and why.
   - CH's and ST's bypass, and CH's near-river pair at `both`, on #364's groups (ADMS, BULK, CHWK, CLWR, SQAM). This is the side-by-side #327 asks for.
   - CO's rearing bands are skipped (BULK holds a CO rearing `user_habitat_classification` reach). WCT is dropped, since no scored group holds it; say so.
-- [ ] Build with `--prefix=score327_` and `--jobs=4` on m1, and score with `--floor=expected` under Open decision 7's rule. Report capture against km added per species and arm, with the run stamped: link SHA, fresh version, fwapg.
-- [ ] Record beside the numbers: a rules change that leaves the species set alone reaches no output token. `cfg$species` (the rules' top-level keys) is in the `acc` payload, but this bypass adds no species.
-- [ ] Write the result into `research/habitat_thresholds.md` (revised in place). Evidence goes to `data-raw/logs/order1_327/`.
-- [ ] Ask Open decision 8 with the numbers. If adopted, set `default`'s cells in Phase 5.
+- [x] Build with `--prefix=score327_` and `--jobs=4` on m1, and score with `--floor=expected` under Open decision 7's rule. Report capture against km added per species and arm, with the run stamped: link SHA, fresh version, fwapg.
+- [x] Record beside the numbers: a rules change that leaves the species set alone reaches no output token. `cfg$species` (the rules' top-level keys) is in the `acc` payload, but this bypass adds no species.
+- [x] Write the result into `research/habitat_thresholds.md` (revised in place). Evidence goes to `data-raw/logs/order1_327/`.
+- [x] Ask Open decision 8 with the numbers. If adopted, set `default`'s cells in Phase 5.
 
 ## Phase 2: the column dictionary documents and validates (#75)
 
@@ -105,7 +106,7 @@ Review G10 changed this phase: "every bundle" means the three that `build_rules.
 ## Owed at the end (reported, done after merge)
 
 - [ ] The pre-run gate runs again before the next provincial run (`R/` and `inst/extdata/` changed).
-- [ ] If Phase 1 adopts the exception, every `default` group re-models at the next provincial run (move 17).
+- [x] Phase 1 declined the exception, so no `default` re-model is owed for it.
 - [ ] `config_hash` moves for `default`, `bcfishpass`, and the three bundles that extend `default`. The cost is near nil, since an `R/` change already refuses readers.
 - [ ] Under Open decision 4's recommended option, the owner ticks fresh's Actions setting, the fresh PR merges, and fresh releases its refreshed sample.
 - [x] Under Open decision 6's recommended option, the issue for #189's remainder is filed, naming move 8 (#512).

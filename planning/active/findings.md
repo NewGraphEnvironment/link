@@ -29,7 +29,15 @@ Move 8 of link's backlog, `planning/backlog.md`. Run `/planning-init <this issue
 - **Phase 3 proof.** ADMS and PARS mapping codes digest identical under the old and the bundle-read sets (`data-raw/logs/residence_189/`).
 - **Phase 4 proof.** fresh PR #332's workflow, run 45203080645 on its branch with a temporary push trigger: drift found, `rules-sync` pushed carrying link main's file byte for byte, label created, `gh pr create` refused by fresh's Actions setting; its re-run skipped the unchanged push. `rules-sync` deleted after. Neither bundle's `rules.yaml` body moved when rebuilt; the sample's diff is the one decision 4 named, plus CH's stream rule taking `near_river: false`.
 
+## Phase 1 result, 2026-11-23
+
+- Build 706.5 min (base 691 min of modelling; KLUM 363 and FRCN 200 min, the rest under 25), variants under 2 min each at 4 jobs.
+- The first score refused every variant schema: no `log` rows, so the validator read them as walking no near-river pair, where `default` walks CH's since #364. The check landed in #364's own commit `db4e615d7`, after that issue's scoring ran, so no variant on `default` could be scored since. Fixed in the harness (`log_variant_pass()`); this build backfilled from `built.csv` (`backfill_log.R`).
+- Every order-1 band underpowered; the owner declined (decision 8). CH pair at `both`: 272.9 km, 1 of 19.1, as #364.
+
 ## Errors Encountered
 
 | Error | Resolution |
 |-------|------------|
+| Score refused: variant schema `log` empty, read as no near-river pair | `log_variant_pass()` in the harness; backfill for this build |
+| `gh` from the scratch dir: "not a git repository" | pass `--repo` |
