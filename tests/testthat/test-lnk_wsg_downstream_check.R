@@ -245,6 +245,7 @@ test_that("lnk_wsg_downstream_check passes the bundle's knob to the probe", {
     .lnk_require_fwa_downstream = function(conn) invisible(TRUE),
     .lnk_wsg_fwa_unloaded = function(conn, wsgs) character(0),
     .lnk_dams_near_groups = function(conn, wsgs) NULL,
+    .lnk_wsg_line_deps = function(conn, aoi) character(0),
     .lnk_dams_blocking_downstream = function(conn, aoi, loaded, outlets,
                                              additions = FALSE,
                                              near_groups = NULL) {
@@ -401,4 +402,35 @@ test_that("the dam snap gives a tie at a shared vertex to the segment starting t
                s.ds DESC, s.lfid
       LIMIT 1) str"))
   expect_identical(as.numeric(got$lfid), 1)
+})
+
+
+# --- groups on the line holding no barrier rows (link#386) -----------------
+
+test_that("a group on the downstream lines holding no barrier rows refuses, named (DB)", {
+  conn <- skip_if_no_db()
+  cfg <- lnk_config("bcfishpass")
+  loaded <- lnk_load_overrides(cfg)
+  s <- paste0("zz_lnk_t386_guard_", Sys.getpid())
+  DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", s))
+  DBI::dbExecute(conn, sprintf("CREATE SCHEMA %s", s))
+  withr::defer(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", s)))
+  cfg$pipeline$schema <- s
+  # BULK's lines are touched by KISP, KLUM, LKEL, LSKE, MORR, MSKE, USKE and
+  # ZYMO (no dam on BULK's path, so only this condition can refuse).
+  deps <- intersect(.lnk_wsg_line_deps(conn, "BULK"),
+                    lnk_wsg_resolve(cfg, loaded, wsgs = NULL))
+  skip_if(length(deps) < 2L, "FWA here no longer gives BULK two line dependencies")
+  DBI::dbExecute(conn, sprintf(
+    "CREATE TABLE %s.barriers (watershed_group_code varchar(4))", s))
+  DBI::dbExecute(conn, sprintf("INSERT INTO %s.barriers VALUES ('%s')", s, deps[1]))
+  expect_error(lnk_wsg_downstream_check(conn, "BULK", cfg, loaded), "link#386")
+  r <- suppressMessages(lnk_wsg_downstream_check(conn, "BULK", cfg, loaded,
+                                                 on_fail = "warn"))
+  expect_identical(r$status, "warn")
+  expect_identical(r$wsgs_unheld, sort(deps[-1]))
+  expect_match(r$note, "^link#386 guard\\(warn\\)")
+  DBI::dbExecute(conn, sprintf("INSERT INTO %s.barriers SELECT unnest(%s::text[])", s,
+    DBI::dbQuoteLiteral(conn, paste0("{", paste(deps[-1], collapse = ","), "}"))))
+  expect_identical(lnk_wsg_downstream_check(conn, "BULK", cfg, loaded)$status, "pass")
 })

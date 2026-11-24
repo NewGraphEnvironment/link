@@ -2254,7 +2254,13 @@ longer holds the copies of other groups' positions it used to: in `fresh_default
 on no downstream path of their holder; `data-raw/logs/barrier_copies_386/before_fresh_default/onegroup_*.csv`).
 Each owner touches the line, so the line rule lists it among the group's dependencies, and
 `lnk_downstream_load()` of their rows restores every one; load them from a build at 0.93.0 or
-later, since an older export still carries the copies.
+later, since an older export still carries the copies. A closure run has the same gap: the
+outlet closure leaves out a tributary group that owns a stretch of the focal group's line
+(FINA's copies were owned by INGR, MESI, OSPK and UOMI). So `lnk_wsg_downstream_check()` also
+refuses where a modelled group touching a line on the group's downstream paths (the line rule,
+for that group alone, `.lnk_wsg_line_deps()`) holds no `barriers` rows in the schema, and names
+them in `wsgs_unheld` (note tag `link#386`); under the driver it warns at model time and the
+recompute's post-condition refuses.
 
 `lnk_pipeline_run()` computes accessibility from the **already-persisted**
 barriers of the WSGs downstream. Model a WSG before them and the access query
