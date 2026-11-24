@@ -1,0 +1,61 @@
+[build] default 20261124_386-before-default -> fresh_386_before_default at c7abea13 (2026-11-24 18:57:23 UTC)
+[1] 0
+[build] TABR model already finished under 20261124_386-before-default
+[build] LSAL model done in 2.0 min
+[build] SALR model done in 2.2 min
+[build] ADMS model done in 3.0 min
+Override validation: w386bd_elkr.pscis_fixes vs w386bd_elkr.crossings
+  Total overrides:  329
+  Valid (matched):  293
+  Orphans:          36  <-- not found in crossings
+  Duplicates:       0
+Updated 293 of 7306 rows (barrier_status)
+[build] ELKR model done in 6.0 min
+Override validation: w386bd_bulk.pscis_fixes vs w386bd_bulk.crossings
+  Total overrides:  589
+  Valid (matched):  521
+  Orphans:          68  <-- not found in crossings
+  Duplicates:       0
+Updated 521 of 5568 rows (barrier_status)
+[build] BULK model done in 9.3 min
+[build] UPCE model done in 4.0 min
+[build] PCEA model done in 4.4 min
+[build] LPCE model done in 2.1 min
+[build] FINA model done in 6.2 min
+Override validation: w386bd_pars.pscis_fixes vs w386bd_pars.crossings
+  Total overrides:  3
+  Valid (matched):  3
+  Orphans:          0
+  Duplicates:       0
+Updated 3 of 3961 rows (barrier_status)
+[build] PARS model done in 8.5 min
+There were 50 or more warnings (use warnings() to see the first 50)
+[build] TABR recompute done
+[build] LSAL recompute done
+[build] SALR recompute done
+[build] ADMS recompute done
+[build] ELKR recompute FAILED
+       LNK_SCHEMA=<schema> LNK_RUN_LABEL=<label> Rscript data-raw/wsg_recompute_one.R ELKR <config>
+  3. Override, if those dams are known passable / remediated / irrelevant.
+     Recorded in the run log and surfaced by lnk_log_read():
+       LNK_GUARD_DOWNSTREAM_NOTE="..." LNK_SCHEMA=<schema> LNK_RUN_LABEL=<label> Rscript data-raw/wsg_run_one.R ELKR <config>
+Warning messages:
+1: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+2: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+3: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+4: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+5: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+6: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+7: In st_read.DBIObject(conn, query = query) :
+  Could not find a simple features geometry column. Will return a `data.frame`.
+Error: recompute failed for ELKR
+In addition: Warning message:
+In system2("Rscript", c(rc, w, config), env = c("LNK_LOAD=loadall",  :
+  running command 'LNK_LOAD=loadall LNK_SCHEMA=fresh_386_before_default LNK_RUN_UID=20261124_386-before-default LNK_RUN_LABEL=link479-proof 'Rscript' <scratch>/wt_before/data-raw/wsg_recompute_one.R ELKR default 2>&1' had status 1
+Execution halted

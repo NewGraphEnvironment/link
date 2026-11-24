@@ -39,8 +39,10 @@ bcfishpass applies its control table by position, with no group filter, and file
 | `bcfishpass` | 118 (11 / 105 / 2) | 81 (63 / 4 / 14) | 0 | 0 | 0 |
 | `default` | 118 (11 / 105 / 2) | 114 (90 / 8 / 16) | 0 | 0 | 0 |
 
-**FINAL against AFTER-386** (`final_equal.R`, `final_equal_*.csv`): every persisted model table digests equal per group (the evidence table on AFTER-386's columns, FINAL's rows with `lift_rule` `own` or `habitat`), and `barrier_rule_id` sits on exactly the crossings the status predicate selects in every group's kept working schema.
+**FINAL against AFTER-386** (`final_equal.R`, `final_equal_bcfishpass.csv`, `final_equal_default.csv`): under both bundles every persisted model table (15 under `bcfishpass`, 18 under `default`) digests equal in all 11 groups (the evidence table on AFTER-386's columns, FINAL's rows with `lift_rule` `own` or `habitat`), and `barrier_rule_id` sits on exactly the crossings the status predicate selects in every group's kept working schema.
 
 **The verify check on FINAL** (`bcfishpass`, `-v holder_from=0.0.0`, ELKR's proof recompute row closed with a note) judges 11 groups and passes; `verify_negative_final_bcfishpass.txt` holds the negative cases, every one answering as it should (6a and 6c are skipped and counted as failures by design on a one-host run).
 
 **A one-group run** (`onegroup.sql` after `measure.sql`, `before_fresh_default/onegroup_*.csv`): of the 1,864 non-owner copies, 72 lay below segments of the group holding them; the rest are on no downstream path of their holder.
+
+`build_logs/` holds each build's driver lines (Postgres notices stripped). Two default builds in the first attempt stalled in fresh's near-river walk at 31 and 34 min while other sessions' R jobs loaded the database (`*.attempt1.log`); they were cancelled and run one at a time under a 20-minute statement bound with one retry (FINAL default's LSAL needed it, retry 1.6 min).
