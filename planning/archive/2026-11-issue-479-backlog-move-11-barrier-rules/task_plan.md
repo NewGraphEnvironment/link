@@ -54,9 +54,10 @@ Owner's answers, 2026-11-24, at the plan gate (recorded in #479's `## Decisions`
 - **O7. Cut tokens (b):** new cut rows as well as the `acc` rows, as #478 did (`cut-full-top-5`, `cut-full-ssf-all-4`, a successor to `cut-min`). A token that changes with the same output costs only bookkeeping, but a cut that changes under an unchanged token passes silently.
 - **O8. A position whose owner does not hold it (a):** one named holder, the lowest group code among the groups that scan the line, counted in the verify report.
 
-## Open decisions
+Mechanism decisions made during the build (2026-11-24, reported in the PR):
 
-None open. A fork met during the build is written here.
+- **D12. A line dependency holding no barrier rows is refused** by `lnk_wsg_downstream_check()` (code-check round 2): from 0.93.0 only the owner holds a position, so a one-group or closure run into a schema without it would read those barriers as open. Warn at model time under the driver; the recompute's post-condition refuses, and takes the written-reason override (round 3).
+- **D13. On a database whose FWA lacks a modelled group, the check names that group** (round 3): the line rule reads FWA and cannot see its lines.
 
 Left open on #341 and not needed to build this: which measured rules `default` adopts and from what source, whether an unassessed crossing stays on its modelled type, and whether POTENTIAL stays a status. Phase 3's compare is the evidence for them.
 
@@ -114,16 +115,16 @@ Review changed: the token decisions are the owner's (C2), what "equal" compares 
 
 - [x] Open decisions 6 and 7 answered at the plan gate (O6 (a), O7 (b)).
 - [x] `R/lnk_vocabulary.R`: the `acc` spec reads the lift rules and the barrier-rule rows decision 6 names (rule columns only, never `date`, `source`, `notes`); `.lnk_vocabulary_canonical()` is not edited (an edit re-specs every `acc` row). `inst/extdata/vocabulary.csv` retires `acc-v7` and `acc-bcfp-5` at 0.93.0 and adds `acc-v8` and `acc-bcfp-6`, and (O7) retires `cut-full-top-4`, `cut-full-ssf-all-3` and `cut-min` for successors; `tests/testthat/test-lnk_vocabulary.R`. Every shipped bundle that resolved before still resolves (`default`, `default_tuned`, `default_minimal`, `default_parent`, `bcfishpass`); `default_extrabreaks` and `default_rearbreaks` have no rows before or after.
-- [ ] Build FINAL for the proof groups, with the recompute pass. Under O3 (a), FINAL equals AFTER-386 by digest in every persisted model table, the evidence table compared on AFTER-386's columns with `lift_rule` in (`own`, `habitat`) and the log tables left out. On FINAL, `barrier_rule_id` is non-NULL on exactly the crossings today's predicate selects, in every proof group's kept working schema.
+- [x] Build FINAL for the proof groups, with the recompute pass. Under O3 (a), FINAL equals AFTER-386 by digest in every persisted model table, the evidence table compared on AFTER-386's columns with `lift_rule` in (`own`, `habitat`) and the log tables left out. On FINAL, `barrier_rule_id` is non-NULL on exactly the crossings today's predicate selects, in every proof group's kept working schema.
 - [x] `bcfishpass` bundle against the reference on the proof groups that bcfishpass models: accessible and observed km unchanged or closer, each move named.
 - [x] `data-raw/pretest_inputs.csv`: a row for each new `R/` file and for each new file under `inst/extdata/` (the rules table drives crossings, the lifts table observations), each with the input it drives, and `tests/testthat/test-pretest.R` green. The unmapped-file test catches a missing row, not a wrong input: read each new row against what the file changes.
 - [x] `RUNBOOK.md`: §2a (the barrier set comes from rules), §5 (several lift rules; one holder per position), §6b if a token rule changed, §7 (the two tables and who owns which column), §8c (what a one-group run needs), §8d (the owner rule and the verify checks).
 - [x] `research/barrier_rules.md` (new, with the header line and a row in `research/README.md`): what is known about copies, lift rules, the rule compare and the recompute finding. `research/bcfishpass_parity.md` only if parity moved.
 - [x] `CLAUDE.md` status block for 0.93.0 (owed, facts not worth re-deriving) and its function lists.
-- [ ] `devtools::document()`, lint compared per file against `origin/main`, `devtools::test()`, `devtools::check()`, `pkgdown::check_pkgdown()`.
+- [x] `devtools::document()`, lint compared per file against `origin/main`, `devtools::test()`, `devtools::check()`, `pkgdown::check_pkgdown()`.
 - [x] `/code-check branch`, fixes as follow-up commits (3 rounds and an enumeration; `review-round1..3.md`, `review-enumeration.md`, `review-verdict.md`).
 - [x] `planning/backlog.md`: batch 16's carry line names the split issue (O1) and the BT-rule follow-up (O3).
-- [ ] `NEWS.md` and `DESCRIPTION` to 0.93.0 as the last commit.
+- [x] `NEWS.md` and `DESCRIPTION` to 0.93.0 as the last commit.
 
 ## Owed at the end (reported, done after merge)
 
@@ -136,10 +137,10 @@ Review changed: the token decisions are the owner's (C2), what "equal" compares 
 
 ## Validation
 
-- [ ] Tests pass
+- [x] Tests pass
 - [x] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
 
 How each change is proved:
 
