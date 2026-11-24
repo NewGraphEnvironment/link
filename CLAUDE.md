@@ -1452,7 +1452,6 @@ Note: `<owner>/<repo>@<sha>` references a commit; this does **not** trigger GitH
 ## Exported Functions
 
 ### Core
-- `lnk_thresholds(csv, high, moderate, low)` — configurable severity thresholds. Ships BC defaults. CSV or inline override. Feeds into `lnk_score()`.
 - `lnk_db_conn()` — PostgreSQL connection factory, through `fresh::frs_db_conn()`: arguments, then `PG*`, then `PG_*_SHARE` (#288).
 - `lnk_config(name_or_path)` — load a config **manifest**: paths (`cfg$rules`, `cfg$dimensions`), file declarations (`cfg$files`), pipeline knobs (`cfg$pipeline`), provenance metadata. **Manifest-only — no parsed CSVs.** Cheap to call. Configs may declare `extends:` to inherit from another config. Ships with `"bcfishpass"` and `"default"` variants under `inst/extdata/configs/<name>/`.
 - `lnk_load_overrides(cfg)` — materialize the data files declared in `cfg$files`. Returns named list of canonical-shape tibbles. Entries with `source` + `canonical_schema` dispatch through `crate::crt_ingest()`; others fall through to local reads dispatched on path extension. Adding a new source family is a config edit + crate registration — no link R code change.
@@ -1464,8 +1463,8 @@ Note: `<owner>/<repo>@<sha>` references a commit; this does **not** trigger GitH
 ### Match family
 - `lnk_match(conn, sources, distance)` — generic N-way matcher on `blue_line_key` + `downstream_route_measure`. Bidirectional 1:1 dedup (closest match wins both directions). Where filters isolated in subqueries. Optional `xref_csv` for hand-curated GPS corrections.
 
-### Score family
-- `lnk_score(conn, crossings, method)` — `method = "severity"` for biological impact classification (high/moderate/low). `method = "rank"` for weighted multi-criteria prioritization. Threshold-driven, NULL-safe, column-agnostic.
+### Barrier rules
+- Which crossings are human-made barriers is the bundle's `parameters_barrier_rules.csv` (#341): evaluated in `lnk_pipeline_crossings()` into `crossings.barrier_rule_id` (`.lnk_barrier_rules_apply()`), read by the four barrier sets. Further observation-lift rules per species are `parameters_barrier_lifts.csv` (#236), read with each species' `parameters_fresh` row by `.lnk_lift_rules()`. `lnk_thresholds()`, `lnk_score()` and `lnk_source()` were removed in 0.93.0.
 
 ### Rules family
 - `lnk_rules_build(csv, to, edge_types)` — transforms a species habitat dimensions CSV into the rules YAML format consumed by `frs_habitat()`. Two CSVs: newgraph defaults (`inst/extdata/parameters_habitat_dimensions.csv`) and bcfishpass comparison variant (`inst/extdata/configs/bcfishpass/dimensions.csv`).
@@ -1491,22 +1490,13 @@ Six-phase bcfishpass-reproducing pipeline, driven by `lnk_config()` + `lnk_load_
 - `lnk_parity_annotate(rollup, taxonomy, to, tolerance)` — annotates a parity rollup against `research/bcfp_divergence_taxonomy.yml`. Tags each row with `taxonomy_id, class, mechanism, status, refs`. Unmatched rows: `UNEXPLAINED | WITHIN_TOLERANCE | NOT_APPLICABLE`.
 
 ### Bridge to fresh
-- `lnk_source(conn, crossings, label_col, label_map)` — returns `list(table, label_col, label_map)` that plugs directly into `frs_habitat(break_sources = list(...))`. `label_map` translates link severity → fresh access labels (`high → blocked`, `moderate → potential`).
 - `lnk_aggregate(conn, crossings, schema, to, config, species, col_id, barriers)` — per crossing and species, the habitat upstream over the whole network (the crossing's stream above it and every tributary, across groups), from a persist schema's `streams` and `streams_habitat_<sp>` (#478, #321). `fresh::frs_aggregate()` refined by bcfishpass's measure-aware `fwa_upstream(..., true, 1)`; exact numeric sums; zeros where nothing is upstream. Writes a long table to `to` (`config`, `species_code`, `spawning_km`, `rearing_km` with connectors out, the stream / lake / wetland split, `rearing_lake_connection_km`), plus `*_belowupstrbarriers_km` given a `barriers` table (to the next human-made barriers upstream). Barriers outside the table (another group's) do not stop the walk.
 
 ## Integration with fresh
 
 ```r
-# link scores crossings
-lnk_load(conn, csv = "overrides.csv", to = "working.fixes")
-lnk_override(conn, "working.crossings", "working.fixes")
-lnk_score(conn, "working.crossings")
-
-# link produces break source spec
-src <- lnk_source(conn, "working.crossings")
-
-# fresh consumes it — zero translation
-frs_habitat(conn, "MORR", break_sources = list(src))
+# link builds the group's crossings; its barrier rules say which are barriers
+lnk_pipeline_crossings(conn, "MORR", cfg, loaded, "working_morr")
 
 # link reads fresh output for per-crossing rollup: per species, over the network
 lnk_aggregate(conn, "working_morr.crossings", schema = "fresh_default",
@@ -1514,11 +1504,11 @@ lnk_aggregate(conn, "working_morr.crossings", schema = "fresh_default",
               barriers = "working_morr.barriers_anthropogenic")
 ```
 
-The data flows both directions: link → fresh (scored crossings as break sources) and fresh → link (habitat classification for upstream rollup).
+The data flows both directions: link → fresh (crossings and barriers as break sources) and fresh → link (habitat classification for upstream rollup).
 
 ## fresh Break Source Label Convention
 
-When link produces a break source via `lnk_source()`, the label values control how fresh treats each point:
+When link hands fresh a break source, the label values control how fresh treats each point (`lnk_pipeline_classify()` labels crossings from their status):
 
 | Label | What fresh does |
 |-------|----------------|
@@ -1532,10 +1522,8 @@ When link produces a break source via `lnk_source()`, the label values control h
 `frs_habitat()` and `frs_habitat_classify()` accept `label_block` (default `"blocked"`). This controls which break labels restrict access:
 
 ```r
-# link scores crossings with severity labels
-src <- lnk_source(conn, "working.crossings",
-  label_col = "severity",
-  label_map = c("high" = "blocked", "moderate" = "potential"))
+# a break source: a table and its label column
+src <- list(table = "working.crossings", label_col = "label")
 
 # Conservative: both high and moderate block
 frs_habitat(conn, "BULK",
@@ -1572,7 +1560,7 @@ The same steps replicate what bcfishpass does, for any `watershed_group_code`:
 2. Load overrides from `bcfishpass/data/` CSVs, filter to WSG
 3. `lnk_load()` → `lnk_override()` (validate + apply)
 4. Get PSCIS via `bcdata::bcdc_get_data()`, match with `lnk_match()` (+ xref CSV)
-5. `lnk_score()` → `lnk_source()` → `frs_habitat()`
+5. `lnk_pipeline_crossings()` (barrier rules) → `frs_habitat()`
 6. Falls as `list(table = "working.falls", label = "blocked")`
 
 To run the entire province: loop over watershed groups. Or pass any AOI with `species` for sub-basin work.

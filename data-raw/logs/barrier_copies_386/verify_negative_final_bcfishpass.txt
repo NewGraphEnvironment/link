@@ -1,0 +1,29 @@
+=== negative test of study_area_verify.sql against run 20261124_386-final-bcfp ===
+  ✓ 1. healthy data              -> PASS (as expected)
+  ✓ 2. ADMS recompute deleted -> FAIL (as expected)
+  ✓ 3. expected_n=12 (wrong)  -> FAIL (as expected)
+  ✓ 4a. unpinned, no reason      -> FAIL (as expected)
+  ✓ 4b. unpinned + written reason-> PASS (as expected)
+  ✓ 4c. unpinned + blank reason  -> FAIL (as expected)
+  ✓ 5. fresh_sha NULLed -> FAIL (as expected)
+  ✓ 6. observations version gone -> FAIL (as expected)
+  ⊘ 6a. SKIPPED: run 20261124_386-final-bcfp has one host or no recorded observations
+       version, so hosts cannot disagree. NOT a pass.
+  ✓ 6b. fresh_dirty=TRUE         -> FAIL (as expected)
+  ⊘ 6c. SKIPPED: run 20261124_386-final-bcfp used one host, so hosts cannot disagree.
+       Absence reported as absence -- this is NOT a pass. Counted as a
+  ✓ 6d. bt row un-settled -> FAIL (as expected)
+  ✓ 6e. ADMS lifted 3      -> FAIL (as expected)
+  ✓ 6f. UPCE open row, superseded -> PASS (as expected)
+  ✓ 6g. UPCE open row, not superseded -> FAIL (as expected)
+  ✓ 6h. outside reader recomputed -> PASS (as expected)
+  ✓ 6i. outside reader lifted 3   -> PASS, reported (as expected)
+  ✓ 6j. evidence judged          -> PASS (as expected)
+  ✓ 6p. a rule's evidence below its threshold -> FAIL (as expected)
+  ✓ 6k. ADMS BT lift with no evidence -> FAIL (as expected)
+  ✓ 6l. ADMS BT evidence for no lift -> FAIL (as expected)
+  ✓ 6m. one holder judged (11 group(s)) -> PASS (as expected)
+  ✓ 6n. BULK also holds ADMS's gradient row -> FAIL (as expected)
+  ✓ 6o. ADMS override beside no barrier of its own -> FAIL (as expected)
+  ✓ 7. healthy data, post-restore-> PASS (as expected)
+=== negative test FAILED (2 case(s) wrong) ===
