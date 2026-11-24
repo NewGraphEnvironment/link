@@ -17,10 +17,6 @@ Batch 11 of `planning/backlog.md`: #75, #86, #129, #189, #212, #316, #327. Gate 
   8. #327 (asked with Phase 1's numbers): decline. Every order-1 band was underpowered (BT 21.4 km held out, 0 of 1.4 expected; CH 11.7 km, 0 of 0.8; ST 12.8 km, 0 of 1.1).
 - 2026-11-23, at the resume, main moved since the park (0.86.1 to 0.88.0): fresh is pinned at v0.55.1 (installed on m1, `RemoteSha 29e7aa13`), so Phase 1 runs on it and builds a new base (a base built under fresh 0.52.0 cannot be reused, `habitat_variants_build.R` header). The release bumps 0.88.0 to 0.89.0. `pretest_inputs.csv` moved one fresh row only; Phase 2's new rows are unaffected.
 
-## Open decisions
-
-None.
-
 ## Phase 1: measure the order-1 exception in `default` (#327), first
 
 Review B1, A4 and AC5 changed this phase: the arms, the groups, its place first, and a fixed environment.
