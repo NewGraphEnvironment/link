@@ -50,7 +50,7 @@ counts them): run `/backlog-sweep` again, the backlog is not finished.
 | - [ ] 8 | #476 | 11: the rules builder and `dimensions.csv` (7 issues) | open | C | 3 | opus |
 | - [ ] 9 | #477 | 12, 13: mapping codes as rules, the persist and run API (8 issues) | open | A | 3, 7, 8, 13 | opus |
 | - [x] 10 | #478 | 14, 15: snapping, habitat upstream of each crossing (6 issues) | done: https://github.com/NewGraphEnvironment/link/pull/518 | C | 3 | opus |
-| - [ ] 11 | #479 | 16: what blocks access at a barrier (5 issues) | open | C | 3, 10, 16 | fable then opus |
+| - [x] 11 | #479 | 16: what blocks access at a barrier (5 issues) | done: https://github.com/NewGraphEnvironment/link/pull/521 | C | 3, 10, 16 | fable then opus |
 | - [ ] 12 | #480 | 17, 18, 19: thresholds from knowledge's table, MAD everywhere, the PARS vignette (7 issues) | **waiting** on knowledge#139's decision of which method sets link's flow numbers | C | 3, 11, 16 | opus |
 | - [ ] 15 | #500 | 23: load an export's input snapshots (1 issue) | **waiting** on crate's self-describing table snapshot contract (crate#66) | B | 14 | opus |
 | - [x] 16 | #501 | 24: rainbow trout back in `default`, the presence review's last rows (2 issues) | done: https://github.com/NewGraphEnvironment/link/pull/517 | D | — | opus |
@@ -321,7 +321,7 @@ script, `research/bcfishpass_parity.md`. No gate. One live parity against bcfish
 
 ### 16. What blocks access at a barrier
 
-- [ ] Carried by move 11, #479: #386, #236 and #341. #201 and #83 split out to one new issue, filed from the draft in #479's archived plan once the owner has read its body. The candidate second BT lift rule is #520.
+- [x] Carried by move 11, #479: #386, #236 and #341. #201 and #83 split out to one new issue, filed from the draft in #479's archived plan once the owner has read its body. The candidate second BT lift rule is #520. (merged in https://github.com/NewGraphEnvironment/link/pull/521)
 
 **Touches:** `R/lnk_barriers_unify.R`, `R/lnk_barriers_views.R`, `R/lnk_barriers_emit.R`, `R/lnk_pipeline_access.R`, `R/lnk_pipeline_prepare.R`, `R/lnk_barrier_overrides.R`, `inst/extdata/configs/default/parameters_fresh.csv`, `data-raw/study_area_verify.sql`, `inst/extdata/vocabulary.csv`, and a new barrier rules table
 
