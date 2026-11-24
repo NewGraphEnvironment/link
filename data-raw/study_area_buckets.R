@@ -20,8 +20,7 @@
 # focal WSGs share a component iff their closures intersect. Each component
 # is then resolved through `lnk_wsg_resolve()` for the species filter and
 # the downstream-first order, and the components are packed onto hosts by
-# greedy LPT (longest processing time first) — the same algorithm
-# wsgs_dispatch.sh uses, with a component rather than a single WSG as the
+# greedy LPT (longest processing time first) — with a component rather than a single WSG as the
 # indivisible atom.
 #
 # The atom (link#361): a component, or a single group.
@@ -49,7 +48,7 @@
 #
 # Usage:
 #   [LNK_LOAD=loadall] Rscript data-raw/study_area_buckets.R \
-#     [--hosts=4] [--config=bcfishpass] [--focal=A,B,C] [--atom=component|group] \
+#     [--hosts=4] --config=<bundle> [--focal=A,B,C] [--atom=component|group] \
 #     [--minutes-schema=<persist schema>] [--host-speeds=1,1,1,1] [--workers=0]
 #     [--host-names=m4,cloud,cloud,cloud] [--speeds-state=<tsv>] [--plan-out=<tsv>] [--write]
 #
@@ -90,7 +89,13 @@ arg_val <- function(flag, default) {
   sub(paste0("^", flag, "="), "", hit[1])
 }
 n_hosts <- as.integer(arg_val("--hosts", "4"))
-config  <- arg_val("--config", "bcfishpass")
+config  <- arg_val("--config", "")
+if (!nzchar(config)) {
+  message("study_area_buckets.R: --config is required. Name a bundle from inst/extdata/configs/ ",
+          "(bcfishpass and default both resolve to schema 'fresh'; any bundle ",
+          "but bcfishpass needs an explicit LNK_SCHEMA).")
+  quit(status = 2)
+}
 minutes_schema <- arg_val("--minutes-schema", "")
 minutes_exclude <- toupper(trimws(strsplit(arg_val("--minutes-exclude", ""), ",")[[1]]))
 minutes_exclude <- minutes_exclude[nzchar(minutes_exclude)]

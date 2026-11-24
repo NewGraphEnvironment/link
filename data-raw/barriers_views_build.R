@@ -20,10 +20,21 @@
 # whichever subset the last WSG to run happened to need.
 #
 # Usage: [LNK_LOAD=loadall] [LNK_SCHEMA=<schema>] \
-#          Rscript data-raw/barriers_views_build.R [config]
+#          Rscript data-raw/barriers_views_build.R <config>
 
 args   <- commandArgs(trailingOnly = TRUE)
-config <- if (length(args) >= 1L && nzchar(args[1])) args[1] else "bcfishpass"
+config <- if (length(args) >= 1L && nzchar(args[1])) args[1] else ""
+if (!nzchar(config)) {
+  message("barriers_views_build.R: config is required. Name a bundle from inst/extdata/configs/ ",
+          "(bcfishpass and default both resolve to schema 'fresh'; any bundle ",
+          "but bcfishpass needs an explicit LNK_SCHEMA).")
+  quit(status = 2)
+}
+if (!identical(config, "bcfishpass") && !nzchar(Sys.getenv("LNK_SCHEMA"))) {
+  message("barriers_views_build.R: LNK_SCHEMA is required with config '", config, "': it resolves to the ",
+          "same persist schema as bcfishpass and would overwrite that build in place.")
+  quit(status = 2)
+}
 
 if (identical(Sys.getenv("LNK_LOAD"), "loadall")) {
   suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))

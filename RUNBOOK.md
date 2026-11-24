@@ -424,9 +424,8 @@ run group holds `accessible AND access_<sp> = 0`.
   one host reads other hosts' barriers and overrides as that host holds them, possibly a previous
   run's, and a one-way gate there would blank habitat the recompute then lifts. The recompute
   settles every group on final access, and so does the re-model command §8d prints for a run's
-  missing groups. A single-group `wsg_run_one.R` gates at model time; so does the legacy
-  `wsgs_dispatch.sh` path (`lnk_compare_wsg()`), which runs no recompute and settles on the access
-  it ships.
+  missing groups. A single-group `wsg_run_one.R` gates at model time. (The legacy `wsgs_dispatch.sh` path, which
+  settled on the access it shipped, was retired in 0.89.0.)
 - **Schemas built before it are unsettled.** A recompute settles one
   (`bash data-raw/study_area_run.sh --recompute-only --run-uid=<uid> --config=<config>
   --schema=<schema>`, §8d), but re-model first, then gate: a re-gate settles on today's access, and
@@ -1330,7 +1329,7 @@ stops (named `wsgs`; a group is taken from whichever of the config's schemas
 holds its build). Provenance is keyed per finished build, never per dispatch:
 a dispatch's set of rows grows as its other groups close and depends on which
 schemas an export reads, while one build's log row does not change. A NULL
-`run_uid` (a direct `wsg_run_one.R` run) is kept under
+`run_uid` (a direct `wsg_run_one.R` run, which carries a label instead) is kept under
 `provenance/run_id=<run_id>/`. Each config entry carries `exported`, which the
 regressions judgement below reads.
 
@@ -1594,11 +1593,23 @@ per group:
 - **Codes.** Each species the group's presence row marks present (every presence column, not
   only `cfg$species`: CT, DV, KO and RB records still cut) counts its own code. Where the bundle
   declares `species_pooling.csv`, [lnk_species_pooling()] adds what it pools: another species'
-  records (DV as BT where the two names mean one species) and alias codes that are no species
-  column, at the `province` scope (`SST`, `WST` as ST; `ADV` as DV; `ABT` as BT; `CCT`, `ACT`,
-  `CT/RB` as CT) or regionally (`BT/DV`, `DV/BT` as BT only where DV pools into BT). A row
-  counts one code as one target: aliases do not chain (`ADV` never reaches BT through DV).
-  `RB/CT` counts as nothing. A bundle with no tracker counts each species' own code only, as
+  records (DV as BT where the two names mean one species; in `default`, ST as RB, link#501) and
+  alias codes that are no species column, at the `province` scope (`SST`, `WST` as ST and as RB;
+  `ADV` as DV; `ABT` as BT; `CCT`, `ACT`, `CT/RB` as CT) or regionally (`BT/DV`, `DV/BT` as BT
+  only where DV pools into BT). A row counts one code as one target: aliases do not chain
+  (`ADV` never reaches BT through DV), so a code counting as two species has a row for each
+  (`RB ← SST` beside `ST ← SST`). Readers key on the record and the species it reads as: the
+  presence check and `.lnk_presence_measures()` give such a record a row per species, and the
+  zones fold an alias into every species it counts as in every group. `RB/CT` counts as nothing.
+- **Rainbow trout and steelhead** (`default`, link#501). A steelhead record (`ST`, `SST`, `WST`)
+  counts as rainbow trout where RB is marked present; a rainbow trout record never counts as
+  steelhead, so a resident rainbow above a falls cannot open steelhead access. The two are one
+  species (*O. mykiss*) whose juveniles cannot be told apart in the field: 58 % of RB records sit
+  in water steelhead can reach, and 348 ST records sit above a barrier no steelhead lift opens
+  (`data-raw/logs/rb_st_497/`). Counted as RB, a steelhead record takes RB's date floor (none),
+  so undated and pre-1990 ones cut and set RB's code 2; a lift still needs a dated record (§5).
+  RB's top record per line is then the higher of the RB and steelhead tops, which moved in 77
+  groups when measured. A bundle with no tracker counts each species' own code only, as
   bcfishpass's `load_observations.sql` does: it tests the recorded code against the presence
   table's codes, so its `species_code_remap` of the cutthroat aliases renames only records
   already coded `CT` (`smnorris/bcfishpass@3bd2824`; on its output 0 of 2,004 alias records
@@ -1633,8 +1644,9 @@ the file models every rules species. It refuses a code with no rules entry, a
 rules species with no row, a value other than `t`/`f`, a duplicate, a paused row
 without its reason or date, and pausing every species. `extends:` inherits the
 file, so `default_tuned` pauses what `default` pauses. `default` pauses KO (its
-presence column was never sourced) and RB (records do not separate rainbow trout
-from steelhead), at `acc-v5`.
+presence column was never sourced), since `acc-v5`. RB was paused with it until
+#501 (`acc-v7`), which settled how its records are told from steelhead's (§7,
+"The record rule").
 
 What a paused species does, and does not do:
 
@@ -1666,9 +1678,17 @@ What a paused species does, and does not do:
   per segment, with no habitat: other groups' recompute reads its barrier rows
   (LEUT and LNRS are each read by 19 groups). `lnk_pipeline_species(paused =
   TRUE)` answers whether a group is modelled; `lnk_wsg_resolve()`,
-  `wsg_run_one.R` and `wsg_recompute_one.R` use it. Under `default` these are
-  BRID, GRNL, LEUT, LNRS, MURT, PITR and UISR (CHUK's only cell is DV, so the
-  filter has always dropped it). Compare skips them with a NOTE.
+  `wsg_run_one.R` and `wsg_recompute_one.R` use it. Under `default` there are
+  none since RB is modelled again (#501); while RB was paused they were BRID,
+  GRNL, LEUT, LNRS, MURT, PITR and UISR. CHUK's only cell is DV, so the filter
+  has always dropped it. Compare skips such groups with a NOTE.
+- **A modelled species can still break streams in a group whose cell does not
+  mark it.** `.lnk_pipeline_prep_minimal()` promotes presence through
+  `presence_groups.csv`, so with RB modelled, a group with CT or DV marked and no
+  RB cell breaks its streams at RB's barriers (`ct_dv_rb`), while the record rule
+  reads the cell as written: no RB record there cuts, sets code 2 or lifts, and
+  RB is not classified. 17 groups at #501: BEAV, BLUR, CHUK, COAL, DEAL, DEAR,
+  FROG, JENR, KTSU, KUSR, LKEC, LPRO, LRAN, MBNK, NBNK, SWIR, TOAD.
 - The validator (`--species`) refuses a paused species only where no scored group's newest build classified it (`log.species`), so a schema built before the pause can still be scored; the variants harness refuses a variant of one among the variants a run builds.
 
 ### Copies and overlays: the bcfishpass files a bundle carries (link#429)
@@ -2286,6 +2306,24 @@ preflight rather than reaching a walk with an argument it does not take. Nothing
 hand: a cloud host installs fresh at prep from the `Remotes:` pin, and a persistent worker
 gets it when the run is launched with `--auto-install` (`worker_prep.sh`'s `install-fresh`
 stage), which re-checks its `RemoteSha` against the dispatcher's.
+
+**fresh's internals are pinned by ordered signature (link#504).** link reaches four
+non-exported fresh functions through `getFromNamespace()`: `.frs_run_connectivity`,
+`.frs_habitat_models`, `.frs_near_river_specs` and `.frs_sql_num`, the last three called
+positionally. `lnk_preflight_fresh()` checks each against
+`.lnk_fresh_required_internal_formals()`: it passes when the declared formals are the
+installed function's leading formals, in order, and any formal after them has a default,
+and reports a mismatch as `mismatched_internal_formals` ("changed internal signatures").
+Order is checked because a reordered internal would bind a positional call's arguments
+to the wrong formals with no error. The test compares the installed fresh's formals
+exactly, so a fresh that changes any of them fails CI before it reaches a host. The drift
+guard (`.lnk_fresh_internal_callsites()`) finds every `getFromNamespace()` call on fresh
+in link's namespace and requires the set to equal the pinned list; it refuses a call
+whose `x` or `ns` is not a literal, and does not see `get(…, envir = asNamespace("fresh"))`
+or `asNamespace("fresh")$x`. fresh's contract test of the same internals is
+NewGraphEnvironment/fresh#329. The pin is fresh v0.56.0 since link 0.90.0 (#507): no
+persisted output moves (`data-raw/logs/fresh_pin_507/`), and the pre-run gate owes a run
+on it once the dispatcher's shared library holds 0.56.0.
 
 ### The pre-run gate (link#372)
 
@@ -3504,9 +3542,18 @@ docker exec fresh-db psql -U postgres -d fwapg -c \
   "SELECT pg_get_viewdef('fresh_default.barriers_bt_unified', true);"
 
 # Single-WSG tunnel-free build (the headline path)
-bash data-raw/wsgs_run_m4_offline.sh --wsgs=PARS --config=default \
-  --schema=fresh_default --force --mapping-code
+LNK_SCHEMA=fresh_default LNK_RUN_LABEL=pars-check \
+  Rscript data-raw/wsg_run_one.R PARS default
 ```
+
+A standalone `wsg_run_one.R` / `wsg_recompute_one.R` (no `LNK_RUN_UID`) refuses an empty
+`LNK_RUN_LABEL` (`data-raw/run_label_check.R`; label characters `A-Z a-z 0-9 . _ -`). Its
+`run_uid` stays NULL: that column means one dispatch across hosts, and PUBLISH keeps refusing a
+build without one unless `LNK_PUBLISH_ALLOW` gives a reason. The label is what records why the run
+happened. Every driver also refuses to run without an explicit config, and the three that write
+persist tables (`wsg_run_one.R`, `wsg_recompute_one.R`, `barriers_views_build.R`) refuse a bundle
+other than `bcfishpass` with no `LNK_SCHEMA`, because `default` resolves to the schema `fresh`
+that `bcfishpass` writes.
 
 Local docker fwapg: `host=localhost port=5432 dbname=fwapg user=postgres
 password=postgres` (compose at `~/Projects/repo/fresh/docker/`).

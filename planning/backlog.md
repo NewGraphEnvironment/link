@@ -46,16 +46,16 @@ counts them): run `/backlog-sweep` again, the backlog is not finished.
 | - [x] 4 | #472 | 5: `default`'s presence table as a copy plus an overlay (4 issues) | done: https://github.com/NewGraphEnvironment/link/pull/498 | — | — | — |
 | - [x] 5 | #473 | 6, 7: the export contract, one-group runs that read downstream (6 issues) | done: https://github.com/NewGraphEnvironment/link/pull/496 | — | — | — |
 | - [x] 6 | #474 | 8, 9: what a run stamps and checks before launch, how primitives load (10 issues) | done: https://github.com/NewGraphEnvironment/link/pull/485 | — | — | — |
-| - [ ] 7 | #475 | 10: drivers (6 issues) | open | B | 14 | opus then sonnet |
+| - [x] 7 | #475 | 10: drivers (6 issues) | done: https://github.com/NewGraphEnvironment/link/pull/513 | B | 14 | opus then sonnet |
 | - [ ] 8 | #476 | 11: the rules builder and `dimensions.csv` (7 issues) | open | C | 3 | opus |
 | - [ ] 9 | #477 | 12, 13: mapping codes as rules, the persist and run API (8 issues) | open | A | 3, 7, 8, 13 | opus |
 | - [ ] 10 | #478 | 14, 15: snapping, habitat upstream of each crossing (6 issues) | open | C | 3 | opus |
 | - [ ] 11 | #479 | 16: what blocks access at a barrier (5 issues) | open | C | 3, 10, 16 | fable then opus |
 | - [ ] 12 | #480 | 17, 18, 19: thresholds from knowledge's table, MAD everywhere, the PARS vignette (7 issues) | **waiting** on knowledge#139's decision of which method sets link's flow numbers | C | 3, 11, 16 | opus |
 | - [ ] 15 | #500 | 23: load an export's input snapshots (1 issue) | **waiting** on crate's self-describing table snapshot contract (crate#66) | B | 14 | opus |
-| - [ ] 16 | #501 | 24: rainbow trout back in `default`, the presence review's last rows (2 issues) | open | D | — | opus |
+| - [x] 16 | #501 | 24: rainbow trout back in `default`, the presence review's last rows (2 issues) | done: https://github.com/NewGraphEnvironment/link/pull/517 | D | — | opus |
 | - [ ] 17 | #502 | 25: province-wide builds at the new tokens (1 issue) | **waiting** on the operator's word for the provincial runs | C | 3, 13, 14, 16, 18 | opus |
-| - [ ] 18 | #507 | 26: fresh's internals pinned by argument, at fresh 0.56.0 (1 issue) | open | A | 7, 13, 14 | opus |
+| - [x] 18 | #507 | 26: fresh's internals pinned by argument, at fresh 0.56.0 (1 issue) | done: https://github.com/NewGraphEnvironment/link/pull/514 | A | 7, 13, 14 | opus |
 
 Rows are in the order to take them (moves 13 and 14 first since 2026-11-22); a move's number is its name.
 
@@ -240,7 +240,7 @@ on a host proves it.
 
 ### 10. Drivers
 
-- [ ] Carried by move 7, #475
+- [x] Carried by move 7, #475 (merged in https://github.com/NewGraphEnvironment/link/pull/513)
 
 **Touches:** `data-raw/README.md`, `data-raw/state_clean.sh`, `data-raw/wsgs_dispatch.sh`, `data-raw/wsgs_run_host.R`, `data-raw/wsg_run_one.R`, `data-raw/study_area_run.sh`, `RUNBOOK.md`, and the argument handling of about 15 other drivers under data-raw
 
@@ -429,7 +429,7 @@ its body. Waits on crate#66 (open) and on batch 21, which settles the layout the
 
 ### 24. Rainbow trout back in `default`, and the presence review's last rows
 
-- [ ] Carried by move 16, #501
+- [x] Carried by move 16, #501 (merged in https://github.com/NewGraphEnvironment/link/pull/517)
 
 **Touches:** `inst/extdata/configs/default/species_modelled.csv`, `inst/extdata/configs/default/species_pooling.csv`, `inst/extdata/configs/default/overrides/wsg_species_presence_overlay.csv`, `inst/extdata/configs/default/wsg_species_presence_review.csv`, `inst/extdata/vocabulary.csv`, `research/species_presence.md`
 
@@ -456,7 +456,7 @@ lists this build as member 2 of its publish umbrella.
 
 ### 26. fresh's internals pinned by argument, at fresh 0.56.0
 
-- [ ] Carried by move 18, #507
+- [x] Carried by move 18, #507 (merged in https://github.com/NewGraphEnvironment/link/pull/514)
 
 **Touches:** `R/lnk_preflight_fresh.R`, `tests/testthat/test-lnk_preflight_fresh.R`, `DESCRIPTION`, `RUNBOOK.md`, `data-raw/pretest_inputs.csv`
 

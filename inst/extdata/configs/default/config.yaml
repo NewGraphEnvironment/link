@@ -221,8 +221,8 @@ provenance:
     shape_checksum: sha256:cf285e3c204249a6b628424979ef780baa271add44cc8ea6512a44d6671a9eb5
   species_pooling.csv:
     source: link (hand-authored; link#290). The DV->BT pooling tracker, one row per decision
-    synced: '2026-11-16'
-    checksum: sha256:1f6dbb905d5d5b39bc29b444bacda5f6fded88f1f8c70447324822a0ce44ab4a
+    synced: '2026-11-23'
+    checksum: sha256:58d5eea9435760bd2b642c4986aa90ea928686da4b8b454e37857079291b458f
     shape_checksum: sha256:0c8af50df7fb05abf8bc443bca31d88cc1c8ad6ebffc077ef0bde6b45ed7a550
   species_groups.csv:
     source: link (hand-authored; link#290)
@@ -231,8 +231,8 @@ provenance:
     shape_checksum: sha256:f26bcf4fdd8096a93bed0c0ddd8f62bb50fe46186d82b121b66a4d5c84ad93e4
   species_modelled.csv:
     source: link (hand-authored; link#432). Which rules species the bundle models; a paused row carries its reason and date
-    synced: '2026-11-01'
-    checksum: sha256:53d7227a849dffe2f550a5f30fd9194fbfcce0d440beec18a8e6c11c1a3afcc6
+    synced: '2026-11-23'
+    checksum: sha256:722a4bbee5a52c8c082db5b3317adb0560fd1bec6429bee6235a23a0e034740b
     shape_checksum: sha256:fa71e78291577055622a28a82276d23d0c0df1c1c6d5baaa7b577e1940551f30
   overrides/user_habitat_classification.csv:
     source: https://github.com/smnorris/bcfishpass
@@ -262,8 +262,8 @@ provenance:
     shape_checksum: sha256:161bef58151083d80bd226022a46aed5a35a5acd1526dfc3deac42cb6ae952fc
   overrides/wsg_species_presence_overlay.csv:
     source: link (hand-authored; link#431). Link's cells on the presence copy, one row each with its reason; #402's decisions land here
-    synced: '2026-11-18'
-    checksum: sha256:aacbc88a1fdbf7b0ea332f4c6355a0d65f5cefc3bdb7b2031c9f788422e51715
+    synced: '2026-11-23'
+    checksum: sha256:8c2a03b7a17fc42604ab99c373ba5a1c2091995c854559886c46e609ae82b38d
     shape_checksum: sha256:eb72f24aa4e2850578d9ce3feadf0125eb8bd1c95a16215705e8c57dc8aee324
   overrides/user_modelled_crossing_fixes.csv:
     source: https://github.com/smnorris/bcfishpass

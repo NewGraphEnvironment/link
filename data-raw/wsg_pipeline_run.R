@@ -1,8 +1,7 @@
 # data-raw/wsg_pipeline_run.R
 #
 # Modelling-only wrapper around `link::lnk_pipeline_run()` for the
-# targets pipeline (data-raw/_targets.R) and the orchestrator scripts
-# (wsgs_run_host.R, trifecta_*.sh).
+# targets pipeline (data-raw/_targets.R) and the study-area scripts.
 #
 # Writes per-WSG segment-level data into the persistent
 # <persist_schema>.streams + per-species streams_habitat_<sp> + barriers

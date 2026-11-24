@@ -17,6 +17,42 @@ The settled findings behind the methods (what is known, with provenance and the 
 
 **Take the next move from `planning/backlog.md`** (`bash <soul>/skills/_shared/backlog_moves.sh next planning/backlog.md`; `/compact-prep` names it): 13 moves, umbrellas #469–#481, each planned with one `/planning-init <umbrella>` and landed in one PR, ticked by `/gh-pr-merge`. Moves 12 and 13 wait on knowledge#139's flow-method decision and fresh 0.54.0. A link issue knowledge waits on says so in its batch section. A new issue joins the open move whose batches touch its files; run `/backlog-sweep` again when one fits none. Record: `planning/archive/2026-11-issue-468-backlog-pass/`.
 
+## Status (2026-11-23) — rainbow trout back in `default`; steelhead records count as RB; the presence review's last rows outside KO (#501, 0.91.0)
+
+**Backlog move 16 (#501) lands as one release: #497 and #402 close.** `default`'s `species_pooling.csv` counts `ST`, `SST` and `WST` records as RB where RB is marked present (province rows), and an RB record never as ST; `species_modelled.csv` models RB again (KO stays paused). The second presence review added BT in nine groups and DV in VICT, removed RB in LPRO and UPET, kept four cells absent, and sent six native-range cells to #515; KO's 138 rows wait for kokanee's return, #516. Tokens: `default`, `default_tuned`, `default_parent` `cut-full-top-3 acc-v7`; `default_minimal` `cut-min acc-v7`. Mechanics: RUNBOOK §7, "The record rule" and "Pausing a species". Evidence: `data-raw/logs/rb_st_497/`, `data-raw/logs/presence_check_501/`, `data-raw/logs/rb_return_501/`.
+
+**Owed:** every `default` group re-models at the next provincial run (move 17, #502) to `acc-v7`, then `streams_parent` is rebuilt (`streams_parent_build.R --verify`) and #490's steps name the new tokens. The pre-run gate runs again first (`R/`, `inst/extdata/`, `pretest_inputs.csv` changed). Post the knowledge#148 note (drafted in the PR body). m1 keeps scratch schemas `fresh_rb501_main`, `fresh_rb501_paused`, `fresh_rb501_ship` until the merge; drop them after.
+
+**Facts not worth re-deriving:**
+- **An alias may count as two species.** `.lnk_record_aliases()` keeps a row per target, so the presence check and `.lnk_presence_measures()` give such a record a row per species: key on (record, species), never on the record alone. The zones fold an alias into every species it counts as in every group.
+- **A steelhead record counted as RB takes RB's date floor (none):** undated and pre-1990 ST records cut and set RB's code 2; the lift's `>= 1900-01-01` still drops undated ones.
+- **RB lifts are built even while RB is paused** (every `parameters_fresh` row lifts), so the record rule moved them before the unpause: LKEL 9 → 14, 6 on steelhead records.
+- **"Steelhead-reachable" in `rb_st_497` is geometry:** no unlifted natural ST barrier below, read from the 2026-11-03 build's lifts (`acc-v5`); it ignores dams and whether steelhead live in the drainage.
+- **With RB modelled, `ct_dv_rb` promotion cuts at RB's barriers in 16 groups whose RB cell is empty** (LPRO joined them when its RB cell was removed); the record rule reads the cell as written, so no RB record there cuts or lifts.
+- **No group holds only paused species now;** the seven that did (BRID, GRNL, LEUT, LNRS, MURT, PITR, UISR) all mark RB.
+## Status (2026-11-23) — fresh 0.56.0; fresh's four internals pinned by ordered signature (#507, 0.90.0)
+
+**Backlog move 18 (#507) lands as one release: #504 and the fresh pin v0.55.1 → v0.56.0.** `lnk_preflight_fresh()` checks `.frs_run_connectivity`, `.frs_habitat_models`, `.frs_near_river_specs` and `.frs_sql_num` against `.lnk_fresh_required_internal_formals()` (leading formals in order, later ones defaulted; the test compares exactly), and `.lnk_fresh_internal_callsites()` requires every `getFromNamespace()` call on fresh to be one of them. No persisted output or token moves (`data-raw/logs/fresh_pin_507/`). Mechanics: RUNBOOK §8d, "fresh's internals are pinned by ordered signature".
+
+**Owed:** fresh 0.56.0 into each host's shared library and a re-prep (`load_all()` refuses 0.55.1 at the new floor); then the full pre-run gate at main before the next provincial run (its pick at this branch: QUES, BULK, SETN, LFRA, TOAD, OKAN, HARR, TAKL, UPCE, HORS, SAJR); a comment on NewGraphEnvironment/fresh#329 giving link's ordered list. fresh v0.57.0 (reservoirs in `lake_rearing`, stricter rules files) is its own move (owner, 2026-11-23).
+
+**Facts not worth re-deriving:**
+- **Three of the four internals are called positionally,** so order is load-bearing; their signatures are identical at fresh v0.55.1, v0.56.0 and v0.57.0.
+- **A plain environment cannot stand in for fresh's namespace in `lnk_preflight_fresh()`** (`getNamespaceExports()` refuses it); test the helper on environments and the whole function against the real fresh.
+- **`quote(utils:::f)` in R/ reads to R CMD check as a `:::` call;** build the head with `call(":::", ...)`.
+- **`data-raw/query_habitat_thresholds_mad.R` reaches a fifth internal (`.frs_rule_to_sql`)**, off the run path and not pinned.
+
+## Status (2026-11-23) — drivers need an explicit config; a standalone run is labelled; the legacy `wsgs_*` path is retired (#475, 0.89.0)
+
+**Backlog move 7 (#475) lands as one release: #278, #281, #181, #166; #179 and #110 close as retired.** Every `data-raw/` driver refuses to run without a config, the three that write persist tables also refuse a non-`bcfishpass` bundle with no `LNK_SCHEMA`, `study_area_run.sh` prints a decisions block before its first write, a standalone `wsg_run_one.R` / `wsg_recompute_one.R` needs `LNK_RUN_LABEL` (its `run_uid` stays NULL, so PUBLISH still refuses it), and `state_clean.sh --tables=` drops named tables locally (or on `--hosts=`). The nine legacy scripts are deleted. Mechanics: RUNBOOK §8d and the single-group path in §8c. Tests: `test-driver_config.R`, `test-state_clean.R` (local only; `data-raw/` skips in CI).
+
+**Owed:** the pre-run gate runs before the next provincial run (this voids any record). Hosts and jobs calling a retired script or omitting a config move to `study_area_run.sh --config=`.
+
+**Facts not worth re-deriving:**
+- **A mutant R driver that accepts a config models for real** against the local fwapg: the mutation proof for the config refusals runs only on the shell drivers.
+- **`state_clean.sh` needs bash 5** (associative arrays); macOS `/bin/bash` 3.2 fails at `declare -A`.
+- **Every verb-first script is cited by path** from research, archives, tests or the weekly workflow, so none was renamed.
+
 ## Status (2026-11-23) — `cabd.dams` loads in one layout on every host; PUBLISH runs on a pool (#499, 0.88.0)
 
 **Backlog move 14 (#499) lands as one release: #494 and #488; #334's public read stays open (owner, 2026-11-22).** `snapshot_bcfp.sh` loads CABD through `cabd_load()` (`data-raw/snapshot_bcfp_lib.sh`): the API into `cabd.dams_load`, then `cabd.dams` rebuilt as `ogc_fid, geom`, CABD's fields, key and index, in one transaction, so every host's content md5 agrees and, while CABD returns the same dams, matches the reload layout's recorded `6f7f44c0…`. PUBLISH (`data-raw/habitat_publish.R`, helpers `.lnk_publish_run()` / `.lnk_publish_list()` in `R/lnk_publish.R`) checks from one listing, puts on a PSOCK pool of `LNK_PUBLISH_JOBS` (default 8), takes versions from the put replies and one `list-object-versions` per per-group directory, and checks every result before the manifest. Mechanics: RUNBOOK §6d, "How PUBLISH talks to S3"; §8d, "An API primitive loads in one column layout". Evidence: `data-raw/logs/cabd_shape_494/`, `data-raw/logs/publish_parallel_488/`.

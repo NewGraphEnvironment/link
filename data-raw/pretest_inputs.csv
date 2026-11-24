@@ -122,6 +122,9 @@ link,^inst/extdata/configs/{config}/overrides/(cabd_[a-z_]+)\.csv$,dams,"dam add
 link,^inst/extdata/configs/{config}/overrides/(user_barriers_definite|user_barriers_definite_control|observation_exclusions|observation_exclusions_link)\.csv$,observations,barrier controls and observation exclusions
 link,^inst/extdata/configs/{config}/overrides/(user_barriers_definite|user_barriers_definite_control|observation_exclusions|observation_exclusions_link)\.csv$,gradient,barrier controls and observation exclusions
 link,^inst/extdata/configs/{config}/overrides/(user_habitat_classification|dfo_known_sockeye_lakes|wsg_species_presence|wsg_species_presence_overlay|wcrp_watersheds)\.csv$,segments,habitat overlays and species presence
+link,^inst/extdata/configs/{config}/overrides/(wsg_species_presence|wsg_species_presence_overlay)\.csv$,observations,"a presence cell decides which records a group reads, as which species (the record rule), and which species' barriers break its streams (#501)"
+link,^inst/extdata/configs/{config}/overrides/(wsg_species_presence|wsg_species_presence_overlay)\.csv$,obs_upstream,"a presence cell decides which records a group reads, as which species (the record rule), and which species' barriers break its streams (#501)"
+link,^inst/extdata/configs/{config}/overrides/(wsg_species_presence|wsg_species_presence_overlay)\.csv$,gradient,"a presence cell decides which records a group reads, as which species (the record rule), and which species' barriers break its streams (#501)"
 link,^inst/extdata/configs/{config}/(.*/)?README\.md$,none,documentation
 link,^inst/extdata/configs/README\.md$,none,documentation
 fresh,^R/frs_near_river\.R$,near_river_conn,the near-river walk; its prefilter is distance_max plus the longest connector run

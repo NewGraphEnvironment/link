@@ -22,5 +22,5 @@ The persisted `gradient` is the parent's, the value classify read; the segment's
 ## Running it
 
 ```bash
-LNK_SCHEMA=fresh_default_parent Rscript data-raw/wsg_run_one.R BULK default_parent
+LNK_SCHEMA=fresh_default_parent LNK_RUN_LABEL=<label> Rscript data-raw/wsg_run_one.R BULK default_parent
 ```

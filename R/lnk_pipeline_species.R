@@ -47,11 +47,11 @@
 #' loaded <- lnk_load_overrides(cfg)
 #' lnk_pipeline_species(cfg, loaded, "BULK")
 #'
-#' # default pauses KO and RB: MURT is modelled, with nothing to classify
+#' # default pauses KO: KOTL's kokanee is left out unless paused = TRUE
 #' cfg <- lnk_config("default")
 #' loaded <- lnk_load_overrides(cfg)
-#' lnk_pipeline_species(cfg, loaded, "MURT")
-#' lnk_pipeline_species(cfg, loaded, "MURT", paused = TRUE)
+#' lnk_pipeline_species(cfg, loaded, "KOTL")
+#' lnk_pipeline_species(cfg, loaded, "KOTL", paused = TRUE)
 #' lnk_pipeline_species(cfg, loaded, "ADMS")
 lnk_pipeline_species <- function(cfg, loaded, aoi, paused = FALSE) {
   if (!inherits(cfg, "lnk_config")) {

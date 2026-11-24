@@ -27,7 +27,7 @@ A segment's gradient is the elevation drop over its own length, so each cut move
 
 ```bash
 bash data-raw/study_area_run.sh --config=default_minimal --schema=fresh_default_minimal ...
-LNK_SCHEMA=fresh_default_minimal Rscript data-raw/wsg_run_one.R ADMS default_minimal
+LNK_SCHEMA=fresh_default_minimal LNK_RUN_LABEL=<label> Rscript data-raw/wsg_run_one.R ADMS default_minimal
 ```
 
 `study_area_run.sh` needs `--schema=` for this bundle, as for every bundle but `bcfishpass`. Its pre-flight refuses a schema with no passing gate record. Until this bundle's own builds cover every group it models, the gate borrows `default`'s history with `--history-schema` and `--history-config`, and that history must hold every group too (RUNBOOK §8d, "The pre-run gate"). Mechanics of the token: RUNBOOK §6b, "Output vocabulary".

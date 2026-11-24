@@ -6,7 +6,7 @@
 #
 #   for IP in <cy1_ip> <cy2_ip> <cy3_ip>; do
 #     scp -q data-raw/cypher_prep.sh "cypher@$IP:/tmp/cypher_prep.sh"
-#     ssh "cypher@$IP" "bash /tmp/cypher_prep.sh" &
+#     ssh "cypher@$IP" "CYPHER_PREP_CONFIG=<bundle> bash /tmp/cypher_prep.sh" &
 #   done
 #   wait
 #
@@ -74,15 +74,15 @@
 # floor on your branch, where the change is reviewable.
 #
 # Examples:
-#   bash cypher_prep.sh                            # main
-#   CYPHER_PREP_BRANCH=feat/foo bash cypher_prep.sh
+#   CYPHER_PREP_CONFIG=<bundle> bash cypher_prep.sh    # main (the config is required at stage all)
+#   CYPHER_PREP_CONFIG=<bundle> CYPHER_PREP_BRANCH=feat/foo bash cypher_prep.sh
 #   CYPHER_PREP_STAGE=install bash cypher_prep.sh
 #   CYPHER_PREP_FRESH_REF=NewGraphEnvironment/fresh@feat/bar bash cypher_prep.sh
 #
 # The override-aware default protects against the cognitive trap of
 # "which branch is everyone on?" — under the default path, all hosts
 # converge on main and the orchestrator's preflight version check
-# (data-raw/wsgs_dispatch.sh, and study_area_run.sh's preflight_hosts)
+# (study_area_run.sh's preflight_hosts)
 # confirms link and fresh agree across hosts.
 
 set -euo pipefail
@@ -97,6 +97,13 @@ case "$STAGE" in
      echo "       a typo must not silently skip the snapshot" >&2
      exit 1 ;;
 esac
+
+# The run config is required for the full prep (link#278); the install stage
+# touches no config, so study_area_run.sh --auto-install runs it without one.
+if [ "$STAGE" = "all" ] && [ -z "${CYPHER_PREP_CONFIG:-}" ]; then
+  echo "FATAL: CYPHER_PREP_CONFIG is required at CYPHER_PREP_STAGE=all (a bundle name)." >&2
+  exit 1
+fi
 
 cd ~/Projects/repo/link
 git fetch origin
@@ -229,7 +236,7 @@ echo "=== provenance: link_sha=${LINK_SHA:0:12} dirty=$LINK_DIRTY fresh_sha=${FR
 TMP_FRS_LOG=$(mktemp)
 if ! Rscript -e 'q(status = if (isTRUE(link::lnk_preflight_fresh()$ok)) 0L else 1L)' \
      > "$TMP_FRS_LOG" 2>&1; then
-  echo "FATAL: fresh export assertion failed; full log:" >&2
+  echo "FATAL: fresh pre-flight failed (a missing symbol or a changed signature); full log:" >&2
   cat "$TMP_FRS_LOG" >&2
   rm -f "$TMP_FRS_LOG"
   exit 1
@@ -253,7 +260,7 @@ export PGUSER=postgres PGPASSWORD=postgres PGHOST=localhost PGPORT=5432 PGDATABA
 # of being masked by `| tail -5` (set -e doesn't propagate exit codes
 # through pipelines). On success, tail-5 to stdout preserves the
 # umbrella's downstream `grep -q "snapshot_bcfp.sh: complete"` check
-# (data-raw/wsgs_run_pipeline.sh:264). Bug class documented in CLAUDE.md
+# (study_area_run.sh's cypher prep). Bug class documented in CLAUDE.md
 # "Shell Scripts → pipefail with ssh+tee"; sibling fix in an internal issue.
 TMP_SNAP_LOG=$(mktemp)
 if ! bash snapshot_bcfp.sh > "$TMP_SNAP_LOG" 2>&1; then
@@ -319,7 +326,7 @@ conn <- DBI::dbConnect(RPostgres::Postgres(),
 # The run config and persist schema (study_area_run.sh passes both), so the
 # DDL repair lands on the schema the run writes. Hardcoding bcfishpass left a
 # --schema=fresh_default run creating its tables without force_recreate (link#246).
-cfg <- lnk_config(Sys.getenv("CYPHER_PREP_CONFIG", "bcfishpass"))
+cfg <- lnk_config(Sys.getenv("CYPHER_PREP_CONFIG"))
 if (nzchar(Sys.getenv("CYPHER_PREP_SCHEMA"))) cfg$pipeline$schema <- Sys.getenv("CYPHER_PREP_SCHEMA")
 loaded <- lnk_load_overrides(cfg)
 # Persist species set MUST match lnk_pipeline_run (R/lnk_pipeline_run.R:
