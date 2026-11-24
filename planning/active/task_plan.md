@@ -88,14 +88,14 @@ Review B2, G7 and G8 changed this phase: the workflow's permissions, idempotency
 
 Review G10 changed this phase: "every bundle" means the three that `build_rules.R` builds, and the regeneration is the last one, not the only one.
 
-- [ ] If Phase 1 adopts the exception, set `default`'s cells. If Open decision 1 chooses GR rows, add them, with `acc-bcfp-6` and the version picked before the row is written (review B3, O5).
-- [ ] Run `Rscript data-raw/build_rules.R`. Diff `default`'s, `bcfishpass`'s and the top-level `rules.yaml`. Expected: no rule moves from Phases 2 to 4. Commit a file only where its body moved.
-- [ ] `lnk_config_verify()` is clean on every bundle, and every changed file has a row in the pretest map.
+- [x] Phase 1 declined and decision 1 closed #212, so no cells or rows: if Phase 1 adopts the exception, set `default`'s cells. If Open decision 1 chooses GR rows, add them, with `acc-bcfp-6` and the version picked before the row is written (review B3, O5).
+- [x] Run `Rscript data-raw/build_rules.R`. Diff `default`'s, `bcfishpass`'s and the top-level `rules.yaml`. Expected: no rule moves from Phases 2 to 4. Commit a file only where its body moved.
+- [x] `lnk_config_verify()` is clean on every bundle, and every changed file has a row in the pretest map.
 
 ## Phase 6: the gate's closures and issue bodies
 
 - [x] #212, #316 and #86: act on Open decisions 1 to 3. Close each with the reason, or carry its work, and edit its body to say which.
-- [x] Edit the #75, #129 and #189 bodies (#327's waits for Phase 1's numbers) where the work changed their scope: #75's path and README covering every dictionary, and #189's split under decision 6.
+- [x] Edit the #75, #129, #189 and #327 bodies where the work changed their scope: #75's path and README covering every dictionary, and #189's split under decision 6.
 
 ## Phase 7: release
 
