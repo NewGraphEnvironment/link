@@ -111,15 +111,15 @@ p
 #>                    scope rule obs_year_max
 #> 1                   <NA>   NA           NA
 #> 2                   <NA>   NA           NA
-#> 3                     BC   13           NA
-#> 4               Kootenay   17           NA
+#> 3                     BC   16           NA
+#> 4               Kootenay   20           NA
 #> 5               Kootenay    5           NA
-#> 6               Kootenay   22           NA
+#> 6               Kootenay   25           NA
 #> 7                   <NA>   NA           NA
-#> 8                     BC   13           NA
-#> 9  Skeena above Hazelton   18           NA
+#> 8                     BC   16           NA
+#> 9  Skeena above Hazelton   21           NA
 #> 10 Skeena above Hazelton    6           NA
-#> 11 Skeena above Hazelton   23           NA
+#> 11 Skeena above Hazelton   26           NA
 #> 12                  <NA>   NA           NA
 
 # The pooled rows alone, with the tracker row that decided each one
@@ -134,12 +134,12 @@ p[p$scope_level != "self", ]
 #> 10                 MORR           BT          DV   subregion
 #> 11                 MORR           BT       DV/BT   subregion
 #>                    scope rule obs_year_max
-#> 3                     BC   13           NA
-#> 4               Kootenay   17           NA
+#> 3                     BC   16           NA
+#> 4               Kootenay   20           NA
 #> 5               Kootenay    5           NA
-#> 6               Kootenay   22           NA
-#> 8                     BC   13           NA
-#> 9  Skeena above Hazelton   18           NA
+#> 6               Kootenay   25           NA
+#> 8                     BC   16           NA
+#> 9  Skeena above Hazelton   21           NA
 #> 10 Skeena above Hazelton    6           NA
-#> 11 Skeena above Hazelton   23           NA
+#> 11 Skeena above Hazelton   26           NA
 ```

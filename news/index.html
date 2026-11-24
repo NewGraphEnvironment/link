@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.90.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.91.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,21 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/link/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.91.0" id="link-0910">link 0.91.0<a class="anchor" aria-label="anchor" href="#link-0910"></a></h2>
+<p><strong>Rainbow trout is modelled again in <code>default</code>, on a record rule that counts steelhead records as rainbow trout, and the presence review decides its last rows outside kokanee</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/501" class="external-link">#501</a>, backlog move 16; <a href="https://github.com/NewGraphEnvironment/link/issues/497" class="external-link">#497</a>, <a href="https://github.com/NewGraphEnvironment/link/issues/402" class="external-link">#402</a>). <code>default</code>, <code>default_tuned</code> and <code>default_parent</code> move to <code>cut-full-top-3 acc-v7</code>, <code>default_minimal</code> to <code>cut-min acc-v7</code>; <code>cut-full-top-2</code> and <code>acc-v6</code> retire.</p>
+<ul><li>
+<strong>A steelhead record counts as rainbow trout where RB is marked present, and a rainbow trout record never counts as steelhead</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/497" class="external-link">#497</a>). Three province rows in <code>configs/default/species_pooling.csv</code>: <code>RB ← ST</code>, <code>RB ← SST</code>, <code>RB ← WST</code>. The two are one species whose juveniles cannot be told apart in the field: 58 % of RB records sit in water steelhead can reach, and 348 ST records sit above a barrier no steelhead lift opens (<code>data-raw/logs/rb_st_497/</code>). Counted as RB, a steelhead record takes RB’s date floor (none), so undated and pre-1990 ones cut and set RB’s code 2; a lift still needs a dated record.</li>
+<li>
+<strong>An alias code can count as two species</strong> (<code>SST</code> as ST and as RB). <code>.lnk_record_aliases()</code> keeps a row per target instead of refusing; the historical zones fold into every species an alias counts as everywhere; <code>.lnk_presence_measures()</code> gives such a record a row per species and joins barriers by record and species, and takes <code>barrier_species =</code> to measure a record against another species’ barriers. The presence check’s SQL recount and the map script follow, and the check takes <code>--evidence=</code>.</li>
+<li>
+<strong>RB is modelled again</strong> (<code>species_modelled.csv</code>); kokanee stays paused (<a href="https://github.com/NewGraphEnvironment/link/issues/432" class="external-link">#432</a>). With RB modelled, a group with CT or DV marked and no RB cell breaks streams at RB’s barriers through <code>ct_dv_rb</code> (16 groups in the run).</li>
+<li>
+<strong>The second presence review</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/402" class="external-link">#402</a>, which closes): BT added in CHIL, CLWR, EUCH, LKEC, LSAL, MFRA, MUSK, SALR and STUL, DV back in VICT, RB removed in LPRO and UPET (stocked fish only), CT in FINL and LOMI and ST in FINA and UFRT kept absent. Six native-range cells go to <a href="https://github.com/NewGraphEnvironment/link/issues/515" class="external-link">#515</a>; kokanee’s 138 rows wait for its return, <a href="https://github.com/NewGraphEnvironment/link/issues/516" class="external-link">#516</a>. The re-run on the decided tables flags no added or removed cell (<code>data-raw/logs/presence_check_501/</code>).</li>
+<li>
+<strong>Measured on three groups built in three states</strong> (<code>data-raw/logs/rb_return_501/</code>): no species’ access or habitat differs on a segment identical between states; RB’s km in GRNL and LKEL match the last build before the pause. Province-wide, cuts move in at least 105 groups.</li>
+<li>Owed: every <code>default</code> group re-models at the next provincial run (move 17) to <code>acc-v7</code>, then <code>streams_parent</code> is rebuilt; the pre-run gate runs again first (<code>R/</code>, <code>inst/extdata/</code> and <code>pretest_inputs.csv</code> changed). knowledge#148 is told which records count as rainbow trout and as steelhead.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.90.0" id="link-0900">link 0.90.0<a class="anchor" aria-label="anchor" href="#link-0900"></a></h2>
 <p><strong>link pins fresh 0.56.0, and its pre-flight pins the four fresh internals it calls by their ordered arguments</strong> (<a href="https://github.com/NewGraphEnvironment/link/issues/507" class="external-link">#507</a>, backlog move 18; <a href="https://github.com/NewGraphEnvironment/link/issues/504" class="external-link">#504</a>). No persisted output and no output token moves: ADMS and BULK under <code>default</code> and ADMS under <code>bcfishpass</code>, built at 0.89.0 on fresh 0.55.1 and at this release on fresh 0.56.0, digest identical in every persisted table and group (<strong>DIGESTS</strong>; <code>data-raw/logs/fresh_pin_507/</code>).</p>

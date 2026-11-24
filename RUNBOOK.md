@@ -1888,17 +1888,33 @@ of the access walk, and the lifts (§5).
   still cut) counts its own code. Where the bundle declares
   `species_pooling.csv`, \[lnk_species_pooling()\] adds what it pools:
   another species’ records (DV as BT where the two names mean one
-  species) and alias codes that are no species column, at the `province`
-  scope (`SST`, `WST` as ST; `ADV` as DV; `ABT` as BT; `CCT`, `ACT`,
-  `CT/RB` as CT) or regionally (`BT/DV`, `DV/BT` as BT only where DV
-  pools into BT). A row counts one code as one target: aliases do not
-  chain (`ADV` never reaches BT through DV). `RB/CT` counts as nothing.
-  A bundle with no tracker counts each species’ own code only, as
-  bcfishpass’s `load_observations.sql` does: it tests the recorded code
-  against the presence table’s codes, so its `species_code_remap` of the
-  cutthroat aliases renames only records already coded `CT`
-  (`smnorris/bcfishpass@3bd2824`; on its output 0 of 2,004 alias records
-  in SQAM, LFRA and VICT reach its upstream arrays,
+  species; in `default`, ST as RB, link#501) and alias codes that are no
+  species column, at the `province` scope (`SST`, `WST` as ST and as RB;
+  `ADV` as DV; `ABT` as BT; `CCT`, `ACT`, `CT/RB` as CT) or regionally
+  (`BT/DV`, `DV/BT` as BT only where DV pools into BT). A row counts one
+  code as one target: aliases do not chain (`ADV` never reaches BT
+  through DV), so a code counting as two species has a row for each
+  (`RB ← SST` beside `ST ← SST`). Readers key on the record and the
+  species it reads as: the presence check and `.lnk_presence_measures()`
+  give such a record a row per species, and the zones fold an alias into
+  every species it counts as in every group. `RB/CT` counts as nothing.
+- **Rainbow trout and steelhead** (`default`, link#501). A steelhead
+  record (`ST`, `SST`, `WST`) counts as rainbow trout where RB is marked
+  present; a rainbow trout record never counts as steelhead, so a
+  resident rainbow above a falls cannot open steelhead access. The two
+  are one species (*O. mykiss*) whose juveniles cannot be told apart in
+  the field: 58 % of RB records sit in water steelhead can reach, and
+  348 ST records sit above a barrier no steelhead lift opens
+  (`data-raw/logs/rb_st_497/`). Counted as RB, a steelhead record takes
+  RB’s date floor (none), so undated and pre-1990 ones cut and set RB’s
+  code 2; a lift still needs a dated record (§5). RB’s top record per
+  line is then the higher of the RB and steelhead tops, which moved in
+  77 groups when measured. A bundle with no tracker counts each species’
+  own code only, as bcfishpass’s `load_observations.sql` does: it tests
+  the recorded code against the presence table’s codes, so its
+  `species_code_remap` of the cutthroat aliases renames only records
+  already coded `CT` (`smnorris/bcfishpass@3bd2824`; on its output 0 of
+  2,004 alias records in SQAM, LFRA and VICT reach its upstream arrays,
   `data-raw/logs/record_rule_470/`).
 - **Whose group.** A record counts as what its own group’s presence and
   pooling say, as presence already worked: a DV record in a pooled
@@ -1939,8 +1955,9 @@ species. It refuses a code with no rules entry, a rules species with no
 row, a value other than `t`/`f`, a duplicate, a paused row without its
 reason or date, and pausing every species. `extends:` inherits the file,
 so `default_tuned` pauses what `default` pauses. `default` pauses KO
-(its presence column was never sourced) and RB (records do not separate
-rainbow trout from steelhead), at `acc-v5`.
+(its presence column was never sourced), since `acc-v5`. RB was paused
+with it until \#501 (`acc-v7`), which settled how its records are told
+from steelhead’s (§7, “The record rule”).
 
 What a paused species does, and does not do:
 
@@ -1984,9 +2001,18 @@ What a paused species does, and does not do:
   modelled;
   [`lnk_wsg_resolve()`](https://newgraphenvironment.github.io/link/reference/lnk_wsg_resolve.md),
   `wsg_run_one.R` and `wsg_recompute_one.R` use it. Under `default`
-  these are BRID, GRNL, LEUT, LNRS, MURT, PITR and UISR (CHUK’s only
-  cell is DV, so the filter has always dropped it). Compare skips them
-  with a NOTE.
+  there are none since RB is modelled again (#501); while RB was paused
+  they were BRID, GRNL, LEUT, LNRS, MURT, PITR and UISR. CHUK’s only
+  cell is DV, so the filter has always dropped it. Compare skips such
+  groups with a NOTE.
+- **A modelled species can still break streams in a group whose cell
+  does not mark it.** `.lnk_pipeline_prep_minimal()` promotes presence
+  through `presence_groups.csv`, so with RB modelled, a group with CT or
+  DV marked and no RB cell breaks its streams at RB’s barriers
+  (`ct_dv_rb`), while the record rule reads the cell as written: no RB
+  record there cuts, sets code 2 or lifts, and RB is not classified. 17
+  groups at \#501: BEAV, BLUR, CHUK, COAL, DEAL, DEAR, FROG, JENR, KTSU,
+  KUSR, LKEC, LPRO, LRAN, MBNK, NBNK, SWIR, TOAD.
 - The validator (`--species`) refuses a paused species only where no
   scored group’s newest build classified it (`log.species`), so a schema
   built before the pause can still be scored; the variants harness

@@ -79,7 +79,7 @@ Other vocabulary:
 ``` r
 lnk_vocabulary_resolve(lnk_config("default"))
 #>              cut              acc             grad             flow 
-#> "cut-full-top-2"         "acc-v6"       "grad-seg"        "q-fwapg" 
+#> "cut-full-top-3"         "acc-v7"       "grad-seg"        "q-fwapg" 
 lnk_vocabulary_resolve(lnk_config("bcfishpass"))
 #>                  cut                  acc                 grad 
 #> "cut-full-ssf-all-2"         "acc-bcfp-5"           "grad-seg" 

@@ -17,7 +17,7 @@ only for these species)."><meta property="og:image" content="https://newgraphenv
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.90.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.91.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -130,15 +130,15 @@ habitat.</p>
 <span class="r-in"><span><span class="fu">lnk_pipeline_species</span><span class="op">(</span><span class="va">cfg</span>, <span class="va">loaded</span>, <span class="st">"BULK"</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BT" "CH" "CO" "PK" "SK" "ST"</span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># default pauses KO and RB: MURT is modelled, with nothing to classify</span></span></span>
+<span class="r-in"><span><span class="co"># default pauses KO: KOTL's kokanee is left out unless paused = TRUE</span></span></span>
 <span class="r-in"><span><span class="va">cfg</span> <span class="op">&lt;-</span> <span class="fu"><a href="lnk_config.html">lnk_config</a></span><span class="op">(</span><span class="st">"default"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">loaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="lnk_load_overrides.html">lnk_load_overrides</a></span><span class="op">(</span><span class="va">cfg</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">lnk_pipeline_species</span><span class="op">(</span><span class="va">cfg</span>, <span class="va">loaded</span>, <span class="st">"MURT"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> character(0)</span>
-<span class="r-in"><span><span class="fu">lnk_pipeline_species</span><span class="op">(</span><span class="va">cfg</span>, <span class="va">loaded</span>, <span class="st">"MURT"</span>, paused <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "RB"</span>
+<span class="r-in"><span><span class="fu">lnk_pipeline_species</span><span class="op">(</span><span class="va">cfg</span>, <span class="va">loaded</span>, <span class="st">"KOTL"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BT"  "WCT" "RB" </span>
+<span class="r-in"><span><span class="fu">lnk_pipeline_species</span><span class="op">(</span><span class="va">cfg</span>, <span class="va">loaded</span>, <span class="st">"KOTL"</span>, paused <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BT"  "WCT" "RB"  "KO" </span>
 <span class="r-in"><span><span class="fu">lnk_pipeline_species</span><span class="op">(</span><span class="va">cfg</span>, <span class="va">loaded</span>, <span class="st">"ADMS"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BT" "CH" "CO" "PK" "SK"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BT" "CH" "CO" "PK" "SK" "RB"</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
