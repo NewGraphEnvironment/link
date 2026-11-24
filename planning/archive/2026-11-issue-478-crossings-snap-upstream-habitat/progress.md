@@ -2,7 +2,7 @@
 
 ## Session 2026-11-22
 
-- Explored and drafted the phases; no plan gate in this pane: parked for the coordinator's plan gate (soul#928)
+- Explored and drafted the phases; no plan gate in this pane: parked for the coordinator's plan gate
 - Created branch `478-backlog-move-10-crossings-snapping-and-h` off origin/main
 - Scaffolded PWF baseline from issue #478 with the drafted phases
 - Next: parked 2026-11-22; paste the block under ### Resume into a fresh session
