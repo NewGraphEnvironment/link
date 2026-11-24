@@ -49,7 +49,7 @@ counts them): run `/backlog-sweep` again, the backlog is not finished.
 | - [x] 7 | #475 | 10: drivers (6 issues) | done: https://github.com/NewGraphEnvironment/link/pull/513 | B | 14 | opus then sonnet |
 | - [ ] 8 | #476 | 11: the rules builder and `dimensions.csv` (7 issues) | open | C | 3 | opus |
 | - [ ] 9 | #477 | 12, 13: mapping codes as rules, the persist and run API (8 issues) | open | A | 3, 7, 8, 13 | opus |
-| - [ ] 10 | #478 | 14, 15: snapping, habitat upstream of each crossing (6 issues) | open | C | 3 | opus |
+| - [x] 10 | #478 | 14, 15: snapping, habitat upstream of each crossing (6 issues) | done: https://github.com/NewGraphEnvironment/link/pull/518 | C | 3 | opus |
 | - [ ] 11 | #479 | 16: what blocks access at a barrier (5 issues) | open | C | 3, 10, 16 | fable then opus |
 | - [ ] 12 | #480 | 17, 18, 19: thresholds from knowledge's table, MAD everywhere, the PARS vignette (7 issues) | **waiting** on knowledge#139's decision of which method sets link's flow numbers | C | 3, 11, 16 | opus |
 | - [ ] 15 | #500 | 23: load an export's input snapshots (1 issue) | **waiting** on crate's self-describing table snapshot contract (crate#66) | B | 14 | opus |
@@ -296,7 +296,7 @@ would remove, so decide which. One release carries the deprecations.
 
 ### 14. Snapping
 
-- [ ] Carried by move 10, #478
+- [x] Carried by move 10, #478 (merged in https://github.com/NewGraphEnvironment/link/pull/518)
 
 **Touches:** `R/lnk_points_snap.R`, `R/lnk_pipeline_pscis_build.R`, `R/lnk_barriers_unify.R`, `data-raw/query_habitat_thresholds_obs.R`
 
@@ -309,7 +309,7 @@ re-model of both configs.
 
 ### 15. Habitat upstream of each crossing
 
-- [ ] Carried by move 10, #478
+- [x] Carried by move 10, #478 (merged in https://github.com/NewGraphEnvironment/link/pull/518)
 
 **Touches:** `R/lnk_aggregate.R`, `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_mad.R`, `research/bcfishpass_parity.md`, and a new crossings parity script
 
