@@ -53,7 +53,7 @@ counts them): run `/backlog-sweep` again, the backlog is not finished.
 | - [ ] 11 | #479 | 16: what blocks access at a barrier (5 issues) | open | C | 3, 10, 16 | fable then opus |
 | - [ ] 12 | #480 | 17, 18, 19: thresholds from knowledge's table, MAD everywhere, the PARS vignette (7 issues) | **waiting** on knowledge#139's decision of which method sets link's flow numbers | C | 3, 11, 16 | opus |
 | - [ ] 15 | #500 | 23: load an export's input snapshots (1 issue) | **waiting** on crate's self-describing table snapshot contract (crate#66) | B | 14 | opus |
-| - [ ] 16 | #501 | 24: rainbow trout back in `default`, the presence review's last rows (2 issues) | open | D | — | opus |
+| - [x] 16 | #501 | 24: rainbow trout back in `default`, the presence review's last rows (2 issues) | done: https://github.com/NewGraphEnvironment/link/pull/517 | D | — | opus |
 | - [ ] 17 | #502 | 25: province-wide builds at the new tokens (1 issue) | **waiting** on the operator's word for the provincial runs | C | 3, 13, 14, 16, 18 | opus |
 | - [x] 18 | #507 | 26: fresh's internals pinned by argument, at fresh 0.56.0 (1 issue) | done: https://github.com/NewGraphEnvironment/link/pull/514 | A | 7, 13, 14 | opus |
 
@@ -429,7 +429,7 @@ its body. Waits on crate#66 (open) and on batch 21, which settles the layout the
 
 ### 24. Rainbow trout back in `default`, and the presence review's last rows
 
-- [ ] Carried by move 16, #501
+- [x] Carried by move 16, #501 (merged in https://github.com/NewGraphEnvironment/link/pull/517)
 
 **Touches:** `inst/extdata/configs/default/species_modelled.csv`, `inst/extdata/configs/default/species_pooling.csv`, `inst/extdata/configs/default/overrides/wsg_species_presence_overlay.csv`, `inst/extdata/configs/default/wsg_species_presence_review.csv`, `inst/extdata/vocabulary.csv`, `research/species_presence.md`
 

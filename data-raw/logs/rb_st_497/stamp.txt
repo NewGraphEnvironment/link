@@ -1,0 +1,17 @@
+date_utc: 2026-11-23 18:37:50 UTC
+host: m1
+schema: fresh_default
+build:                    run_uid    token_cut token_acc
+1 20261103_163715-269b585a cut-full-top    acc-v5
+                                  link_sha n_groups           first_end
+1 4dfbfa4980eb259e2f6a3e9b198c54014315d0ce      241 2026-11-03 16:50:56
+             last_end
+1 2026-11-03 19:46:26
+bcfishobs.observations rows: 375962 newest: 9999-11-01
+minutes: 6.8
+<lnk_stamp> default
+  aoi:        (none)
+  started:    2026-11-23 11:37:50 MST
+  link:       0.89.0
+  fresh:      0.55.1
+  provenance: 26 files (0 byte, 0 shape drifted)
