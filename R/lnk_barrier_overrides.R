@@ -201,7 +201,13 @@ lnk_barrier_overrides <- function(conn,
     buffer_m <- as.numeric(species_to_process$observation_buffer_m[i])
     if (is.na(buffer_m)) buffer_m <- 20
     obs_sp_str <- as.character(species_to_process$observation_species[i])
-    obs_sp_list <- if (is.na(obs_sp_str)) sp else trimws(strsplit(obs_sp_str, ";")[[1]])
+    # NA or blank (read.csv and read_as: text give "") means the row's own
+    # species, as the dictionaries and .lnk_lift_rules() read it; an empty list
+    # would build `IN ('')` and lift nothing.
+    obs_sp_list <- if (is.na(obs_sp_str)) character(0) else
+      trimws(strsplit(obs_sp_str, ";", fixed = TRUE)[[1]])
+    obs_sp_list <- obs_sp_list[nzchar(obs_sp_list)]
+    if (length(obs_sp_list) == 0L) obs_sp_list <- sp
     obs_sp_sql <- paste0("'", obs_sp_list, "'", collapse = ", ")
 
     # Species-level opt-in for the control filter. bcfishpass applies control

@@ -534,3 +534,20 @@ test_that("params$rule must be a plain name (#236)", {
                                      to = "w.bo", verbose = FALSE),
                "must name each rule")
 })
+
+test_that("a blank observation_species reads as the row's own species (round 1)", {
+  captured <- character(0)
+  local_mocked_bindings(
+    dbExecute = function(conn, sql, ...) { captured <<- c(captured, sql); 1L },
+    dbGetQuery = function(conn, sql, ...) {
+      if (grepl("SELECT count", sql, ignore.case = TRUE)) return(data.frame(count = 0L))
+      data.frame(column_name = character(0))
+    },
+    .package = "DBI")
+  p <- .stub_params(); p$observation_species <- ""
+  lnk_barrier_overrides("mock", barriers = "w.nb", observations = "w.obs",
+                        params = p, to = "w.bo", verbose = FALSE)
+  joined <- paste(captured, collapse = "\n")
+  expect_match(joined, "o.species_code IN ('BT')", fixed = TRUE)
+  expect_no_match(joined, "IN ('')", fixed = TRUE)
+})

@@ -387,3 +387,9 @@ test_that("under lift_floor a further rule's floor must equal its species' floor
   expect_error(.lnk_observation_species_map(cfg_rr("lift_floor"), ld, "SQAM"),
                "BT rule salmon's lift counts")
 })
+
+test_that("a rule name lnk_barrier_overrides() would refuse is refused at load (round 1)", {
+  ld <- list(parameters_fresh = pf_lift(),
+             parameters_barrier_lifts = lifts_rr(rule = "salmon 2"))
+  expect_error(.lnk_lift_rules(cfg_rr(), ld), "a rule name holds")
+})

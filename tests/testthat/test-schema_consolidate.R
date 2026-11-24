@@ -401,9 +401,10 @@ test_that("a source's lift_rule refuses a destination evidence table without it 
   old <- list(c("evidence_key")); names(old) <- t
   expect_true(e$consolidate_evidence_unmigrated(dest_cols = old, src_cols = new))
   expect_false(e$consolidate_evidence_unmigrated(dest_cols = new, src_cols = new))
-  # an older source into a migrated destination: the column's NOT NULL refuses
-  # the copy itself, loudly
-  expect_false(e$consolidate_evidence_unmigrated(dest_cols = new, src_cols = old))
+  # an older source into a migrated destination: refused too, before the
+  # delete, because the copy itself would fail after it
+  expect_true(e$consolidate_evidence_unmigrated(dest_cols = new, src_cols = old))
+  expect_false(e$consolidate_evidence_unmigrated(dest_cols = old, src_cols = old))
   expect_false(e$consolidate_evidence_unmigrated(dest_cols = list(), src_cols = new))
   # the refusal sits before any delete in the script
   txt <- readLines(consolidate_script())

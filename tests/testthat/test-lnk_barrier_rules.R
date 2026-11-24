@@ -179,3 +179,14 @@ test_that("a caller's crossings with no barrier_rule_id falls back to status (DB
   expect_equal(nrow(DBI::dbGetQuery(conn, sprintf(
     "SELECT 1 FROM %s.barriers_anthropogenic", s))), 3L)
 })
+
+test_that("a pscis_assessment row must be scoped to PSCIS (round 1)", {
+  ld <- list(parameters_barrier_rules = rules_df(list(
+    source_table = "pscis_assessment", column_name = "outlet_drop",
+    operator = "is_null", value = NA, applies_to = "*")))
+  expect_error(.lnk_barrier_rules(list(), ld), "must have applies_to PSCIS")
+  ld$parameters_barrier_rules$applies_to <- "PSCIS;CABD"
+  expect_error(.lnk_barrier_rules(list(), ld), "must have applies_to PSCIS")
+  ld$parameters_barrier_rules$applies_to <- "PSCIS"
+  expect_no_error(.lnk_barrier_rules(list(), ld))
+})

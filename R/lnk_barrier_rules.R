@@ -70,6 +70,12 @@
   }, logical(1))
   bad(scope_ok, "applies_to must be '*' or of PSCIS, CABD, MODELLED_CROSSINGS",
       r$applies_to)
+  # pscis_assessment is a LEFT JOIN that matches PSCIS crossings only, so its
+  # columns read NULL on every other crossing: scoped wider, an is_null row
+  # would make every dam and modelled crossing a barrier.
+  pa_scope <- vapply(scope, function(v) identical(trimws(v), "PSCIS"), logical(1))
+  bad(r$source_table != "pscis_assessment" | pa_scope,
+      "a pscis_assessment row must have applies_to PSCIS", r$rule_id)
   needs_value <- !r$operator %in% c("is_null", "not_null")
   bad(!needs_value | (!is.na(r$value) & nzchar(r$value)),
       "a value is needed for operator", r$operator)

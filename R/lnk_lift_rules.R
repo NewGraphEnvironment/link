@@ -58,9 +58,13 @@
         barrier_kinds = trimws(as.character(lifts$barrier_kinds)),
         stringsAsFactors = FALSE)
       for (col in .lnk_lift_rules_params) x[[col]] <- lifts[[col]]
-      bad_name <- is.na(x$rule) | !nzchar(x$rule)
+      # The grammar lnk_barrier_overrides() enforces, refused here so a bad
+      # name stops before a run's log row opens.
+      bad_name <- is.na(x$rule) | !grepl("^[A-Za-z0-9_.-]+$", x$rule)
       if (any(bad_name)) {
-        stop("parameters_barrier_lifts: every rule needs a name", call. = FALSE)
+        stop("parameters_barrier_lifts: a rule name holds letters, digits, ",
+             "'_', '.' or '-': ", paste(x$rule[bad_name], collapse = ", "),
+             call. = FALSE)
       }
       if (any(x$rule == "own")) {
         stop("parameters_barrier_lifts: a rule may not be named 'own', which ",
