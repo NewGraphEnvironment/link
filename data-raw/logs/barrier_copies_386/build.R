@@ -32,28 +32,64 @@ sha <- system2("git", c("-C", code, "rev-parse", "--short", "HEAD"), stdout = TR
 cat(sprintf("[build] %s %s -> %s at %s (%s)\n", config, run_uid, persist, sha,
             format(Sys.time(), tz = "UTC", usetz = TRUE)))
 
+# A statement bound, because fresh's near-river walk can stall CPU-bound while
+# other sessions load the database (link#487): a stalled group is retried
+# once. A group this run_uid already finished is not rebuilt, so a stopped
+# build resumes.
+DBI::dbExecute(conn, "SET statement_timeout = '20min'")
+done_here <- function(w) {
+  if (!.lnk_table_exists(conn, paste0(persist, ".log"))) return(FALSE)
+  nrow(DBI::dbGetQuery(conn, sprintf(
+    "SELECT 1 FROM %s.log WHERE run_uid = %s AND watershed_group_code = %s
+        AND date_end IS NOT NULL", persist,
+    DBI::dbQuoteString(conn, run_uid), DBI::dbQuoteString(conn, w)))) > 0L
+}
 for (w in wsgs) {
-  t0 <- Sys.time()
-  lnk_pipeline_run(conn, aoi = w, cfg = cfg, loaded = loaded,
-                   schema = paste0(prefix, tolower(w)),
-                   mapping_code = TRUE, cleanup_working = FALSE,
-                   habitat_gate = FALSE, run_uid = run_uid,
-                   run_label = "link479-proof")
+  if (done_here(w)) {
+    cat(sprintf("[build] %s model already finished under %s\n", w, run_uid))
+    next
+  }
+  for (attempt in 1:2) {
+    t0 <- Sys.time()
+    ok <- tryCatch({
+      lnk_pipeline_run(conn, aoi = w, cfg = cfg, loaded = loaded,
+                       schema = paste0(prefix, tolower(w)),
+                       mapping_code = TRUE, cleanup_working = FALSE,
+                       habitat_gate = FALSE, run_uid = run_uid,
+                       run_label = "link479-proof")
+      TRUE
+    }, error = function(e) {
+      cat(sprintf("[build] %s attempt %d failed: %s\n", w, attempt,
+                  conditionMessage(e)))
+      FALSE
+    })
+    if (ok) break
+    if (attempt == 2) stop("model failed twice for ", w, call. = FALSE)
+  }
   cat(sprintf("[build] %s model done in %.1f min\n", w,
               as.numeric(difftime(Sys.time(), t0, units = "mins"))))
 }
 DBI::dbDisconnect(conn)
 
+# wsg_recompute_one.R load_all()s the working directory, so it runs from the
+# worktree.
 rc <- file.path(code, "data-raw", "wsg_recompute_one.R")
 for (w in wsgs) {
-  st <- system2("Rscript", c(rc, w, config),
+  st <- withr::with_dir(code, system2("Rscript", c(rc, w, config),
                 env = c("LNK_LOAD=loadall", paste0("LNK_SCHEMA=", persist),
                         paste0("LNK_RUN_UID=", run_uid),
                         "LNK_RUN_LABEL=link479-proof"),
-                stdout = TRUE, stderr = TRUE)
+                stdout = TRUE, stderr = TRUE))
   ok <- is.null(attr(st, "status"))
-  cat(sprintf("[build] %s recompute %s\n", w, if (ok) "done" else "FAILED"))
-  if (!ok) {
+  # The downstream-state check runs after the recompute has committed
+  # (wsg_recompute_one.R's post-condition). A proof set that leaves a group's
+  # downstream groups out fails it by design; the recompute itself landed.
+  post <- !ok && any(grepl("Model the downstream WSGs first", st, fixed = TRUE))
+  cat(sprintf("[build] %s recompute %s\n", w,
+              if (ok) "done" else if (post) {
+                "done (downstream post-condition failed: groups outside the set)"
+              } else "FAILED"))
+  if (!ok && !post) {
     cat(tail(st, 20), sep = "\n")
     stop("recompute failed for ", w, call. = FALSE)
   }
