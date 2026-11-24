@@ -10,6 +10,7 @@
 #
 #   Rscript data-raw/wsg_species_presence_check.R [--n-min=1] [--year-min=1950]
 #     [--seed-tracker] [--out=data-raw/logs/presence_check_402]
+#     [--evidence=<out>/evidence]
 #
 # The rule and its counting are .lnk_presence_check() (R/lnk_presence_check.R).
 # Three groups (PARS, ADMS, ALBN: Mackenzie, Fraser, west Vancouver Island)
@@ -33,7 +34,7 @@
 #                      their measures: what each measure sees of known errors
 #   stamp.txt
 #
-# The measures read evidence/hist_zones.csv (data-raw/presence_evidence_load.R)
+# The measures read <evidence>/hist_zones.csv (data-raw/presence_evidence_load.R)
 # and the bundle's overrides/dfo_known_sockeye_lakes.csv. They are counted
 # again in SQL for the same three groups.
 
@@ -45,7 +46,8 @@ arg <- function(name, default) {
   hit <- grep(paste0("^--", name, "="), args, value = TRUE)
   if (length(hit) == 0L) default else sub(paste0("^--", name, "="), "", hit[1])
 }
-known <- c("--n-min", "--year-min", "--seed-tracker", "--out", "--config")
+known <- c("--n-min", "--year-min", "--seed-tracker", "--out", "--evidence",
+           "--config")
 bad <- args[!sub("=.*$", "", args) %in% known]
 if (length(bad) > 0L) stop("unknown arguments: ", paste(bad, collapse = " "))
 config <- arg("config", "default")
@@ -61,6 +63,8 @@ if (year_min < 1850L) stop("--year-min must be 1850 or later")
 seed <- "--seed-tracker" %in% args
 dir_out <- arg("out", file.path("data-raw", "logs", "presence_check_402"))
 fs::dir_create(dir_out)
+# The evidence presence_evidence_load.R fetched; by default beside --out.
+dir_evidence <- arg("evidence", file.path(dir_out, "evidence"))
 year_now <- as.integer(format(Sys.Date(), "%Y"))
 # Read before anything is written: the run rewrites tracked outputs itself.
 # Untracked files count (load_all() loads a new file under R/), and so do the
@@ -101,7 +105,7 @@ fl$story <- .lnk_presence_story(fl)
 rule <- .lnk_presence_rule(res$n_min[1], res$year_min[1])
 
 # -- record measures (link#402, part 2) ---------------------------------------
-zones_path <- file.path(dir_out, "evidence", "hist_zones.csv")
+zones_path <- file.path(dir_evidence, "hist_zones.csv")
 if (!file.exists(zones_path)) {
   stop(zones_path, " missing: run data-raw/presence_evidence_load.R first")
 }
@@ -123,7 +127,11 @@ meas <- .lnk_presence_measures(
   aliases = .lnk_record_aliases(loaded,
                                 loaded$wsg_species_presence$watershed_group_code),
   year_min = year_min, year_now = year_now)
-if (nrow(meas) != nrow(records)) stop("measures do not cover every record")
+# One row per record and species it reads as: an alias can count as two.
+if (!setequal(meas$observation_key, records$observation_key) ||
+    anyDuplicated(meas[, c("observation_key", "species_code")])) {
+  stop("measures do not cover every record once per species")
+}
 cm <- .lnk_presence_cell_measures(meas)
 # The measures count records by their own SQL; the check by R. They must agree.
 both <- merge(cm[, c("watershed_group_code", "species_code", "n_counting")],
@@ -256,9 +264,13 @@ sqm <- dbGetQuery(conn, sprintf("
            AS n_above_barrier,
          count(*) FILTER (WHERE EXISTS (
            SELECT 1 FROM pg_temp.pc_zones_raw z
-           WHERE coalesce((SELECT az.species_code FROM pg_temp.pc_alias_zone az
-                           WHERE az.species_obs = z.species_code),
-                          z.species_code) = o.species_code
+           -- an alias zone row reads as each species it counts as everywhere
+           WHERE (EXISTS (SELECT 1 FROM pg_temp.pc_alias_zone az
+                          WHERE az.species_obs = z.species_code
+                            AND az.species_code = o.species_code)
+                  OR (z.species_code = o.species_code
+                      AND NOT EXISTS (SELECT 1 FROM pg_temp.pc_alias_zone az
+                                      WHERE az.species_obs = z.species_code)))
              AND z.code50 = nullif(rtrim(o.code_full, '0'), '')))::int AS n_hist_zone
   FROM o GROUP BY 1, 2",
   paste(sprintf("'%s'", check_wsgs), collapse = ", "), year_min, year_now,
@@ -307,7 +319,11 @@ utils::write.csv(ord(cm_out), file.path(dir_out, "measures.csv"),
 excl_all <- loaded[["observation_exclusions"]]
 errs <- excl_all[excl_all$data_error %in% c(TRUE, "t"),
                  c("observation_key", "notes")]
-recall <- merge(errs, meas, by = "observation_key", all.x = TRUE)
+# One row per known error: an alias record has a measures row per species,
+# and a known error is scored as a species the measures test against barriers.
+recall <- merge(errs, .lnk_measures_per_record(meas, prefer = sp_barrier),
+                by = "observation_key", all.x = TRUE)
+stopifnot(!anyDuplicated(recall$observation_key))
 recall <- recall[order(recall$watershed_group_code, recall$species_code,
                        recall$observation_key, method = "radix"), ]
 utils::write.csv(recall[, c("observation_key", "watershed_group_code",
@@ -406,13 +422,14 @@ writeLines(c(
                      method = "radix"), collapse = "; ")),
   sprintf("SQL cross-check: %s, %d cells, %d records, all counts agree",
           paste(check_wsgs, collapse = ", "), n_cmp_cells, n_cmp_records),
-  sprintf(paste0("measures: %d records; %d cells with a counting record (measures.csv), ",
+  sprintf(paste0("measures: %d records (%d rows, one per record and species it reads as); ",
+                 "%d cells with a counting record (measures.csv), ",
                  "each counting the records the check counts (%d cells compared); SQL recount ",
                  "of %s, %d cells, all agree on: %s"),
-          nrow(meas), nrow(cm), nrow(both), paste(check_wsgs, collapse = ", "), n_cmp_m,
+          length(unique(meas$observation_key)), nrow(meas), nrow(cm), nrow(both), paste(check_wsgs, collapse = ", "), n_cmp_m,
           paste(setdiff(names(sqm), c("watershed_group_code", "species_code")),
                 collapse = ", ")),
-  sprintf("evidence: %s", paste(readLines(file.path(dir_out, "evidence", "stamp.txt"))[1:3],
+  sprintf("evidence: %s", paste(readLines(file.path(dir_evidence, "stamp.txt"))[1:3],
                                 collapse = "; ")),
   sprintf("recall set: %d data_error records in observation_exclusions.csv (recall.csv), %d of them in bcfishobs",
           nrow(errs), sum(!is.na(recall$watershed_group_code))),

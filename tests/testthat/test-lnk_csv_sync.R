@@ -64,13 +64,15 @@ test_that("the copies the sync must cover are all targets in both bundles", {
 
 test_that("default's presence overlay keeps every species cell (#431)", {
   # The pre-conversion table (link's hand-edited fork at 0.85.0), read as the
-  # loader reads it: the same cells, column order and types.
+  # loader reads it: the same cells, column order and types. Re-pinned at
+  # #501, whose review moved exactly 12 cells: BT added in CHIL, CLWR, EUCH,
+  # LKEC, LSAL, MFRA, MUSK, SALR, STUL; DV in VICT; RB removed in LPRO, UPET.
   for (b in c("default", "default_tuned")) {
     p <- lnk_load_overrides(lnk_config(b))$wsg_species_presence
     cols <- c("watershed_group_code", link:::.lnk_presence_species_cols(p))
     expect_identical(
       digest::digest(as.data.frame(p)[, cols], algo = "sha256"),
-      "2d9f385654cd3bbf7a46a9ee3216f4095777019306209cf1c7369f8114578c8f",
+      "1af21ed55a8f627417db1c5789f09a60da58a69e26314d49556077724f56ded0",
       info = b)
   }
 })

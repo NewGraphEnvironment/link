@@ -1,7 +1,8 @@
 #' Measure each fish record for the presence review
 #'
 #' Builds session temp tables on `conn` and returns one row per record of
-#' `bcfishobs.observations`, with the measures an operator reads before a
+#' `bcfishobs.observations` and species it reads as (an alias counting as two
+#' species, `SST` as ST and RB, gives two rows), with the measures an operator reads before a
 #' record counts as evidence for a presence cell (link#402). Nothing here
 #' judges a record: the rules are the operator's, set from these numbers.
 #'
@@ -18,8 +19,9 @@
 #' - `barrier_below`: for species in `species_barrier`, the kind of the
 #'   nearest natural barrier below the record (FALLS, GRADIENT,
 #'   USER_DEFINITE in `fresh_default.barriers`) whose `blocks_species` holds
-#'   the species. Lifts are not read: they count only records of species a
-#'   group marks present, so they cannot judge an absent cell. NA where none,
+#'   the species, or the species `barrier_species` measures it against.
+#'   Lifts are not read: they count only records of species a group marks
+#'   present, so they cannot judge an absent cell. NA where none,
 #'   and `barriers_known` is FALSE in a group holding no barrier rows.
 #' - `n_class_above`: counting records above that barrier of the species'
 #'   lift pool (`lift_pools`), presence ignored: not excluded, not a release,
@@ -53,9 +55,10 @@
 #'
 #' Alias codes read as the species the bundle's pooling tracker counts them
 #' as in the record's group (`aliases`, from `.lnk_record_aliases()`), as the
-#' presence check and the pipeline read them (link#470). In the zones, which
-#' carry no group, an alias is folded only where it counts as one species in
-#' every group that lists it (the tracker's province rows).
+#' presence check and the pipeline read them (link#470); an alias counting
+#' as two species gives its record a row as each. In the zones, which carry
+#' no group, an alias is folded only where it counts as a species in every
+#' group (the tracker's province rows), as each species it counts as.
 #'
 #' @param conn A DBI connection to a database holding `bcfishobs`, FWA and
 #'   `fresh_default.barriers`.
@@ -65,17 +68,23 @@
 #'   barriers below them.
 #' @param lift_pools Named list: for each species in `species_barrier`, the
 #'   species whose records count above its barrier.
+#' @param barrier_species Named character vector, or `NULL`: a record species
+#'   (the name) measured against another species' barriers and lift pool (the
+#'   value, one of `species_barrier`). `c(RB = "ST")` asks whether a rainbow
+#'   trout record sits above a barrier that blocks steelhead (link#501).
+#'   Unnamed species in `species_barrier` are measured against their own.
 #' @param sockeye_lakes `waterbody_poly_id`s of known sockeye lakes.
 #' @param excl_keys,incl_keys `observation_key`s excluded
 #'   ([.lnk_observation_exclusion_keys()]) and read as releases
 #'   (`release_include`).
 #' @param aliases Data frame from `.lnk_record_aliases()`.
 #' @param year_min,year_now Years a counting record falls between.
-#' @return A data frame, one row per record.
+#' @return A data frame, one row per record and species it reads as.
 #' @noRd
 .lnk_presence_measures <- function(conn, zones, species_barrier, lift_pools,
                                    sockeye_lakes, excl_keys, incl_keys,
                                    aliases,
+                                   barrier_species = NULL,
                                    year_min = 1950L,
                                    year_now = as.integer(format(Sys.Date(), "%Y"))) {
   stopifnot(all(c("species_code", "code50") %in% names(zones)),
@@ -84,6 +93,7 @@
             length(year_min) == 1L, length(year_now) == 1L,
             all(c("watershed_group_code", "species_obs", "species_code") %in%
                   names(aliases)))
+  barsp <- .lnk_presence_barrier_species(species_barrier, barrier_species)
   pools <- do.call(rbind, lapply(species_barrier, function(s) {
     data.frame(species_code = s, pool_species = unique(lift_pools[[s]]),
                stringsAsFactors = FALSE)
@@ -91,12 +101,14 @@
   tmp <- function(name, df) {
     DBI::dbWriteTable(conn, name, df, temporary = TRUE, overwrite = TRUE)
   }
-  # Fold aliases in the zones as in the records, where an alias counts as
-  # one species wherever it is listed.
+  # Fold aliases in the zones as in the records, into each species an alias
+  # counts as in every group.
   z <- zones[, c("species_code", "code50")]
   one <- .lnk_record_aliases_everywhere(aliases)
-  hit <- match(z$species_code, one$species_obs)
-  z$species_code[!is.na(hit)] <- one$species_code[hit[!is.na(hit)]]
+  folded <- merge(z, one, by.x = "species_code", by.y = "species_obs")
+  z <- rbind(z[!z$species_code %in% one$species_obs, , drop = FALSE],
+             data.frame(species_code = folded$species_code.y,
+                        code50 = folded$code50, stringsAsFactors = FALSE))
   tmp("pm_zones", unique(z))
   tmp("pm_alias", data.frame(
     watershed_group_code = as.character(aliases$watershed_group_code),
@@ -106,6 +118,7 @@
                                 rep(NA_integer_, nrow(aliases))),
     stringsAsFactors = FALSE))
   tmp("pm_pools", pools)
+  tmp("pm_barsp", barsp)
   tmp("pm_sockeye", data.frame(waterbody_poly_id = as.numeric(sockeye_lakes)))
   tmp("pm_excl", data.frame(observation_key = as.character(excl_keys)))
   tmp("pm_incl", data.frame(observation_key = as.character(incl_keys)))
@@ -114,6 +127,74 @@
   }
   out <- DBI::dbGetQuery(conn, "SELECT * FROM pg_temp.pm_out ORDER BY observation_key")
   out
+}
+
+#' The measures, one row per record
+#'
+#' `.lnk_presence_measures()` gives a record one row per species it reads as
+#' (an alias counting as two species, `SST` as ST and RB, has two). A reader
+#' keyed on the record alone takes this instead, and names the species it is
+#' about: per record the row whose species comes first in `prefer` wins, then
+#' the first in code order. The species-dependent columns (`species_code`,
+#' `barrier_below`, `n_class_above`, `rearing_lake_ha`, `in_hist_zone`) are
+#' that row's; `species_read_as` lists every species the record reads as.
+#' @param meas Data frame from `.lnk_presence_measures()`.
+#' @param prefer Character vector of species codes, most preferred first.
+#' @return `meas` with one row per `observation_key` and `species_read_as`.
+#' @noRd
+.lnk_measures_per_record <- function(meas, prefer) {
+  stopifnot(all(c("observation_key", "species_code") %in% names(meas)),
+            is.character(prefer), length(prefer) > 0L, !anyNA(prefer))
+  if (nrow(meas) == 0L) {
+    meas$species_read_as <- character(0)
+    return(meas)
+  }
+  key <- as.character(meas$observation_key)
+  as_all <- tapply(as.character(meas$species_code), key, function(s) {
+    paste(sort(unique(s), method = "radix"), collapse = ", ")
+  })
+  rank <- match(as.character(meas$species_code), prefer)
+  rank[is.na(rank)] <- length(prefer) + 1L
+  o <- order(key, rank, as.character(meas$species_code), method = "radix")
+  out <- meas[o, , drop = FALSE]
+  out <- out[!duplicated(as.character(out$observation_key)), , drop = FALSE]
+  out$species_read_as <- as.character(as_all[as.character(out$observation_key)])
+  rownames(out) <- NULL
+  out
+}
+
+#' Which species' barriers each measured record species is tested against
+#'
+#' One row per record species: each of `species_barrier` against its own,
+#' then each name of `barrier_species` against its value. A value must be one
+#' of `species_barrier` (its lift pool is what counts above), and a name must
+#' not be one, so a species is measured one way only.
+#' @noRd
+.lnk_presence_barrier_species <- function(species_barrier, barrier_species = NULL) {
+  out <- data.frame(species_code = species_barrier,
+                    barrier_species = species_barrier,
+                    stringsAsFactors = FALSE)
+  if (is.null(barrier_species) || length(barrier_species) == 0L) return(out)
+  nm <- names(barrier_species)
+  bad_names <- is.null(nm) || anyNA(nm) || any(!nzchar(nm)) ||
+    anyDuplicated(nm) > 0L
+  if (!is.character(barrier_species) || bad_names) {
+    stop("barrier_species must be a character vector named by record species, ",
+         "each name once", call. = FALSE)
+  }
+  bad <- setdiff(unname(barrier_species), species_barrier)
+  if (length(bad)) {
+    stop("barrier_species maps to ", paste(bad, collapse = ", "),
+         ", not in species_barrier", call. = FALSE)
+  }
+  both <- intersect(nm, species_barrier)
+  if (length(both)) {
+    stop(paste(both, collapse = ", "), " is in species_barrier already; ",
+         "it cannot also be measured against another species", call. = FALSE)
+  }
+  rbind(out, data.frame(species_code = nm,
+                        barrier_species = unname(barrier_species),
+                        stringsAsFactors = FALSE))
 }
 
 #' The statements `.lnk_presence_measures()` runs, in order
@@ -157,7 +238,8 @@ LEFT JOIN pg_temp.pm_excl x ON x.observation_key = o.observation_key
 LEFT JOIN (SELECT DISTINCT observation_key FROM pg_temp.pm_incl) i
   ON i.observation_key = o.observation_key
 -- an alias reads as its species in the record's group, within the row's year
--- limit (.lnk_record_aliases(), link#470); one target per group and code
+-- limit (.lnk_record_aliases(), link#470); a code counting as two species
+-- gives the record a row as each (link#501)
 LEFT JOIN pg_temp.pm_alias a
   ON a.watershed_group_code = o.watershed_group_code
  AND a.species_obs = o.species_code
@@ -182,34 +264,34 @@ WHERE l.watershed_code_50k IN (SELECT DISTINCT code50_full FROM pg_temp.pm_rec)"
     "DROP TABLE IF EXISTS pg_temp.pm_bar",
     "
 CREATE TEMP TABLE pm_bar AS
-SELECT o.observation_key, o.species_code, b.barrier_source,
+SELECT o.observation_key, o.species_code, m.barrier_species, b.barrier_source,
        b.blue_line_key AS b_blk, b.downstream_route_measure AS b_drm,
        b.wscode_ltree AS b_ws, b.localcode_ltree AS b_lc
 FROM pg_temp.pm_rec o
+JOIN pg_temp.pm_barsp m ON m.species_code = o.species_code
 CROSS JOIN LATERAL (
   SELECT b.barrier_source, b.blue_line_key, b.downstream_route_measure,
          b.wscode_ltree, b.localcode_ltree
   FROM fresh_default.barriers b
   WHERE b.barrier_source IN ('FALLS', 'GRADIENT', 'USER_DEFINITE')
     AND b.wscode_ltree @> o.wscode
-    AND o.species_code = ANY (b.blocks_species)
+    AND m.barrier_species = ANY (b.blocks_species)
     AND whse_basemapping.fwa_downstream(
           o.blue_line_key, o.downstream_route_measure, o.wscode, o.localcode,
           b.blue_line_key, b.downstream_route_measure, b.wscode_ltree, b.localcode_ltree)
   ORDER BY nlevel(b.wscode_ltree) DESC, b.localcode_ltree DESC,
            b.downstream_route_measure DESC
   LIMIT 1) b
-WHERE o.species_code IN (SELECT DISTINCT species_code FROM pg_temp.pm_pools)
-  AND o.wscode IS NOT NULL",
+WHERE o.wscode IS NOT NULL",
 
     # Counting records of the species' pool above each such barrier.
     "DROP TABLE IF EXISTS pg_temp.pm_above",
     "
 CREATE TEMP TABLE pm_above AS
-SELECT d.b_blk, d.b_drm, d.species_code,
+SELECT d.b_blk, d.b_drm, d.barrier_species,
        count(DISTINCT r.observation_key)::int AS n_class_above
-FROM (SELECT DISTINCT b_blk, b_drm, b_ws, b_lc, species_code FROM pg_temp.pm_bar) d
-JOIN pg_temp.pm_pools p ON p.species_code = d.species_code
+FROM (SELECT DISTINCT b_blk, b_drm, b_ws, b_lc, barrier_species FROM pg_temp.pm_bar) d
+JOIN pg_temp.pm_pools p ON p.species_code = d.barrier_species
 JOIN pg_temp.pm_rec r
   ON r.species_code = p.pool_species
  AND r.counting
@@ -225,7 +307,7 @@ GROUP BY 1, 2, 3",
 CREATE TEMP TABLE pm_lake AS
 SELECT d.b_blk, d.b_drm, max(l.area_ha) AS rearing_lake_ha
 FROM (SELECT DISTINCT b_blk, b_drm, b_ws, b_lc FROM pg_temp.pm_bar
-      WHERE species_code = 'KO') d
+      WHERE barrier_species = 'KO') d
 JOIN whse_basemapping.fwa_stream_networks_sp s
   ON s.wscode_ltree <@ d.b_ws
  AND s.waterbody_key IS NOT NULL
@@ -286,11 +368,12 @@ SELECT o.observation_key, o.watershed_group_code, o.species_code, o.counting,
                          WHERE z.species_code = o.species_code
                            AND z.code50 = o.code50) END AS in_hist_zone
 FROM pg_temp.pm_rec o
-LEFT JOIN pg_temp.pm_bar b ON b.observation_key = o.observation_key
+LEFT JOIN pg_temp.pm_bar b
+  ON b.observation_key = o.observation_key AND b.species_code = o.species_code
 LEFT JOIN pg_temp.pm_above a
-  ON a.b_blk = b.b_blk AND a.b_drm = b.b_drm AND a.species_code = b.species_code
+  ON a.b_blk = b.b_blk AND a.b_drm = b.b_drm AND a.barrier_species = b.barrier_species
 LEFT JOIN pg_temp.pm_lake k
-  ON k.b_blk = b.b_blk AND k.b_drm = b.b_drm AND b.species_code = 'KO'
+  ON k.b_blk = b.b_blk AND k.b_drm = b.b_drm AND b.barrier_species = 'KO'
 LEFT JOIN pg_temp.pm_lake50 lw ON lw.wb_id = o.waterbody_identifier
 LEFT JOIN pg_temp.pm_lakekey ls ON ls.waterbody_key = o.waterbody_key"
   )

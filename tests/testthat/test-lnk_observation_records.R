@@ -235,3 +235,86 @@ test_that("every alias code default's tracker names is a code bcfishobs uses (DB
     paste(vapply(a, .lnk_quote_literal, character(1)), collapse = ", ")))
   expect_setequal(have$species_code, a)
 })
+
+# Rainbow trout and steelhead (link#501): ST records count as RB where RB is
+# present; RB records never count as ST; SST and WST count as both.
+tracker_rb <- function() {
+  rbind(tracker_rr(),
+        data.frame(species_code = "RB", species_obs = "ST",
+                   scope_level = "province", scope = "BC", pool = "yes"),
+        data.frame(species_code = "RB", species_obs = "SST",
+                   scope_level = "province", scope = "BC", pool = "yes"))
+}
+
+presence_rb <- function() {
+  p <- presence_rr()
+  p$rb[p$watershed_group_code == "SQAM"] <- "t"
+  p
+}
+
+test_that("a steelhead record counts as rainbow trout only where RB is present", {
+  ld <- list(wsg_species_presence = presence_rb(),
+             species_pooling = tracker_rb(), parameters_fresh = pf_rr())
+  m <- .lnk_observation_species_map(cfg_rr(), ld, c("LFRA", "SQAM"))
+  expect_equal(codes_for(m, "SQAM", "RB"), c("RB", "SST", "ST"))
+  expect_equal(codes_for(m, "LFRA", "RB"), character(0))
+  # an RB record never counts as ST, and SST still counts as ST
+  expect_equal(codes_for(m, "SQAM", "ST"), c("SST", "ST"))
+  expect_equal(codes_for(m, "LFRA", "ST"), c("SST", "ST"))
+})
+
+test_that("a steelhead record counted as RB takes RB's date floor, not ST's", {
+  pf <- rbind(pf_rr(), data.frame(species_code = "RB", observation_date_min = NA))
+  ld <- list(wsg_species_presence = presence_rb(),
+             species_pooling = tracker_rb(), parameters_fresh = pf)
+  m <- .lnk_observation_species_map(cfg_rr("lift_floor"), ld, "SQAM")
+  d <- function(sp, obs) m$date_min[m$species_code == sp & m$species_obs == obs]
+  # undated and pre-1990 ST records cut and set code 2 for RB ...
+  expect_true(is.na(d("RB", "ST")))
+  expect_true(is.na(d("RB", "SST")))
+  # ... and stay held to 1990 for ST
+  expect_equal(d("ST", "ST"), as.Date("1990-01-01"))
+  expect_equal(d("ST", "SST"), as.Date("1990-01-01"))
+})
+
+test_that("an alias can count as two species, in the records and the zones", {
+  ld <- list(wsg_species_presence = presence_rr(),
+             species_pooling = tracker_rb())
+  a <- .lnk_record_aliases(ld, c("LFRA", "SQAM"))
+  sst <- a[a$species_obs == "SST", ]
+  # resolved as if every species were present, in both groups
+  expect_setequal(paste(sst$watershed_group_code, sst$species_code),
+                  c("LFRA RB", "LFRA ST", "SQAM RB", "SQAM ST"))
+  ev <- .lnk_record_aliases_everywhere(a)
+  expect_equal(ev$species_code[ev$species_obs == "SST"], c("RB", "ST"))
+  expect_false("BT/DV" %in% ev$species_obs)
+})
+
+test_that("the RB rows move the record-rule digest", {
+  cfg <- cfg_rr("lift_floor")
+  pf <- rbind(pf_rr(), data.frame(species_code = "RB", observation_date_min = NA))
+  ld <- list(wsg_species_presence = presence_rr(),
+             species_pooling = tracker_rr(), parameters_fresh = pf)
+  ld_rb <- ld
+  ld_rb$species_pooling <- tracker_rb()
+  expect_false(identical(.lnk_record_rule_digest(cfg, ld),
+                         .lnk_record_rule_digest(cfg, ld_rb)))
+})
+
+test_that("default counts ST, SST and WST as RB wherever RB is present, and RB never as ST", {
+  cfg <- lnk_config("default")
+  ld <- suppressWarnings(lnk_load_overrides(cfg))
+  pres <- ld$wsg_species_presence
+  m <- .lnk_observation_species_map(cfg, ld, pres$watershed_group_code)
+  rb_groups <- sort(pres$watershed_group_code[pres$rb %in% c("t", TRUE)])
+  rb <- m[m$species_code == "RB", ]
+  for (code in c("RB", "ST", "SST", "WST")) {
+    expect_identical(sort(rb$watershed_group_code[rb$species_obs == code]),
+                     rb_groups, info = code)
+  }
+  expect_false("RB" %in% m$species_obs[m$species_code == "ST"])
+  # SST and WST still count as ST wherever ST is present
+  st <- m[m$species_code == "ST", ]
+  expect_identical(sort(st$watershed_group_code[st$species_obs == "WST"]),
+                   sort(st$watershed_group_code[st$species_obs == "ST"]))
+})

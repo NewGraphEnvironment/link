@@ -1,6 +1,6 @@
 # Naming link's outputs: what a token covers
 
-**Verified:** 2026-11-13 · **Issues:** #414, #415, #420, #460, #462, #463 (consumers: a downstream tuning archive) · **Produced by:** reading the seven config bundles under `inst/extdata/configs/` and the code paths below; the specs in `inst/extdata/vocabulary.csv` are written by `lnk_vocabulary_resolve()`'s helpers · **Status:** four axes; ten live tokens; `default_extrabreaks` and `default_rearbreaks` have none and refuse
+**Verified:** 2026-11-23 · **Issues:** #414, #415, #420, #460, #462, #463, #501 (consumers: a downstream tuning archive) · **Produced by:** reading the seven config bundles under `inst/extdata/configs/` and the code paths below; the specs in `inst/extdata/vocabulary.csv` are written by `lnk_vocabulary_resolve()`'s helpers · **Status:** four axes; ten live tokens; `default_extrabreaks` and `default_rearbreaks` have none and refuse
 
 ## The question
 
@@ -32,8 +32,8 @@ The access inputs differ between the shipped configs:
 |---|---|---|
 | Species the rules model | BT CH CM CO PK SK ST WCT | adds GR, KO, RB |
 | BT lifts on | BT, the salmon and ST, records from 1900 | BT and DV, any date |
-| RB lifts | none | one RB record |
-| Presence table | bcfishpass's | link's own: bcfishpass's except a few cells, then #402's review (2026-11-01) added 111 and removed 10 |
+| RB lifts | none | one record counting as RB (RB, and ST, SST and WST where RB is present, #501) |
+| Presence table | bcfishpass's | bcfishpass's copy plus link's overlay: a few cells of link's own, then the presence reviews (#402 on 2026-11-01, #501 on 2026-11-23) |
 
 `default_extrabreaks` and `default_rearbreaks` are `extends: ~` copies of an older
 `default`. They carry no RB lift rule and bcfishpass's presence table, and leave

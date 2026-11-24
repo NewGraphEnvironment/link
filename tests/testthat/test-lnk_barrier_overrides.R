@@ -382,3 +382,40 @@ test_that("each lift's evidence lists the records that met the rule, once each (
     "SELECT species_code_recorded FROM %s.ev3 ORDER BY evidence_key", s))
   expect_equal(ev3$species_code_recorded, c("XX", "XA"))
 })
+
+test_that("a species with no date floor lifts only on dated records (#501)", {
+  # RB has no floor, so an ST record counted as RB cuts and sets code 2 even
+  # undated; a lift compares the date with 1900-01-01, which NULL fails.
+  captured <- character(0)
+  local_mocked_bindings(
+    dbExecute = function(conn, sql, ...) {
+      captured <<- c(captured, sql)
+      1L
+    },
+    dbGetQuery = function(conn, sql, ...) {
+      if (grepl("information_schema.columns", sql)) {
+        return(data.frame(
+          column_name = c("blue_line_key", "wscode_ltree", "localcode_ltree"),
+          stringsAsFactors = FALSE))
+      }
+      if (grepl("SELECT count", sql, ignore.case = TRUE)) {
+        return(data.frame(count = 0L))
+      }
+      data.frame()
+    },
+    .package = "DBI"
+  )
+  p <- data.frame(species_code = "RB", observation_threshold = 1L,
+                  observation_date_min = NA, observation_buffer_m = 20,
+                  observation_species = "RB",
+                  observation_control_apply = FALSE,
+                  stringsAsFactors = FALSE)
+  lnk_barrier_overrides(
+    conn = "mock", barriers = "working.natural_barriers",
+    observations = "working.observations_province", control = NULL,
+    params = p, to = "working.barrier_overrides", verbose = FALSE
+  )
+  joined <- paste(captured, collapse = "\n")
+  expect_match(joined, "WHERE o.species_code IN ('RB')", fixed = TRUE)
+  expect_match(joined, "AND o.observation_date >= '1900-01-01'", fixed = TRUE)
+})
