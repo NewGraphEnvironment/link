@@ -99,9 +99,10 @@ Review G10 changed this phase: "every bundle" means the three that `build_rules.
 
 ## Phase 7: release
 
-- [ ] NEWS entry and a minor version bump (new `lnk_rules_build(strict =)` argument, new dimensions column), as the final commit unless a vocabulary row already fixed the version.
-- [ ] CLAUDE.md status block for move 8, and RUNBOOK §7 (residence, dictionary, sample sync).
-- [ ] `devtools::document()`, `devtools::test()` (no new warnings), `lintr::lint_package()` per file against main, `devtools::check()`, `pkgdown::check_pkgdown()`.
+- [x] NEWS entry and a minor version bump (0.92.0: main reached 0.91.0 meanwhile) (new `lnk_rules_build(strict =)` argument, new dimensions column), as the final commit unless a vocabulary row already fixed the version.
+- [x] CLAUDE.md status block for move 8, and RUNBOOK §7 (residence, dictionary, sample sync).
+- [x] `devtools::document()`, `devtools::test()` (no new warnings), `lintr::lint_package()` per file against main, `devtools::check()`, `pkgdown::check_pkgdown()`.
+  Results: 1,553 tests, 0 failed, 0 errors, 6 warnings (the same 6 on main when those files run together); lint 0 new beyond lintr's installed-package `cfg` reading; `check()` 0 errors, 0 warnings, 3 notes, all on main; `check_pkgdown()` no problems.
 
 ## Owed at the end (reported, done after merge)
 
@@ -113,7 +114,7 @@ Review G10 changed this phase: "every bundle" means the three that `build_rules.
 
 ## Validation
 
-- [ ] Tests pass
+- [x] Tests pass
 - [ ] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion

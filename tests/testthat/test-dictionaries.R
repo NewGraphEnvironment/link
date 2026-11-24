@@ -348,5 +348,10 @@ test_that("the README renderer escapes pipes and newlines in a cell", {
                    file.path(d, "dictionary_toy.csv"), row.names = FALSE)
   out <- .lnk_dictionary_readme(d)
   expect_match(out, "| a | x \\| y z |", fixed = TRUE)
+  utils::write.csv(data.frame(column = "b",
+                              description = "(<stage>_x, `a<b`) and `c`"),
+                   file.path(d, "dictionary_toy.csv"), row.names = FALSE)
+  expect_match(.lnk_dictionary_readme(d),
+               "| b | (&lt;stage&gt;_x, `a<b`) and `c` |", fixed = TRUE)
   expect_error(.lnk_dictionary_readme(withr::local_tempdir()), "no dictionary")
 })

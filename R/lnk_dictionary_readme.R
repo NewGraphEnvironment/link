@@ -17,10 +17,25 @@
   if (length(files) == 0L) {
     stop("no dictionary_*.csv in ", dir, call. = FALSE)
   }
+  # One table cell: no newline, `|` escaped, and `<` / `>` written as entities
+  # outside code spans, so markdown does not read `<stage>` as an HTML tag and
+  # drop it. Inside a code span an entity would print as typed.
   cell <- function(x) {
     x <- ifelse(is.na(x), "", as.character(x))
     x <- gsub("\r?\n", " ", x)
-    gsub("|", "\\|", x, fixed = TRUE)
+    x <- gsub("|", "\\|", x, fixed = TRUE)
+    vapply(x, function(v) {
+      parts <- strsplit(v, "`", fixed = TRUE)[[1]]
+      if (length(parts) == 0L) return(v)
+      prose <- seq_along(parts) %% 2L == 1L
+      parts[prose] <- gsub(">", "&gt;", gsub("<", "&lt;", parts[prose],
+                                             fixed = TRUE), fixed = TRUE)
+      out <- paste(parts, collapse = "`")
+      # strsplit() drops a trailing empty field, so a closing backtick at the
+      # end of the cell is put back.
+      if (endsWith(v, "`")) out <- paste0(out, "`")
+      out
+    }, character(1), USE.NAMES = FALSE)
   }
   out <- c(
     "# Config column dictionaries",
@@ -34,8 +49,9 @@
     ""
   )
   for (f in files) {
+    # UTF-8 whatever the locale: the README is compared with a UTF-8 read.
     d <- utils::read.csv(f, check.names = FALSE, colClasses = "character",
-                         na.strings = character())
+                         na.strings = character(), encoding = "UTF-8")
     target <- sub("^dictionary_(.*)\\.csv$", "\\1", basename(f))
     out <- c(
       out,
