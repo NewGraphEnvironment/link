@@ -188,10 +188,29 @@ encounter order between two modelled crossings on one feature (link#277:
 two builds at main, minutes apart, picked a different modelled crossing
 for 464 PSCIS). Step 3b ports it, with `modelled_crossing_id` breaking
 its tie, and the pick’s order (`.lnk_pscis_pick_order`) ends on
-`linear_feature_id, modelled_xing_dist, modelled_crossing_id`. Both KNN
-snaps
-([`lnk_points_snap()`](https://newgraphenvironment.github.io/link/reference/lnk_points_snap.md),
-the dam snap) end on `linear_feature_id`.
+`snap_at_segment_end, segment_downstream_route_measure DESC, linear_feature_id, modelled_xing_dist, modelled_crossing_id`.
+
+**Snapping and ties (#478).**
+[`lnk_points_snap()`](https://newgraphenvironment.github.io/link/reference/lnk_points_snap.md)
+is
+[`fresh::frs_point_snap()`](https://newgraphenvironment.github.io/fresh/reference/frs_point_snap.html)
+with the input’s columns kept, so placeholder (`999.*`) streams are
+never candidates (#313; the old guard was `!= '999'`, and 11 provincial
+PSCIS picks sat on one). A point nearest to a vertex two segments share
+is at exactly the same distance from both. Measures resolve
+`[downstream, upstream)`, so in the PSCIS pick and the dam snap the tie
+goes to the segment that **starts** at the vertex: first a candidate
+whose snapped point is not its segment’s upstream end, then the higher
+raw segment start, then the lower `linear_feature_id`. On one stream
+that is fwapg’s rule (`fwa_indexpoint`) and fresh’s snap order. Across
+two streams fwapg’s “higher measure” means nothing: it put one lower
+Fraser barrier dam (Crescent Slough) at the top end of an unnamed line,
+blocking 7,892 km instead of 7.7, and the start test keeps it at the
+slough’s mouth. The whole-metre measure is never the tie key: two
+segments meeting at a whole metre round equal on it. bcfishpass’s
+`04_pscis.sql` ends on `linear_feature_id` alone, so this is a
+departure. The snap’s own `candidate_rank` (fresh’s order) is not read
+by the pick. Measured province-wide in `data-raw/logs/snap_tie_478/`.
 
 `barriers_<sp>_min` is a **break-spec**: a present, modelled species’
 post-lift natural barriers (gradient at its classes, falls, opt-in
@@ -2338,10 +2357,11 @@ dispatch.**
     validator’s `summary` carries all three. What code 2 means, and
     where it ends relative to a species’ top record, is §2c.
   - **[`lnk_aggregate()`](https://newgraphenvironment.github.io/link/reference/lnk_aggregate.md)
-    still sums the flag**, connection lines included: it is
-    per-crossing, link-side SQL over boolean habitat columns, with no
-    connection split. So do the older one-off scripts with their own SQL
-    (`data-raw/compare_adms.R`, `data-raw/exp_gradient_extra_breaks.R`).
+    splits them too (#478):** per crossing and species it writes
+    `rearing_km` (connectors out), the stream / lake / wetland split and
+    `rearing_lake_connection_km`, with the same predicates. The older
+    one-off scripts with their own SQL (`data-raw/compare_adms.R`,
+    `data-raw/exp_gradient_extra_breaks.R`) still sum the flag.
   - SK / KO lake rearing is mostly 1450, so their compare `rearing` km
     drop sharply: SK 55–95 % on seven measured WSGs (ADMS 159.1 of 229.9
     km), KO 62 % on NATR. For SK the drop is the same on the bcfishpass

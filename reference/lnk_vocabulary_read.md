@@ -65,4 +65,6 @@ v[, c("token", "axis", "introduced")]
 #> 21         acc-bcfp-5  acc     0.84.0
 #> 22     cut-full-top-3  cut     0.91.0
 #> 23             acc-v7  acc     0.91.0
+#> 24     cut-full-top-4  cut     0.92.0
+#> 25 cut-full-ssf-all-3  cut     0.92.0
 ```

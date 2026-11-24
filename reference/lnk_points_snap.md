@@ -3,7 +3,8 @@
 Bulk-snap helper: takes a Postgres table of point geometries and creates
 a new table with each row enriched with the nearest FWA stream segment's
 `linear_feature_id`, `blue_line_key`, `downstream_route_measure`,
-`wscode_ltree`, `localcode_ltree`, plus snap distance.
+`wscode_ltree`, `localcode_ltree`, `watershed_group_code`, `gnis_name`,
+plus snap distance.
 
 ## Usage
 
@@ -12,6 +13,7 @@ lnk_points_snap(
   conn,
   table_in,
   table_out,
+  id_col,
   geom_col = "geom",
   snap_tolerance = 100,
   exclude_edge_types = 1425L,
@@ -36,9 +38,15 @@ lnk_points_snap(
   Fully-qualified `<schema>.<table>` to create. Existing table is
   `DROP TABLE IF EXISTS`'d first.
 
+- id_col:
+
+  Name of a column in `table_in` that identifies each point. Its values
+  must be unique and non-missing; the function stops otherwise.
+
 - geom_col:
 
-  Name of the geometry column in `table_in`. Default `"geom"`.
+  Name of the geometry column in `table_in`. Default `"geom"`. A
+  MultiPoint is snapped by its first point.
 
 - snap_tolerance:
 
@@ -55,7 +63,7 @@ lnk_points_snap(
 
   Optional name of a `blue_line_key` column in `table_in` to constrain
   candidate streams to. `NULL` (default) snaps to any FWA stream within
-  tolerance.
+  tolerance. A point whose hint is missing snaps to any stream.
 
 - stream_order_min:
 
@@ -65,12 +73,9 @@ lnk_points_snap(
 - num_features:
 
   Integer scalar. Maximum number of stream candidates per input point.
-  Default `1L` (nearest-only — backwards compatible). Set higher (e.g.
-  `5L`) for downstream scoring/dedup workflows that need multiple
-  candidates per point (e.g. bcfp PSCIS-to-stream selection where
-  stream-name match disambiguates among nearby streams). Output has one
-  row per (input row, candidate stream) pair, ordered by distance
-  ascending.
+  Default `1L` (nearest only). Set higher (e.g. `5L`) to score and pick
+  among nearby streams. Output then has one row per (input row,
+  candidate stream) pair and a `candidate_rank` column (1 = nearest).
 
 ## Value
 
@@ -79,30 +84,36 @@ database.
 
 ## Details
 
-Uses a single SQL `CROSS JOIN LATERAL ... ORDER BY <-> ... LIMIT 1`
-against `whse_basemapping.fwa_stream_networks_sp` — same lateral-KNN
-pattern as `bcfishpass`'s `load_dams.sql` and link's existing CABD dams
-snap in
-[`lnk_pipeline_prepare()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_prepare.md).
-One round-trip; scales to province-wide point sets.
+The snap itself is
+[`fresh::frs_point_snap()`](https://newgraphenvironment.github.io/fresh/reference/frs_point_snap.html):
+one lateral nearest-neighbour query for the whole table. This function
+keeps every column of `table_in` beside the snap, under link's column
+names, so a pipeline can carry the points' own attributes through. The
+candidate rules are fresh's:
 
-Generic — not specific to any pipeline phase. Likely belongs in a future
-`pac` package once that's scaffolded; ships in link for now.
+- placeholder streams (`wscode_ltree <@ '999'`) and unmapped tributaries
+  (`localcode_ltree IS NULL`) are never candidates;
+
+- `edge_type NOT IN (exclude_edge_types)` drops more;
+
+- an exact distance tie, a point nearest to the vertex two segments
+  share, goes to the segment with the higher `downstream_route_measure`
+  (on one stream, the one starting at that vertex), then the lower
+  `linear_feature_id`. This is fwapg's rule for `fwa_indexpoint()`.
+  Across two streams the higher measure means nothing; the PSCIS pick,
+  which reads every candidate, orders such a tie by which segment starts
+  at the vertex.
+
+The measure is a whole metre, as in bcfishpass's `04_pscis.sql`.
 
 Output table columns: every column from `table_in` PLUS
-`linear_feature_id` (bigint), `blue_line_key` (integer),
-`downstream_route_measure` (numeric), `wscode_ltree` (ltree),
-`localcode_ltree` (ltree), `distance_to_stream` (numeric, metres),
-`geom_snapped` (geometry — point projected onto the segment).
-
-Filters applied to candidate streams (from `fresh::frs_point_snap_knn`
-conventions):
-
-- `wscode_ltree != '999'` (placeholder streams excluded)
-
-- `localcode_ltree IS NOT NULL` (unmapped tributaries excluded)
-
-- `edge_type NOT IN (exclude_edge_types)` (subsurface etc. excluded)
+`linear_feature_id`, `snapped_blue_line_key`,
+`downstream_route_measure`, `wscode_ltree`, `localcode_ltree`,
+`watershed_group_code`, `gnis_name`, `distance_to_stream` (metres),
+`candidate_rank` (when `num_features > 1`) and `geom_snapped` (the point
+projected onto the segment, EPSG:3005). An input table holding any of
+those names is refused. The snap is written first to a scratch table
+beside `table_out`, which is dropped on exit.
 
 ## Examples
 
@@ -113,8 +124,9 @@ lnk_points_snap(
   conn,
   table_in  = "whse_fish.pscis_assessment_svw",
   table_out = "working_adms.pscis_assessment_snapped",
-  snap_tolerance = 100,
-  exclude_edge_types = c(1410L, 1425L)
+  id_col = "stream_crossing_id",
+  snap_tolerance = 150,
+  num_features = 5L
 )
 } # }
 ```

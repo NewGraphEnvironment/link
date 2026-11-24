@@ -6,7 +6,7 @@
   : Build per-segment per-species access from schema tables (portable)
 
 - [`lnk_aggregate()`](https://newgraphenvironment.github.io/link/reference/lnk_aggregate.md)
-  : Compute upstream habitat per crossing
+  : Habitat upstream of each crossing, per species
 
 - [`lnk_artifact_probe()`](https://newgraphenvironment.github.io/link/reference/lnk_artifact_probe.md)
   : Probe the FWA primitives' artifacts and record what is current now
