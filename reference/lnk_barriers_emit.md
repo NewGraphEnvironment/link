@@ -56,8 +56,12 @@ phase; may move to a future `pac` package once that's scaffolded.
 Filters mirror bcfp's `model/01_access/sql/barriers_*.sql` and
 `remediations_barriers.sql`:
 
-- `barrier_status IN ('BARRIER', 'POTENTIAL')` for anthropogenic-style
-  tables.
+- The barrier set: crossings the bundle's barrier rules select
+  (`crossings.barrier_rule_id` not NULL, link#341), written by
+  [`lnk_pipeline_crossings()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_crossings.md).
+  A crossings table without the column (a caller's own) uses the
+  source's status, `barrier_status IN ('BARRIER', 'POTENTIAL')`, which
+  is what the built-in rule selects.
 
 - `blue_line_key = watershed_key` (excludes side-channel features).
 

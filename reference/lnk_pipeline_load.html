@@ -11,7 +11,7 @@ crossing-level override types from the config bundle:"><meta property="og:image"
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.92.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.93.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -101,11 +101,10 @@ observation-only points.</p></li>
 </ol><p>The <code>barrier_status</code> column on <code>&lt;schema&gt;.crossings</code> is the
 bcfishpass-parity label — <code>{PASSABLE, POTENTIAL, BARRIER, UNKNOWN}</code>
 — derived from PSCIS field <code>current_barrier_result_code</code> plus the
-override CSV. It is distinct from <code>severity</code> produced by
-<code><a href="lnk_score.html">lnk_score()</a></code> (link's own culvert-geometry scoring; high / moderate
-/ low). Both can coexist on the same crossings row: <code>barrier_status</code>
-for parity comparisons against bcfp, <code>severity</code> for link-specific
-metrics and break-source label translation via <code><a href="lnk_source.html">lnk_source()</a></code>.</p>
+override CSV. Which crossings count as human-made barriers is a
+separate question, answered by the bundle's barrier rules
+(<code>parameters_barrier_rules.csv</code>, link#341), which may read this
+status or the assessment's measurements.</p>
 <p>Falls, user-identified definite barriers, observation exclusions,
 and habitat classification CSVs are loaded by
 <code><a href="lnk_pipeline_prepare.html">lnk_pipeline_prepare()</a></code> where they are consumed, not here.</p>

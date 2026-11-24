@@ -13,7 +13,7 @@ database."><meta property="og:image" content="https://newgraphenvironment.github
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.92.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.93.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -132,7 +132,6 @@ now reaches the <code>PG*</code> target, so pass the arguments to reach the othe
 <span class="r-in"><span><span class="co"># A named database: every field given, so the environment fills nothing</span></span></span>
 <span class="r-in"><span><span class="va">conn</span> <span class="op">&lt;-</span> <span class="fu">lnk_db_conn</span><span class="op">(</span>dbname <span class="op">=</span> <span class="st">"fwapg"</span>, host <span class="op">=</span> <span class="st">"localhost"</span>, port <span class="op">=</span> <span class="fl">5432L</span>,</span></span>
 <span class="r-in"><span>                    user <span class="op">=</span> <span class="st">"postgres"</span>, password <span class="op">=</span> <span class="st">"postgres"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="lnk_score.html">lnk_score</a></span><span class="op">(</span><span class="va">conn</span>, <span class="st">"working.crossings"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">DBI</span><span class="fu">::</span><span class="fu"><a href="https://dbi.r-dbi.org/reference/dbDisconnect.html" class="external-link">dbDisconnect</a></span><span class="op">(</span><span class="va">conn</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># A slow link: wait longer to connect</span></span></span>

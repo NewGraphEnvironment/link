@@ -15,7 +15,7 @@ so the wrong answer is indistinguishable from a right one."><meta property="og:i
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.92.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.93.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -104,15 +104,25 @@ A downstream group whose FWA streams this database does not hold hides
 every dam on it, so the check refuses it as it refuses an unmodelled dam
 and names it in <code>wsgs_unloaded</code> (link#464). Only dams within 65 m of the
 downstream groups' polygons are snapped, which leaves the answer as it was
-and keeps the check's cost to the path (link#461).</p></dd>
+and keeps the check's cost to the path (link#461). From link 0.93.0 a
+gradient barrier is persisted only by the group owning its segment
+(link#386), so the check also refuses where a modelled group touching a line
+on <code>aoi</code>'s downstream paths (the line rule, for <code>aoi</code> alone) holds no rows in
+the schema's <code>barriers</code>, and names those groups in <code>wsgs_unheld</code>: a
+tributary group the outlet closure leaves out can own a stretch of <code>aoi</code>'s
+own line.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>Invisibly, a list with <code>aoi</code>, <code>status</code>, <code>dams</code>, <code>wsgs_missing</code>
 (groups holding unmodelled dams), <code>wsgs_unloaded</code> (downstream groups with
-no FWA streams), <code>note</code>, <code>elapsed_s</code> and <code>steps_s</code> (seconds per step:
-outlets, fwa_downstream, closure, loaded, near, probe, persisted).</p>
+no FWA streams), <code>wsgs_unheld</code> (groups on its lines holding no barrier
+rows, and modelled groups with no FWA streams in the database, whose
+lines the check cannot read), <code>note</code>, <code>elapsed_s</code> and <code>steps_s</code> (seconds per step: outlets,
+fwa_downstream, closure, loaded, near, line_deps, holders, fwa_absent,
+probe,
+persisted).</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

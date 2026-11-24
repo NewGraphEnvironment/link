@@ -76,10 +76,10 @@ Source families + `blocks_species` semantics:
 
 - **Anthropogenic**
   (`barrier_source IN ('PSCIS','CABD','MODELLED_CROSSINGS')`, from
-  `<schema>.crossings WHERE barrier_status IN ('BARRIER','POTENTIAL')`):
-  blocks all 8 species. `crossing_source` is mapped through verbatim,
-  keeping the `MODELLED_CROSSINGS` value (vs. lossy normalization to
-  `MODELLED`).
+  `<schema>.crossings` where the bundle's barrier rules select the
+  crossing, `barrier_rule_id` not NULL; link#341): blocks all 8 species.
+  `crossing_source` is mapped through verbatim, keeping the
+  `MODELLED_CROSSINGS` value (vs. lossy normalization to `MODELLED`).
 
 - **Gradient** (`barrier_source = 'GRADIENT'`, from
   `<schema>.gradient_barriers_raw`): blocks species whose

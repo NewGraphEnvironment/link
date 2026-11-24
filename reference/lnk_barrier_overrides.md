@@ -75,13 +75,19 @@ lnk_barrier_overrides(
 
 - params:
 
-  Data frame with per-species parameters. Must have columns:
+  Data frame of lift rules, one row per rule. Must have columns:
   `species_code`, `observation_threshold`, `observation_date_min`,
   `observation_buffer_m`, `observation_species`. Optional column
   `observation_control_apply` (logical) — when TRUE, the `control` table
-  blocks overrides for this species; when FALSE/NA/missing, the species
+  blocks overrides for this rule; when FALSE/NA/missing, the rule
   ignores control. Bcfishpass defaults: TRUE for CH/CM/CO/PK/SK/ST,
   FALSE for BT/WCT. See `configs/bcfishpass/parameters_fresh.csv`.
+  Optional column `rule` names each rule (link#236): a species may have
+  several, and a barrier is lifted where any one of them is met (the
+  records of two rules never add together). Without it every row is rule
+  `own`, so a `parameters_fresh.csv`-shaped table lifts as it always
+  has. Habitat lifts run once per species, on its `own` row's species
+  list.
 
 - cols_index:
 
@@ -102,8 +108,10 @@ lnk_barrier_overrides(
   rule (`observation_key`, the code it is filed under, its date and
   group); a habitat lift lists each confirming habitat row. Every row
   carries the rule as applied (`observation_threshold`,
-  `observation_date_min`, `observation_species`,
-  `observation_buffer_m`). `NULL` (default) writes none.
+  `observation_date_min`, `observation_species`, `observation_buffer_m`)
+  and its name in `lift_rule` (`habitat` for a habitat lift), so a
+  record counted under two rules has a row for each. `NULL` (default)
+  writes none.
 
 - verbose:
 

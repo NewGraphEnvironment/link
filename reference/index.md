@@ -188,12 +188,6 @@
 - [`lnk_scenario_export()`](https://newgraphenvironment.github.io/link/reference/lnk_scenario_export.md)
   : Publish link's habitat flags per config as Parquet + manifest
 
-- [`lnk_score()`](https://newgraphenvironment.github.io/link/reference/lnk_score.md)
-  : Score crossings
-
-- [`lnk_source()`](https://newgraphenvironment.github.io/link/reference/lnk_source.md)
-  : Produce a fresh-compatible break source list
-
 - [`lnk_species_pooling()`](https://newgraphenvironment.github.io/link/reference/lnk_species_pooling.md)
   : Resolve which observation species count as each model species, per
   WSG
@@ -206,9 +200,6 @@
 
 - [`lnk_streams_parent()`](https://newgraphenvironment.github.io/link/reference/lnk_streams_parent.md)
   : Join each full segment to the minimal segment it was cut from
-
-- [`lnk_thresholds()`](https://newgraphenvironment.github.io/link/reference/lnk_thresholds.md)
-  : Load configurable severity scoring thresholds
 
 - [`lnk_vocabulary_read()`](https://newgraphenvironment.github.io/link/reference/lnk_vocabulary_read.md)
   : Read link's output vocabulary

@@ -64,13 +64,22 @@ lnk_wsg_downstream_check(
   dam and names it in `wsgs_unloaded` (link#464). Only dams within 65 m
   of the downstream groups' polygons are snapped, which leaves the
   answer as it was and keeps the check's cost to the path (link#461).
+  From link 0.93.0 a gradient barrier is persisted only by the group
+  owning its segment (link#386), so the check also refuses where a
+  modelled group touching a line on `aoi`'s downstream paths (the line
+  rule, for `aoi` alone) holds no rows in the schema's `barriers`, and
+  names those groups in `wsgs_unheld`: a tributary group the outlet
+  closure leaves out can own a stretch of `aoi`'s own line.
 
 ## Value
 
 Invisibly, a list with `aoi`, `status`, `dams`, `wsgs_missing` (groups
 holding unmodelled dams), `wsgs_unloaded` (downstream groups with no FWA
-streams), `note`, `elapsed_s` and `steps_s` (seconds per step: outlets,
-fwa_downstream, closure, loaded, near, probe, persisted).
+streams), `wsgs_unheld` (groups on its lines holding no barrier rows,
+and modelled groups with no FWA streams in the database, whose lines the
+check cannot read), `note`, `elapsed_s` and `steps_s` (seconds per step:
+outlets, fwa_downstream, closure, loaded, near, line_deps, holders,
+fwa_absent, probe, persisted).
 
 ## Details
 

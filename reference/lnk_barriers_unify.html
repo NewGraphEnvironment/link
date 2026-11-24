@@ -19,7 +19,7 @@ lnk_pipeline_access() queries via WHERE 'BT' = ANY(blocks_species)."><meta prope
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.92.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.93.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -121,7 +121,8 @@ doesn't care which WSG a barrier physically lives in — fixes the
 PARS BT 60% defect (PARS drains through dams in PCEA/UPCE WSGs)
 and unblocks any regional run.</p>
 <p>Source families + <code>blocks_species</code> semantics:</p><ul><li><p><strong>Anthropogenic</strong> (<code>barrier_source IN ('PSCIS','CABD','MODELLED_CROSSINGS')</code>,
-from <code>&lt;schema&gt;.crossings WHERE barrier_status IN ('BARRIER','POTENTIAL')</code>):
+from <code>&lt;schema&gt;.crossings</code> where the bundle's barrier rules select the
+crossing, <code>barrier_rule_id</code> not NULL; link#341):
 blocks all 8 species. <code>crossing_source</code> is mapped through verbatim,
 keeping the <code>MODELLED_CROSSINGS</code> value (vs. lossy normalization to
 <code>MODELLED</code>).</p></li>
