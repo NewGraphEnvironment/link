@@ -345,6 +345,7 @@ test_that("dictionary_parameters_barrier_lifts matches the reader's columns", {
     rep(list("x"), length(d$column)), d$column), stringsAsFactors = FALSE)
   fixture$species_code <- "BT"; fixture$barrier_kinds <- "natural"
   fixture$observation_threshold <- "2"; fixture$observation_date_min <- NA
+  fixture$observation_buffer_m <- "20"; fixture$observation_control_apply <- "yes"
   pf <- utils::read.csv(file.path(cfg_dir(), "default", "parameters_fresh.csv"))
   r <- link:::.lnk_lift_rules(list(pipeline = list()),
                               list(parameters_fresh = pf,
