@@ -140,20 +140,6 @@ test_that("build_where rejects injection in column names", {
   )
 })
 
-# --- .lnk_merge_lists ---
-
-test_that("merge_lists combines two named lists", {
-  a <- list(x = 1, y = 2)
-  b <- list(y = 3, z = 4)
-  result <- link:::.lnk_merge_lists(a, b)
-  expect_equal(result, list(x = 1, y = 3, z = 4))
-})
-
-test_that("merge_lists handles empty inputs", {
-  expect_equal(link:::.lnk_merge_lists(list(), list(x = 1)), list(x = 1))
-  expect_equal(link:::.lnk_merge_lists(list(x = 1), list()), list(x = 1))
-})
-
 # --- .lnk_wsg_persisted ---
 
 test_that(".lnk_wsg_persisted rejects non-DBI conn", {

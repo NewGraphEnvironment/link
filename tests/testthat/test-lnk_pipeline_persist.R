@@ -453,8 +453,10 @@ test_that("an override or evidence row persists only beside a natural barrier th
        v(blue_line_key, downstream_route_measure, species_code)", w))
   DBI::dbExecute(conn, sprintf(
     "INSERT INTO %s.barrier_override_evidence
-       (blue_line_key, downstream_route_measure, species_code, evidence, evidence_key)
-     SELECT blue_line_key, downstream_route_measure, species_code, 'observation', 'k1'
+       (blue_line_key, downstream_route_measure, species_code, evidence, evidence_key,
+        lift_rule)
+     SELECT blue_line_key, downstream_route_measure, species_code, 'observation', 'k1',
+            'own'
        FROM %s.barrier_overrides", w, w))
   lnk_pipeline_persist(conn, aoi = "LSAL", cfg = cfg, species = character(0),
                        schema = w)
