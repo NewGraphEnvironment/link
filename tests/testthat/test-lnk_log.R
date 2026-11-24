@@ -1364,3 +1364,13 @@ test_that("no log table's primary key includes watershed_group_code", {
     expect_false("watershed_group_code" %in% s$pk, info = s$table)
   }
 })
+
+test_that("no column a log snapshot table is built from is a reserved word (#341, DB)", {
+  # The DDL writes column names unquoted: a dictionary row named `column`
+  # failed lnk_persist_init() on a new schema.
+  conn <- skip_if_no_db()
+  reserved <- DBI::dbGetQuery(conn,
+    "SELECT word FROM pg_get_keywords() WHERE catcode = 'R'")$word
+  cols <- unlist(lapply(.lnk_log_specs(), function(s) names(s$cols)))
+  expect_length(intersect(tolower(cols), reserved), 0L)
+})

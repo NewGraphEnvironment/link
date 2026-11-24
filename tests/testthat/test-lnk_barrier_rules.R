@@ -4,7 +4,7 @@ rules_df <- function(...) {
   rows <- list(...)
   do.call(rbind, lapply(rows, function(r) {
     d <- data.frame(rule_id = "status", applies_to = "*",
-                    source_table = "crossings", column = "barrier_status",
+                    source_table = "crossings", column_name = "barrier_status",
                     operator = "in", value = "BARRIER;POTENTIAL", species = "*",
                     outcome = "barrier", date = "2026-11-24", source = "test",
                     notes = "", stringsAsFactors = FALSE)
@@ -24,7 +24,7 @@ test_that("default and bcfishpass ship the one reproducing row", {
     cfg <- lnk_config(b)
     r <- .lnk_barrier_rules(cfg, lnk_load_overrides(cfg))
     expect_equal(nrow(r), 1L, info = b)
-    for (k in c("rule_id", "applies_to", "source_table", "column", "operator",
+    for (k in c("rule_id", "applies_to", "source_table", "column_name", "operator",
                 "value", "species", "outcome")) {
       expect_identical(r[[k]], .lnk_barrier_rules_builtin[[k]], info = paste(b, k))
     }
@@ -45,8 +45,8 @@ test_that("a bad rule is refused at load", {
                "applies_to")
   expect_error(.lnk_barrier_rules(list(), ld(value = "")),
                "a value is needed")
-  expect_error(.lnk_barrier_rules(list(), ld(column = "x; DROP")),
-               "lower-case name")
+  expect_error(.lnk_barrier_rules(list(), ld(column_name = "x; DROP")),
+               "column_name must be a lower-case name")
   expect_error(.lnk_barrier_rules(list(), ld(rule_id = "1x")), "rule_id")
   expect_error(.lnk_barrier_rules(list(), list(parameters_barrier_rules =
                                                  rules_df(list())[0, ])),
@@ -108,12 +108,12 @@ test_that("AND within a rule_id, OR across, scoped by source, NULL only by is_nu
   rules <- rules_df(
     # measured: outlet drop over 0.6 m, or slope x length over 120, PSCIS only
     list(rule_id = "drop", applies_to = "PSCIS", source_table = "pscis_assessment",
-         column = "outlet_drop", operator = ">", value = "0.6"),
+         column_name = "outlet_drop", operator = ">", value = "0.6"),
     list(rule_id = "slope", applies_to = "PSCIS", source_table = "pscis_assessment",
-         column = "slope_length", operator = ">", value = "120"),
+         column_name = "slope_length", operator = ">", value = "120"),
     # unassessed in the view: keep the province's result (both rows of one rule)
     list(rule_id = "unmeasured", applies_to = "PSCIS",
-         source_table = "pscis_assessment", column = "outlet_drop",
+         source_table = "pscis_assessment", column_name = "outlet_drop",
          operator = "is_null", value = NA),
     list(rule_id = "unmeasured", applies_to = "PSCIS"),
     # the rest keep the modelled or dam status
@@ -128,7 +128,7 @@ test_that("AND within a rule_id, OR across, scoped by source, NULL only by is_nu
   # order of rows means nothing, and a crossing matching two rules names both
   both <- rules_df(
     list(rule_id = "zz", applies_to = "PSCIS", source_table = "pscis_assessment",
-         column = "outlet_drop", operator = ">=", value = "1"),
+         column_name = "outlet_drop", operator = ">=", value = "1"),
     list(rule_id = "aa"))
   .lnk_barrier_rules_apply(conn, s, both[2:1, ])
   r1 <- rule_ids(conn, s)
@@ -140,10 +140,10 @@ test_that("AND within a rule_id, OR across, scoped by source, NULL only by is_nu
 test_that("a rule cannot reach a column its source lacks, nor inject SQL (DB)", {
   conn <- skip_if_no_db()
   s <- local_crossings(conn)
-  expect_error(.lnk_barrier_rules_apply(conn, s, rules_df(list(column = "nope"))),
+  expect_error(.lnk_barrier_rules_apply(conn, s, rules_df(list(column_name = "nope"))),
                "crossings has no column nope")
   expect_error(.lnk_barrier_rules_apply(conn, s, rules_df(list(
-    source_table = "pscis_assessment", column = "outlet_drop", operator = ">",
+    source_table = "pscis_assessment", column_name = "outlet_drop", operator = ">",
     value = "0; DROP TABLE x"))), "not a number")
   # a text value is quoted, so it is compared, never run
   .lnk_barrier_rules_apply(conn, s, rules_df(list(
@@ -158,7 +158,7 @@ test_that("a non-reproducing rule file moves the four barrier sets alike (DB)", 
   # modelled crossing are.
   .lnk_barrier_rules_apply(conn, s, rules_df(list(
     rule_id = "drop", applies_to = "PSCIS", source_table = "pscis_assessment",
-    column = "outlet_drop", operator = ">", value = "0.6")))
+    column_name = "outlet_drop", operator = ">", value = "0.6")))
   lnk_barriers_emit(conn, s)
   ids <- function(t, col) DBI::dbGetQuery(conn, sprintf(
     "SELECT %s AS id FROM %s.%s ORDER BY 1", col, s, t))$id

@@ -186,8 +186,8 @@ provenance:
   parameters_barrier_rules.csv:
     source: link (hand-authored; link#341). Which crossings are human-made barriers, as rules; not csv-synced
     synced: '2026-11-24'
-    checksum: sha256:f801b1003ea61dd94a78713bdf8e7553342769f7580153753caaa34a3e5a2a08
-    shape_checksum: sha256:2f0bca6d45d51554b474561183c80e0303d038fbbf170bc667ef9544f1babc7f
+    checksum: sha256:68b69ca4a3d8ee4790072b5d6db4227c6483795072b320fa0e989e06750e3a27
+    shape_checksum: sha256:51707ff384dd6bacd89913ad3170f547275a23fb2bb00cf031f999a52ac57a37
   presence_groups.csv:
     source: link (hand-authored; link#292). The species groups lnk_presence() promotes presence by; bcfishpass's wsg_salmon and wsg_ct_dv_rb
     synced: '2026-11-18'

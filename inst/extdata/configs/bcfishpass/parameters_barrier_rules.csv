@@ -1,2 +1,2 @@
-rule_id,applies_to,source_table,column,operator,value,species,outcome,date,source,notes
+rule_id,applies_to,source_table,column_name,operator,value,species,outcome,date,source,notes
 status,*,crossings,barrier_status,in,BARRIER;POTENTIAL,*,barrier,2026-11-24,link#341,"The source's own status: PSCIS's current barrier result, CABD's passability, the modelled crossing's type, after the per-row correction files. What link has always counted as a human-made barrier."

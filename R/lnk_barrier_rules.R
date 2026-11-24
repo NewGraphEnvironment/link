@@ -9,7 +9,7 @@
 #'
 #' Rows sharing a `rule_id` are ANDed into one rule, different `rule_id`s are
 #' ORed, a NULL value matches only `is_null`, and row order means nothing.
-#' `applies_to` scopes a row to crossing sources. Columns are read from a
+#' `applies_to` scopes a row to crossing sources. `column_name` is read from a
 #' source in `.lnk_barrier_rule_sources`: the crossing row itself, or the
 #' crossing's PSCIS assessment. `species` accepts only `*` and `outcome` only
 #' `barrier`: the columns exist so a later rule that blocks a species adds rows,
@@ -60,8 +60,8 @@
       "species must be '*' (no rule blocks a species yet)", r$species)
   bad(!is.na(r$outcome) & r$outcome == "barrier",
       "outcome must be 'barrier' (no rule blocks a species yet)", r$outcome)
-  bad(!is.na(r$column) & grepl("^[a-z_][a-z0-9_]*$", r$column),
-      "column must be a lower-case name", r$column)
+  bad(!is.na(r$column_name) & grepl("^[a-z_][a-z0-9_]*$", r$column_name),
+      "column_name must be a lower-case name", r$column_name)
   scope <- strsplit(ifelse(is.na(r$applies_to), "", r$applies_to), ";",
                     fixed = TRUE)
   scope_ok <- vapply(scope, function(v) {
@@ -80,7 +80,7 @@
 #' @noRd
 .lnk_barrier_rules_builtin <- data.frame(
   rule_id = "status", applies_to = "*", source_table = "crossings",
-  column = "barrier_status", operator = "in", value = "BARRIER;POTENTIAL",
+  column_name = "barrier_status", operator = "in", value = "BARRIER;POTENTIAL",
   species = "*", outcome = "barrier", date = NA_character_,
   source = "link (built in)", notes = NA_character_,
   stringsAsFactors = FALSE)
@@ -119,7 +119,7 @@
 #' pipeline's `crossings` always carries the column and the four barrier-set
 #' sites read it through `.lnk_sql_barrier_selected()`.
 #'
-#' A rule's column is checked against its source's columns, and its value
+#' A rule's `column_name` is checked against its source's columns, and its value
 #' typed by the column (a number for a numeric column) and quoted through DBI,
 #' so a value cannot inject SQL. A PSCIS source holding two assessments for one
 #' crossing in the table is refused.
@@ -158,9 +158,9 @@
     types[[src]] <- t
   }
   for (i in seq_len(nrow(rules))) {
-    if (!rules$column[i] %in% names(types[[rules$source_table[i]]])) {
+    if (!rules$column_name[i] %in% names(types[[rules$source_table[i]]])) {
       stop("parameters_barrier_rules: rule ", rules$rule_id[i], ": ",
-           rules$source_table[i], " has no column ", rules$column[i],
+           rules$source_table[i], " has no column ", rules$column_name[i],
            call. = FALSE)
     }
   }
@@ -217,7 +217,7 @@
 #' @noRd
 .lnk_sql_barrier_rule_row <- function(conn, row, types) {
   spec <- .lnk_barrier_rule_sources[[row$source_table]]
-  col <- row$column
+  col <- row$column_name
   expr <- if (!is.null(spec$derived) && col %in% names(spec$derived)) {
     spec$derived[[col]]
   } else {
