@@ -94,15 +94,15 @@ test_that("the vocabulary only grows against the default branch", {
 test_that("each shipped config resolves to its tokens", {
   expect_identical(
     lnk_vocabulary_resolve(lnk_config("default")),
-    c(cut = "cut-full-top-4", acc = "acc-v7", grad = "grad-seg",
+    c(cut = "cut-full-top-5", acc = "acc-v8", grad = "grad-seg",
       flow = "q-fwapg"))
   expect_identical(
     lnk_vocabulary_resolve(lnk_config("default_tuned")),
-    c(cut = "cut-full-top-4", acc = "acc-v7", grad = "grad-seg",
+    c(cut = "cut-full-top-5", acc = "acc-v8", grad = "grad-seg",
       flow = "q-wet-fill"))
   expect_identical(
     lnk_vocabulary_resolve(lnk_config("bcfishpass")),
-    c(cut = "cut-full-ssf-all-3", acc = "acc-bcfp-5", grad = "grad-seg",
+    c(cut = "cut-full-ssf-all-4", acc = "acc-bcfp-6", grad = "grad-seg",
       flow = "q-fwapg"))
 })
 
@@ -139,27 +139,27 @@ test_that("the record rule is in the cut and acc specs (#470)", {
 test_that("default_minimal differs from default only in its cut token (#415)", {
   minimal <- lnk_vocabulary_resolve(lnk_config("default_minimal"))
   def <- lnk_vocabulary_resolve(lnk_config("default"))
-  expect_identical(minimal[["cut"]], "cut-min")
+  expect_identical(minimal[["cut"]], "cut-min-2")
   # Compared with default, not named: the two networks are compared because
   # only the cuts differ, and that must hold when default's acc token moves.
   others <- c("acc", "grad", "flow")
   expect_identical(minimal[others], def[others])
 })
 
-test_that("grad-parent is live and only default_parent resolves to it (#444, #463)", {
+test_that("grad-parent-2 is live and only default_parent resolves to it (#444, #463, #386)", {
   v <- lnk_vocabulary_read()
-  row <- v[v$token == "grad-parent", ]
+  row <- v[v$token == "grad-parent-2", ]
   expect_equal(nrow(row), 1L)
   expect_true(is.na(row$retired))
   expect_identical(row$axis, "grad")
-  expect_identical(row$spec, "gradient=parent;parent_cut=cut-min")
+  expect_identical(row$spec, "gradient=parent;parent_cut=cut-min-2")
   configs <- list.files(system.file("extdata", "configs", package = "link"))
   resolved <- 0L
   for (cf in configs) {
     tok <- tryCatch(lnk_vocabulary_resolve(lnk_config(cf)), error = function(e) NULL)
     if (is.null(tok)) next
     resolved <- resolved + 1L
-    want <- if (identical(cf, "default_parent")) "grad-parent" else "grad-seg"
+    want <- if (identical(cf, "default_parent")) "grad-parent-2" else "grad-seg"
     expect_identical(tok[["grad"]], want, info = cf)
   }
   # Five bundles resolve today; none resolving would pass the loop vacuously.

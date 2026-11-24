@@ -221,6 +221,20 @@ lnk_vocabulary_resolve <- function(cfg, loaded = NULL) {
   # is a new rule set (link#470).
   records <- .lnk_observation_species_map(cfg, loaded,
                                           pres$watershed_group_code)
+  # Further lift rules (link#236): each species' own rule is its
+  # parameters_fresh row, digested above. Rule columns only, never date,
+  # source or notes.
+  lifts <- .lnk_lift_rules(cfg, loaded)
+  lifts <- lifts[lifts$rule != "own",
+                 c("species_code", "rule", "barrier_kinds",
+                   .lnk_lift_rules_params), drop = FALSE]
+  # Of the barrier rules (link#341), only those whose outcome can move access:
+  # a `barrier` row moves barrier-below marks and per-crossing totals, never
+  # access, and is named by config_hash and the logged rule set. None can yet.
+  brules <- .lnk_barrier_rules(cfg, loaded)
+  brules <- brules[brules$outcome != "barrier",
+                   setdiff(names(.lnk_barrier_rules_builtin),
+                           c("date", "source", "notes")), drop = FALSE]
   payload <- paste(
     paste0("species=", paste(cfg$species, collapse = ",")),
     paste0("observation_upstream=", .lnk_observation_upstream(cfg)),
@@ -236,6 +250,8 @@ lnk_vocabulary_resolve <- function(cfg, loaded = NULL) {
     .lnk_vocabulary_canonical(pf[, .lnk_vocabulary_acc_cols, drop = FALSE]),
     .lnk_vocabulary_canonical(pres),
     .lnk_vocabulary_canonical(records),
+    .lnk_vocabulary_canonical(lifts),
+    .lnk_vocabulary_canonical(brules),
     sep = "\n--\n")
   paste0("sha256:",
          digest::digest(payload, algo = "sha256", serialize = FALSE))
