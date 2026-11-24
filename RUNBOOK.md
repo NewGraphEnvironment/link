@@ -2259,8 +2259,11 @@ outlet closure leaves out a tributary group that owns a stretch of the focal gro
 (FINA's copies were owned by INGR, MESI, OSPK and UOMI). So `lnk_wsg_downstream_check()` also
 refuses where a modelled group touching a line on the group's downstream paths (the line rule,
 for that group alone, `.lnk_wsg_line_deps()`) holds no `barriers` rows in the schema, and names
-them in `wsgs_unheld` (note tag `link#386`); under the driver it warns at model time and the
-recompute's post-condition refuses.
+them in `wsgs_unheld` (note tag `link#386`), with every modelled group the database holds no
+FWA streams for, whose lines the rule cannot read; under the driver it warns at model time and
+the recompute's post-condition refuses. A deliberate partial build (a scratch set of groups)
+passes the post-condition with a written reason, `LNK_GUARD_DOWNSTREAM_NOTE="..."`, recorded as
+at model time.
 
 `lnk_pipeline_run()` computes accessibility from the **already-persisted**
 barriers of the WSGs downstream. Model a WSG before them and the access query
