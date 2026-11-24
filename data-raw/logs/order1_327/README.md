@@ -1,7 +1,7 @@
 # The order-1 exception in `default`, scored (#327)
 
 Built by `data-raw/habitat_variants_build.R` with `data-raw/habitat_score/variants_327.csv`
-and `wsg_roles_327.csv` (`--prefix=score327_ --jobs=4`), and scored by
+and `wsg_roles_327.csv` (`--prefix=score327_ --jobs=4`; the base was `default`, then the default of `--base`, which 0.91.0 makes required), and scored by
 `data-raw/habitat_variants_score.R` with `--floor=expected`, on m1 on 2026-11-23: link 0.88.0
 at `9306e581` (from a separate worktree), fresh 0.55.1 (`29e7aa13`), local fwapg,
 375,962 bcfishobs records (`stamp_build.txt`, `stamp_score.txt`).
