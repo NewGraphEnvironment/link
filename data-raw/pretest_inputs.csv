@@ -163,7 +163,7 @@ fresh,^R/frs_network\.R$,none,"not reached from link's modelling path at fresh v
 fresh,^R/frs_order_filter\.R$,none,"not reached from link's modelling path at fresh v0.44.0 and v0.46.0 (call graph, data-raw/logs/pretest_372/reach.md, data-raw/logs/prefilter_409/reach.md)"
 fresh,^R/frs_point_locate\.R$,none,"not reached from link's modelling path at fresh v0.44.0 and v0.46.0 (call graph, data-raw/logs/pretest_372/reach.md, data-raw/logs/prefilter_409/reach.md)"
 fresh,^R/frs_point_match\.R$,none,"not reached from link's modelling path at fresh v0.44.0 and v0.46.0 (call graph, data-raw/logs/pretest_372/reach.md, data-raw/logs/prefilter_409/reach.md)"
-fresh,^R/frs_point_snap\.R$,none,"not reached from link's modelling path at fresh v0.44.0 and v0.46.0 (call graph, data-raw/logs/pretest_372/reach.md, data-raw/logs/prefilter_409/reach.md)"
+fresh,^R/frs_point_snap\.R$,crossings,"snaps the group's PSCIS crossings, through lnk_points_snap() (#478)"
 fresh,^R/frs_stream_fetch\.R$,none,"not reached from link's modelling path at fresh v0.44.0 and v0.46.0 (call graph, data-raw/logs/pretest_372/reach.md, data-raw/logs/prefilter_409/reach.md)"
 fresh,^R/frs_waterbody_network\.R$,none,"not reached from link's modelling path at fresh v0.44.0 and v0.46.0 (call graph, data-raw/logs/pretest_372/reach.md, data-raw/logs/prefilter_409/reach.md)"
 fresh,^R/frs_watershed_at_measure\.R$,none,"not reached from link's modelling path at fresh v0.44.0 and v0.46.0 (call graph, data-raw/logs/pretest_372/reach.md, data-raw/logs/prefilter_409/reach.md)"

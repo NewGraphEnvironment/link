@@ -8,6 +8,7 @@ lnk_points_snap(
   conn,
   table_in,
   table_out,
+  id_col,
   geom_col = "geom",
   snap_tolerance = 100,
   exclude_edge_types = 1425L,
@@ -24,8 +25,12 @@ lnk_points_snap(
 \item{table_out}{Fully-qualified \verb{<schema>.<table>} to create. Existing
 table is \verb{DROP TABLE IF EXISTS}'d first.}
 
+\item{id_col}{Name of a column in \code{table_in} that identifies each point.
+Its values must be unique and non-missing; the function stops
+otherwise.}
+
 \item{geom_col}{Name of the geometry column in \code{table_in}. Default
-\code{"geom"}.}
+\code{"geom"}. A MultiPoint is snapped by its first point.}
 
 \item{snap_tolerance}{Maximum snap distance in metres. Points farther
 than this from the network are dropped. Default \code{100}.}
@@ -36,18 +41,17 @@ exclude from the FWA network when snapping. Default \code{1425L}
 
 \item{blue_line_key_col}{Optional name of a \code{blue_line_key} column in
 \code{table_in} to constrain candidate streams to. \code{NULL} (default) snaps
-to any FWA stream within tolerance.}
+to any FWA stream within tolerance. A point whose hint is missing
+snaps to any stream.}
 
 \item{stream_order_min}{Optional minimum \code{stream_order} to include.
 \code{NULL} (default) accepts any order.}
 
 \item{num_features}{Integer scalar. Maximum number of stream candidates
-per input point. Default \code{1L} (nearest-only — backwards compatible).
-Set higher (e.g. \code{5L}) for downstream scoring/dedup workflows that
-need multiple candidates per point (e.g. bcfp PSCIS-to-stream
-selection where stream-name match disambiguates among nearby streams).
-Output has one row per (input row, candidate stream) pair, ordered by
-distance ascending.}
+per input point. Default \code{1L} (nearest only). Set higher (e.g. \code{5L})
+to score and pick among nearby streams. Output then has one row per
+(input row, candidate stream) pair and a \code{candidate_rank} column
+(1 = nearest).}
 }
 \value{
 \code{invisible(table_out)}. Side effect: creates \code{table_out} in
@@ -57,31 +61,36 @@ distance ascending.}
 Bulk-snap helper: takes a Postgres table of point geometries and
 creates a new table with each row enriched with the nearest FWA stream
 segment's \code{linear_feature_id}, \code{blue_line_key}, \code{downstream_route_measure},
-\code{wscode_ltree}, \code{localcode_ltree}, plus snap distance.
+\code{wscode_ltree}, \code{localcode_ltree}, \code{watershed_group_code}, \code{gnis_name},
+plus snap distance.
 }
 \details{
-Uses a single SQL \verb{CROSS JOIN LATERAL ... ORDER BY <-> ... LIMIT 1}
-against \code{whse_basemapping.fwa_stream_networks_sp} — same lateral-KNN
-pattern as \code{bcfishpass}'s \code{load_dams.sql} and link's existing CABD
-dams snap in \code{\link[=lnk_pipeline_prepare]{lnk_pipeline_prepare()}}. One round-trip; scales to
-province-wide point sets.
+The snap itself is \code{\link[fresh:frs_point_snap]{fresh::frs_point_snap()}}: one lateral nearest-neighbour
+query for the whole table. This function keeps every column of \code{table_in}
+beside the snap, under link's column names, so a pipeline can carry the
+points' own attributes through. The candidate rules are fresh's:
+\itemize{
+\item placeholder streams (\verb{wscode_ltree <@ '999'}) and unmapped tributaries
+(\verb{localcode_ltree IS NULL}) are never candidates;
+\item \verb{edge_type NOT IN (exclude_edge_types)} drops more;
+\item an exact distance tie, a point nearest to the vertex two segments
+share, goes to the segment with the higher \code{downstream_route_measure}
+(on one stream, the one starting at that vertex), then the lower
+\code{linear_feature_id}. This is fwapg's rule for \code{fwa_indexpoint()}. Across
+two streams the higher measure means nothing; the PSCIS pick, which reads
+every candidate, orders such a tie by which segment starts at the vertex.
+}
 
-Generic — not specific to any pipeline phase. Likely belongs in a
-future \code{pac} package once that's scaffolded; ships in link for now.
+The measure is a whole metre, as in bcfishpass's \verb{04_pscis.sql}.
 
 Output table columns: every column from \code{table_in} PLUS
-\code{linear_feature_id} (bigint), \code{blue_line_key} (integer),
-\code{downstream_route_measure} (numeric), \code{wscode_ltree} (ltree),
-\code{localcode_ltree} (ltree), \code{distance_to_stream} (numeric, metres),
-\code{geom_snapped} (geometry — point projected onto the segment).
-
-Filters applied to candidate streams (from
-\code{fresh::frs_point_snap_knn} conventions):
-\itemize{
-\item \code{wscode_ltree != '999'} (placeholder streams excluded)
-\item \verb{localcode_ltree IS NOT NULL} (unmapped tributaries excluded)
-\item \verb{edge_type NOT IN (exclude_edge_types)} (subsurface etc. excluded)
-}
+\code{linear_feature_id}, \code{snapped_blue_line_key},
+\code{downstream_route_measure}, \code{wscode_ltree}, \code{localcode_ltree},
+\code{watershed_group_code}, \code{gnis_name}, \code{distance_to_stream} (metres),
+\code{candidate_rank} (when \code{num_features > 1}) and \code{geom_snapped} (the
+point projected onto the segment, EPSG:3005). An input table holding
+any of those names is refused. The snap is written first to a scratch
+table beside \code{table_out}, which is dropped on exit.
 }
 \examples{
 \dontrun{
@@ -90,8 +99,9 @@ lnk_points_snap(
   conn,
   table_in  = "whse_fish.pscis_assessment_svw",
   table_out = "working_adms.pscis_assessment_snapped",
-  snap_tolerance = 100,
-  exclude_edge_types = c(1410L, 1425L)
+  id_col = "stream_crossing_id",
+  snap_tolerance = 150,
+  num_features = 5L
 )
 }
 

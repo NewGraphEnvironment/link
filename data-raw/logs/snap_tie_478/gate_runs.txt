@@ -1,0 +1,5 @@
+# tests/testthat/test-lnk_fwapg_gate.R, three ways (link#478, #383), 2026-11-23T23:24:04Z, link a1dad615, tree clean: yes
+# trial: fwapg indexpoint-tiebreak-41 (a8d00b97) migrations 202610131654__watershedatmeasure_drop_exbc.sql and 202610240132__indexpoint_tiebreak.sql, md5 a048f8e2 98d84a33
+no trial:                         fail 0 err 0 skip 3 pass 3 
+LNK_FWAPG_TRIAL (both files):     fail 0 err 0 skip 1 pass 7 
+LNK_FWAPG_CURRENT=true, no trial: fail 4 err 0 skip 0 pass 4 

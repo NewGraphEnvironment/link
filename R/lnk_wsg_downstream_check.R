@@ -96,7 +96,14 @@
          (c.blue_line_key IS NULL)
          OR (c.blue_line_key = str.blue_line_key)
        )
-     ORDER BY str.geom <-> c.geom, str.linear_feature_id
+     -- an exact tie (a dam nearest to a vertex two segments share) goes
+     -- to the segment starting there, as measures resolve [downstream,
+     -- upstream): not at its own upstream end, then the higher start, then
+     -- the lower id (link#478; fwapg's rule on one stream)
+     ORDER BY str.geom <-> c.geom,
+              ST_LineLocatePoint(str.geom, c.geom) = 1,
+              str.downstream_route_measure DESC,
+              str.linear_feature_id
      LIMIT 1
    ) str
    WHERE ST_Distance(str.geom, c.geom) <= 65

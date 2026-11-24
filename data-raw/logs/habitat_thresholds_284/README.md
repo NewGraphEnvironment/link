@@ -46,3 +46,7 @@ Both are read-only against docker `fwapg` (:5432). Environment stamps are in
   what each moved. Each bridge row (one per BT set) is the share of all of that set's
   observations that sit on an accessible segment passing the rear predicate yet carrying
   `rearing = FALSE`.
+
+## Since #356 (2026-11-23)
+
+The scripts that wrote these files now sum `length_metre` exactly (`::numeric`) and read the sums in a fixed row order, so two reruns on an unchanged database give byte-identical files (measured in #478). The CSVs here are kept as the records of the runs that produced them: a rerun may change the last digits of their `km` and share columns, which means nothing about the method.

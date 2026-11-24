@@ -373,3 +373,32 @@ test_that(".lnk_dams_near_groups snaps every dam where the polygon table is abse
   local_mocked_bindings(.lnk_table_exists = function(conn, tbl) FALSE)
   expect_null(.lnk_dams_near_groups(conn, c("PCEA", "UPCE")))
 })
+
+test_that("the dam snap gives a tie at a shared vertex to the segment starting there (link#478)", {
+  sql <- link:::.lnk_dams_matched_sql()
+  expect_match(sql, paste0(
+    "ORDER BY str.geom <-> c.geom,\\s+ST_LineLocatePoint\\(str.geom, c.geom\\) = 1,",
+    "\\s+str.downstream_route_measure DESC,\\s+str.linear_feature_id"))
+
+  conn <- skip_if_no_db()
+  # A dam 10 m off the vertex where a tributary (start 0) meets the top end
+  # of another line, both segments equidistant: the tributary wins, where
+  # "higher measure" would take the other line's top.
+  got <- DBI::dbGetQuery(conn, sprintf("
+    WITH str_in AS (
+      SELECT * FROM (VALUES
+        (1::bigint, 11::integer, 0::double precision,
+         'LINESTRING(0 0, 0 100)'::text),
+        (2::bigint, 22::integer, 900::double precision,
+         'LINESTRING(-100 0, 0 0)'::text)) v(lfid, blk, ds, wkt)),
+    c AS (SELECT 'd1'::text AS dam_id, ST_SetSRID(ST_MakePoint(7.0710678, -7.0710678), 3005) AS geom)
+    SELECT str.lfid
+    FROM c CROSS JOIN LATERAL (
+      SELECT s.lfid, ST_SetSRID(ST_GeomFromText(s.wkt), 3005) AS geom, s.ds
+      FROM str_in s
+      ORDER BY ST_SetSRID(ST_GeomFromText(s.wkt), 3005) <-> c.geom,
+               ST_LineLocatePoint(ST_SetSRID(ST_GeomFromText(s.wkt), 3005), c.geom) = 1,
+               s.ds DESC, s.lfid
+      LIMIT 1) str"))
+  expect_identical(as.numeric(got$lfid), 1)
+})

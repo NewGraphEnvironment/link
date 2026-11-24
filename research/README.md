@@ -17,6 +17,7 @@ renamed.
 | [`bcfishpass_methodology.md`](bcfishpass_methodology.md) | bcfishpass methodology, the canonical reference |
 | [`bcfishpass_comparison.md`](bcfishpass_comparison.md) | How link's output is compared with bcfishpass |
 | [`bcfp_table_map.md`](bcfp_table_map.md) | bcfp ↔ link table relationships |
+| [`crossing_snap.md`](crossing_snap.md) | Where a PSCIS crossing or CABD dam snaps: no placeholder streams, a shared-vertex tie to the segment starting there (and why not fwapg's rule across two streams), what moved province-wide, and `FWA_LocateAlong` on link's inputs before and after fwapg's rework (#478, #313, #314, #383) |
 | [`bcfp_segmentation_parity.md`](bcfp_segmentation_parity.md) | Where streams break, bcfishpass and link step by step: bcfishpass's five access scripts, link's break set, how it drifted (#45, #223), why parity numbers missed it, and what it does to BT habitat (#324) |
 | [`observation_breaks.md`](observation_breaks.md) | Where a fish observation breaks a stream: `default`'s top per species per line against every record, what reads code 2, what moved, the sampling bias it removes, and a smaller near-exact set, dropped (#396); since #399 code 2 normally ends at each species' highest record |
 | [`minimal_network.md`](minimal_network.md) | The minimal network (`default_minimal`, `cut-min`) against `default` on four groups: a superset of cuts, the same access, more code 2 and rearing, crossing fields that read below a segment's start, and how far observation lifts move the cuts (#415) |

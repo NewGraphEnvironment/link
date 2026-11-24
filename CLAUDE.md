@@ -17,6 +17,18 @@ The settled findings behind the methods (what is known, with provenance and the 
 
 **Take the next move from `planning/backlog.md`** (`bash <soul>/skills/_shared/backlog_moves.sh next planning/backlog.md`; `/compact-prep` names it): 13 moves, umbrellas #469–#481, each planned with one `/planning-init <umbrella>` and landed in one PR, ticked by `/gh-pr-merge`. Moves 12 and 13 wait on knowledge#139's flow-method decision and fresh 0.54.0. A link issue knowledge waits on says so in its batch section. A new issue joins the open move whose batches touch its files; run `/backlog-sweep` again when one fits none. Record: `planning/archive/2026-11-issue-468-backlog-pass/`.
 
+## Status (2026-11-24) — crossings snap by one rule; habitat upstream of each crossing over the network (#478, 0.92.0)
+
+**Backlog move 10 (#478) lands as one release: #313, #314, #383 (snapping) and #321, #232, #356 (habitat upstream of each crossing).** `lnk_points_snap()` wraps `fresh::frs_point_snap()` (required `id_col`), so no crossing snaps to a `999.*` placeholder; the PSCIS pick and the CABD dam snap give a shared-vertex tie to the segment that **starts** there (not at its own upstream end, then higher start, then lower id): fwapg's rule on one stream, and the stream starting at the vertex across two. `cut-full-top-4` / `cut-full-ssf-all-3` replace `cut-full-top-3` (#501's) and `cut-full-ssf-all-2` (same specs). `lnk_aggregate()` is rebuilt on `fresh::frs_aggregate()` (breaking): per crossing and species over the whole network, bcfishpass's `fwa_upstream(..., true, 1)`, long table to `to`, below-barrier totals. Mechanics: RUNBOOK's PSCIS-pick paragraph, "Snapping and ties". Write-ups: `research/crossing_snap.md`, `research/bcfishpass_parity.md` ("Crossings, and habitat upstream of each crossing"). Evidence: `data-raw/logs/snap_tie_478/`, `data-raw/logs/crossings_upstream_478/`, `data-raw/logs/crossings_parity_232/`.
+
+**Owed:** every persisted group in `fresh_default` and `fresh` re-models at the next provincial run (tokens moved), after the pre-run gate (`R/`, `pretest_inputs.csv` changed); the `default` config's scratch re-model of groups holding a moved crossing (NASR's near-river walk stalled twice beside another session's, #487); #356's MAD-script reruns once a host's `fresh_default` has #481's column; the head-measure live tests run for real once a shared database has fwapg#41's rework; #341 reads the per-crossing table.
+
+**Facts not worth re-deriving:**
+- **fwapg's "higher measure" tie rule is wrong across two streams:** it put the Crescent Slough barrier dam (LFRA) at the top end of a Fraser side channel carrying code `100`, so 17,657 segments counted as upstream instead of 16 (`claims.sql`).
+- **`fwa_upstream(..., true, 1)` is mutual for two points within 1 m on one stream**, so "immediate barrier upstream" needs a strict order (higher measure, then id).
+- **FWA segments overlap** (a start before the last segment's end): a point resolved by `m >= ds AND m < us` can match two, which doubled `frs_aggregate()`'s sums (225 modelled crossings province-wide). Resolve once, highest start.
+- **The PSCIS pick reads all five candidates, so the snap's own tie order matters only at the five-candidate cutoff** (LILL's one indirect move: a cross-stream tie in PSCIS 63445's fifth candidate, then bcfishpass's duplicate-match step clears all of a PSCIS's modelled matches).
+- **Killing an R client leaves its Postgres query running:** two orphaned near-river walks from a killed parallel attempt held the database; `pg_terminate_backend` them. Two builds of different code cannot run at once: they share `working_<wsg>`.
 ## Status (2026-11-23) — rainbow trout back in `default`; steelhead records count as RB; the presence review's last rows outside KO (#501, 0.91.0)
 
 **Backlog move 16 (#501) lands as one release: #497 and #402 close.** `default`'s `species_pooling.csv` counts `ST`, `SST` and `WST` records as RB where RB is marked present (province rows), and an RB record never as ST; `species_modelled.csv` models RB again (KO stays paused). The second presence review added BT in nine groups and DV in VICT, removed RB in LPRO and UPET, kept four cells absent, and sent six native-range cells to #515; KO's 138 rows wait for kokanee's return, #516. Tokens: `default`, `default_tuned`, `default_parent` `cut-full-top-3 acc-v7`; `default_minimal` `cut-min acc-v7`. Mechanics: RUNBOOK §7, "The record rule" and "Pausing a species". Evidence: `data-raw/logs/rb_st_497/`, `data-raw/logs/presence_check_501/`, `data-raw/logs/rb_return_501/`.
@@ -772,7 +784,7 @@ Mechanics: RUNBOOK §6d (`access`, contract, gates, digest, versions) and §8c (
   - `lnk_habitat_validate()`'s cost has the same split.
   - `parity_crosssection.R` and `wsg_vignette_data.R` apply `.lnk_sql_lake_connection()` to `fresh.streams_vw_bcfp`.
   - **Capture still reads the `rearing` flag.** About half of in-lake fish records (bcfishobs A / B) sit on a 1450 line, so they are lake evidence.
-  - **Still on the flag:** `lnk_aggregate()` (per crossing) and the older one-off scripts with their own SQL (`compare_adms.R`, `exp_gradient_extra_breaks.R`).
+  - **Still on the flag:** the older one-off scripts with their own SQL (`compare_adms.R`, `exp_gradient_extra_breaks.R`). `lnk_aggregate()` splits connectors out since #478.
 - **Measured** (`data-raw/logs/lake_connection_319/`):
   - Cross-section 25/25 pass before and after; FINA BT rearing −393.6 km on both sides.
   - #284's `habitat_change.csv` reproduces 36 / 36.
@@ -1480,7 +1492,7 @@ Six-phase bcfishpass-reproducing pipeline, driven by `lnk_config()` + `lnk_load_
 
 ### Bridge to fresh
 - `lnk_source(conn, crossings, label_col, label_map)` — returns `list(table, label_col, label_map)` that plugs directly into `frs_habitat(break_sources = list(...))`. `label_map` translates link severity → fresh access labels (`high → blocked`, `moderate → potential`).
-- `lnk_aggregate(conn, crossings, habitat, cols_sum)` — sums habitat on the crossing's **own stream line** above it (same `blue_line_key`, higher measure). There is no network walk, it is not per species, it cannot read the persisted `streams_habitat_<sp>` (no key, measure or length columns there), and nothing calls it (measured in #338). It is not a per-crossing upstream rollup.
+- `lnk_aggregate(conn, crossings, schema, to, config, species, col_id, barriers)` — per crossing and species, the habitat upstream over the whole network (the crossing's stream above it and every tributary, across groups), from a persist schema's `streams` and `streams_habitat_<sp>` (#478, #321). `fresh::frs_aggregate()` refined by bcfishpass's measure-aware `fwa_upstream(..., true, 1)`; exact numeric sums; zeros where nothing is upstream. Writes a long table to `to` (`config`, `species_code`, `spawning_km`, `rearing_km` with connectors out, the stream / lake / wetland split, `rearing_lake_connection_km`), plus `*_belowupstrbarriers_km` given a `barriers` table (to the next human-made barriers upstream). Barriers outside the table (another group's) do not stop the walk.
 
 ## Integration with fresh
 
@@ -1496,8 +1508,10 @@ src <- lnk_source(conn, "working.crossings")
 # fresh consumes it — zero translation
 frs_habitat(conn, "MORR", break_sources = list(src))
 
-# link reads fresh output for per-crossing rollup
-lnk_aggregate(conn, "working.crossings", "fresh.streams_habitat")
+# link reads fresh output for per-crossing rollup: per species, over the network
+lnk_aggregate(conn, "working_morr.crossings", schema = "fresh_default",
+              to = "working_morr.crossings_upstream_habitat", config = "default",
+              barriers = "working_morr.barriers_anthropogenic")
 ```
 
 The data flows both directions: link → fresh (scored crossings as break sources) and fresh → link (habitat classification for upstream rollup).
@@ -1536,7 +1550,7 @@ frs_habitat(conn, "BULK",
 
 ### `gate` parameter
 
-`gate = FALSE` skips accessibility entirely — classifies all segments by gradient/channel width alone. Useful for total habitat potential before considering barriers. `lnk_aggregate()` can compare gated vs ungated to show how much habitat each crossing blocks.
+`gate = FALSE` skips accessibility entirely — classifies all segments by gradient/channel width alone. Useful for total habitat potential before considering barriers. Summed per crossing with `lnk_aggregate()` on a gated and an ungated build, it shows how much habitat each crossing blocks.
 
 ### Any AOI
 
