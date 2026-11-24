@@ -47,11 +47,11 @@ counts them): run `/backlog-sweep` again, the backlog is not finished.
 | - [x] 5 | #473 | 6, 7: the export contract, one-group runs that read downstream (6 issues) | done: https://github.com/NewGraphEnvironment/link/pull/496 | — | — | — |
 | - [x] 6 | #474 | 8, 9: what a run stamps and checks before launch, how primitives load (10 issues) | done: https://github.com/NewGraphEnvironment/link/pull/485 | — | — | — |
 | - [x] 7 | #475 | 10: drivers (6 issues) | done: https://github.com/NewGraphEnvironment/link/pull/513 | B | 14 | opus then sonnet |
-| - [x] 8 | #476 | 11: the rules builder and `dimensions.csv` (7 issues) | done: https://github.com/NewGraphEnvironment/soul/pull/517 | C | 3 | opus |
+| - [ ] 8 | #476 | 11: the rules builder and `dimensions.csv` (7 issues) | open | C | 3 | opus |
 | - [ ] 9 | #477 | 12, 13: mapping codes as rules, the persist and run API (8 issues) | open | A | 3, 7, 8, 13 | opus |
-| - [x] 10 | #478 | 14, 15: snapping, habitat upstream of each crossing (6 issues) | done: https://github.com/NewGraphEnvironment/soul/pull/517 | C | 3 | opus |
+| - [ ] 10 | #478 | 14, 15: snapping, habitat upstream of each crossing (6 issues) | open | C | 3 | opus |
 | - [ ] 11 | #479 | 16: what blocks access at a barrier (5 issues) | open | C | 3, 10, 16 | fable then opus |
-| - [x] 12 | #480 | 17, 18, 19: thresholds from knowledge's table, MAD everywhere, the PARS vignette (7 issues) | done: https://github.com/NewGraphEnvironment/soul/pull/517 | C | 3, 11, 16 | opus |
+| - [ ] 12 | #480 | 17, 18, 19: thresholds from knowledge's table, MAD everywhere, the PARS vignette (7 issues) | **waiting** on knowledge#139's decision of which method sets link's flow numbers | C | 3, 11, 16 | opus |
 | - [ ] 15 | #500 | 23: load an export's input snapshots (1 issue) | **waiting** on crate's self-describing table snapshot contract (crate#66) | B | 14 | opus |
 | - [ ] 16 | #501 | 24: rainbow trout back in `default`, the presence review's last rows (2 issues) | open | D | — | opus |
 | - [ ] 17 | #502 | 25: province-wide builds at the new tokens (1 issue) | **waiting** on the operator's word for the provincial runs | C | 3, 13, 14, 16, 18 | opus |
@@ -254,7 +254,7 @@ RUNBOOK. Gate: retire the legacy `wsgs_*` path, which closes #179 and #110 and s
 
 ### 11. The rules builder and `dimensions.csv`
 
-- [x] Carried by move 8, #476 (merged in https://github.com/NewGraphEnvironment/soul/pull/517)
+- [ ] Carried by move 8, #476
 
 **Touches:** `R/lnk_rules_build.R`, `data-raw/build_rules.R`, `inst/extdata/configs/default/dimensions.csv`, `inst/extdata/configs/bcfishpass/dimensions.csv`, `inst/extdata/configs/dictionary_dimensions.csv`, `R/lnk_config_verify.R`, and a new workflow that copies the rules to fresh
 
@@ -296,7 +296,7 @@ would remove, so decide which. One release carries the deprecations.
 
 ### 14. Snapping
 
-- [x] Carried by move 10, #478 (merged in https://github.com/NewGraphEnvironment/soul/pull/517)
+- [ ] Carried by move 10, #478
 
 **Touches:** `R/lnk_points_snap.R`, `R/lnk_pipeline_pscis_build.R`, `R/lnk_barriers_unify.R`, `data-raw/query_habitat_thresholds_obs.R`
 
@@ -309,7 +309,7 @@ re-model of both configs.
 
 ### 15. Habitat upstream of each crossing
 
-- [x] Carried by move 10, #478 (merged in https://github.com/NewGraphEnvironment/soul/pull/517)
+- [ ] Carried by move 10, #478
 
 **Touches:** `R/lnk_aggregate.R`, `data-raw/query_habitat_thresholds_obs.R`, `data-raw/query_habitat_thresholds_mad.R`, `research/bcfishpass_parity.md`, and a new crossings parity script
 
@@ -337,7 +337,7 @@ bcfishpass (dams per species, evidence over dams); #386 owner-only persistence o
 
 ### 17. Thresholds from knowledge's published table
 
-- [x] Carried by move 12, #480 (merged in https://github.com/NewGraphEnvironment/soul/pull/517)
+- [ ] Carried by move 12, #480
 
 **Touches:** `inst/extdata/configs/default_tuned/parameters_habitat_thresholds.csv`, `data-raw/habitat_variants_build.R`, `data-raw/habitat_variants_score.R`, `data-raw/habitat_validate.R`, `research/habitat_thresholds.md`
 
@@ -354,7 +354,7 @@ proposed `default` beside #343.
 
 ### 18. MAD everywhere on wet's flows
 
-- [x] Carried by move 12, #480 (merged in https://github.com/NewGraphEnvironment/soul/pull/517)
+- [ ] Carried by move 12, #480
 
 **Touches:** `R/lnk_preflight_discharge.R`, `R/lnk_log.R`, `inst/extdata/vocabulary.csv`, and a new default_mad bundle
 
@@ -366,7 +366,7 @@ dispatcher.
 
 ### 19. The PARS vignette
 
-- [x] Carried by move 12, #480 (merged in https://github.com/NewGraphEnvironment/soul/pull/517)
+- [ ] Carried by move 12, #480
 
 **Touches:** `data-raw/wsg_vignette_data.R`, `vignettes/`, `inst/vignette-data/`, `data-raw/readme_figure.R`
 
