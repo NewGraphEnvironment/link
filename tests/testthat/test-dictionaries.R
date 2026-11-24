@@ -398,10 +398,9 @@ test_that("every README cell displays as its dictionary cell (cmark-gfm)", {
   n_csv <- sum(vapply(csvs, size, numeric(1)))
   expect_identical(check(cfg_dir()), as.integer(n_csv))
   d <- withr::local_tempdir()
-  toy <- data.frame(
-    column = c("a", "b", "c", "d"),
-    description = c("(<stage>_river_*, x) & [l](u) ~s~ \\", "a `x|y` b | c",
-                    "odd ` tick_x_", ""))
+  desc <- c("(<stage>_river_*, x) & [l](u) ~s~ \\", "a `x|y` b | c",
+            "odd ` tick_x_", "")
+  toy <- data.frame(column = c("a", "b", "c", "d"), description = desc)
   utils::write.csv(toy, file.path(d, "dictionary_toy.csv"), row.names = FALSE)
   expect_identical(check(d), 8L)
 })
