@@ -9,6 +9,8 @@
 
 pkgload::load_all(quiet = TRUE)
 dir <- file.path("inst", "extdata", "configs")
-writeLines(.lnk_dictionary_readme(dir), file.path(dir, "README.md"),
-           sep = "")
+# UTF-8 bytes whatever the locale: writeLines() would otherwise convert to
+# the native encoding and write <U+2014> for an em dash under LANG=C.
+writeLines(enc2utf8(.lnk_dictionary_readme(dir)), file.path(dir, "README.md"),
+           sep = "", useBytes = TRUE)
 message("wrote ", file.path(dir, "README.md"))

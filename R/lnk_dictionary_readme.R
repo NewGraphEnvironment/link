@@ -17,24 +17,27 @@
   if (length(files) == 0L) {
     stop("no dictionary_*.csv in ", dir, call. = FALSE)
   }
-  # One table cell: no newline, `|` escaped, and `<` / `>` written as entities
-  # outside code spans, so markdown does not read `<stage>` as an HTML tag and
-  # drop it. Inside a code span an entity would print as typed.
+  # One table cell. Outside code spans every character markdown could read as
+  # syntax (emphasis, links, HTML, entities, strikethrough, the table's `|`) is
+  # backslash-escaped, so `_river_` is not italic and `<stage>` is not a tag;
+  # inside a code span only `|` is, which GFM tables need. A cell with an odd
+  # number of backticks has no code span, so its backticks are escaped too.
+  # test-dictionaries.R checks every cell against what cmark-gfm displays.
   cell <- function(x) {
     x <- ifelse(is.na(x), "", as.character(x))
     x <- gsub("\r?\n", " ", x)
-    x <- gsub("|", "\\|", x, fixed = TRUE)
     vapply(x, function(v) {
+      if (!nzchar(v)) return(v)
+      esc <- function(p) gsub("([\\[\\]\\\\*_<>&~|`])", "\\\\\\1", p, perl = TRUE)
+      n_tick <- nchar(v) - nchar(gsub("`", "", v, fixed = TRUE))
+      if (n_tick %% 2L == 1L) return(esc(v))
       parts <- strsplit(v, "`", fixed = TRUE)[[1]]
-      if (length(parts) == 0L) return(v)
+      # strsplit() drops a trailing empty field; put it back.
+      if (endsWith(v, "`")) parts <- c(parts, "")
       prose <- seq_along(parts) %% 2L == 1L
-      parts[prose] <- gsub(">", "&gt;", gsub("<", "&lt;", parts[prose],
-                                             fixed = TRUE), fixed = TRUE)
-      out <- paste(parts, collapse = "`")
-      # strsplit() drops a trailing empty field, so a closing backtick at the
-      # end of the cell is put back.
-      if (endsWith(v, "`")) out <- paste0(out, "`")
-      out
+      parts[prose] <- esc(parts[prose])
+      parts[!prose] <- gsub("|", "\\|", parts[!prose], fixed = TRUE)
+      paste(parts, collapse = "`")
     }, character(1), USE.NAMES = FALSE)
   }
   out <- c(

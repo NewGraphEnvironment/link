@@ -48,6 +48,7 @@ Remotes:
 Suggests:
     bcdata,
     bookdown,
+    commonmark,
     curl,
     dplyr,
     duckdb,
@@ -61,7 +62,8 @@ Suggests:
     targets,
     testthat (>= 3.0.0),
     wet (>= 0.4.7),
-    withr
+    withr,
+    xml2
 VignetteBuilder: knitr
 Config/DOI: 10.5281/zenodo.23264990
 Config/testthat/edition: 3
