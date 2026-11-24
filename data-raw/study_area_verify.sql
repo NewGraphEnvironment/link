@@ -439,6 +439,7 @@ DECLARE
   v_unpin  text := nullif(btrim(current_setting('lnk.unpinned_ok')), '');
   v_hfrom  int[] := (string_to_array(current_setting('lnk.holder_from'), '.'))[1:3]::int[];
   n_judged int;
+  v_rulecol text;
   n_dup    int;
   n_model  int;
   n_gap    int;
@@ -811,23 +812,33 @@ BEGIN
         'run %: % lifted barrier(s) where barrier_override_evidence and barrier_overrides disagree (%). Every lift must list what it rests on, and every listed lift must be a lift (link#434): re-model those groups under this run_uid.',
         v_run, n_ev, bad;
     END IF;
+    -- Per rule where the table names them (link#236, 0.93.0): only a rule
+    -- that met its threshold writes rows, so every (lift, rule) present must
+    -- reach that rule's threshold of distinct records. An older table has one
+    -- rule per species.
+    v_rulecol := CASE WHEN EXISTS (
+        SELECT 1 FROM information_schema.columns
+         WHERE table_schema = v_sch AND table_name = 'barrier_override_evidence'
+           AND column_name = 'lift_rule')
+      THEN ', lift_rule' ELSE '' END;
     EXECUTE format(
       $q$SELECT count(*),
                 coalesce(string_agg(DISTINCT watershed_group_code || ' ' || species_code,
                                     ', '), '')
            FROM (SELECT watershed_group_code, species_code, blue_line_key,
-                        downstream_route_measure,
+                        downstream_route_measure %2$s,
                         max(observation_threshold) AS thr,
                         count(DISTINCT evidence_key) AS n
                    FROM %1$I.barrier_override_evidence
                   WHERE evidence = 'observation'
                     AND watershed_group_code IN
                         (SELECT watershed_group_code FROM %1$I.log WHERE run_uid = $1)
-                  GROUP BY 1, 2, 3, 4) t
-          WHERE n < thr$q$, v_sch) INTO n_evthr, bad USING v_run;
+                  GROUP BY watershed_group_code, species_code, blue_line_key,
+                           downstream_route_measure %2$s) t
+          WHERE n < thr$q$, v_sch, v_rulecol) INTO n_evthr, bad USING v_run;
     IF n_evthr > 0 THEN
       RAISE EXCEPTION
-        'run %: % observation lift(s) list fewer records than their threshold (%) (link#434).',
+        'run %: % observation lift rule(s) list fewer records than their threshold (%) (link#434, link#236).',
         v_run, n_evthr, bad;
     END IF;
   END IF;

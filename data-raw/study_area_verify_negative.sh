@@ -25,6 +25,7 @@
 #   6j. evidence judged (groups at 0.84.0)          -> expect PASS (link#434)
 #   6k.  ... one lift's evidence deleted            -> expect FAIL
 #   6l.  ... an evidence row beside no lift          -> expect FAIL
+#   6p.  ... a second rule's evidence below its threshold -> expect FAIL (link#236)
 #   6m. one holder judged (groups at HOLDER_FROM)    -> expect PASS (link#386)
 #   6n.  ... a second judged group holds a gradient row -> expect FAIL
 #   6o.  ... an override beside no natural barrier of its own -> expect FAIL
@@ -615,6 +616,38 @@ SQL
       echo "  ✗ 6j. evidence judged          -> FAILED, but should have passed."
       show_verify
       fails=$((fails + 1))
+    fi
+    # 6p (link#236): a second rule's evidence for one lift, below that rule's
+    # threshold. Only where the table names rules (0.93.0 on).
+    HAS_RULE=$("${PSQL[@]}" -c "SELECT count(*) FROM information_schema.columns
+                 WHERE table_schema = '${SCRATCH}'
+                   AND table_name = 'barrier_override_evidence'
+                   AND column_name = 'lift_rule'")
+    P_KEY=$("${PSQL[@]}" -c "SELECT evidence_key FROM ${SCRATCH}.barrier_override_evidence
+               WHERE evidence = 'observation' AND watershed_group_code IN (${JUDGED})
+               ORDER BY 1 LIMIT 1")
+    if [ "$HAS_RULE" = "0" ] || [ -z "$P_KEY" ]; then
+      echo "  ⊘ 6p. SKIPPED: no lift_rule column, or no observation evidence (not counted)."
+    else
+      "${PSQL[@]}" >/dev/null -c "INSERT INTO ${SCRATCH}.barrier_override_evidence
+          (blue_line_key, downstream_route_measure, species_code, evidence,
+           evidence_key, watershed_group_code, observation_threshold, lift_rule)
+          SELECT blue_line_key, downstream_route_measure, species_code, evidence,
+                 evidence_key, watershed_group_code, 99, 'neg6p'
+            FROM ${SCRATCH}.barrier_override_evidence
+           WHERE evidence_key = '${P_KEY}' AND evidence = 'observation' LIMIT 1"
+      if run_verify -v expected_n="$N_WSG"; then
+        echo "  ✗ 6p. a rule's evidence below its threshold -> PASSED, but should have FAILED."
+        show_verify
+        fails=$((fails + 1))
+      elif grep -q "fewer records than their threshold" "$VERIFY_LOG"; then
+        echo "  ✓ 6p. a rule's evidence below its threshold -> FAIL (as expected)"
+      else
+        echo "  ✗ 6p. a rule's evidence below its threshold -> FAILED, but on another check."
+        show_verify
+        fails=$((fails + 1))
+      fi
+      "${PSQL[@]}" >/dev/null -c "DELETE FROM ${SCRATCH}.barrier_override_evidence WHERE lift_rule = 'neg6p'"
     fi
     "${PSQL[@]}" >/dev/null <<SQL
 CREATE TABLE ${SCRATCH}.ev_held AS

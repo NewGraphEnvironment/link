@@ -641,7 +641,7 @@ test_that(".lnk_pipeline_prep_overrides passes control when manifest declares it
     .lnk_db_execute = function(conn, sql) invisible(NULL)
   )
 
-  .lnk_pipeline_prep_overrides("mock-conn", loaded = loaded_stub,
+  .lnk_pipeline_prep_overrides("mock-conn", cfg = .fake_cfg(), loaded = loaded_stub,
     schema = "working_bulk")
 
   expect_equal(captured$args$control, "working_bulk.barriers_definite_control")
@@ -668,7 +668,7 @@ test_that(".lnk_pipeline_prep_overrides passes control = NULL when manifest omit
     .lnk_db_execute = function(conn, sql) invisible(NULL)
   )
 
-  .lnk_pipeline_prep_overrides("mock-conn", loaded = loaded_stub,
+  .lnk_pipeline_prep_overrides("mock-conn", cfg = .fake_cfg(), loaded = loaded_stub,
     schema = "working_bulk")
 
   expect_null(captured$args$control)
@@ -702,7 +702,7 @@ test_that(".lnk_pipeline_prep_overrides passes habitat when manifest declares it
     .lnk_db_execute = function(conn, sql) invisible(NULL)
   )
 
-  .lnk_pipeline_prep_overrides("mock-conn", loaded = loaded_stub,
+  .lnk_pipeline_prep_overrides("mock-conn", cfg = .fake_cfg(), loaded = loaded_stub,
     schema = "working_bulk")
 
   expect_equal(captured$args$habitat,
@@ -730,7 +730,7 @@ test_that(".lnk_pipeline_prep_overrides passes habitat = NULL when manifest omit
     .lnk_db_execute = function(conn, sql) invisible(NULL)
   )
 
-  .lnk_pipeline_prep_overrides("mock-conn", loaded = loaded_stub,
+  .lnk_pipeline_prep_overrides("mock-conn", cfg = .fake_cfg(), loaded = loaded_stub,
     schema = "working_bulk")
 
   expect_null(captured$args$habitat)
@@ -1159,7 +1159,7 @@ test_that("prep_overrides counts lifts over observations_province and keeps it",
     },
     .lnk_db_execute = function(conn, sql) { sent <<- c(sent, sql); invisible(NULL) }
   )
-  .lnk_pipeline_prep_overrides("mock-conn",
+  .lnk_pipeline_prep_overrides("mock-conn", cfg = .fake_cfg(),
     loaded = list(parameters_fresh = data.frame(species_code = "BT")),
     schema = "working_bulk")
   expect_equal(captured$args$observations, "working_bulk.observations_province")

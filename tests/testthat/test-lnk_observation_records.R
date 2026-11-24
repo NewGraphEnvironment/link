@@ -318,3 +318,72 @@ test_that("default counts ST, SST and WST as RB wherever RB is present, and RB n
   expect_identical(sort(st$watershed_group_code[st$species_obs == "WST"]),
                    sort(st$watershed_group_code[st$species_obs == "ST"]))
 })
+
+# -- several lift rules per species (link#236) --------------------------------
+
+lifts_rr <- function(...) {
+  d <- data.frame(species_code = "BT", rule = "salmon",
+                  barrier_kinds = "natural", observation_species = "CH;ST",
+                  observation_threshold = 2, observation_date_min = "1990-01-01",
+                  observation_buffer_m = 20, observation_control_apply = TRUE,
+                  date = "2026-11-24", source = "test", notes = "",
+                  stringsAsFactors = FALSE)
+  mods <- list(...)
+  for (k in names(mods)) d[[k]] <- mods[[k]]
+  d
+}
+
+pf_lift <- function() {
+  data.frame(species_code = c("BT", "CH", "ST"),
+             observation_threshold = c(1, 2, 2),
+             observation_date_min = c(NA, "1990-01-01", "1990-01-01"),
+             observation_buffer_m = 20,
+             observation_species = c("BT", "CH;ST", "ST"),
+             observation_control_apply = c(FALSE, TRUE, TRUE),
+             stringsAsFactors = FALSE)
+}
+
+test_that("the lift rules are each species' own row, then its further rules", {
+  ld <- list(parameters_fresh = pf_lift(), parameters_barrier_lifts = lifts_rr())
+  r <- .lnk_lift_rules(cfg_rr(), ld)
+  expect_equal(paste(r$species_code, r$rule),
+               c("BT own", "BT salmon", "CH own", "ST own"))
+  expect_equal(r$observation_species[2], "CH;ST")
+  expect_equal(r$barrier_kinds, rep("natural", 4))
+  # with no lifts table, parameters_fresh alone, first row per species
+  pf <- rbind(pf_lift(), pf_lift()[1, ])
+  pf$observation_threshold[4] <- 99
+  r0 <- .lnk_lift_rules(cfg_rr(), list(parameters_fresh = pf))
+  expect_equal(r0$rule, rep("own", 3))
+  expect_equal(r0$observation_threshold, c(1, 2, 2))
+})
+
+test_that("a bad lift rule is refused at load (#236)", {
+  ld <- function(l) list(parameters_fresh = pf_lift(), parameters_barrier_lifts = l)
+  expect_error(.lnk_lift_rules(cfg_rr(), ld(rbind(lifts_rr(), lifts_rr()))),
+               "duplicate \\(species, rule\\): BT salmon")
+  expect_error(.lnk_lift_rules(cfg_rr(), ld(lifts_rr(rule = "own"))),
+               "may not be named 'own'")
+  expect_error(.lnk_lift_rules(cfg_rr(), ld(lifts_rr(species_code = "KO"))),
+               "absent from parameters_fresh: KO")
+  expect_error(.lnk_lift_rules(cfg_rr(), ld(lifts_rr(barrier_kinds = "natural;dam"))),
+               "barrier_kinds must be 'natural'")
+  expect_error(.lnk_lift_rules(cfg_rr(), ld(lifts_rr(observation_threshold = 0))),
+               "positive whole number")
+  expect_error(.lnk_lift_rules(cfg_rr(), ld(lifts_rr()[, -2])),
+               "lacks column\\(s\\): rule")
+})
+
+test_that("under lift_floor a further rule's floor must equal its species' floors (#236)", {
+  ld <- list(parameters_fresh = pf_lift(), parameters_barrier_lifts = lifts_rr())
+  expect_silent(.lnk_lift_rules(cfg_rr("lift_floor"), ld))
+  ld$parameters_barrier_lifts <- lifts_rr(observation_date_min = "2000-01-01")
+  expect_error(.lnk_lift_rules(cfg_rr("lift_floor"), ld),
+               "BT rule salmon's lift counts CH, ST")
+  # without lift_floor the same rule is accepted (bcfishpass mixes floors)
+  expect_silent(.lnk_lift_rules(cfg_rr(), ld))
+  # the record rule's readers refuse it too
+  ld$wsg_species_presence <- presence_rr()
+  expect_error(.lnk_observation_species_map(cfg_rr("lift_floor"), ld, "SQAM"),
+               "BT rule salmon's lift counts")
+})

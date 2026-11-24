@@ -377,3 +377,18 @@ test_that("pausing a species moves the acc spec (#432)", {
   cfg$species <- c(cfg$species, cfg$species_paused)
   expect_false(identical(paused, .lnk_vocabulary_spec_acc(cfg, loaded)))
 })
+
+test_that("a mixed-floor lift rule refuses before a run opens; bcfishpass still resolves (#236)", {
+  cfg <- lnk_config("default")
+  loaded <- lnk_load_overrides(cfg)
+  loaded$parameters_barrier_lifts <- data.frame(
+    species_code = "BT", rule = "salmon", barrier_kinds = "natural",
+    observation_species = "CH;ST", observation_threshold = 2,
+    observation_date_min = "2000-01-01", observation_buffer_m = 20,
+    observation_control_apply = TRUE, date = "2026-11-24", source = "test",
+    notes = "", stringsAsFactors = FALSE)
+  expect_error(lnk_vocabulary_resolve(cfg, loaded),
+               "BT rule salmon's lift counts")
+  # bcfishpass's BT rule mixes floors without lift_floor, and resolves
+  expect_no_error(lnk_vocabulary_resolve(lnk_config("bcfishpass")))
+})

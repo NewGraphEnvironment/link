@@ -201,7 +201,8 @@ test_that(".lnk_log_create_tables emits a CREATE TABLE for every spec", {
   sql <- capture_ddl(.lnk_log_create_tables(NULL, "fresh_test"))
   joined <- paste(sql, collapse = "\n")
   for (tbl in c("log", "log_recompute", "log_input", "log_parameters_fresh",
-                "log_parameters_habitat_thresholds", "log_dimensions")) {
+                "log_parameters_habitat_thresholds", "log_dimensions",
+                "log_parameters_barrier_lifts")) {
     expect_match(joined,
       sprintf("CREATE TABLE IF NOT EXISTS fresh_test\\.%s \\(", tbl))
   }

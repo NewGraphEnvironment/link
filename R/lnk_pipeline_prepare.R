@@ -135,7 +135,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
                                   cfg = cfg)
   .lnk_pipeline_prep_gradient(conn, aoi, loaded, schema, classes)
   .lnk_pipeline_prep_natural(conn, aoi, cfg, loaded, schema)
-  .lnk_pipeline_prep_overrides(conn, loaded, schema)
+  .lnk_pipeline_prep_overrides(conn, cfg, loaded, schema)
   .lnk_pipeline_prep_minimal(conn, aoi, cfg, loaded, schema, classes)
   .lnk_pipeline_prep_network(conn, aoi, schema,
                              fill = .lnk_discharge_fill_applied(cfg, aoi),
@@ -653,8 +653,12 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
 
 
 #' Compute barrier overrides via lnk_barrier_overrides
+#'
+#' Every lift rule the bundle applies (`.lnk_lift_rules()`, link#236): each
+#' species' `parameters_fresh` row and any further rules from
+#' `parameters_barrier_lifts.csv`.
 #' @noRd
-.lnk_pipeline_prep_overrides <- function(conn, loaded, schema) {
+.lnk_pipeline_prep_overrides <- function(conn, cfg, loaded, schema) {
   # Manifest-driven gate. `.lnk_pipeline_prep_load_aux` writes
   # `<schema>.user_habitat_classification` exactly when the manifest
   # declares `user_habitat_classification`, so the loaded entry is the
@@ -687,7 +691,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
     observations = paste0(schema, ".observations_province"),
     habitat = habitat_arg,
     control = control_arg,
-    params = loaded$parameters_fresh,
+    params = .lnk_lift_rules(cfg, loaded),
     to = paste0(schema, ".barrier_overrides"),
     evidence = paste0(schema, ".barrier_override_evidence"),
     verbose = FALSE)

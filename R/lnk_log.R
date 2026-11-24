@@ -494,6 +494,15 @@ cols_log_input <- c(
 }
 
 #' @noRd
+.lnk_cols_log_barrier_lifts <- function() {
+  cols <- .lnk_dictionary_columns("parameters_barrier_lifts")
+  out <- stats::setNames(rep("text", length(cols)), cols)
+  out[["species_code"]] <- "text NOT NULL"
+  out[["rule"]] <- "text NOT NULL"
+  c(config_hash = "text NOT NULL", out)
+}
+
+#' @noRd
 .lnk_cols_log_thresholds <- function() {
   cols <- .lnk_dictionary_columns("parameters_habitat_thresholds")
   out <- stats::setNames(rep("text", length(cols)), cols)
@@ -589,7 +598,12 @@ cols_log_input <- c(
          cols = .lnk_cols_log_thresholds(),
          pk = c("config_hash", "species_code")),
     list(table = "log_dimensions", cols = .lnk_cols_log_dimensions(),
-         pk = c("config_hash", "species"))
+         pk = c("config_hash", "species")),
+    # Further observation-lift rules (link#236); a bundle without the table
+    # logs none, its rules being parameters_fresh's rows.
+    list(table = "log_parameters_barrier_lifts",
+         cols = .lnk_cols_log_barrier_lifts(),
+         pk = c("config_hash", "species_code", "rule"))
   )
   names(specs) <- vapply(specs, `[[`, character(1), "table")
   specs
@@ -1028,7 +1042,10 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
            cols = .lnk_cols_log_dimensions(),
            data = tryCatch(utils::read.csv(cfg$dimensions, check.names = FALSE,
                                            colClasses = "character"),
-                           error = function(e) NULL))
+                           error = function(e) NULL)),
+      list(table = "log_parameters_barrier_lifts",
+           cols = .lnk_cols_log_barrier_lifts(),
+           data = loaded$parameters_barrier_lifts)
     )
 
     for (s in specs) {

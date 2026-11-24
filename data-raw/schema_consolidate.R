@@ -232,6 +232,17 @@ consolidate_missing_persist <- function(tables) {
   tables[tables %in% consolidate_persist_core]
 }
 
+#' Does the source's evidence table carry lift_rule while the destination's
+#' does not? (link#236)
+#'
+#' @param dest_cols,src_cols Named lists of column names per table.
+#' @return TRUE when the copy would drop the column.
+consolidate_evidence_unmigrated <- function(dest_cols, src_cols) {
+  t <- "barrier_override_evidence"
+  "lift_rule" %in% src_cols[[t]] && !is.null(dest_cols[[t]]) &&
+    !"lift_rule" %in% dest_cols[[t]]
+}
+
 #' link's persist tables every species set has. host_drop_partials in
 #' data-raw/study_area_hosts.sh names the same set; a test holds them equal.
 consolidate_persist_core <- c("streams", "barriers", "barrier_overrides",
@@ -578,6 +589,20 @@ schema_consolidate <- function(schema,
             paste(setdiff(sc, dc), collapse = ","), "; dest-only: ",
             paste(setdiff(dc, sc), collapse = ","))
       }
+    }
+
+    # A source evidence table carries lift_rule (link#236, 0.93.0) and the
+    # destination's lacks it: copying the shared columns would drop which rule
+    # each record counted under, and with it a key column. Refuse before
+    # anything is deleted; lnk_persist_init() on the destination migrates it.
+    ev_unmigrated <- consolidate_evidence_unmigrated(dest_cols, src_cols)
+    if (ev_unmigrated) {
+      log(src$host, " -> ERROR: the destination's barrier_override_evidence ",
+          "has no lift_rule column, which the source's has; run ",
+          "lnk_persist_init() on the destination first — nothing deleted or copied")
+      results[[src$host]] <- list(ok = FALSE, stage = "evidence_unmigrated",
+                                   rc = -1L)
+      next
     }
 
     # 3.5. Bucket-aware destination cleanup. DELETE the bucket's WSGs
