@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.93.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.94.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -731,9 +731,8 @@ The bucket is versioned but cannot be listed (<code>?versions</code> is AccessDe
 </td>
 </tr><tr><td>Species residence (resident/anadromous/spawn-only)</td>
 <td>
-<strong>hardcoded</strong> defaults in <code><a href="reference/lnk_pipeline_mapping_code.html">lnk_pipeline_mapping_code()</a></code>
-</td>
-<td>which mc_barrier flavor + spawn-only token1</td>
+<code>configs/&lt;name&gt;/dimensions.csv</code> → <code>residence</code>, and <code>rear_no_fw = yes</code> for spawn-only (#189) → <code>.lnk_species_residence()</code> → <code>.lnk_mapping_code_persist(cfg =)</code>. A bundle with no <code>residence</code> column, and the exported <code><a href="reference/lnk_mapping_code.html">lnk_mapping_code()</a></code> / <code><a href="reference/lnk_pipeline_mapping_code.html">lnk_pipeline_mapping_code()</a></code> called directly, keep the sets coded before (CH, CM, CO, PK, SK, ST anadromous; #512)</td>
+<td>which mc_barrier flavor + spawn-only token1 of every persisted mapping code (model and recompute)</td>
 </tr><tr><td>Which crossings are human-made barriers</td>
 <td>
 <code>configs/&lt;name&gt;/parameters_barrier_rules.csv</code> (#341) → <code>.lnk_barrier_rules_apply()</code> → <code>crossings.barrier_rule_id</code>
@@ -762,10 +761,12 @@ The bucket is versioned but cannot be listed (<code>?versions</code> is AccessDe
 <td>everything species-keyed: gradient breaks, classify, access, mapping code (§7, “Pausing a species”)</td>
 </tr><tr><td>What each config column means</td>
 <td>
-<code>configs/dictionary_dimensions.csv</code>, <code>configs/dictionary_parameters_fresh.csv</code>, <code>configs/dictionary_parameters_habitat_thresholds.csv</code>
-</td>
-<td>data dictionaries — per-column type, group, default, description, and (for <code>parameters_fresh</code>) <code>owner</code> + <code>consumed_by</code> <a href="file:line" class="uri">file:line</a>
-</td>
+<code>configs/dictionary_*.csv</code> (one per bundle file), rendered as <code>configs/README.md</code> by <code>data-raw/dictionary_readme_build.R</code> (#75; <code>test-dictionaries.R</code> fails on a stale README)</td>
+<td>data dictionaries — per-column type, group, default, description, and (for most) <code>owner</code> + <code>consumed_by</code> <a href="file:line" class="uri">file:line</a>; <code><a href="reference/lnk_rules_build.html">lnk_rules_build()</a></code> warns on a <code>dimensions.csv</code> column the dictionary does not list (<code>strict = TRUE</code> stops)</td>
+</tr><tr><td>The sample rules (<code>inst/extdata/parameters_habitat_rules.yaml</code>, fresh’s fallback without a config)</td>
+<td>
+<code>data-raw/build_rules.R</code>: <code>default</code>’s <code>dimensions.csv</code> (copied to <code>inst/extdata/parameters_habitat_dimensions.csv</code>) with <code>default</code>’s thresholds (#129)</td>
+<td>nothing a run reads; fresh’s weekly <code>sync-link-rules</code> workflow opens one <code>rules-sync</code> PR when link main’s differs from fresh’s copy</td>
 </tr></tbody></table><div class="section level3">
 <h3 id="the-record-rule-which-fish-records-count-link470">The record rule: which fish records count (link#470)<a class="anchor" aria-label="anchor" href="#the-record-rule-which-fish-records-count-link470"></a></h3>
 <p>One rule decides which bcfishobs records a build reads, as which species, wherever records are read: the observation cuts (§2c), code 2 of the access walk, and the lifts (§5). <code>.lnk_observation_species_map(cfg, loaded, wsgs)</code> (<code>R/lnk_observation_records.R</code>) resolves it per group:</p>

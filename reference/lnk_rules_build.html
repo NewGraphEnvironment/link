@@ -11,7 +11,7 @@ of truth; the YAML is the derived artifact."><meta property="og:image" content="
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.93.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.94.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -53,7 +53,8 @@ of truth; the YAML is the derived artifact.</p>
 <span>  <span class="va">to</span>,</span>
 <span>  thresholds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"parameters_habitat_thresholds.csv"</span>, package <span class="op">=</span></span>
 <span>    <span class="st">"fresh"</span><span class="op">)</span>,</span>
-<span>  edge_types <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"categories"</span>, <span class="st">"explicit"</span><span class="op">)</span></span>
+<span>  edge_types <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"categories"</span>, <span class="st">"explicit"</span><span class="op">)</span>,</span>
+<span>  strict <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -102,6 +103,14 @@ Default uses the copy shipped with fresh.</p></dd>
 <code>"categories"</code> (default) uses fresh categories (<code>stream</code>, <code>canal</code>).
 <code>"explicit"</code> uses integer FWA edge_type codes (<code>1000, 1100, 2000, 2300</code>).</p></dd>
 
+
+<dt id="arg-strict">strict<a class="anchor" aria-label="anchor" href="#arg-strict"></a></dt>
+<dd><p>Logical. Every column of <code>csv</code> is checked against the
+column dictionary, <code>configs/dictionary_dimensions.csv</code>, whose rendered
+form is <code>configs/README.md</code>. A column the dictionary does not list is
+a warning by default and an error when <code>strict = TRUE</code>; either way it
+reaches no rule.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -110,21 +119,37 @@ Default uses the copy shipped with fresh.</p></dd>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="co"># NGE defaults</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># The default bundle's rules, built with its own thresholds</span></span></span>
+<span class="r-in"><span><span class="va">cfg</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"configs"</span>, <span class="st">"default"</span>, package <span class="op">=</span> <span class="st">"link"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".yaml"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">lnk_rules_build</span><span class="op">(</span></span></span>
-<span class="r-in"><span>  csv <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"parameters_habitat_dimensions.csv"</span>, package <span class="op">=</span> <span class="st">"link"</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  to <span class="op">=</span> <span class="st">"inst/extdata/parameters_habitat_rules.yaml"</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># bcfishpass comparison variant</span></span></span>
-<span class="r-in"><span><span class="fu">lnk_rules_build</span><span class="op">(</span></span></span>
-<span class="r-in"><span>  csv <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"configs"</span>, <span class="st">"bcfishpass"</span>, <span class="st">"dimensions.csv"</span>,</span></span>
-<span class="r-in"><span>                    package <span class="op">=</span> <span class="st">"link"</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  to <span class="op">=</span> <span class="st">"inst/extdata/configs/bcfishpass/rules.yaml"</span>,</span></span>
+<span class="r-in"><span>  csv <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">cfg</span>, <span class="st">"dimensions.csv"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  to <span class="op">=</span> <span class="va">out</span>,</span></span>
+<span class="r-in"><span>  thresholds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">cfg</span>, <span class="st">"parameters_habitat_thresholds.csv"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  edge_types <span class="op">=</span> <span class="st">"explicit"</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Skipping CT: no thresholds in fresh CSV</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Skipping DV: no thresholds in fresh CSV</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Wrote /tmp/RtmpX6CIfH/file1e8c5e4a72ed.yaml (11 species, explicit edge types)</span>
+<span class="r-in"><span><span class="co"># Bull trout's rear rules: an edge-type rule or a waterbody polygon each</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="fu">yaml</span><span class="fu">::</span><span class="fu"><a href="https://yaml.r-lib.org/reference/read_yaml.html" class="external-link">read_yaml</a></span><span class="op">(</span><span class="va">out</span><span class="op">)</span><span class="op">$</span><span class="va">BT</span><span class="op">$</span><span class="va">rear</span>, <span class="kw">function</span><span class="op">(</span><span class="va">r</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">r</span><span class="op">$</span><span class="va">waterbody_type</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"edges"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">r</span><span class="op">$</span><span class="va">edge_types_explicit</span>, collapse <span class="op">=</span> <span class="st">"/"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"waterbody"</span>, <span class="va">r</span><span class="op">$</span><span class="va">waterbody_type</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="op">}</span></span></span>
+<span class="r-in"><span><span class="op">}</span>, <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "edges 1000/1100/2000/2300" "waterbody R"              </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [3] "edges 1050/1150"           "waterbody W"              </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [5] "waterbody L"              </span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># A column the dictionary does not list is refused under strict = TRUE</span></span></span>
+<span class="r-in"><span><span class="va">bad</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".csv"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu">utils</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">cfg</span>, <span class="st">"dimensions.csv"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">d</span><span class="op">$</span><span class="va">rear_strem</span> <span class="op">&lt;-</span> <span class="st">"yes"</span></span></span>
+<span class="r-in"><span><span class="fu">utils</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html" class="external-link">write.csv</a></span><span class="op">(</span><span class="va">d</span>, <span class="va">bad</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu">lnk_rules_build</span><span class="op">(</span><span class="va">bad</span>, <span class="va">out</span>, strict <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Error : Dimensions CSV column(s) not in dictionary_dimensions.csv (they reach no rule): rear_strem</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
