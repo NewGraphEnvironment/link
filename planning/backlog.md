@@ -47,7 +47,7 @@ counts them): run `/backlog-sweep` again, the backlog is not finished.
 | - [x] 5 | #473 | 6, 7: the export contract, one-group runs that read downstream (6 issues) | done: https://github.com/NewGraphEnvironment/link/pull/496 | — | — | — |
 | - [x] 6 | #474 | 8, 9: what a run stamps and checks before launch, how primitives load (10 issues) | done: https://github.com/NewGraphEnvironment/link/pull/485 | — | — | — |
 | - [x] 7 | #475 | 10: drivers (6 issues) | done: https://github.com/NewGraphEnvironment/link/pull/513 | B | 14 | opus then sonnet |
-| - [ ] 8 | #476 | 11: the rules builder and `dimensions.csv` (7 issues) | open | C | 3 | opus |
+| - [x] 8 | #476 | 11: the rules builder and `dimensions.csv` (7 issues) | done: https://github.com/NewGraphEnvironment/link/pull/519 | C | 3 | opus |
 | - [ ] 9 | #477 | 12, 13: mapping codes as rules, the persist and run API (8 issues) | open | A | 3, 7, 8, 13 | opus |
 | - [x] 10 | #478 | 14, 15: snapping, habitat upstream of each crossing (6 issues) | done: https://github.com/NewGraphEnvironment/link/pull/518 | C | 3 | opus |
 | - [x] 11 | #479 | 16: what blocks access at a barrier (5 issues) | done: https://github.com/NewGraphEnvironment/link/pull/521 | C | 3, 10, 16 | fable then opus |
@@ -254,7 +254,7 @@ RUNBOOK. Gate: retire the legacy `wsgs_*` path, which closes #179 and #110 and s
 
 ### 11. The rules builder and `dimensions.csv`
 
-- [ ] Carried by move 8, #476
+- [x] Carried by move 8, #476 (merged in https://github.com/NewGraphEnvironment/link/pull/519)
 
 **Touches:** `R/lnk_rules_build.R`, `data-raw/build_rules.R`, `inst/extdata/configs/default/dimensions.csv`, `inst/extdata/configs/bcfishpass/dimensions.csv`, `inst/extdata/configs/dictionary_dimensions.csv`, `R/lnk_config_verify.R`, and a new workflow that copies the rules to fresh
 
