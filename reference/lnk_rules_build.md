@@ -88,7 +88,7 @@ lnk_rules_build(
 )
 #> Skipping CT: no thresholds in fresh CSV
 #> Skipping DV: no thresholds in fresh CSV
-#> Wrote /tmp/RtmpX6CIfH/file1e8c5e4a72ed.yaml (11 species, explicit edge types)
+#> Wrote /tmp/RtmpO3F8Tg/file1de561cb49fa.yaml (11 species, explicit edge types)
 # Bull trout's rear rules: an edge-type rule or a waterbody polygon each
 vapply(yaml::read_yaml(out)$BT$rear, function(r) {
   if (is.null(r$waterbody_type)) {
