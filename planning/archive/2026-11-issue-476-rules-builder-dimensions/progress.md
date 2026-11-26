@@ -2,7 +2,7 @@
 
 ## Session 2026-11-22
 
-- Explored and drafted the phases. There was no plan gate in this pane, so the plan is parked for the coordinator's plan gate (soul#928).
+- Explored and drafted the phases. There was no plan gate in this pane, so the plan is parked for the coordinator's plan gate.
 - Created branch `476-backlog-move-8-the-rules-builder-and-dim` off origin/main.
 - Scaffolded the PWF baseline from issue #476 with the drafted phases.
 
