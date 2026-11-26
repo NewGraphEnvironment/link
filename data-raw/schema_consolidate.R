@@ -232,6 +232,22 @@ consolidate_missing_persist <- function(tables) {
   tables[tables %in% consolidate_persist_core]
 }
 
+#' Do the source's and destination's evidence tables disagree on lift_rule?
+#' (link#236)
+#'
+#' Either way the copy goes wrong: a destination without it would drop which
+#' rule each record counted under, and a destination with it (NOT NULL, in
+#' the key) refuses a source's rows without it, after step 3.5 has deleted the
+#' bucket's persist rows. So both are refused before anything is deleted.
+#'
+#' @param dest_cols,src_cols Named lists of column names per table.
+#' @return TRUE when exactly one side carries the column.
+consolidate_evidence_unmigrated <- function(dest_cols, src_cols) {
+  t <- "barrier_override_evidence"
+  if (is.null(dest_cols[[t]]) || is.null(src_cols[[t]])) return(FALSE)
+  xor("lift_rule" %in% src_cols[[t]], "lift_rule" %in% dest_cols[[t]])
+}
+
 #' link's persist tables every species set has. host_drop_partials in
 #' data-raw/study_area_hosts.sh names the same set; a test holds them equal.
 consolidate_persist_core <- c("streams", "barriers", "barrier_overrides",
@@ -578,6 +594,19 @@ schema_consolidate <- function(schema,
             paste(setdiff(sc, dc), collapse = ","), "; dest-only: ",
             paste(setdiff(dc, sc), collapse = ","))
       }
+    }
+
+    # The source's and destination's evidence tables disagree on lift_rule
+    # (link#236, 0.93.0): refuse before anything is deleted; lnk_persist_init()
+    # on the side without it migrates it.
+    ev_unmigrated <- consolidate_evidence_unmigrated(dest_cols, src_cols)
+    if (ev_unmigrated) {
+      log(src$host, " -> ERROR: barrier_override_evidence has lift_rule on one ",
+          "side only; run lnk_persist_init() on the side without it first ",
+          "— nothing deleted or copied")
+      results[[src$host]] <- list(ok = FALSE, stage = "evidence_unmigrated",
+                                   rc = -1L)
+      next
     }
 
     # 3.5. Bucket-aware destination cleanup. DELETE the bucket's WSGs

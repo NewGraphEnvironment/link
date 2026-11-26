@@ -494,6 +494,25 @@ cols_log_input <- c(
 }
 
 #' @noRd
+.lnk_cols_log_barrier_lifts <- function() {
+  cols <- .lnk_dictionary_columns("parameters_barrier_lifts")
+  out <- stats::setNames(rep("text", length(cols)), cols)
+  out[["species_code"]] <- "text NOT NULL"
+  out[["rule"]] <- "text NOT NULL"
+  c(config_hash = "text NOT NULL", out)
+}
+
+#' @noRd
+.lnk_cols_log_barrier_rules <- function() {
+  cols <- .lnk_dictionary_columns("parameters_barrier_rules")
+  out <- stats::setNames(rep("text", length(cols)), cols)
+  out[["rule_id"]] <- "text NOT NULL"
+  # Several rows share a rule_id, and a value may be blank: the row's place
+  # in the file keys it.
+  c(config_hash = "text NOT NULL", row_number = "text NOT NULL", out)
+}
+
+#' @noRd
 .lnk_cols_log_thresholds <- function() {
   cols <- .lnk_dictionary_columns("parameters_habitat_thresholds")
   out <- stats::setNames(rep("text", length(cols)), cols)
@@ -589,7 +608,17 @@ cols_log_input <- c(
          cols = .lnk_cols_log_thresholds(),
          pk = c("config_hash", "species_code")),
     list(table = "log_dimensions", cols = .lnk_cols_log_dimensions(),
-         pk = c("config_hash", "species"))
+         pk = c("config_hash", "species")),
+    # Further observation-lift rules (link#236); a bundle without the table
+    # logs none, its rules being parameters_fresh's rows.
+    list(table = "log_parameters_barrier_lifts",
+         cols = .lnk_cols_log_barrier_lifts(),
+         pk = c("config_hash", "species_code", "rule")),
+    # Which crossings are human-made barriers (link#341): the bundle's rules,
+    # or the built-in rule for a bundle that declares none.
+    list(table = "log_parameters_barrier_rules",
+         cols = .lnk_cols_log_barrier_rules(),
+         pk = c("config_hash", "row_number"))
   )
   names(specs) <- vapply(specs, `[[`, character(1), "table")
   specs
@@ -1028,7 +1057,17 @@ lnk_log_read <- function(conn, cfg, aoi = NULL, latest = TRUE,
            cols = .lnk_cols_log_dimensions(),
            data = tryCatch(utils::read.csv(cfg$dimensions, check.names = FALSE,
                                            colClasses = "character"),
-                           error = function(e) NULL))
+                           error = function(e) NULL)),
+      list(table = "log_parameters_barrier_lifts",
+           cols = .lnk_cols_log_barrier_lifts(),
+           data = loaded$parameters_barrier_lifts),
+      list(table = "log_parameters_barrier_rules",
+           cols = .lnk_cols_log_barrier_rules(),
+           data = {
+             br <- .lnk_barrier_rules(cfg, loaded)
+             br$row_number <- as.character(seq_len(nrow(br)))
+             br
+           })
     )
 
     for (s in specs) {

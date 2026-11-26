@@ -1,0 +1,24 @@
+diff fresh_386_before_default -> fresh_386_after_default (default), 11 groups: ADMS BULK ELKR FINA LPCE LSAL PARS PCEA SALR TABR UPCE
+explained positions: 90 control, 1 disagreed in BEFORE
+
+== barriers 
+  barrier_source  change       category   n
+1       GRADIENT removed        control   2
+2       GRADIENT removed non_owner_copy  11
+3       GRADIENT removed  owner_outside 105
+
+== overrides 
+   change       category  n
+1 removed        control 16
+2 removed non_owner_copy 90
+3 removed  owner_outside  8
+
+== segments 
+[1] change w      n     
+<0 rows> (or 0-length row.names)
+
+== values 
+data frame with 0 columns and 0 rows
+
+== lifts_lost 
+[1] 0

@@ -1,0 +1,28 @@
+[build] bcfishpass 20261124_386-before-bcfp -> fresh_386_before_bcfp at c7abea13 (2026-11-24 19:01:27 UTC)
+[1] 0
+[build] TABR model already finished under 20261124_386-before-bcfp
+[build] LSAL model already finished under 20261124_386-before-bcfp
+[build] SALR model already finished under 20261124_386-before-bcfp
+[build] ADMS model already finished under 20261124_386-before-bcfp
+[build] ELKR model already finished under 20261124_386-before-bcfp
+[build] BULK model already finished under 20261124_386-before-bcfp
+[build] UPCE model already finished under 20261124_386-before-bcfp
+[build] PCEA model already finished under 20261124_386-before-bcfp
+[build] LPCE model already finished under 20261124_386-before-bcfp
+[build] FINA model already finished under 20261124_386-before-bcfp
+[build] PARS model already finished under 20261124_386-before-bcfp
+[build] TABR recompute done
+[build] LSAL recompute done
+[build] SALR recompute done
+[build] ADMS recompute done
+[build] ELKR recompute done (downstream post-condition failed: groups outside the set)
+[build] BULK recompute done
+[build] UPCE recompute done
+[build] PCEA recompute done
+[build] LPCE recompute done
+[build] FINA recompute done
+[build] PARS recompute done
+Warning message:
+In system2("Rscript", c(rc, w, config), env = c("LNK_LOAD=loadall",  :
+  running command 'LNK_LOAD=loadall LNK_SCHEMA=fresh_386_before_bcfp LNK_RUN_UID=20261124_386-before-bcfp LNK_RUN_LABEL=link479-proof 'Rscript' <scratch>/wt_before/data-raw/wsg_recompute_one.R ELKR bcfishpass 2>&1' had status 1
+[build] all done 2026-11-24 19:04:38 UTC

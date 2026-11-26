@@ -1,0 +1,91 @@
+blue_line_key,downstream_route_measure,barrier_type,barrier_ind,filed_under,owner,scanners,natural_rows_within_1m,overrides_within_1m,notes
+356292469,8505,SUBSURFACEFLOW,f,CHWK,CHWK,CHWK;HARR,,,"Reference document notes Chum, Pink, Chinook and Sockeye in Camp Slough. Changes to flows since then likely anthropogenic. Should probably include but no recent records to pull from"
+356347721,3114,FALLS,t,MAHD,MAHD,CLWR;MAHD,MAHD:FALLS,MAHD:BT;MAHD:RB,No salmon points showing upstream from here. Ok as is
+356347721,4121,FALLS,t,MAHD,MAHD,CLWR;MAHD,MAHD:FALLS,MAHD:BT;MAHD:RB,No salmon points showing upstream from here. Ok as is
+356353731,1598,FALLS,f,TAKL,TAKL,DRIR;TAKL,,,No falls in reference document. Falls do not exist. Known anadromous river. Falls can be removed.
+356357296,67524,FALLS,t,HORS,HORS,HORS;QUES,HORS:FALLS,HORS:RB,Falls appear to be mapped slightly incorrectly. Falls are displayed upstream of these points in HabitatWizard
+356360939,2047,FALLS,f,BIGC,BIGC,BIGC;LCHR,,,https://www.env.gov.bc.ca/cariboo/env_stewardship/wrp/reports/fhap/big_churn_gaspard/overview/big_over.html
+356361637,74030,FALLS,t,BRID,BRID,BRID;MAHD,BRID:FALLS,BRID:RB,Reference document is a field form that lumps steelhead and rainbow. Should be RB here.
+356361749,45743,FALLS,t,DEAD,DEAD,DEAD;THOM,DEAD:FALLS,DEAD:BT;DEAD:RB,Most literature seem to indicate Reach 11 as upstream-most distribution for Steelhead (falls is at break of 10/11). Seems that fish points in Yard Ck are likely actually Yard Ck in SHUL watershed. Points in Snohoosh Lake don't seem to have a reference document. Other Steelhead points seem unreliable. I would keep this as a barrier
+356362728,1958,FALLS,t,MURT,MURT,CLWR;MURT,MURT:FALLS,MURT:RB,No salmon points showing upstream from here. Ok as is
+356362743,154194,FALLS,f,ADMS,ADMS,ADMS;SHUL,,,Multiple reference docs corroborate Coho spawning upstream of Tum Tum Lake. Falls noted as passable to Coho.
+356363010,23160,FALLS,f,CARR,CARR,CARR;QUES,,,Only 1 of 2 references to falls could be verified. Reference makes no mention of falls in Cariboo River but notes several falls in lower 1/8 mile of Six Mile Creek. Likely meant to be snapped to Six Mile
+356363343,5922,FALLS,f,HORS,LNIC,LNIC;NICL;THOM,,,Does not exist
+356363343,5999,FALLS,f,LNIC,LNIC,LNIC;NICL;THOM,,,non-barrier FWA falls on Nicola River (note that these features are also present in CANVEC source)
+356363343,6748,FALLS,f,LNIC,LNIC,LNIC;NICL;THOM,,,non-barrier FWA falls on Nicola River (note that these features are also present in CANVEC source)
+356363343,6811,FALLS,f,LNIC,LNIC,LNIC;NICL;THOM,,,non-barrier FWA falls on Nicola River (note that these features are also present in CANVEC source)
+356363343,8621,FALLS,f,LNIC,LNIC,LNIC;NICL;THOM,,,non-barrier FWA falls on Nicola River (note that these features are also present in CANVEC source)
+356363343,8866,FALLS,f,LNIC,LNIC,LNIC;NICL;THOM,,,non-barrier FWA falls on Nicola River (note that these features are also present in CANVEC source)
+356363343,9171,FALLS,f,LNIC,LNIC,LNIC;NICL;THOM,,,non-barrier FWA falls on Nicola River (note that these features are also present in CANVEC source)
+356363343,9247,FALLS,f,LNIC,LNIC,LNIC;NICL;THOM,,,non-barrier FWA falls on Nicola River (note that these features are also present in CANVEC source)
+356363343,9821,FALLS,f,LNIC,LNIC,LNIC;NICL;THOM,,,non-barrier FWA falls on Nicola River (note that these features are also present in CANVEC source)
+356363343,10079,FALLS,f,LNIC,LNIC,LNIC;NICL;THOM,,,non-barrier FWA falls on Nicola River (note that these features are also present in CANVEC source)
+356363343,11262,FALLS,f,LNIC,LNIC,LNIC;NICL;THOM,,,non-barrier FWA falls on Nicola River (note that these features are also present in CANVEC source)
+356363343,11380,FALLS,f,LNIC,LNIC,LNIC;NICL;THOM,,,non-barrier FWA falls on Nicola River (note that these features are also present in CANVEC source)
+356363343,11919,FALLS,f,LNIC,LNIC,LNIC;NICL;THOM,,,non-barrier FWA falls on Nicola River (note that these features are also present in CANVEC source)
+356363343,12216,FALLS,f,LNIC,LNIC,LNIC;NICL;THOM,,,non-barrier FWA falls on Nicola River (note that these features are also present in CANVEC source)
+356363343,14725,FALLS,f,LNIC,LNIC,LNIC;NICL;THOM,,,non-barrier FWA falls on Nicola River (note that these features are also present in CANVEC source)
+356363343,14890,FALLS,f,LNIC,LNIC,LNIC;NICL;THOM,,,non-barrier FWA falls on Nicola River (note that these features are also present in CANVEC source)
+356363343,15224,FALLS,f,LNIC,LNIC,LNIC;NICL;THOM,,,non-barrier FWA falls on Nicola River (note that these features are also present in CANVEC source)
+356363343,15288,FALLS,f,LNIC,LNIC,LNIC;NICL;THOM,,,non-barrier FWA falls on Nicola River (note that these features are also present in CANVEC source)
+356363343,15760,FALLS,f,LNIC,LNIC,LNIC;NICL;THOM,,,non-barrier FWA falls on Nicola River (note that these features are also present in CANVEC source)
+356363343,15924,FALLS,f,LNIC,LNIC,LNIC;NICL;THOM,,,non-barrier FWA falls on Nicola River (note that these features are also present in CANVEC source)
+356363343,16669,FALLS,f,LNIC,LNIC,LNIC;NICL;THOM,,,non-barrier FWA falls on Nicola River (note that these features are also present in CANVEC source)
+356363343,16716,FALLS,f,LNIC,LNIC,LNIC;NICL;THOM,,,non-barrier FWA falls on Nicola River (note that these features are also present in CANVEC source)
+356363393,176561,FALLS,f,MCGR,MCGR,MCGR;MORK,,,rapids
+356363393,176633,FALLS,f,MCGR,MCGR,MCGR;MORK,,,rapids
+356363411,201296,SUBSURFACEFLOW,f,UCHR,UCHR,LCHR;MFRA;UCHR,,,"The subsurface flow is a side channel, the Chilcotin merges with the Clusco farther upstream"
+356363411,201503,SUBSURFACEFLOW,f,UCHR,UCHR,LCHR;MFRA;UCHR,,,"The subsurface flow is a side channel, the Chilcotin merges with the Clusco farther upstream"
+356363594,3604,FALLS,f,BONP,BONP,BONP;THOM,,,Bonaparte Fishway allows anadromous passage beyond this point
+356363594,10728,FALLS,f,BONP,BONP,BONP;THOM,,,Falls do not exist here - reference document only notes the falls with fishway 2.6 km upstream from mouth.
+356364051,46581,FALLS,t,HERR,HERR,HERR;MCGR,HERR:FALLS,HERR:BT,Reference document for Chinook points notes that Farmstead Creek and Muller Creek do not support salmon due to 60 ft falls on Herrick Ck at Mile 27.5. These fish points should not be here.
+356364114,212049,FALLS,f,THOM,FRCN,BBAR;COTR;DOGC;FRCN;HARR;LFRA;MFRA;MORK;NARC;SETN;TABR;TWAC;UFRA,,,non-barrier FWA falls on Thompson River
+356364114,1101431,FALLS,f,MORK,MORK,BBAR;COTR;DOGC;FRCN;HARR;LFRA;MFRA;MORK;NARC;SETN;TABR;TWAC;UFRA,,,rapids
+356364114,1101556,FALLS,f,MORK,MORK,BBAR;COTR;DOGC;FRCN;HARR;LFRA;MFRA;MORK;NARC;SETN;TABR;TWAC;UFRA,,,rapids
+356364485,67492,GRADIENT,f,LSAL,LSAL,LSAL;SALR;TABR,SALR:GRADIENT;TABR:GRADIENT,SALR:BT;SALR:CH;SALR:CM;SALR:CO;SALR:PK;SALR:RB;SALR:SK;SALR:ST;TABR:BT;TABR:CH;TABR:CM;TABR:CO;TABR:PK;TABR:RB;TABR:SK;TABR:ST,an odd point on Salmon River that looks like a data error
+356364550,2437,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,2483,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,2636,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,2724,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,2917,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,2995,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,6619,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,6651,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,9939,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,10014,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,10210,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,10349,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,10471,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,10527,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,11078,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,11213,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,12172,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,12222,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,12647,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,12702,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,144714,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,145308,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,145457,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,145850,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,145959,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,146030,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,146136,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,146419,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,146639,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,146867,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364550,148525,FALLS,f,BLAR,BLAR,BLAR;COTR;EUCL,,,all FWA falls on Blackwater removed as they appear to be unreliable
+356364690,20066,FALLS,f,THOM,THOM,FRCN;THOM,,,non-barrier FWA falls on Thompson River
+356364690,20176,FALLS,f,THOM,THOM,FRCN;THOM,,,non-barrier FWA falls on Thompson River
+356364690,27785,FALLS,f,THOM,THOM,FRCN;THOM,,,non-barrier FWA falls on Thompson River
+356364690,28023,FALLS,f,THOM,THOM,FRCN;THOM,,,non-barrier FWA falls on Thompson River
+356364690,29130,FALLS,f,THOM,THOM,FRCN;THOM,,,non-barrier FWA falls on Thompson River
+356364690,29243,FALLS,f,THOM,THOM,FRCN;THOM,,,non-barrier FWA falls on Thompson River
+356364690,41467,FALLS,f,THOM,THOM,FRCN;THOM,,,non-barrier FWA falls on Thompson River
+356364690,41571,FALLS,f,THOM,THOM,FRCN;THOM,,,non-barrier FWA falls on Thompson River
+356364690,47306,FALLS,f,LNIC,THOM,FRCN;THOM,,,non-barrier FWA falls on Nicola River (note that these features are also present in CANVEC source)
+356364690,47662,FALLS,f,THOM,THOM,FRCN;THOM,,,non-barrier FWA falls on Thompson River
+360873822,67,FALLS,f,KISP,KISP,BULK;KISP,,,Reference document for falls only makes mention of Moricetown falls near Moricetown. This falls is an error and can be removed.
+360873822,194306,FALLS,f,BULK,BULK,BULK;KISP,,,Falls seeems to be an error - no white water or falls at this location
+360873822,242072,FALLS,f,BABL,BULK,BULK;KISP,,,Two falls with same ID number. Reference doc places falls at 9U 690318 6068411. Referenc e document for Sockeye point upstream makes no mention of where Sockeye are found in stream. This point should be removed.
+360880688,30928,FALLS,f,SUST,SUST,MSKE;SUST,,,No falls on record in this location. None visible on satellite imagery. Can be removed.
+360883982,55338,FALLS,f,LDEN,LDEN,LDEN;UDEN,,,three PSE chinook spawning points upstream of this location

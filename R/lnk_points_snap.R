@@ -3,23 +3,35 @@
 #' Bulk-snap helper: takes a Postgres table of point geometries and
 #' creates a new table with each row enriched with the nearest FWA stream
 #' segment's `linear_feature_id`, `blue_line_key`, `downstream_route_measure`,
-#' `wscode_ltree`, `localcode_ltree`, plus snap distance.
+#' `wscode_ltree`, `localcode_ltree`, `watershed_group_code`, `gnis_name`,
+#' plus snap distance.
 #'
-#' Uses a single SQL `CROSS JOIN LATERAL ... ORDER BY <-> ... LIMIT 1`
-#' against `whse_basemapping.fwa_stream_networks_sp` — same lateral-KNN
-#' pattern as `bcfishpass`'s `load_dams.sql` and link's existing CABD
-#' dams snap in [lnk_pipeline_prepare()]. One round-trip; scales to
-#' province-wide point sets.
+#' The snap itself is [fresh::frs_point_snap()]: one lateral nearest-neighbour
+#' query for the whole table. This function keeps every column of `table_in`
+#' beside the snap, under link's column names, so a pipeline can carry the
+#' points' own attributes through. The candidate rules are fresh's:
 #'
-#' Generic — not specific to any pipeline phase. Likely belongs in a
-#' future `pac` package once that's scaffolded; ships in link for now.
+#' - placeholder streams (`wscode_ltree <@ '999'`) and unmapped tributaries
+#'   (`localcode_ltree IS NULL`) are never candidates;
+#' - `edge_type NOT IN (exclude_edge_types)` drops more;
+#' - an exact distance tie, a point nearest to the vertex two segments
+#'   share, goes to the segment with the higher `downstream_route_measure`
+#'   (on one stream, the one starting at that vertex), then the lower
+#'   `linear_feature_id`. This is fwapg's rule for `fwa_indexpoint()`. Across
+#'   two streams the higher measure means nothing; the PSCIS pick, which reads
+#'   every candidate, orders such a tie by which segment starts at the vertex.
+#'
+#' The measure is a whole metre, as in bcfishpass's `04_pscis.sql`.
 #'
 #' @param conn A DBI connection.
 #' @param table_in Fully-qualified `<schema>.<table>` of input points.
 #' @param table_out Fully-qualified `<schema>.<table>` to create. Existing
 #'   table is `DROP TABLE IF EXISTS`'d first.
+#' @param id_col Name of a column in `table_in` that identifies each point.
+#'   Its values must be unique and non-missing; the function stops
+#'   otherwise.
 #' @param geom_col Name of the geometry column in `table_in`. Default
-#'   `"geom"`.
+#'   `"geom"`. A MultiPoint is snapped by its first point.
 #' @param snap_tolerance Maximum snap distance in metres. Points farther
 #'   than this from the network are dropped. Default `100`.
 #' @param exclude_edge_types Integer vector of `edge_type` codes to
@@ -27,32 +39,28 @@
 #'   (subsurface flow). Pass `integer(0)` to exclude none.
 #' @param blue_line_key_col Optional name of a `blue_line_key` column in
 #'   `table_in` to constrain candidate streams to. `NULL` (default) snaps
-#'   to any FWA stream within tolerance.
+#'   to any FWA stream within tolerance. A point whose hint is missing
+#'   snaps to any stream.
 #' @param stream_order_min Optional minimum `stream_order` to include.
 #'   `NULL` (default) accepts any order.
 #' @param num_features Integer scalar. Maximum number of stream candidates
-#'   per input point. Default `1L` (nearest-only — backwards compatible).
-#'   Set higher (e.g. `5L`) for downstream scoring/dedup workflows that
-#'   need multiple candidates per point (e.g. bcfp PSCIS-to-stream
-#'   selection where stream-name match disambiguates among nearby streams).
-#'   Output has one row per (input row, candidate stream) pair, ordered by
-#'   distance ascending.
+#'   per input point. Default `1L` (nearest only). Set higher (e.g. `5L`)
+#'   to score and pick among nearby streams. Output then has one row per
+#'   (input row, candidate stream) pair and a `candidate_rank` column
+#'   (1 = nearest).
 #'
 #' @return `invisible(table_out)`. Side effect: creates `table_out` in
 #'   `conn`'s database.
 #'
 #' @details
 #' Output table columns: every column from `table_in` PLUS
-#' `linear_feature_id` (bigint), `blue_line_key` (integer),
-#' `downstream_route_measure` (numeric), `wscode_ltree` (ltree),
-#' `localcode_ltree` (ltree), `distance_to_stream` (numeric, metres),
-#' `geom_snapped` (geometry — point projected onto the segment).
-#'
-#' Filters applied to candidate streams (from
-#' `fresh::frs_point_snap_knn` conventions):
-#' - `wscode_ltree != '999'` (placeholder streams excluded)
-#' - `localcode_ltree IS NOT NULL` (unmapped tributaries excluded)
-#' - `edge_type NOT IN (exclude_edge_types)` (subsurface etc. excluded)
+#' `linear_feature_id`, `snapped_blue_line_key`,
+#' `downstream_route_measure`, `wscode_ltree`, `localcode_ltree`,
+#' `watershed_group_code`, `gnis_name`, `distance_to_stream` (metres),
+#' `candidate_rank` (when `num_features > 1`) and `geom_snapped` (the
+#' point projected onto the segment, EPSG:3005). An input table holding
+#' any of those names is refused. The snap is written first to a scratch
+#' table beside `table_out`, which is dropped on exit.
 #'
 #' @examples
 #' \dontrun{
@@ -61,14 +69,15 @@
 #'   conn,
 #'   table_in  = "whse_fish.pscis_assessment_svw",
 #'   table_out = "working_adms.pscis_assessment_snapped",
-#'   snap_tolerance = 100,
-#'   exclude_edge_types = c(1410L, 1425L)
+#'   id_col = "stream_crossing_id",
+#'   snap_tolerance = 150,
+#'   num_features = 5L
 #' )
 #' }
 #'
 #' @family points
 #' @export
-lnk_points_snap <- function(conn, table_in, table_out,
+lnk_points_snap <- function(conn, table_in, table_out, id_col,
                             geom_col = "geom",
                             snap_tolerance = 100,
                             exclude_edge_types = 1425L,
@@ -79,6 +88,8 @@ lnk_points_snap <- function(conn, table_in, table_out,
     inherits(conn, "DBIConnection"),
     is.character(table_in), length(table_in) == 1L, nzchar(table_in),
     is.character(table_out), length(table_out) == 1L, nzchar(table_out),
+    is.character(id_col), length(id_col) == 1L, !is.na(id_col),
+    nzchar(id_col),
     is.character(geom_col), length(geom_col) == 1L, nzchar(geom_col),
     is.numeric(snap_tolerance), length(snap_tolerance) == 1L,
     snap_tolerance > 0,
@@ -88,42 +99,11 @@ lnk_points_snap <- function(conn, table_in, table_out,
     is.null(stream_order_min) ||
       (is.numeric(stream_order_min) && length(stream_order_min) == 1L),
     is.numeric(num_features), length(num_features) == 1L,
-    num_features >= 1, !is.na(num_features)
+    !is.na(num_features), num_features >= 1
   )
 
-  # Constrained candidate-stream WHERE clause built up from optional args.
-  where <- c(
-    "s.wscode_ltree != '999'::ltree",
-    "s.localcode_ltree IS NOT NULL"
-  )
-  if (length(exclude_edge_types) > 0L) {
-    where <- c(where, sprintf("s.edge_type NOT IN (%s)",
-                              paste(as.integer(exclude_edge_types),
-                                    collapse = ", ")))
-  }
-  if (!is.null(blue_line_key_col)) {
-    where <- c(where, sprintf("s.blue_line_key = pts.%s",
-                              DBI::dbQuoteIdentifier(conn,
-                                                     blue_line_key_col)))
-  }
-  if (!is.null(stream_order_min)) {
-    where <- c(where, sprintf("s.stream_order >= %d",
-                              as.integer(stream_order_min)))
-  }
-  where_sql <- paste(where, collapse = " AND ")
-
-  geom_q <- DBI::dbQuoteIdentifier(conn, geom_col)
-
-  # Wrap the input geometry with ST_GeometryN(..., 1) so MultiPoint
-  # inputs (e.g. bcdata bc2pg's PSCIS output) work — ST_LineLocatePoint
-  # requires Point. ST_GeometryN(point, 1) is a no-op on already-Point.
-  pt_expr <- sprintf("ST_GeometryN(pts.%s, 1)", geom_q)
-
-  # Fail loud if the input table has columns that collide with the snap
-  # output projection — `pts.*` would otherwise produce a duplicate-name
-  # error from CREATE TABLE AS at the bottom of a 100-line statement.
-  # Require <schema>.<table> form so the lookup can run; bare names and
-  # 3-part names get a clear error rather than a silent skip.
+  # <schema>.<table> for both, so the column lookup can run and the
+  # scratch table can sit in table_out's schema.
   parts <- strsplit(table_in, ".", fixed = TRUE)[[1]]
   if (length(parts) != 2L) {
     stop(
@@ -131,17 +111,37 @@ lnk_points_snap <- function(conn, table_in, table_out,
       call. = FALSE
     )
   }
+  # table_out is dropped before it is built from table_in
+  if (identical(tolower(table_in), tolower(table_out))) {
+    stop("table_out must differ from table_in.", call. = FALSE)
+  }
+  parts_out <- strsplit(table_out, ".", fixed = TRUE)[[1]]
+  if (length(parts_out) != 2L) {
+    stop(
+      sprintf("table_out must be '<schema>.<table>'; got '%s'.", table_out),
+      call. = FALSE
+    )
+  }
+
+  # Fail loud if the input table has columns that collide with the snap
+  # output projection: `pts.*` would otherwise produce a duplicate-name
+  # error from CREATE TABLE AS.
+  # Resolved as the snap's own FROM resolves it (case folding, pg_temp), not
+  # by the literal name, which information_schema would need spelled exactly.
   in_cols <- DBI::dbGetQuery(conn, sprintf(
-    "SELECT column_name
-       FROM information_schema.columns
-      WHERE table_schema = %s AND table_name = %s;",
-    DBI::dbQuoteString(conn, parts[1]),
-    DBI::dbQuoteString(conn, parts[2])
+    "SELECT attname AS column_name
+       FROM pg_attribute
+      WHERE attrelid = to_regclass(%s) AND attnum > 0 AND NOT attisdropped;",
+    DBI::dbQuoteString(conn, table_in)
   ))$column_name
+  if (length(in_cols) == 0L) {
+    stop(sprintf("table_in %s was not found (or has no columns).", table_in),
+         call. = FALSE)
+  }
   snap_cols <- c("linear_feature_id", "snapped_blue_line_key",
                  "downstream_route_measure", "wscode_ltree",
-                 "localcode_ltree", "distance_to_stream",
-                 "geom_snapped")
+                 "localcode_ltree", "watershed_group_code", "gnis_name",
+                 "distance_to_stream", "candidate_rank", "geom_snapped")
   collisions <- intersect(in_cols, snap_cols)
   if (length(collisions) > 0L) {
     stop(
@@ -151,53 +151,54 @@ lnk_points_snap <- function(conn, table_in, table_out,
       call. = FALSE
     )
   }
+  if (!id_col %in% in_cols) {
+    stop(sprintf("id_col '%s' is not a column of %s.", id_col, table_in),
+         call. = FALSE)
+  }
 
-  drop_sql <- sprintf("DROP TABLE IF EXISTS %s;", table_out)
+  tmp <- sprintf("%s.zz_lnk_points_snap_%d", parts_out[1], Sys.getpid())
+  on.exit(
+    tryCatch(DBI::dbExecute(conn, sprintf("DROP TABLE IF EXISTS %s;", tmp)),
+             error = function(e) NULL),
+    add = TRUE
+  )
+  fresh::frs_point_snap(
+    conn, table_in,
+    to = tmp,
+    col_id = id_col,
+    col_geom = geom_col,
+    col_blk = blue_line_key_col,
+    tolerance = snap_tolerance,
+    num_features = as.integer(num_features),
+    stream_order_min = stream_order_min,
+    exclude_edge_types = as.integer(exclude_edge_types)
+  )
+
+  id_q <- DBI::dbQuoteIdentifier(conn, id_col)
+  has_rank <- num_features > 1
   create_sql <- sprintf("
     CREATE TABLE %s AS
     SELECT
       pts.*,
       snap.linear_feature_id,
-      snap.blue_line_key   AS snapped_blue_line_key,
+      snap.blue_line_key AS snapped_blue_line_key,
       snap.downstream_route_measure,
       snap.wscode_ltree,
       snap.localcode_ltree,
-      ST_Distance(%s, snap.geom_snapped) AS distance_to_stream,
-      snap.geom_snapped
+      snap.watershed_group_code,
+      snap.gnis_name,
+      snap.distance_to_stream,%s
+      snap.geom AS geom_snapped
     FROM %s pts
-    CROSS JOIN LATERAL (
-      SELECT
-        s.linear_feature_id,
-        s.blue_line_key,
-        s.wscode_ltree,
-        s.localcode_ltree,
-        -- Add segment's downstream_route_measure offset to the within-
-        -- segment position to get the absolute drm on the blue line.
-        -- Clamp to [segment.downstream_route_measure, segment.upstream_route_measure]
-        -- to avoid floating-point edge cases past the segment boundary.
-        -- Formula mirrors bcfp/04_pscis.sql lines 43-45 + 79-82.
-        CEIL(GREATEST(s.downstream_route_measure, FLOOR(LEAST(s.upstream_route_measure,
-          (ST_LineLocatePoint(s.geom, ST_ClosestPoint(s.geom, %s)) * s.length_metre)
-            + s.downstream_route_measure
-        )))) AS downstream_route_measure,
-        ST_ClosestPoint(s.geom, %s) AS geom_snapped
-      FROM whse_basemapping.fwa_stream_networks_sp s
-      WHERE ST_DWithin(s.geom, %s, %f)
-        AND %s
-      ORDER BY s.geom <-> %s, s.linear_feature_id
-      LIMIT %d
-    ) snap;",
+    JOIN %s snap ON snap.%s = pts.%s
+    ORDER BY snap.%s%s;",
     table_out,
-    pt_expr,
-    table_in,
-    pt_expr, pt_expr, pt_expr,
-    snap_tolerance,
-    where_sql,
-    pt_expr,
-    as.integer(num_features)
+    if (has_rank) "\n      snap.candidate_rank," else "",
+    table_in, tmp, id_q, id_q, id_q,
+    if (has_rank) ", snap.candidate_rank" else ""
   )
 
-  DBI::dbExecute(conn, drop_sql)
+  DBI::dbExecute(conn, sprintf("DROP TABLE IF EXISTS %s;", table_out))
   DBI::dbExecute(conn, create_sql)
   invisible(table_out)
 }

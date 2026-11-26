@@ -245,6 +245,7 @@ test_that("lnk_wsg_downstream_check passes the bundle's knob to the probe", {
     .lnk_require_fwa_downstream = function(conn) invisible(TRUE),
     .lnk_wsg_fwa_unloaded = function(conn, wsgs) character(0),
     .lnk_dams_near_groups = function(conn, wsgs) NULL,
+    .lnk_wsg_line_deps = function(conn, aoi) character(0),
     .lnk_dams_blocking_downstream = function(conn, aoi, loaded, outlets,
                                              additions = FALSE,
                                              near_groups = NULL) {
@@ -372,4 +373,98 @@ test_that(".lnk_dams_near_groups snaps every dam where the polygon table is abse
   conn <- skip_if_no_db()
   local_mocked_bindings(.lnk_table_exists = function(conn, tbl) FALSE)
   expect_null(.lnk_dams_near_groups(conn, c("PCEA", "UPCE")))
+})
+
+test_that("the dam snap gives a tie at a shared vertex to the segment starting there (link#478)", {
+  sql <- link:::.lnk_dams_matched_sql()
+  expect_match(sql, paste0(
+    "ORDER BY str.geom <-> c.geom,\\s+ST_LineLocatePoint\\(str.geom, c.geom\\) = 1,",
+    "\\s+str.downstream_route_measure DESC,\\s+str.linear_feature_id"))
+
+  conn <- skip_if_no_db()
+  # A dam 10 m off the vertex where a tributary (start 0) meets the top end
+  # of another line, both segments equidistant: the tributary wins, where
+  # "higher measure" would take the other line's top.
+  got <- DBI::dbGetQuery(conn, sprintf("
+    WITH str_in AS (
+      SELECT * FROM (VALUES
+        (1::bigint, 11::integer, 0::double precision,
+         'LINESTRING(0 0, 0 100)'::text),
+        (2::bigint, 22::integer, 900::double precision,
+         'LINESTRING(-100 0, 0 0)'::text)) v(lfid, blk, ds, wkt)),
+    c AS (SELECT 'd1'::text AS dam_id, ST_SetSRID(ST_MakePoint(7.0710678, -7.0710678), 3005) AS geom)
+    SELECT str.lfid
+    FROM c CROSS JOIN LATERAL (
+      SELECT s.lfid, ST_SetSRID(ST_GeomFromText(s.wkt), 3005) AS geom, s.ds
+      FROM str_in s
+      ORDER BY ST_SetSRID(ST_GeomFromText(s.wkt), 3005) <-> c.geom,
+               ST_LineLocatePoint(ST_SetSRID(ST_GeomFromText(s.wkt), 3005), c.geom) = 1,
+               s.ds DESC, s.lfid
+      LIMIT 1) str"))
+  expect_identical(as.numeric(got$lfid), 1)
+})
+
+
+# --- groups on the line holding no barrier rows (link#386) -----------------
+
+test_that("a group on the downstream lines holding no barrier rows refuses, named (DB)", {
+  conn <- skip_if_no_db()
+  cfg <- lnk_config("bcfishpass")
+  loaded <- lnk_load_overrides(cfg)
+  s <- paste0("zz_lnk_t386_guard_", Sys.getpid())
+  DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", s))
+  DBI::dbExecute(conn, sprintf("CREATE SCHEMA %s", s))
+  withr::defer(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", s)))
+  cfg$pipeline$schema <- s
+  # BULK's lines are touched by KISP, KLUM, LKEL, LSKE, MORR, MSKE, USKE and
+  # ZYMO (no dam on BULK's path, so only this condition can refuse).
+  deps <- intersect(.lnk_wsg_line_deps(conn, "BULK"),
+                    lnk_wsg_resolve(cfg, loaded, wsgs = NULL))
+  skip_if(length(deps) < 2L, "FWA here no longer gives BULK two line dependencies")
+  DBI::dbExecute(conn, sprintf(
+    "CREATE TABLE %s.barriers (watershed_group_code varchar(4))", s))
+  DBI::dbExecute(conn, sprintf("INSERT INTO %s.barriers VALUES ('%s')", s, deps[1]))
+  expect_error(lnk_wsg_downstream_check(conn, "BULK", cfg, loaded), "link#386")
+  r <- suppressMessages(lnk_wsg_downstream_check(conn, "BULK", cfg, loaded,
+                                                 on_fail = "warn"))
+  expect_identical(r$status, "warn")
+  expect_identical(r$wsgs_unheld, sort(deps[-1]))
+  expect_match(r$note, "^link#386 guard\\(warn\\)")
+  DBI::dbExecute(conn, sprintf("INSERT INTO %s.barriers SELECT unnest(%s::text[])", s,
+    DBI::dbQuoteLiteral(conn, paste0("{", paste(deps[-1], collapse = ","), "}"))))
+  expect_identical(lnk_wsg_downstream_check(conn, "BULK", cfg, loaded)$status, "pass")
+})
+
+test_that("a modelled group with no FWA streams here is named: its lines cannot be read (round 3)", {
+  local_mocked_bindings(
+    .lnk_require_fwa_downstream = function(conn) invisible(TRUE),
+    .lnk_wsg_fwa_unloaded = function(conn, wsgs) intersect(wsgs, "INGR"),
+    .lnk_dams_near_groups = function(conn, wsgs) NULL,
+    .lnk_wsg_line_deps = function(conn, aoi) character(0),
+    .lnk_wsg_unheld = function(conn, cfg, wsgs) character(0),
+    .lnk_dams_blocking_downstream = function(...) {
+      data.frame(dam_id = character(0), dam_name_en = character(0),
+                 watershed_group_code = character(0),
+                 passability_status_code = integer(0))
+    },
+    lnk_wsg_resolve = function(cfg, loaded, wsgs = NULL, ...) {
+      if (is.null(wsgs)) c("FINA", "INGR", "UPCE") else wsgs
+    })
+  local_mocked_bindings(frs_wsg_drainage = function(conn, wsg, outlets) c("FINA", "UPCE"),
+                        .package = "fresh")
+  r <- suppressMessages(lnk_wsg_downstream_check(fake_conn(), "FINA",
+    lnk_config("default"), list(), on_fail = "warn", outlets = stub_outlets()))
+  expect_identical(r$status, "warn")
+  expect_identical(r$wsgs_unheld, "INGR")
+  expect_error(lnk_wsg_downstream_check(fake_conn(), "FINA", lnk_config("default"),
+                                        list(), outlets = stub_outlets()),
+               "no FWA streams in this database")
+})
+
+test_that("the recompute's post-condition takes the written-reason override (round 3)", {
+  f <- testthat::test_path("..", "..", "data-raw", "wsg_recompute_one.R")
+  skip_if_not(file.exists(f), "data-raw not in this tree")
+  txt <- paste(readLines(f), collapse = "\n")
+  expect_match(txt, 'Sys.getenv("LNK_GUARD_DOWNSTREAM_NOTE", "")', fixed = TRUE)
+  expect_match(txt, "override = if \\(nzchar\\(trimws\\(note\\)\\)\\) note")
 })

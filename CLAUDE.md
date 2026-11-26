@@ -17,7 +17,7 @@ The settled findings behind the methods (what is known, with provenance and the 
 
 **Take the next move from `planning/backlog.md`** (`bash <soul>/skills/_shared/backlog_moves.sh next planning/backlog.md`; `/compact-prep` names it): 13 moves, umbrellas #469–#481, each planned with one `/planning-init <umbrella>` and landed in one PR, ticked by `/gh-pr-merge`. Moves 12 and 13 wait on knowledge#139's flow-method decision and fresh 0.54.0. A link issue knowledge waits on says so in its batch section. A new issue joins the open move whose batches touch its files; run `/backlog-sweep` again when one fits none. Record: `planning/archive/2026-11-issue-468-backlog-pass/`.
 
-## Status (2026-11-23, later) — dictionaries render and validate; residence from `dimensions.csv`; fresh syncs the sample; order-1 declined (#476, 0.92.0)
+## Status (2026-11-26) — dictionaries render and validate; residence from `dimensions.csv`; fresh syncs the sample; order-1 declined (#476, 0.94.0)
 
 **Backlog move 8 (#476) lands as one release.** `configs/README.md` renders every `dictionary_*.csv` (`.lnk_dictionary_readme()`, tested for staleness) and `lnk_rules_build(strict =)` checks columns against it (#75). `default` and `bcfishpass` carry `residence`; spawn-only is `rear_no_fw = yes`; `.lnk_species_residence()` feeds every persisted mapping code through the run's `cfg` (#189; the exported functions are #512, move 9). `build_rules.R` builds the top-level sample from `default` (byte-copied dimensions, `default`'s thresholds), and fresh PR #332's weekly `sync-link-rules` workflow opens a `rules-sync` PR on drift (#129). The order-1 exception is declined in `default` (#327). #212, #316 and #86 closed by decision. No token moves. Mechanics: RUNBOOK §7. Evidence: `data-raw/logs/order1_327/`, `data-raw/logs/residence_189/`.
 
@@ -30,6 +30,33 @@ The settled findings behind the methods (what is known, with provenance and the 
 - **The base of a 20-group `default` closure took 691 min on m1 on 2026-11-23**, 563 of them KLUM (363) and FRCN (200); the other 18 groups took 1.7 to 25 min each.
 - **A `rules.yaml` regenerated with no body change still moves its checksum** (`# Generated:` date): `build_rules.R` says to commit only a file whose body moved.
 
+## Status (2026-11-24, later) — one holder per barrier position; several lift rules per species; barrier rules as config (#479, 0.93.0)
+
+**Backlog move 11 (#479) lands as one release: #386, #236 and #341; #201 and #83 split out.** Every control row applies by position; a gradient barrier is held only by the group owning its segment (`.lnk_pipeline_prep_locate()`, `.lnk_sql_gradient_held()`), with overrides and evidence beside a barrier the group holds (`.lnk_sql_override_held()`). `.lnk_lift_rules()` reads each species' `parameters_fresh` row plus a bundle's `parameters_barrier_lifts.csv`; evidence names its `lift_rule` (in the key). `parameters_barrier_rules.csv` is evaluated into `crossings.barrier_rule_id` (`.lnk_barrier_rules_apply()`), read by the four barrier sets. `lnk_thresholds()`, `lnk_score()`, `lnk_source()` removed. Tokens: `default`, `default_tuned`, `default_parent` `cut-full-top-5 acc-v8`; `default_minimal` `cut-min-2 acc-v8`; `bcfishpass` `cut-full-ssf-all-4 acc-bcfp-6`; `grad-parent-2`. Mechanics: RUNBOOK §2a, §5 ("Several lift rules", "One holder per position"), §7, §8c, §8d. Write-up: `research/barrier_rules.md`. Evidence: `data-raw/logs/barrier_copies_386/`, `data-raw/logs/lift_rules_236/`, `data-raw/logs/barrier_rules_341/`.
+
+**Owed:** every group re-models at the next provincial run (tokens moved), after the pre-run gate (`R/`, `inst/extdata/`, `pretest_inputs.csv` changed); `lnk_persist_init()` once per host on each persist schema at a quiet time (the evidence key migration takes ACCESS EXCLUSIVE) before any consolidate into it; the scheduler's move to the owner rule once every group is at 0.93.0; the #201 + #83 issue filed from the draft in this move's archived plan once the owner has read it; #341's body narrowed to what stays open; #520 (adopt or reject the second BT lift rule). m1 keeps scratch schemas `fresh_386_{before,after,final}_{default,bcfp}` and working schemas `w386{bd,bb,ad,ab,fd,fb}_*` until the merge; drop them after.
+
+**Facts not worth re-deriving:**
+- **Only 259 FWA lines touch more than one group,** and every gradient position on them was held by every built scanner (1,224 positions, up to 13 holders). Copies never differed in subtype or species; the one disagreement was LSAL's Salmon River control (67492, GRADIENT f) defeated by SALR's and TABR's copies.
+- **The 7 control rows filed under a non-owner are FALLS f with no natural row within 1 m:** fresh's `falls.csv` already leaves those falls out, so they were inert before and after.
+- **On eleven proof groups, both bundles, the only changes were removed copies:** no segment, access or habitat value moved, no lift lost; FINAL digests equal to AFTER-386 in every persisted table.
+- **`column` is a Postgres reserved word:** a log snapshot table built from a dictionary row of that name failed `lnk_persist_init()`; a test checks every log column against `pg_get_keywords()`.
+- **A scratch copy of `barriers` needs the persisted table's GiST and btree indexes,** or `lnk_access()`'s walk scans it (BULK sat 16 min on one statement).
+- **`wsg_recompute_one.R`'s downstream check is a post-condition after the recompute commits:** a proof set leaving a group's downstream groups out fails it by design.
+- **Measured against outlet drop above 0.6 m or slope times length above 120,** most PSCIS crossings the province calls barriers are neither (BULK: 779 of 1,564 leave the barrier set in place of the status), so the status reads more than those two measurements.
+
+## Status (2026-11-24) — crossings snap by one rule; habitat upstream of each crossing over the network (#478, 0.92.0)
+
+**Backlog move 10 (#478) lands as one release: #313, #314, #383 (snapping) and #321, #232, #356 (habitat upstream of each crossing).** `lnk_points_snap()` wraps `fresh::frs_point_snap()` (required `id_col`), so no crossing snaps to a `999.*` placeholder; the PSCIS pick and the CABD dam snap give a shared-vertex tie to the segment that **starts** there (not at its own upstream end, then higher start, then lower id): fwapg's rule on one stream, and the stream starting at the vertex across two. `cut-full-top-4` / `cut-full-ssf-all-3` replace `cut-full-top-3` (#501's) and `cut-full-ssf-all-2` (same specs). `lnk_aggregate()` is rebuilt on `fresh::frs_aggregate()` (breaking): per crossing and species over the whole network, bcfishpass's `fwa_upstream(..., true, 1)`, long table to `to`, below-barrier totals. Mechanics: RUNBOOK's PSCIS-pick paragraph, "Snapping and ties". Write-ups: `research/crossing_snap.md`, `research/bcfishpass_parity.md` ("Crossings, and habitat upstream of each crossing"). Evidence: `data-raw/logs/snap_tie_478/`, `data-raw/logs/crossings_upstream_478/`, `data-raw/logs/crossings_parity_232/`.
+
+**Owed:** every persisted group in `fresh_default` and `fresh` re-models at the next provincial run (tokens moved), after the pre-run gate (`R/`, `pretest_inputs.csv` changed); the `default` config's scratch re-model of groups holding a moved crossing (NASR's near-river walk stalled twice beside another session's, #487); #356's MAD-script reruns once a host's `fresh_default` has #481's column; the head-measure live tests run for real once a shared database has fwapg#41's rework; #341 reads the per-crossing table.
+
+**Facts not worth re-deriving:**
+- **fwapg's "higher measure" tie rule is wrong across two streams:** it put the Crescent Slough barrier dam (LFRA) at the top end of a Fraser side channel carrying code `100`, so 17,657 segments counted as upstream instead of 16 (`claims.sql`).
+- **`fwa_upstream(..., true, 1)` is mutual for two points within 1 m on one stream**, so "immediate barrier upstream" needs a strict order (higher measure, then id).
+- **FWA segments overlap** (a start before the last segment's end): a point resolved by `m >= ds AND m < us` can match two, which doubled `frs_aggregate()`'s sums (225 modelled crossings province-wide). Resolve once, highest start.
+- **The PSCIS pick reads all five candidates, so the snap's own tie order matters only at the five-candidate cutoff** (LILL's one indirect move: a cross-stream tie in PSCIS 63445's fifth candidate, then bcfishpass's duplicate-match step clears all of a PSCIS's modelled matches).
+- **Killing an R client leaves its Postgres query running:** two orphaned near-river walks from a killed parallel attempt held the database; `pg_terminate_backend` them. Two builds of different code cannot run at once: they share `working_<wsg>`.
 ## Status (2026-11-23) — rainbow trout back in `default`; steelhead records count as RB; the presence review's last rows outside KO (#501, 0.91.0)
 
 **Backlog move 16 (#501) lands as one release: #497 and #402 close.** `default`'s `species_pooling.csv` counts `ST`, `SST` and `WST` records as RB where RB is marked present (province rows), and an RB record never as ST; `species_modelled.csv` models RB again (KO stays paused). The second presence review added BT in nine groups and DV in VICT, removed RB in LPRO and UPET, kept four cells absent, and sent six native-range cells to #515; KO's 138 rows wait for kokanee's return, #516. Tokens: `default`, `default_tuned`, `default_parent` `cut-full-top-3 acc-v7`; `default_minimal` `cut-min acc-v7`. Mechanics: RUNBOOK §7, "The record rule" and "Pausing a species". Evidence: `data-raw/logs/rb_st_497/`, `data-raw/logs/presence_check_501/`, `data-raw/logs/rb_return_501/`.
@@ -785,7 +812,7 @@ Mechanics: RUNBOOK §6d (`access`, contract, gates, digest, versions) and §8c (
   - `lnk_habitat_validate()`'s cost has the same split.
   - `parity_crosssection.R` and `wsg_vignette_data.R` apply `.lnk_sql_lake_connection()` to `fresh.streams_vw_bcfp`.
   - **Capture still reads the `rearing` flag.** About half of in-lake fish records (bcfishobs A / B) sit on a 1450 line, so they are lake evidence.
-  - **Still on the flag:** `lnk_aggregate()` (per crossing) and the older one-off scripts with their own SQL (`compare_adms.R`, `exp_gradient_extra_breaks.R`).
+  - **Still on the flag:** the older one-off scripts with their own SQL (`compare_adms.R`, `exp_gradient_extra_breaks.R`). `lnk_aggregate()` splits connectors out since #478.
 - **Measured** (`data-raw/logs/lake_connection_319/`):
   - Cross-section 25/25 pass before and after; FINA BT rearing −393.6 km on both sides.
   - #284's `habitat_change.csv` reproduces 36 / 36.
@@ -1453,7 +1480,6 @@ Note: `<owner>/<repo>@<sha>` references a commit; this does **not** trigger GitH
 ## Exported Functions
 
 ### Core
-- `lnk_thresholds(csv, high, moderate, low)` — configurable severity thresholds. Ships BC defaults. CSV or inline override. Feeds into `lnk_score()`.
 - `lnk_db_conn()` — PostgreSQL connection factory, through `fresh::frs_db_conn()`: arguments, then `PG*`, then `PG_*_SHARE` (#288).
 - `lnk_config(name_or_path)` — load a config **manifest**: paths (`cfg$rules`, `cfg$dimensions`), file declarations (`cfg$files`), pipeline knobs (`cfg$pipeline`), provenance metadata. **Manifest-only — no parsed CSVs.** Cheap to call. Configs may declare `extends:` to inherit from another config. Ships with `"bcfishpass"` and `"default"` variants under `inst/extdata/configs/<name>/`.
 - `lnk_load_overrides(cfg)` — materialize the data files declared in `cfg$files`. Returns named list of canonical-shape tibbles. Entries with `source` + `canonical_schema` dispatch through `crate::crt_ingest()`; others fall through to local reads dispatched on path extension. Adding a new source family is a config edit + crate registration — no link R code change.
@@ -1465,8 +1491,8 @@ Note: `<owner>/<repo>@<sha>` references a commit; this does **not** trigger GitH
 ### Match family
 - `lnk_match(conn, sources, distance)` — generic N-way matcher on `blue_line_key` + `downstream_route_measure`. Bidirectional 1:1 dedup (closest match wins both directions). Where filters isolated in subqueries. Optional `xref_csv` for hand-curated GPS corrections.
 
-### Score family
-- `lnk_score(conn, crossings, method)` — `method = "severity"` for biological impact classification (high/moderate/low). `method = "rank"` for weighted multi-criteria prioritization. Threshold-driven, NULL-safe, column-agnostic.
+### Barrier rules
+- Which crossings are human-made barriers is the bundle's `parameters_barrier_rules.csv` (#341): evaluated in `lnk_pipeline_crossings()` into `crossings.barrier_rule_id` (`.lnk_barrier_rules_apply()`), read by the four barrier sets. Further observation-lift rules per species are `parameters_barrier_lifts.csv` (#236), read with each species' `parameters_fresh` row by `.lnk_lift_rules()`. `lnk_thresholds()`, `lnk_score()` and `lnk_source()` were removed in 0.93.0.
 
 ### Rules family
 - `lnk_rules_build(csv, to, thresholds, edge_types, strict)` — transforms a species habitat dimensions CSV into the rules YAML format consumed by `frs_habitat()`. Every column is checked against `configs/dictionary_dimensions.csv` (warning, or error under `strict = TRUE`; rendered as `configs/README.md`, #75). Built for `default` (whose dimensions the top-level `inst/extdata/parameters_habitat_dimensions.csv` copies) and the bcfishpass comparison variant.
@@ -1492,32 +1518,25 @@ Six-phase bcfishpass-reproducing pipeline, driven by `lnk_config()` + `lnk_load_
 - `lnk_parity_annotate(rollup, taxonomy, to, tolerance)` — annotates a parity rollup against `research/bcfp_divergence_taxonomy.yml`. Tags each row with `taxonomy_id, class, mechanism, status, refs`. Unmatched rows: `UNEXPLAINED | WITHIN_TOLERANCE | NOT_APPLICABLE`.
 
 ### Bridge to fresh
-- `lnk_source(conn, crossings, label_col, label_map)` — returns `list(table, label_col, label_map)` that plugs directly into `frs_habitat(break_sources = list(...))`. `label_map` translates link severity → fresh access labels (`high → blocked`, `moderate → potential`).
-- `lnk_aggregate(conn, crossings, habitat, cols_sum)` — sums habitat on the crossing's **own stream line** above it (same `blue_line_key`, higher measure). There is no network walk, it is not per species, it cannot read the persisted `streams_habitat_<sp>` (no key, measure or length columns there), and nothing calls it (measured in #338). It is not a per-crossing upstream rollup.
+- `lnk_aggregate(conn, crossings, schema, to, config, species, col_id, barriers)` — per crossing and species, the habitat upstream over the whole network (the crossing's stream above it and every tributary, across groups), from a persist schema's `streams` and `streams_habitat_<sp>` (#478, #321). `fresh::frs_aggregate()` refined by bcfishpass's measure-aware `fwa_upstream(..., true, 1)`; exact numeric sums; zeros where nothing is upstream. Writes a long table to `to` (`config`, `species_code`, `spawning_km`, `rearing_km` with connectors out, the stream / lake / wetland split, `rearing_lake_connection_km`), plus `*_belowupstrbarriers_km` given a `barriers` table (to the next human-made barriers upstream). Barriers outside the table (another group's) do not stop the walk.
 
 ## Integration with fresh
 
 ```r
-# link scores crossings
-lnk_load(conn, csv = "overrides.csv", to = "working.fixes")
-lnk_override(conn, "working.crossings", "working.fixes")
-lnk_score(conn, "working.crossings")
+# link builds the group's crossings; its barrier rules say which are barriers
+lnk_pipeline_crossings(conn, "MORR", cfg, loaded, "working_morr")
 
-# link produces break source spec
-src <- lnk_source(conn, "working.crossings")
-
-# fresh consumes it — zero translation
-frs_habitat(conn, "MORR", break_sources = list(src))
-
-# link reads fresh output for per-crossing rollup
-lnk_aggregate(conn, "working.crossings", "fresh.streams_habitat")
+# link reads fresh output for per-crossing rollup: per species, over the network
+lnk_aggregate(conn, "working_morr.crossings", schema = "fresh_default",
+              to = "working_morr.crossings_upstream_habitat", config = "default",
+              barriers = "working_morr.barriers_anthropogenic")
 ```
 
-The data flows both directions: link → fresh (scored crossings as break sources) and fresh → link (habitat classification for upstream rollup).
+The data flows both directions: link → fresh (crossings and barriers as break sources) and fresh → link (habitat classification for upstream rollup).
 
 ## fresh Break Source Label Convention
 
-When link produces a break source via `lnk_source()`, the label values control how fresh treats each point:
+When link hands fresh a break source, the label values control how fresh treats each point (`lnk_pipeline_classify()` labels crossings from their status):
 
 | Label | What fresh does |
 |-------|----------------|
@@ -1531,10 +1550,8 @@ When link produces a break source via `lnk_source()`, the label values control h
 `frs_habitat()` and `frs_habitat_classify()` accept `label_block` (default `"blocked"`). This controls which break labels restrict access:
 
 ```r
-# link scores crossings with severity labels
-src <- lnk_source(conn, "working.crossings",
-  label_col = "severity",
-  label_map = c("high" = "blocked", "moderate" = "potential"))
+# a break source: a table and its label column
+src <- list(table = "working.crossings", label_col = "label")
 
 # Conservative: both high and moderate block
 frs_habitat(conn, "BULK",
@@ -1549,7 +1566,7 @@ frs_habitat(conn, "BULK",
 
 ### `gate` parameter
 
-`gate = FALSE` skips accessibility entirely — classifies all segments by gradient/channel width alone. Useful for total habitat potential before considering barriers. `lnk_aggregate()` can compare gated vs ungated to show how much habitat each crossing blocks.
+`gate = FALSE` skips accessibility entirely — classifies all segments by gradient/channel width alone. Useful for total habitat potential before considering barriers. Summed per crossing with `lnk_aggregate()` on a gated and an ungated build, it shows how much habitat each crossing blocks.
 
 ### Any AOI
 
@@ -1571,7 +1588,7 @@ The same steps replicate what bcfishpass does, for any `watershed_group_code`:
 2. Load overrides from `bcfishpass/data/` CSVs, filter to WSG
 3. `lnk_load()` → `lnk_override()` (validate + apply)
 4. Get PSCIS via `bcdata::bcdc_get_data()`, match with `lnk_match()` (+ xref CSV)
-5. `lnk_score()` → `lnk_source()` → `frs_habitat()`
+5. `lnk_pipeline_crossings()` (barrier rules) → `frs_habitat()`
 6. Falls as `list(table = "working.falls", label = "blocked")`
 
 To run the entire province: loop over watershed groups. Or pass any AOI with `species` for sub-basin work.
@@ -3173,6 +3190,12 @@ Write a JSON object with an empty key as text, not through `toJSON()`.
 ### Probing a TMB objective can break `vcov()` on the fit
 Compute `vcov()` and `SE()` before probing a TMB objective, or save and restore `env$last.par.best` and `env$value.best` around the probe.
 
+### Numeric routines that err at their edge, and `round()`
+`besselI(x, nu, expon.scaled = TRUE)` returns 0 with no warning for large `x`.
+
+### knitr and pandoc rewrite a caption: `fig.cap` is evaluated late, and `alt` copies it
+Set `fig.alt` from a call, not from the caption's value.
+
 # Code Check — Shell
 Tool-level traps in bash, sed, git and `gh`, and in the host toolchain those commands depend on.
 
@@ -3257,7 +3280,7 @@ Wait on the PIDs you started (`wait "$pid"`), because a bare `wait` also blocks 
 Inside the branch, `$?` is the status of the `!` compound — which is **0 by construction**, because the negation succeeded.
 
 ### A `pgrep -f` waiter matches a waiter's command line, so it never exits
-Wait on a PID with `while kill -0 "$PID"; do sleep 30; done`, never on `pgrep -f "job"`, whose pattern matches a waiting loop's command line so it never exits.
+Wait on a PID with `while ps -p "$PID" >/dev/null 2>&1; do sleep 30; done`, never on `pgrep -f "job"`, whose pattern matches a waiting loop's command line so it never exits.
 
 ### `timeout` is GNU coreutils — a portable deadline
 An assertion around something that might hang can only pass or hang, never fail (`code-check.md`, "Restore the bug and prove the guard fires").
@@ -3396,6 +3419,12 @@ Give each setup step its own `|| exit 1` and branch with `if`.
 
 ### An Actions `run:` step with no `shell:` has no `pipefail`
 Set `defaults: run: shell: bash` on the job, since a Linux step with no `shell:` runs `bash -e {0}`.
+
+### `git mv -k` on an untracked file exits 0 and moves nothing
+Rename an untracked file with `mv` and a tracked one with `git mv` without `-k`, then check the new path exists.
+
+### `pipefail` fails `cmd | head -N | grep -q` on SIGPIPE
+Capture the output first (`out=$(cmd 2>&1)`) and test the variable, or run the probe without `pipefail`.
 
 # Code Check — Spatial
 terra, sf, bcdata, GDAL/OGR CLIs.
@@ -3690,6 +3719,12 @@ Before calling two DEMs the same surface, regress their difference on the refere
 ### A nodata value written to PNG comes back from magick as alpha
 Read a PNG that terra or GDAL wrote with `magick::image_convert(magick::image_read(f), matte = FALSE)`: their nodata becomes a tRNS chunk, which magick reads as alpha.
 
+### An ogr2ogr load's column order depends on whether it was the database's first
+Set a loaded table's column order yourself when anything hashes its rows: the first load into a database puts the geometry last, every later one second.
+
+### Headless Chrome's `--screenshot` captures a MapLibre map before it draws
+Capture a mapgl or MapLibre page after a real wait (`chromote`, `Sys.sleep(15)`), never with Chrome's `--screenshot --virtual-time-budget`.
+
 # Code Check Conventions
 Structured checklist for reviewing diffs before commit.
 
@@ -3857,10 +3892,10 @@ Before opening a PR, and again before merging:
 ```bash
 git fetch -q origin
 git log --oneline HEAD..origin/main          # what landed while you worked
-git diff origin/main -- DESCRIPTION NEWS.md  # a version you did not bump
+git diff origin/main -- DESCRIPTION NEWS.md  # a NEWS bullet you did not write
 ```
 
-**A version bump you did not make is the tell**, and usually the only one — the tree is
+**A release you did not make is the tell**, and usually the only one — the tree is
 clean, the branch is healthy, and nothing in git hints that someone solved your problem
 an hour ago.
 
@@ -4950,7 +4985,8 @@ Then keep the vignette and its bundle true as both move:
 3. **Check every number the prose quotes** with a `stopifnot()` in the chunk that computes
    it, so the build fails when the data no longer supports the sentence.
 4. **Prove a refactor did not move the numbers:** render before and after, strip the HTML
-   to text, and diff. Only the prose you meant to change differs.
+   to text, and diff, then compare `alt`, `title`, `aria-label`, `id` and `href` as well: a
+   text diff is blind to attributes. Only the prose you meant to change differs.
 5. **The bundle carries provenance**, the commit and date it was built at, which the
    vignette prints. A regeneration forced by a script change asserts every other element
    `identical()` to the old bundle; rebuild where it was built when values pass through BLAS.
@@ -4959,7 +4995,7 @@ Then keep the vignette and its bundle true as both move:
    installed copy's bundle, while `rmarkdown::render()` after `pkgload::load_all()` reads
    the source tree's: the same article can pass one way and fail the other.
 
-*13 lines of evidence for this rule are in `conventions/r-packages.md`.*
+*14 lines of evidence for this rule are in `conventions/r-packages.md`.*
 
 ### Test data
 
@@ -5038,9 +5074,10 @@ exclusions: list(
      Link to the pkgdown reference page for details — don't duplicate it.
    - Don't list every function; the pkgdown reference page is the single
      source of truth for what's in the package.
-2. Bump version in `DESCRIPTION` (e.g., `0.0.0.9000` → `0.1.0`) — as the **final** commit of the branch, after verification numbers/tests are final. Mid-branch bumps are premature and churn: additional code changes end up bundled inside a "release" that already claimed the version.
-3. Commit as "Release vX.Y.Z"
-4. Tag: `git tag vX.Y.Z && git push && git push --tags`
+2. **Leave the version to the merge:** add the bullet under the development heading, change no
+   version, and put `Bump: major|minor|patch` on its own line in the PR body; `/gh-pr-merge`
+   releases (the first: `first-release=0.1.0`).
+3. With no merge: commit "Release vX.Y.Z", then `git tag vX.Y.Z && git push && git push --tags`.
 
 ## Repository Setup
 

@@ -20,7 +20,8 @@
 #' Source families + `blocks_species` semantics:
 #'
 #' - **Anthropogenic** (`barrier_source IN ('PSCIS','CABD','MODELLED_CROSSINGS')`,
-#'   from `<schema>.crossings WHERE barrier_status IN ('BARRIER','POTENTIAL')`):
+#'   from `<schema>.crossings` where the bundle's barrier rules select the
+#'   crossing, `barrier_rule_id` not NULL; link#341):
 #'   blocks all 8 species. `crossing_source` is mapped through verbatim,
 #'   keeping the `MODELLED_CROSSINGS` value (vs. lossy normalization to
 #'   `MODELLED`).
@@ -153,7 +154,7 @@ lnk_barriers_unify <- function(conn, aoi, cfg, loaded,
       arr <- sprintf("ARRAY[%s]::text[]",
                      paste(sprintf("'%s'", spp), collapse = ", "))
     }
-    sprintf("WHEN gradient_class = %s THEN %s", cls, arr)
+    sprintf("WHEN g.gradient_class = %s THEN %s", cls, arr)
   }, character(1))
   gradient_case <- paste(
     "CASE", paste(case_branches, collapse = " "),
@@ -161,7 +162,7 @@ lnk_barriers_unify <- function(conn, aoi, cfg, loaded,
   )
 
   # Universal-block array for natural barriers and anthropogenic
-  # passability IN ('BARRIER', 'POTENTIAL') — all 8 species blocked.
+  # crossings the barrier rules select (link#341) — all species listed.
   all_species_arr <- sprintf(
     "ARRAY[%s]::text[]",
     paste(sprintf("'%s'", species), collapse = ", ")
@@ -197,34 +198,40 @@ lnk_barriers_unify <- function(conn, aoi, cfg, loaded,
       localcode_ltree,
       ST_Force2D(geom)::geometry(Point, 3005) AS geom
     FROM %2$s.crossings
-    WHERE barrier_status IN ('BARRIER', 'POTENTIAL')
+    WHERE %3$s
       AND blue_line_key = watershed_key",
-    all_species_arr, schema)  # nolint: indentation_linter
+    all_species_arr, schema,
+    .lnk_sql_barrier_selected(conn, schema))  # nolint: indentation_linter
 
-  # Source 2: gradient. id_barrier = 3_000_000_000 + row_number().
-  # gradient_barriers_raw has no watershed_group_code column; the
-  # entire table is per-AOI per lnk_pipeline_prepare. geom derived
-  # via .lnk_sql_locate() for cross-source uniformity.
+  # Source 2: gradient. id_barrier = 'GRADIENT-' || row_number(), numbered
+  # over the rows this group holds. gradient_barriers_raw covers the whole of
+  # every line the group touches; a group holds only the positions it owns
+  # (link#386), so one row stands for each position province-wide:
+  # `.lnk_sql_gradient_held()`. geom derived via .lnk_sql_locate() for
+  # cross-source uniformity.
   sql_gradient <- sprintf("
     SELECT
       ('GRADIENT-' || row_number() OVER (
-        ORDER BY blue_line_key, downstream_route_measure, label)::text)::text
+        ORDER BY g.blue_line_key, g.downstream_route_measure, g.label)::text)::text
                                         AS id_barrier,
       %1$s::varchar(4)                  AS watershed_group_code,
       'GRADIENT'::text                  AS barrier_source,
-      label                             AS barrier_subtype,
+      g.label                           AS barrier_subtype,
       'BARRIER'::text                   AS passability,
       %2$s                              AS blocks_species,
       NULL::bigint                      AS linear_feature_id,
-      blue_line_key,
+      g.blue_line_key,
       NULL::integer                     AS watershed_key,
-      downstream_route_measure,
-      wscode_ltree,
-      localcode_ltree,
+      g.downstream_route_measure,
+      g.wscode_ltree,
+      g.localcode_ltree,
       %4$s AS geom
-    FROM %3$s.gradient_barriers_raw g",
+    FROM %3$s.gradient_barriers_raw g
+    %5$s",
     aoi_lit, gradient_case, schema,
-    .lnk_sql_locate("g.blue_line_key", "g.downstream_route_measure"))  # nolint: indentation_linter
+    .lnk_sql_locate("g.blue_line_key", "g.downstream_route_measure"),
+    .lnk_sql_gradient_held(paste0(schema, ".gradient_barriers_raw"), "g", aoi,
+                           lnk_wsg_resolve(cfg, loaded)))  # nolint: indentation_linter
 
   # Source 3: falls. id_barrier = 4_000_000_000 + row_number().
   # Ordered on the joined linear_feature_id too: a falls point in the ~1 mm
@@ -331,6 +338,55 @@ lnk_barriers_unify <- function(conn, aoi, cfg, loaded,
     schema, paste(union_parts, collapse = "\nUNION ALL\n")))
 
   invisible(conn)
+}
+
+
+#' SQL: keep only the gradient barrier rows this group holds
+#'
+#' A gradient barrier is found by every group scanning its line (a group scans
+#' every line it has a segment of, edge type 6010 aside:
+#' `.lnk_pipeline_prep_gradient()`'s `streams_blk`). One group holds it
+#' (link#386): its owner, the group of the segment it sits on
+#' (`gradient_barriers_raw.watershed_group_code`,
+#' `.lnk_pipeline_prep_locate()`). Where the owner would never hold it,
+#' because the bundle models no species in the owner or the owner does not scan
+#' the line, the lowest-coded modelled group scanning the line holds it instead,
+#' so no position is lost. Every scanning group computes the same holder from
+#' FWA and the bundle's presence table.
+#' @param table The schema-qualified `gradient_barriers_raw`.
+#' @param alias Its alias in the calling query.
+#' @param aoi The group being built.
+#' @param modelled The groups the bundle models (`lnk_wsg_resolve(cfg,
+#'   loaded)`).
+#' @return A `JOIN ... WHERE ...` fragment to follow `FROM <table> <alias>`.
+#' @noRd
+.lnk_sql_gradient_held <- function(table, alias, aoi, modelled) {
+  .lnk_validate_identifier(table, "table")
+  .lnk_validate_identifier(alias, "alias")
+  if (!is.character(modelled) || length(modelled) == 0L || anyNA(modelled)) {
+    stop("modelled must be a non-empty character vector of group codes",
+         call. = FALSE)
+  }
+  if (!aoi %in% modelled) {
+    stop(aoi, " is not among the groups the bundle models", call. = FALSE)
+  }
+  arr <- sprintf("ARRAY[%s]::text[]",
+                 paste(vapply(sort(unique(modelled)), .lnk_quote_literal, ""),
+                       collapse = ", "))
+  sprintf(
+    "JOIN (SELECT s.blue_line_key,
+                 array_agg(DISTINCT s.watershed_group_code::text
+                           ORDER BY s.watershed_group_code::text) AS scanners
+            FROM whse_basemapping.fwa_stream_networks_sp s
+           WHERE s.blue_line_key IN (SELECT blue_line_key FROM %1$s)
+             AND s.edge_type != 6010
+             AND s.watershed_group_code::text = ANY (%3$s)
+           GROUP BY s.blue_line_key) gh_scan
+      ON gh_scan.blue_line_key = %2$s.blue_line_key
+    WHERE CASE WHEN %2$s.watershed_group_code = ANY (gh_scan.scanners)
+               THEN %2$s.watershed_group_code
+               ELSE gh_scan.scanners[1] END = %4$s",
+    table, alias, arr, .lnk_quote_literal(aoi))
 }
 
 

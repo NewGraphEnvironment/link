@@ -46,7 +46,10 @@ once that's scaffolded.
 Filters mirror bcfp's \verb{model/01_access/sql/barriers_*.sql} and
 \code{remediations_barriers.sql}:
 \itemize{
-\item \verb{barrier_status IN ('BARRIER', 'POTENTIAL')} for anthropogenic-style tables.
+\item The barrier set: crossings the bundle's barrier rules select
+(\code{crossings.barrier_rule_id} not NULL, link#341), written by
+\code{\link[=lnk_pipeline_crossings]{lnk_pipeline_crossings()}}. A crossings table without the column (a
+caller's own) uses the source's status, \verb{barrier_status IN ('BARRIER', 'POTENTIAL')}, which is what the built-in rule selects.
 \item \code{blue_line_key = watershed_key} (excludes side-channel features).
 \item \code{barriers_remediations} = \code{barriers_anthropogenic} UNION
 crossings WHERE \verb{pscis_status = 'REMEDIATED' AND barrier_status = 'PASSABLE'}

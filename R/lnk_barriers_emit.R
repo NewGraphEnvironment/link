@@ -33,7 +33,11 @@
 #' @details
 #' Filters mirror bcfp's `model/01_access/sql/barriers_*.sql` and
 #' `remediations_barriers.sql`:
-#' - `barrier_status IN ('BARRIER', 'POTENTIAL')` for anthropogenic-style tables.
+#' - The barrier set: crossings the bundle's barrier rules select
+#'   (`crossings.barrier_rule_id` not NULL, link#341), written by
+#'   [lnk_pipeline_crossings()]. A crossings table without the column (a
+#'   caller's own) uses the source's status, `barrier_status IN ('BARRIER',
+#'   'POTENTIAL')`, which is what the built-in rule selects.
 #' - `blue_line_key = watershed_key` (excludes side-channel features).
 #' - `barriers_remediations` = `barriers_anthropogenic` UNION
 #'   crossings WHERE `pscis_status = 'REMEDIATED' AND barrier_status = 'PASSABLE'`
@@ -57,6 +61,9 @@ lnk_barriers_emit <- function(conn, schema) {
   )
 
   s <- DBI::dbQuoteIdentifier(conn, schema)
+  # Which crossings are human-made barriers: the bundle's rules, through
+  # crossings.barrier_rule_id (link#341).
+  sel <- .lnk_sql_barrier_selected(conn, schema)
 
   # Each table: separate DROP + CREATE pair (RPostgres rejects multi-
   # statement prepared queries, so we issue them individually).
@@ -82,9 +89,9 @@ lnk_barriers_emit <- function(conn, schema) {
         watershed_group_code,
         ST_Force2D(geom)        AS geom
       FROM %s.crossings
-      WHERE barrier_status IN ('BARRIER', 'POTENTIAL')
+      WHERE %s
         AND blue_line_key = watershed_key;",
-      s, s), # nolint: indentation_linter
+      s, s, sel), # nolint: indentation_linter
 
     barriers_pscis = sprintf("
       CREATE TABLE %s.barriers_pscis AS
@@ -102,9 +109,9 @@ lnk_barriers_emit <- function(conn, schema) {
         ST_Force2D(geom)        AS geom
       FROM %s.crossings
       WHERE crossing_source = 'PSCIS'
-        AND barrier_status IN ('BARRIER', 'POTENTIAL')
+        AND %s
         AND blue_line_key = watershed_key;",
-      s, s), # nolint: indentation_linter
+      s, s, sel), # nolint: indentation_linter
 
     barriers_dams = sprintf("
       CREATE TABLE %s.barriers_dams AS
@@ -122,9 +129,9 @@ lnk_barriers_emit <- function(conn, schema) {
         ST_Force2D(geom)        AS geom
       FROM %s.crossings
       WHERE crossing_source = 'CABD'
-        AND barrier_status IN ('BARRIER', 'POTENTIAL')
+        AND %s
         AND blue_line_key = watershed_key;",
-      s, s), # nolint: indentation_linter
+      s, s, sel), # nolint: indentation_linter
 
     barriers_remediations = sprintf("
       CREATE TABLE %s.barriers_remediations AS

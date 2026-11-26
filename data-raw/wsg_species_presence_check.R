@@ -98,7 +98,7 @@ stopifnot(inherits(records$observation_date, "Date"))
 
 res <- .lnk_presence_check(records, loaded, n_min = n_min, year_min = year_min,
                            year_now = year_now, regions = regions,
-                           species_modelled = cfg$species)
+                           species_modelled = cfg$species, cfg = cfg)
 other <- attr(res, "other_codes")
 fl <- res[!is.na(res$flag), , drop = FALSE]
 fl$story <- .lnk_presence_story(fl)

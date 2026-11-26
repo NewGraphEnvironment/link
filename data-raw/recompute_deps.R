@@ -16,18 +16,28 @@
 #            line the group touches, the most downstream segment of each other
 #            group on each ancestor-or-equal line, kept when FWA's
 #            fwa_downstream() puts it below the group's lowest segment on that
-#            line. Complete only if every row is also held, identically, by
-#            the group that owns the segment it sits on: true of this build's
-#            data save a handful of rows (recompute_early_374/README.md), not
-#            by construction.
+#            line. Complete when every row is held by the group owning the
+#            segment it sits on. From link 0.93.0 that holds by construction
+#            for gradient rows (link#386: each position is persisted by its
+#            owner alone, with controls applied by position), and overrides
+#            and evidence sit beside the barrier their group holds. Falls and
+#            user-definite rows are filed by their files' groups, which own
+#            all 3,294 falls and 227 user-definite rows in `default`
+#            (data-raw/logs/barrier_copies_386/). Builds before 0.93.0 hold
+#            copies (1,864 non-owner rows in fresh_default at 0.78.2), so the
+#            owner rule is complete only for a schema built wholly at 0.93.0
+#            or later, and the scheduler stays on the line rule until a
+#            provincial run has rebuilt every group.
 #   line     groups touching ANY part of a line on the path: every blue line
 #            carrying a code that is an ancestor of, or equal to, one of the
-#            group's codes. Complete by construction, which is what the
-#            scheduler uses: gradient barriers are found along the whole of
-#            every line a group touches and persisted under its own code
-#            (R/lnk_pipeline_prepare.R, R/lnk_barriers_unify.R), an override
-#            is written at the group's own barrier positions, and every other
-#            barrier source is filtered to the group's own segments. An early
+#            group's codes. Complete by construction for any build, which is
+#            what the scheduler uses: gradient barriers are found along the
+#            whole of every line a group touches (R/lnk_pipeline_prepare.R)
+#            and persisted by a group touching that line (every scanning
+#            group before link 0.93.0, the owner from then on:
+#            R/lnk_barriers_unify.R), an override beside its group's barrier,
+#            and every other barrier source is filtered to the group's own
+#            segments. An early
 #            recompute that reads too little cannot be undone (the habitat
 #            gate is one-way), so the rule errs wide.
 #            Its query is link's .lnk_wsg_deps_line() (R/lnk_wsg_deps.R),

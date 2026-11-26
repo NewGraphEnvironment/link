@@ -48,6 +48,42 @@ From `dictionary_dimensions.csv`: 37 columns.
 | residence | character | mapping\_code | both | the sets coded before #189: CH, CM, CO, PK, SK and ST anadromous, every other species resident | resident or anadromous: which barrier token a species' persisted mapping code reads (DAM / barrier class for residents, the anadromous form for the rest), read by .lnk\_species\_residence() (#189). Required for every modelled species once the column is present; a bundle without it keeps the sets coded before #189. Spawn-only species are those with rear\_no\_fw = yes, not a column of their own. | - | rear\_no\_fw |
 | notes | character | free\_form | - | empty | Free-form notes per species - biology references, citations, NGE-vs-bcfishpass deltas, TODO lifelines. Not consumed by lnk\_rules\_build. | - | - |
 
+## `parameters_barrier_lifts`
+
+From `dictionary_parameters_barrier_lifts.csv`: 11 columns.
+
+| column | type | group | owner | consumed_by | default_when_absent | description | related |
+|---|---|---|---|---|---|---|---|
+| species\_code | character | key | link | R/lnk\_lift\_rules.R | required | The species the rule lifts barriers for. Must be a species\_code of the bundle's parameters\_fresh.csv, whose row is that species' first lift rule (`own`). | rule |
+| rule | character | key | link | R/lnk\_lift\_rules.R | required | The rule's name, unique per species. Not `own`, which names the parameters\_fresh row. Evidence rows carry it in barrier\_override\_evidence.lift\_rule. | species\_code |
+| barrier\_kinds | semicolon\_list | scope | link | R/lnk\_lift\_rules.R | required | Which barrier kinds the rule may lift. Only `natural` (gradient, falls, subsurface flow) is accepted until human-made barriers can block a species; any other value is refused at load. | - |
+| observation\_species | semicolon\_list | observation | link | R/lnk\_barrier\_overrides.R | the row's own species\_code | Semicolon-separated observation species codes counting toward this rule's threshold, as in parameters\_fresh.csv. Each code counts under the record rule (which codes count as which species, and from what date). | observation\_species (parameters\_fresh) |
+| observation\_threshold | positive\_integer | observation | link | R/lnk\_barrier\_overrides.R | required | Minimum count of distinct qualifying records upstream of a barrier for this rule alone to lift it. A barrier is lifted where any of a species' rules is met; records of two rules never add together. | observation\_threshold (parameters\_fresh) |
+| observation\_date\_min | date | observation | link | R/lnk\_barrier\_overrides.R | 1900-01-01 | Earliest observation\_date that counts toward this rule. Under pipeline: observation\_record\_date: lift\_floor it must equal the record floor of every species the rule lists (their parameters\_fresh observation\_date\_min), as the parameters\_fresh row's must. | observation\_date\_min (parameters\_fresh) |
+| observation\_buffer\_m | numeric | observation | link | R/lnk\_barrier\_overrides.R | 20 | Tolerance in metres passed to fwa\_upstream() when testing whether a record lies upstream of a barrier position. | observation\_buffer\_m (parameters\_fresh) |
+| observation\_control\_apply | yes\_no | observation | link | R/lnk\_barrier\_overrides.R | FALSE | Whether a user\_barriers\_definite\_control row with barrier\_ind TRUE vetoes this rule's lift at its position. | observation\_control\_apply (parameters\_fresh) |
+| date | date | provenance | link | - | required | When the rule was added or last changed. | - |
+| source | character | provenance | link | - | required | Where the rule comes from: a study, bcfishpass's model SQL at a pinned commit, or an issue. | - |
+| notes | character | provenance | link | - | - | Why the rule exists. | - |
+
+## `parameters_barrier_rules`
+
+From `dictionary_parameters_barrier_rules.csv`: 11 columns.
+
+| column | type | group | owner | consumed_by | default_when_absent | description | related |
+|---|---|---|---|---|---|---|---|
+| rule\_id | character | key | link | R/lnk\_barrier\_rules.R | required | The rule's name. Rows sharing a rule\_id are ANDed into one rule; different rule\_ids are ORed, so a crossing is a human-made barrier where any rule matches. Each crossing's matching rule\_ids are written, sorted and joined with ';', to crossings.barrier\_rule\_id. Row order means nothing. | - |
+| applies\_to | semicolon\_list | scope | link | R/lnk\_barrier\_rules.R | required | The crossing sources the row applies to: '\*', or any of PSCIS, CABD, MODELLED\_CROSSINGS. A row matches no crossing outside them, which is how a scenario replaces the province's result for assessed crossings and keeps the modelled type for the rest. | - |
+| source\_table | character | condition | link | R/lnk\_barrier\_rules.R | required | Where the row's column\_name is read: crossings (the crossing row itself) or pscis\_assessment (whse\_fish.pscis\_assessment\_svw, joined on stream\_crossing\_id for a PSCIS crossing; its derived slope\_length is culvert\_slope times length\_or\_width). Any other value is refused. | column\_name |
+| column\_name | character | condition | link | R/lnk\_barrier\_rules.R | required | The column compared. Refused when the source does not carry it. | source\_table |
+| operator | character | condition | link | R/lnk\_barrier\_rules.R | required | One of in, =, \>, \>=, \<, \<=, is\_null, not\_null. A NULL value matches only is\_null. | value |
+| value | character | condition | link | R/lnk\_barrier\_rules.R | required unless is\_null or not\_null | The value compared, typed by the column (a number for a numeric column) and quoted through DBI; for in, a ';'-separated list. | operator |
+| species | character | outcome | link | R/lnk\_barrier\_rules.R | required | Which species the rule applies to. Only '\*' is accepted until a rule can block a species; anything else is refused at load. | outcome |
+| outcome | character | outcome | link | R/lnk\_barrier\_rules.R | required | What a match means. Only 'barrier' (a human-made barrier: barrier-below marks, mapping codes and per-crossing totals, never access) is accepted; anything else is refused at load. | species |
+| date | date | provenance | link | - | required | When the row was added or last changed. | - |
+| source | character | provenance | link | - | required | Where the rule comes from: an assessment protocol, a study, or an issue. | - |
+| notes | character | provenance | link | - | - | Why the rule exists. | - |
+
 ## `parameters_fresh`
 
 From `dictionary_parameters_fresh.csv`: 19 columns.
@@ -168,12 +204,12 @@ From `dictionary_wsg_species_presence_review.csv`: 9 columns.
 
 | column | type | group | owner | consumed_by | default_when_absent | description | related |
 |---|---|---|---|---|---|---|---|
-| watershed\_group\_code | character | key | link | R/lnk\_presence\_check.R:438 | required | The group whose presence cell was flagged, as in wsg\_species\_presence.csv. With species\_code, unique. | species\_code |
-| species\_code | character | key | link | R/lnk\_presence\_check.R:439 | required | The species column flagged, upper case (BT, CH, ...). | watershed\_group\_code |
-| flag | character | check | link | R/lnk\_presence\_check.R:440 | required | present\_unsupported: the cell is marked present and fewer records meet the rule than it asks for. absent\_recorded: the cell is not marked present and at least as many do. Refreshed while the row is pending. | rule |
-| rule | character | check | link | R/lnk\_presence\_check.R:441 | required | The rule the flag was judged by, as a sentence (.lnk\_presence\_rule()). A note on a changed presence cell names it. | flag |
-| story | character | record | link | R/lnk\_presence\_check.R:442 | required | What the group's records show for the species, drafted by the check from its evidence (counts, years, sources, releases, pooling, the group's note) and refreshed while pending. The reviewer may rewrite it; a decided row is never changed by the check. | decision |
-| decision | character | record | link | R/lnk\_presence\_check.R:443 | pending | pending (not reviewed), keep (the cell stays as it is), add (mark the species present), or remove (unmark it). An add, a remove, or a keep where bcfishpass's copy differs, is carried out as a row in wsg\_species\_presence\_overlay.csv, whose reason names the decision (#431). | story |
-| reviewer | character | record | link | R/lnk\_presence\_check.R:444 | - | Who made the decision. | review\_date |
-| review\_date | date | record | link | R/lnk\_presence\_check.R:445 | - | Date of the decision (YYYY-MM-DD). | reviewer |
-| issue | character | record | link | R/lnk\_presence\_check.R:446 | - | The link issue the row was raised or last decided under. | - |
+| watershed\_group\_code | character | key | link | R/lnk\_presence\_check.R:446 | required | The group whose presence cell was flagged, as in wsg\_species\_presence.csv. With species\_code, unique. | species\_code |
+| species\_code | character | key | link | R/lnk\_presence\_check.R:447 | required | The species column flagged, upper case (BT, CH, ...). | watershed\_group\_code |
+| flag | character | check | link | R/lnk\_presence\_check.R:448 | required | present\_unsupported: the cell is marked present and fewer records meet the rule than it asks for. absent\_recorded: the cell is not marked present and at least as many do. Refreshed while the row is pending. | rule |
+| rule | character | check | link | R/lnk\_presence\_check.R:449 | required | The rule the flag was judged by, as a sentence (.lnk\_presence\_rule()). A note on a changed presence cell names it. | flag |
+| story | character | record | link | R/lnk\_presence\_check.R:450 | required | What the group's records show for the species, drafted by the check from its evidence (counts, years, sources, releases, pooling, the group's note) and refreshed while pending. The reviewer may rewrite it; a decided row is never changed by the check. | decision |
+| decision | character | record | link | R/lnk\_presence\_check.R:451 | pending | pending (not reviewed), keep (the cell stays as it is), add (mark the species present), or remove (unmark it). An add, a remove, or a keep where bcfishpass's copy differs, is carried out as a row in wsg\_species\_presence\_overlay.csv, whose reason names the decision (#431). | story |
+| reviewer | character | record | link | R/lnk\_presence\_check.R:452 | - | Who made the decision. | review\_date |
+| review\_date | date | record | link | R/lnk\_presence\_check.R:453 | - | Date of the decision (YYYY-MM-DD). | reviewer |
+| issue | character | record | link | R/lnk\_presence\_check.R:454 | - | The link issue the row was raised or last decided under. | - |

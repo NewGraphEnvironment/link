@@ -1,6 +1,6 @@
 # Parity with bcfishpass
 
-**Verified:** 2026-11-02 · **Issues:** #440 (this record), #361, #362, #326, #364, #367, #349, #277, #279 · **Produced by:**
+**Verified:** 2026-11-02; crossings and per-crossing habitat 2026-11-23 · **Issues:** #440 (this record), #478 (#232, #321), #361, #362, #326, #364, #367, #349, #277, #279 · **Produced by:**
 `data-raw/parity_crosssection.R`, `data-raw/logs/parity_0.78.0/moves.R`, log prefix
 `data-raw/logs/parity_0.78.0/` · **Run:** `20261102_083253-52f261f8`, link 0.78.0 (`34c4c598`), fresh 0.52.0
 
@@ -46,6 +46,25 @@ model in that group are left out: CM and PK accessible in ADMS and BABL, CM in B
 recomputed and verified by `study_area_verify.sql` (PASS). The primitives are the 2026-10-23 load
 `fresh_parity361` was built on, and the reference did not move on any of the 50 pairs. The full
 stamp is in `data-raw/logs/parity_0.78.0/README.md`.
+
+## Crossings, and habitat upstream of each crossing
+
+Against bcfishpass run 148 (`v0.7.15-51-g3bd2824c`, 2026-11-17), with link's `bcfishpass` config built at `2b12adf0` (`zz478_parity.log`; `data-raw/logs/snap_tie_478/status_parity_bcfishpass.tsv`) into scratch schema `zz478_parity` for ADMS, BULK, MORR (upstream of BULK) and their downstream groups (LFRA, HARR, FRCN, THOM, STHM; LSKE, KLUM, KISP), downstream first. Producers: `data-raw/crossings_parity.R` (logs in `data-raw/logs/crossings_parity_232/`) and `data-raw/logs/crossings_upstream_478/` (`parity.R`, `defect.R`).
+
+**The crossings (#232).** Joined on `aggregated_crossings_id`, ADMS and BULK hold 9,173 crossings on both sides, and every one agrees on `barrier_status`; all but 4 sit on the same stream within 1 m. 27 are on one side only (19 link, 8 bcfishpass). Every CABD dam matches (42). The differences (`crossings_parity_rows.csv`):
+
+- **Modelled crossings:** 15 on link's side only and 1 on bcfishpass's (spelled `MODELLED CROSSINGS` there), and 2 in ADMS on another stream, 1 more 1.6 m apart: the modelled-crossings table's vintage.
+- **PSCIS, 7 on bcfishpass's side only and 4 on link's, all BULK.** At two positions each side kept a different one of two assessments (198104 and 198113, 198105 and 198114), the dedup choosing differently; 123530 and 123529 sit 20 m apart on one stream, one on each side. Three (8733, 8745, 8758) are crossings bcfishpass placed from PSCIS where link keeps the modelled crossing 2 to 6 m away; 8744 and 58123 have no counterpart. One PSCIS (199455) is 3 m apart.
+
+**Habitat upstream of each crossing (#321).** `lnk_aggregate()` against `bcfishpass.crossings_upstream_habitat`, per main-stem crossing (bcfishpass reports no other) and species, on the 9,145 crossings both hold (`distribution.csv`, `per_crossing.csv`). link's rearing is `rearing_km + rearing_lake_connection_km`, because bcfishpass counts lake connection lines in rearing.
+
+- **98 to 100 % of crossings are within 0.1 km** in every species and metric of both groups; in ADMS every metric rounds to 100 %, with no crossing more than 2.1 km apart except in sockeye spawning (12.8 km at most) and pink spawning, which link places none of (8.3 km).
+- **Spawning and rearing totals over all crossings** agree within 1.5 % except sockeye (ADMS spawning 302.7 against 327.1 km; BULK spawning 1,102 against 1,496 and rearing 5,100 against 4,662, the parked BULK SK difference of the group parity above) and two species link places none of: ADMS pink spawning (0 against 8.4 km) and BULK chum spawning (0 against 1.1).
+- **Below the next barriers upstream** runs higher in BULK (BT rearing 36,331 against 34,483 km): `lnk_aggregate()` stops at the barriers its table holds, here BULK's own, while bcfishpass's set is province-wide, so a crossing whose next barrier upstream is in MORR keeps MORR's habitat.
+
+**The defect it fixes.** `main`'s `lnk_aggregate()` summed only the crossing's own stream above it. On the same build, summed over every crossing: ADMS chinook spawning 774.5 km against 1,349.5 over the network, rearing 827.5 against 1,562.3; BULK chinook spawning 4,201 against 22,996, rearing 4,852 against 33,498 (`defect_adms.csv`, `defect_bulk.csv`).
+
+**Cost.** Eight species take 0.13 minutes on ADMS and 0.3 on BULK, over 3,615 and 5,577 crossings and their barriers (`stamp.csv`). The first version computed each crossing's immediate barriers upstream once per species, with a `NOT EXISTS` over the pair table, and took 15.4 minutes on ADMS and 91.5 on BULK (`stamp.csv` as committed in `4cf02d7a`); building the pairs once, with one `EXCEPT`, gave row-for-row the same table (28,920 ADMS and 44,616 BULK rows, compared in the session that made the change, before the 1 m and overlap fixes; the comparison was not kept).
 
 ## What moved at v0.78.0 (2026-11-02, #440)
 

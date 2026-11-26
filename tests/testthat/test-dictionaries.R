@@ -246,7 +246,7 @@ declaring <- function(stem) {
 }
 
 for (stem in c("species_pooling", "species_groups", "species_modelled",
-              "presence_groups")) {
+              "presence_groups", "parameters_barrier_rules")) {
   test_that(sprintf("dictionary_%s has the expected shape", stem), {
     d <- dict_read(stem)
     expect_true(all(c("column", "type", "group", "owner", "consumed_by",
@@ -403,4 +403,30 @@ test_that("every README cell displays as its dictionary cell (cmark-gfm)", {
   toy <- data.frame(column = c("a", "b", "c", "d"), description = desc)
   utils::write.csv(toy, file.path(d, "dictionary_toy.csv"), row.names = FALSE)
   expect_identical(check(d), 8L)
+})
+
+# -- dictionary_parameters_barrier_lifts (#236) -------------------------------
+# No shipped bundle declares the lifts table (a header-only file would move
+# config_hash for nothing), so the dictionary is held to the reader's column
+# list and to a table the reader accepts, not to a declaring bundle.
+
+test_that("dictionary_parameters_barrier_lifts matches the reader's columns", {
+  d <- dict_read("parameters_barrier_lifts")
+  expect_true(all(c("column", "type", "group", "owner", "consumed_by",
+                    "default_when_absent", "description",
+                    "related") %in% names(d)))
+  expect_false(any(duplicated(d$column)))
+  expect_true(all(filled(d$description)))
+  expect_true(all(d$owner == "link"))
+  expect_setequal(d$column, link:::.lnk_lift_rules_required)
+  fixture <- as.data.frame(stats::setNames(
+    rep(list("x"), length(d$column)), d$column), stringsAsFactors = FALSE)
+  fixture$species_code <- "BT"; fixture$barrier_kinds <- "natural"
+  fixture$observation_threshold <- "2"; fixture$observation_date_min <- NA
+  fixture$observation_buffer_m <- "20"; fixture$observation_control_apply <- "yes"
+  pf <- utils::read.csv(file.path(cfg_dir(), "default", "parameters_fresh.csv"))
+  r <- link:::.lnk_lift_rules(list(pipeline = list()),
+                              list(parameters_fresh = pf,
+                                   parameters_barrier_lifts = fixture))
+  expect_equal(sum(r$rule == "x"), 1L)
 })

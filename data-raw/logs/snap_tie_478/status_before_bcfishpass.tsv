@@ -1,0 +1,8 @@
+step	config	wsg	start_utc	end_utc	exit	load_start	load_end
+before	bcfishpass	NASR	2026-11-23T16:25:36Z	2026-11-23T16:27:28Z	0	5.33	7.16
+before	bcfishpass	SHUL	2026-11-23T16:27:28Z	2026-11-23T17:11:09Z	0	7.16	8.55
+before	bcfishpass	JERV	2026-11-23T17:11:09Z	2026-11-23T17:16:25Z	0	8.55	6.45
+before	bcfishpass	KETL	2026-11-23T17:16:25Z	2026-11-23T17:18:50Z	0	6.45	7.14
+before	bcfishpass	LILL	2026-11-23T17:18:50Z	2026-11-23T17:22:29Z	0	7.14	13.27
+before	bcfishpass	GUIC	2026-11-23T17:22:29Z	2026-11-23T17:24:37Z	0	13.27	9.67
+before	bcfishpass	USHU	2026-11-23T17:24:37Z	2026-11-23T17:27:46Z	0	9.67	14.34

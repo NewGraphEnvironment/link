@@ -1,10 +1,6 @@
 # Shared test helpers and fixtures for link tests
 #
 # Test data paths
-test_thresholds_csv <- function() {
-  system.file("extdata", "thresholds_default.csv", package = "link")
-}
-
 test_overrides_csv <- function() {
   system.file("extdata", "overrides_example.csv", package = "link")
 }

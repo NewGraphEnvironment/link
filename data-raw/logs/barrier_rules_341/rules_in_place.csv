@@ -1,0 +1,7 @@
+"rule_id","applies_to","source_table","column_name","operator","value","species","outcome"
+"status","MODELLED_CROSSINGS;CABD","crossings","barrier_status","in","BARRIER;POTENTIAL","*","barrier"
+"drop","PSCIS","pscis_assessment","outlet_drop",">","0.6","*","barrier"
+"slope","PSCIS","pscis_assessment","slope_length",">","120","*","barrier"
+"unmeasured","PSCIS","pscis_assessment","outlet_drop","is_null",NA,"*","barrier"
+"unmeasured","PSCIS","pscis_assessment","slope_length","is_null",NA,"*","barrier"
+"unmeasured","PSCIS","crossings","barrier_status","in","BARRIER;POTENTIAL","*","barrier"

@@ -48,6 +48,9 @@ link,^R/lnk_observation_records\.R$,observations,"the record rule: which records
 link,^R/lnk_observation_records\.R$,obs_upstream,"the record rule: which records count, as which species, from which date, for the cuts, code 2 and the lifts (#470)"
 link,^R/lnk_pipeline_break\.R$,observations,observations are the first break source
 link,^R/lnk_barrier_overrides\.R$,observations,counts observations upstream of each barrier
+link,^R/lnk_lift_rules\.R$,observations,"reads every observation-lift rule a barrier lift counts under, each species' own and further ones (#236)"
+link,^R/lnk_barrier_rules\.R$,crossings,"decides which crossings are human-made barriers, the barrier-below marks and per-crossing totals (#341)"
+link,^R/lnk_barrier_rules\.R$,dams,"decides which dams are human-made barriers, the dam marks downstream (#341)"
 link,^R/lnk_barriers_unify\.R$,gradient,stages and locates every barrier row
 link,^R/lnk_barriers_unify\.R$,dams,stages and locates every barrier row
 link,^R/lnk_barriers_emit\.R$,gradient,stages and locates every barrier row
@@ -93,17 +96,17 @@ link,^R/lnk_export_inputs\.R$,none,"the export's CABD and PSCIS snapshots and ve
 link,^R/lnk_export_groups\.R$,none,"the export's per-group barrier and override parts (#465): not reached from wsg_run_one.R's entry points (test-pretest.R checks)"
 link,^R/lnk_publish\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^R/lnk_scenario_export\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
-link,^R/lnk_score\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
-link,^R/lnk_source\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^R/lnk_streams_parent\.R$,none,"the post-hoc parent join, run by data-raw/streams_parent_build.R; a parent build reads the table through R/lnk_gradient_parent.R, never this file (test-pretest.R checks it is not reached)"
 link,^R/lnk_wsg_deps\.R$,none,"the line rule of the recompute scheduler and the habitat export (#374, #465): not reached from wsg_run_one.R's entry points (test-pretest.R checks)"
-link,^R/lnk_thresholds\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^inst/extdata/configs/{config}/(rules\.yaml|dimensions\.csv|parameters_habitat_thresholds\.csv|parameters_habitat_method\.csv)$,segments,"habitat rules and thresholds, including the near-river pair"
 link,^inst/extdata/configs/{config}/(rules\.yaml|dimensions\.csv|parameters_habitat_thresholds\.csv|parameters_habitat_method\.csv)$,near_river_conn,"habitat rules and thresholds, including the near-river pair"
 link,^inst/extdata/configs/{config}/parameters_fresh\.csv$,segments,access thresholds and observation-lift parameters
 link,^inst/extdata/configs/{config}/parameters_fresh\.csv$,gradient,access thresholds and observation-lift parameters
 link,^inst/extdata/configs/{config}/parameters_fresh\.csv$,observations,access thresholds and observation-lift parameters
 link,^inst/extdata/configs/{config}/parameters_fresh\.csv$,obs_upstream,"lift date floors, which the record rule also applies to code 2 (#470)"
+link,^inst/extdata/configs/{config}/parameters_barrier_lifts\.csv$,observations,"further observation-lift rules per species (#236)"
+link,^inst/extdata/configs/{config}/parameters_barrier_rules\.csv$,crossings,"which crossings are human-made barriers (#341)"
+link,^inst/extdata/configs/{config}/parameters_barrier_rules\.csv$,dams,"which dams are human-made barriers (#341)"
 link,^inst/extdata/configs/{config}/config\.yaml$,any,"pipeline knobs (break sources, observation breaks, dams, discharge)"
 link,^inst/extdata/configs/{config}/config\.yaml$,segments,"pipeline knobs (break sources, observation breaks, dams, discharge)"
 link,^inst/extdata/configs/{config}/config\.yaml$,observations,"pipeline knobs (break sources, observation breaks, dams, discharge)"
@@ -165,7 +168,7 @@ fresh,^R/frs_network\.R$,none,"not reached from link's modelling path at fresh v
 fresh,^R/frs_order_filter\.R$,none,"not reached from link's modelling path at fresh v0.44.0 and v0.46.0 (call graph, data-raw/logs/pretest_372/reach.md, data-raw/logs/prefilter_409/reach.md)"
 fresh,^R/frs_point_locate\.R$,none,"not reached from link's modelling path at fresh v0.44.0 and v0.46.0 (call graph, data-raw/logs/pretest_372/reach.md, data-raw/logs/prefilter_409/reach.md)"
 fresh,^R/frs_point_match\.R$,none,"not reached from link's modelling path at fresh v0.44.0 and v0.46.0 (call graph, data-raw/logs/pretest_372/reach.md, data-raw/logs/prefilter_409/reach.md)"
-fresh,^R/frs_point_snap\.R$,none,"not reached from link's modelling path at fresh v0.44.0 and v0.46.0 (call graph, data-raw/logs/pretest_372/reach.md, data-raw/logs/prefilter_409/reach.md)"
+fresh,^R/frs_point_snap\.R$,crossings,"snaps the group's PSCIS crossings, through lnk_points_snap() (#478)"
 fresh,^R/frs_stream_fetch\.R$,none,"not reached from link's modelling path at fresh v0.44.0 and v0.46.0 (call graph, data-raw/logs/pretest_372/reach.md, data-raw/logs/prefilter_409/reach.md)"
 fresh,^R/frs_waterbody_network\.R$,none,"not reached from link's modelling path at fresh v0.44.0 and v0.46.0 (call graph, data-raw/logs/pretest_372/reach.md, data-raw/logs/prefilter_409/reach.md)"
 fresh,^R/frs_watershed_at_measure\.R$,none,"not reached from link's modelling path at fresh v0.44.0 and v0.46.0 (call graph, data-raw/logs/pretest_372/reach.md, data-raw/logs/prefilter_409/reach.md)"
@@ -185,7 +188,7 @@ link,^inst/extdata/wsg_regions\.csv$,gradient,"pooling regions, which decide whi
 link,^inst/extdata/wsg_regions\.csv$,obs_upstream,"pooling regions, which decide which records count as which species (#470)"
 link,^inst/extdata/vocabulary\.csv$,any,"output vocabulary; every run resolves its tokens before it opens (lnk_vocabulary_resolve), and a row it cannot match refuses the run"
 link,^inst/extdata/configs/dictionary_[a-z_]+\.csv$,none,data dictionaries; no run reads them
-link,^inst/extdata/(thresholds_default|crossings_example|overrides_example|parameters_habitat_dimensions)\.csv$,none,"package examples and lnk_thresholds() defaults, off the modelling path"
+link,^inst/extdata/(crossings_example|overrides_example|parameters_habitat_dimensions)\.csv$,none,"package examples, off the modelling path"
 link,^inst/extdata/parameters_habitat_rules\.yaml$,none,sample rules for fresh's fallback; a run reads its bundle's rules.yaml
 link,^inst/extdata/schemas/,none,"the export's column contract (lnk_scenario_export); moved to crate in 0.85.0 (#333), kept so a range that spans its removal stays mapped"
 fresh,^inst/extdata/falls\.csv$,gradient,the falls link reads as natural barriers (lnk_pipeline_prepare)

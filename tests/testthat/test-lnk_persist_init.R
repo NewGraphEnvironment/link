@@ -444,3 +444,45 @@ test_that("lnk_persist_init fills linear_feature_id on an old near-river table f
       WHERE linear_feature_id IS NULL", schema))$n
   expect_identical(again, 2L)
 })
+
+test_that("an evidence table with the old key is migrated to lift_rule (#236, DB)", {
+  conn <- skip_if_no_db()
+  s <- paste0("zz_lnk_t236_ev_", Sys.getpid())
+  DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", s))
+  withr::defer(DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", s)))
+  DBI::dbExecute(conn, sprintf("CREATE SCHEMA %s", s))
+  # The 0.92.0 shape: no lift_rule, the six-column key.
+  old_cols <- cols_barrier_override_evidence[
+    names(cols_barrier_override_evidence) != "lift_rule"]
+  DBI::dbExecute(conn, sprintf(
+    "CREATE TABLE %s.barrier_override_evidence (%s)", s,
+    .lnk_cols_clause(old_cols, c("blue_line_key", "downstream_route_measure",
+                                 "species_code", "watershed_group_code",
+                                 "evidence", "evidence_key"))))
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.barrier_override_evidence
+       (blue_line_key, downstream_route_measure, species_code, evidence,
+        evidence_key, watershed_group_code)
+     VALUES (1, 10, 'BT', 'observation', 'k1', 'AAAA'),
+            (1, 10, 'BT', 'habitat', 'h1', 'AAAA')", s))
+  cfg <- lnk_config("default")
+  cfg$pipeline$schema <- s
+  lnk_persist_init(conn, cfg, species = "BT")
+  got <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT evidence, lift_rule FROM %s.barrier_override_evidence ORDER BY 1", s))
+  expect_equal(got$lift_rule, c("habitat", "own"))
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.barrier_override_evidence
+       (blue_line_key, downstream_route_measure, species_code, evidence,
+        evidence_key, watershed_group_code, lift_rule)
+     VALUES (1, 10, 'BT', 'observation', 'k1', 'AAAA', 'salmon')", s))
+  expect_equal(DBI::dbGetQuery(conn, sprintf(
+    "SELECT count(*)::int AS n FROM %s.barrier_override_evidence", s))$n, 3L)
+  expect_error(DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.barrier_override_evidence
+       (blue_line_key, downstream_route_measure, species_code, evidence,
+        evidence_key, watershed_group_code)
+     VALUES (2, 10, 'BT', 'observation', 'k2', 'AAAA')", s)), "null value")
+  # A second init finds it done and changes nothing.
+  expect_false(.lnk_evidence_rule_migrate(conn, s))
+})

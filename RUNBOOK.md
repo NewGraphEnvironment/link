@@ -86,7 +86,7 @@ important table in the system:**
 | Family | Source table | `blocks_species` | Species-specific? |
 |---|---|---|---|
 | **Gradient** | `gradient_barriers_raw` | species where `access_gradient_max ≤ gradient_class/100` | **YES** — from `parameters_fresh.csv` |
-| **Anthropogenic** (PSCIS, **CABD dams**, modelled crossings) | `crossings WHERE barrier_status IN ('BARRIER','POTENTIAL')` | **ALL species** (universal) | **NO** |
+| **Anthropogenic** (PSCIS, **CABD dams**, modelled crossings) | `crossings` the bundle's barrier rules select (`barrier_rule_id` not NULL, link#341) | **ALL species** (universal) | **NO** |
 | **Falls** | `falls` | ALL species | NO |
 | **Subsurface flow** | `barriers_subsurfaceflow` (opt-in) | ALL species | NO |
 
@@ -126,6 +126,25 @@ guard, §8c). Like every dam they never block access; they move the `DAM` token
 above them (LARL, KETL, SKGT: 19,065 segments, all `NONE` to `DAM`;
 `data-raw/logs/provincial_prep_367/`) and, by the same rule, in the groups
 upstream whose next anthropogenic barrier they are.
+
+**Which crossings are human-made barriers is a rules table (link#341).** A bundle's
+`parameters_barrier_rules.csv` is evaluated once, in `lnk_pipeline_crossings()` after the
+per-row corrections and before `lnk_barriers_emit()`, into `crossings.barrier_rule_id`:
+every rule a crossing matches, sorted in `C` order and joined with `;`, NULL when none
+(`.lnk_barrier_rules_apply()`, `R/lnk_barrier_rules.R`). Rows sharing a `rule_id` are ANDed,
+different `rule_id`s ORed; `applies_to` scopes a row to crossing sources; a row reads its
+`column_name` from the crossing itself or from its PSCIS assessment
+(`whse_fish.pscis_assessment_svw`, joined on `stream_crossing_id`, with a derived
+`slope_length` = `culvert_slope * length_or_width`); a NULL value matches only `is_null`.
+The four barrier sets (`barriers_anthropogenic`, `_pscis`, `_dams` and unify's
+anthropogenic source) read one predicate, `.lnk_sql_barrier_selected()`; a caller's own
+`crossings` without the column falls back to `barrier_status IN ('BARRIER','POTENTIAL')`,
+the built-in rule `status`, which `default` and `bcfishpass` also ship as their one row.
+`barrier_status` stays the source's own status (the persisted `passability`), and the
+remediation set and fresh's break labels still read it. `species` accepts only `*` and
+`outcome` only `barrier`: a rule cannot block a species yet, so a rule change moves the
+barrier-below marks, the mapping code's second token and the per-crossing totals, never
+access. The run log snapshots the rules applied (`log_parameters_barrier_rules`).
 
 Remediations (PASSABLE) are **not** in `blocks_species`. They flow separately
 via `<schema>.barriers_remediations` for the sequence-aware `remediated_dnstr_ind`.
@@ -171,9 +190,25 @@ skipped that step, and the pick fell to encounter order between two modelled
 crossings on one feature (link#277: two builds at main, minutes apart, picked a
 different modelled crossing for 464 PSCIS). Step 3b ports it, with
 `modelled_crossing_id` breaking its tie, and the pick's order
-(`.lnk_pscis_pick_order`) ends on `linear_feature_id, modelled_xing_dist,
-modelled_crossing_id`. Both KNN snaps (`lnk_points_snap()`, the dam snap) end on
-`linear_feature_id`.
+(`.lnk_pscis_pick_order`) ends on `snap_at_segment_end, segment_downstream_route_measure
+DESC, linear_feature_id, modelled_xing_dist, modelled_crossing_id`.
+
+**Snapping and ties (#478).** `lnk_points_snap()` is `fresh::frs_point_snap()`
+with the input's columns kept, so placeholder (`999.*`) streams are never
+candidates (#313; the old guard was `!= '999'`, and 11 provincial PSCIS picks sat
+on one). A point nearest to a vertex two segments share is at exactly the same
+distance from both. Measures resolve `[downstream, upstream)`, so in the PSCIS pick
+and the dam snap the tie goes to the segment that **starts** at the vertex: first a
+candidate whose snapped point is not its segment's upstream end, then the higher
+raw segment start, then the lower `linear_feature_id`. On one stream that is
+fwapg's rule (`fwa_indexpoint`) and fresh's snap order. Across two streams fwapg's
+"higher measure" means nothing: it put one lower Fraser barrier dam (Crescent
+Slough) at the top end of an unnamed line, blocking 7,892 km instead of 7.7,
+and the start test keeps it at the slough's mouth. The whole-metre
+measure is never the tie key: two segments meeting at a whole metre round equal on
+it. bcfishpass's `04_pscis.sql` ends on `linear_feature_id` alone, so this is a
+departure. The snap's own `candidate_rank` (fresh's order) is not read by the
+pick. Measured province-wide in `data-raw/logs/snap_tie_478/`.
 
 `barriers_<sp>_min` is a **break-spec**: a present, modelled species' post-lift natural barriers (gradient at its classes, falls, opt-in subsurface flow, minus its overrides, plus user-definite) reduced to the downstream-most position per flow path, as bcfishpass breaks (#326); a species the bundle pauses adds none (#432). It was reduced before the lifts until #223, then held every position until #326; the raw post-lift table `barriers_<sp>` stays in the working schema for diagnostics, and how this compares with bcfishpass is `research/bcfp_segmentation_parity.md`. It
 has NO id column, so it **cannot** feed `frs_network_features` /
@@ -662,6 +697,40 @@ table the lift and its evidence both read, so the `fwa_upstream()` join runs onc
 `study_area_verify.sql` holds each group's evidence equal to its `barrier_overrides` (groups built
 at 0.84.0 on) and every observation lift at or above its threshold of distinct records.
 
+**Several lift rules per species (link#236).** `.lnk_lift_rules(cfg, loaded)` is the one
+reader of every rule: each species' `parameters_fresh.csv` row is rule `own` (its
+`observation_date_min` is also the species' record floor, so it stays there), and a bundle's
+`parameters_barrier_lifts.csv` adds further rules. `lnk_barrier_overrides()` loops rules: a
+barrier is lifted for a species where any of its rules is met, and the records of two rules
+never add together. Habitat lifts run once per species, on rule `own`. Each evidence row names
+its rule in `lift_rule` (`own`, a further rule's name, or `habitat`), now part of the evidence
+table's key, so one record counted under two rules has two rows; `lnk_persist_init()` migrates
+an existing table (add, fill, not null, new key, in one transaction) and `schema_consolidate.R`
+refuses a destination that has not been migrated. The reader refuses a duplicate rule, a rule
+named `own`, an unknown species, `barrier_kinds` other than `natural` and, under
+`observation_record_date: lift_floor`, a rule whose listed species' floors differ from its own;
+it is reached from the record rule, so the vocabulary refuses before a run opens. The run log
+snapshots further rules (`log_parameters_barrier_lifts`); the `acc` spec digests them.
+
+**One holder per position, and controls by position (link#386).** A gradient barrier is found
+by every group scanning its line (`streams_blk`: every line with a non-6010 segment in the
+group), and until 0.93.0 every scanner persisted it, so 1,224 positions on the 259 lines that
+touch more than one group were held by up to 13 groups each (`data-raw/logs/barrier_copies_386/`),
+and a control row, filed under one group, pruned or locked only that group's copy (LSAL's Salmon
+River row was defeated by SALR's and TABR's copies and their lifts). Now every control row is
+staged whatever group it is filed under, as bcfishpass joins its control table
+(`barriers_gradient.sql` at `smnorris/bcfishpass@3bd2824`), and the working tables stay
+whole-line, so a group's working lift at any position equals the owner's. The **owner** is taken
+once, in `.lnk_pipeline_prep_locate()`: the group of the segment the position sits on
+(lowest downstream measure, then `linear_feature_id`, for the ~1 mm overlap; the nearest segment
+for a measure in the gap). `lnk_barriers_unify()` keeps a gradient row only in its owner, or,
+where the owner would never hold it (no modelled species there, or it does not scan the line),
+in the lowest-coded modelled scanner (`.lnk_sql_gradient_held()`). `lnk_pipeline_persist()`
+writes an override or evidence row only beside a natural barrier the group holds within 1 m
+(`.lnk_sql_override_held()`), never by the owner of the override's rounded position, which can
+fall on the neighbour's side of a boundary. Falls and user-definite rows were already filed by
+their files' groups, which own every one in `default`.
+
 The count is of distinct records (`count(DISTINCT o.observation_key)`, link#367):
 `natural_barriers` can hold one position twice (a point where two FWA segments overlap, or
 a falls and a gradient barrier that round to one metre), and each copy joins the same records.
@@ -1002,8 +1071,11 @@ much as the break sources do. Two outputs with the same `cut` token and differen
 change flags, not segments, and a tuning chooses them. Data vintage: observation records,
 the bcfishpass correction CSVs, `observation_exclusions.csv` and a bundle's own
 `observation_exclusions_link.csv` (#436), FWA and the discharge
-loads. `config_hash` and `log_input` carry those. Same tokens means made the same way,
-not necessarily from the same data.
+loads. `config_hash` and `log_input` carry those. Barrier rules whose outcome is `barrier`
+(link#341): they move barrier-below marks and per-crossing totals, not segments or access, so a
+scenario bundle that changes only them models under its parent's tokens, named by `config_hash`
+and `log_parameters_barrier_rules`; a rule that can move access (a future `blocks`) is in the
+`acc` spec. Same tokens means made the same way, not necessarily from the same data.
 
 **A config with no live token is refused** before the run opens. That covers a
 changed break source, a new access gradient, an edited presence table, a bundle loaded
@@ -1577,7 +1649,9 @@ anomaly alerts); discharge from wet's `discharge.fwa_v1_segment_monthly`
 | Through-wetland rearing (FWA 1050/1150) and the near-river scope | `dimensions.csv` → `rear_wetland_flow`, `rear_near_river` → `lnk_rules_build()` | the 1050/1150 rule's shape; `near_river: false` stamps (always on river-polygon rules) |
 | The near-river pair (a river of at least a size within a distance downstream) | `parameters_habitat_thresholds.csv` → `<stage>_river_*` (#364, fresh#263) → `fresh::frs_params()` | inherited by every rule with a size test that is not stamped out; walked into `streams_near_river` |
 | Species residence (resident/anadromous/spawn-only) | `configs/<name>/dimensions.csv` → `residence`, and `rear_no_fw = yes` for spawn-only (#189) → `.lnk_species_residence()` → `.lnk_mapping_code_persist(cfg =)`. A bundle with no `residence` column, and the exported `lnk_mapping_code()` / `lnk_pipeline_mapping_code()` called directly, keep the sets coded before (CH, CM, CO, PK, SK, ST anadromous; #512) | which mc_barrier flavor + spawn-only token1 of every persisted mapping code (model and recompute) |
-| Dam / anthropogenic blocking | **nowhere** — universal `all species` in `lnk_barriers_unify` | `blocks_species` (§2a). Not rules-driven. |
+| Which crossings are human-made barriers | `configs/<name>/parameters_barrier_rules.csv` (#341) → `.lnk_barrier_rules_apply()` → `crossings.barrier_rule_id` | the anthropogenic, PSCIS and dam barrier sets and unify's anthropogenic rows (§2a); never access |
+| Further observation-lift rules per species | `configs/<name>/parameters_barrier_lifts.csv` (#236; no shipped bundle declares one) → `.lnk_lift_rules()` | lifts beside each species' own `parameters_fresh` rule (§5, "Several lift rules per species") |
+| Dam / anthropogenic blocking of a species | **nowhere** — a barrier rule's `outcome` accepts only `barrier` | `blocks_species` (§2a). The split piece of #479 adds `blocks` rows. |
 | Which fish records count, as which species, from which date (the record rule) | `configs/<name>/species_pooling.csv` (aliases and pooling) + `pipeline: observation_record_date:` + `parameters_fresh.csv` → `observation_date_min` (#470) → `.lnk_observation_species_map()` | the observation cuts, code 2 and the lifts' records (§7, "The record rule"); the presence check and measures read its aliases |
 | Which rules species run | `configs/<name>/species_modelled.csv` (#432) → `lnk_config()` → `cfg$species` / `cfg$species_paused` | everything species-keyed: gradient breaks, classify, access, mapping code (§7, "Pausing a species") |
 | What each config column means | `configs/dictionary_*.csv` (one per bundle file), rendered as `configs/README.md` by `data-raw/dictionary_readme_build.R` (#75; `test-dictionaries.R` fails on a stale README) | data dictionaries — per-column type, group, default, description, and (for most) `owner` + `consumed_by` file:line; `lnk_rules_build()` warns on a `dimensions.csv` column the dictionary does not list (`strict = TRUE` stops) |
@@ -1948,10 +2022,11 @@ next dispatch.**
     the rows `accessible_km` sums, so the pair sums to it (to 0.01 km a column) and all three are NA
     together where access is not built. The validator's `summary` carries all three. What code 2
     means, and where it ends relative to a species' top record, is §2c.
-  - **`lnk_aggregate()` still sums the flag**, connection lines included: it is per-crossing,
-    link-side SQL over boolean habitat columns, with no connection split. So do the older
-    one-off scripts with their own SQL (`data-raw/compare_adms.R`,
-    `data-raw/exp_gradient_extra_breaks.R`).
+  - **`lnk_aggregate()` splits them too (#478):** per crossing and species it writes
+    `rearing_km` (connectors out), the stream / lake / wetland split and
+    `rearing_lake_connection_km`, with the same predicates. The older one-off scripts with
+    their own SQL (`data-raw/compare_adms.R`, `data-raw/exp_gradient_extra_breaks.R`) still sum
+    the flag.
   - SK / KO lake rearing is mostly 1450, so their compare `rearing` km drop sharply: SK
     55–95 % on seven measured WSGs (ADMS 159.1 of 229.9 km), KO 62 % on NATR. For SK the
     drop is the same on the bcfishpass side; KO has no bcfishpass reference.
@@ -2172,6 +2247,24 @@ it answers them wrongly. Outlets now ship in fresh at `inst/extdata/wsg_outlet.c
 and reach the DB as a `VALUES` list; no table is needed anywhere.
 
 ## 8c. Downstream state: the guard, and why membership ≠ path
+
+**What a one-group run needs (link#386).** Since 0.93.0 a group holds only the gradient
+positions it owns, so a group built alone into a schema without its line-rule dependencies no
+longer holds the copies of other groups' positions it used to: in `fresh_default` at 0.78.2,
+1,864 non-owner copies, of which 72 lay below segments of the group holding them (the rest are
+on no downstream path of their holder; `data-raw/logs/barrier_copies_386/before_fresh_default/onegroup_*.csv`).
+Each owner touches the line, so the line rule lists it among the group's dependencies, and
+`lnk_downstream_load()` of their rows restores every one; load them from a build at 0.93.0 or
+later, since an older export still carries the copies. A closure run has the same gap: the
+outlet closure leaves out a tributary group that owns a stretch of the focal group's line
+(FINA's copies were owned by INGR, MESI, OSPK and UOMI). So `lnk_wsg_downstream_check()` also
+refuses where a modelled group touching a line on the group's downstream paths (the line rule,
+for that group alone, `.lnk_wsg_line_deps()`) holds no `barriers` rows in the schema, and names
+them in `wsgs_unheld` (note tag `link#386`), with every modelled group the database holds no
+FWA streams for, whose lines the rule cannot read; under the driver it warns at model time and
+the recompute's post-condition refuses. A deliberate partial build (a scratch set of groups)
+passes the post-condition with a written reason, `LNK_GUARD_DOWNSTREAM_NOTE="..."`, recorded as
+at model time.
 
 `lnk_pipeline_run()` computes accessibility from the **already-persisted**
 barriers of the WSGs downstream. Model a WSG before them and the access query
@@ -3102,6 +3195,19 @@ only at the end.
   width is still best: replayed on 2026-10-23 without its stalls, it ends the
   recompute 36.7 min sooner, against 22.2 at width 4 and 11.1 at none.
   Evidence: `data-raw/logs/recompute_early_374/`.
+
+### One holder per position, and the owner rule (link#386)
+
+From 0.93.0 each gradient position is persisted by its owner alone, with controls applied by
+position, and overrides and evidence sit beside the barrier their group holds (§5). So the owner
+rule of `data-raw/recompute_deps.R` is complete for a schema built wholly at 0.93.0 or later;
+the scheduler stays on the line rule until a provincial run has rebuilt every group.
+`study_area_verify.sql` judges the run's groups built at `-v holder_from` (default `0.93.0`) or
+later, and prints how many it judged: no gradient position held by two judged groups, and no
+override or evidence row of a judged group without a natural barrier of its own within 1 m.
+Negative cases 6m to 6o (`HOLDER_FROM=0.0.0` for a proof build made before the release). The
+holder equals the owner is proved in the unit tests and the diff script, which read FWA; the
+verify file does not.
 
 ### Groups outside a partial run (link#274)
 

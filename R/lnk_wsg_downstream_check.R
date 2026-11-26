@@ -96,7 +96,14 @@
          (c.blue_line_key IS NULL)
          OR (c.blue_line_key = str.blue_line_key)
        )
-     ORDER BY str.geom <-> c.geom, str.linear_feature_id
+     -- an exact tie (a dam nearest to a vertex two segments share) goes
+     -- to the segment starting there, as measures resolve [downstream,
+     -- upstream): not at its own upstream end, then the higher start, then
+     -- the lower id (link#478; fwapg's rule on one stream)
+     ORDER BY str.geom <-> c.geom,
+              ST_LineLocatePoint(str.geom, c.geom) = 1,
+              str.downstream_route_measure DESC,
+              str.linear_feature_id
      LIMIT 1
    ) str
    WHERE ST_Distance(str.geom, c.geom) <= 65
@@ -456,12 +463,22 @@
 #' every dam on it, so the check refuses it as it refuses an unmodelled dam
 #' and names it in `wsgs_unloaded` (link#464). Only dams within 65 m of the
 #' downstream groups' polygons are snapped, which leaves the answer as it was
-#' and keeps the check's cost to the path (link#461).
+#' and keeps the check's cost to the path (link#461). From link 0.93.0 a
+#' gradient barrier is persisted only by the group owning its segment
+#' (link#386), so the check also refuses where a modelled group touching a line
+#' on `aoi`'s downstream paths (the line rule, for `aoi` alone) holds no rows in
+#' the schema's `barriers`, and names those groups in `wsgs_unheld`: a
+#' tributary group the outlet closure leaves out can own a stretch of `aoi`'s
+#' own line.
 #'
 #' @return Invisibly, a list with `aoi`, `status`, `dams`, `wsgs_missing`
 #'   (groups holding unmodelled dams), `wsgs_unloaded` (downstream groups with
-#'   no FWA streams), `note`, `elapsed_s` and `steps_s` (seconds per step:
-#'   outlets, fwa_downstream, closure, loaded, near, probe, persisted).
+#'   no FWA streams), `wsgs_unheld` (groups on its lines holding no barrier
+#'   rows, and modelled groups with no FWA streams in the database, whose
+#'   lines the check cannot read), `note`, `elapsed_s` and `steps_s` (seconds per step: outlets,
+#'   fwa_downstream, closure, loaded, near, line_deps, holders, fwa_absent,
+#'   probe,
+#'   persisted).
 #' @family wsg
 #' @export
 #' @examples
@@ -509,7 +526,8 @@ lnk_wsg_downstream_check <- function(conn, aoi, cfg, loaded,
   if (identical(on_fail, "ignore")) {
     return(invisible(list(aoi = aoi, status = "pass", dams = NULL,
                           wsgs_missing = character(0),
-                          wsgs_unloaded = character(0), note = NA_character_,
+                          wsgs_unloaded = character(0),
+                          wsgs_unheld = character(0), note = NA_character_,
                           elapsed_s = 0, steps_s = numeric(0))))
   }
 
@@ -539,6 +557,25 @@ lnk_wsg_downstream_check <- function(conn, aoi, cfg, loaded,
   unloaded <- step("loaded", .lnk_wsg_fwa_unloaded(conn, down))
   near <- step("near", .lnk_dams_near_groups(conn, setdiff(down, unloaded)))
 
+  # From 0.93.0 a gradient barrier is persisted only by the group owning its
+  # segment (link#386), so the walk finds the gradient barriers on this
+  # group's downstream paths only where their owners have landed. Every
+  # modelled group touching a line on those paths (the line rule, for this
+  # group alone) must hold barrier rows in the schema; one that holds none is
+  # a group whose barriers this walk would read as open. The outlet closure
+  # misses them: a tributary group can own a stretch of the focal group's line.
+  # The line rule reads FWA, so on a database holding only some groups' FWA a
+  # tributary group whose streams are absent is invisible to it: every
+  # modelled group with no FWA streams here is named too, since this check
+  # cannot tell whether it touches the lines.
+  modelled <- suppressMessages(lnk_wsg_resolve(cfg, loaded, wsgs = NULL))
+  deps <- step("line_deps", .lnk_wsg_line_deps(conn, aoi))
+  deps <- intersect(deps, modelled)
+  unheld <- step("holders", .lnk_wsg_unheld(conn, cfg, deps))
+  fwa_absent <- step("fwa_absent",
+                     .lnk_wsg_fwa_unloaded(conn, setdiff(modelled, c(aoi, unloaded))))
+  unheld <- sort(unique(c(unheld, fwa_absent)))
+
   dams <- step("probe", .lnk_dams_blocking_downstream(
     conn, aoi, loaded, outlets,
     additions = .lnk_cabd_additions_barriers(cfg), near_groups = near))
@@ -556,34 +593,39 @@ lnk_wsg_downstream_check <- function(conn, aoi, cfg, loaded,
   elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
   wsgs_missing <- sort(unique(missing_dams$watershed_group_code))
 
-  if (nrow(missing_dams) == 0L && length(unloaded) == 0L) {
+  if (nrow(missing_dams) == 0L && length(unloaded) == 0L &&
+      length(unheld) == 0L) {
     return(invisible(list(aoi = aoi, status = "pass", dams = dams,
                           wsgs_missing = character(0),
-                          wsgs_unloaded = character(0), note = NA_character_,
+                          wsgs_unloaded = character(0),
+                          wsgs_unheld = character(0), note = NA_character_,
                           elapsed_s = elapsed, steps_s = steps)))
   }
 
   brief <- function(at_dams, at_groups) {
-    .lnk_guard_brief(missing_dams, wsgs_missing, unloaded, at_dams, at_groups)
+    .lnk_guard_brief(missing_dams, wsgs_missing, unloaded, at_dams, at_groups,
+                     unheld = unheld)
   }
   msg <- .lnk_guard_message(aoi, missing_dams, wsgs_missing, cfg, closure,
-                            unloaded = unloaded)
+                            unloaded = unloaded, unheld = unheld)
   out <- function(status, note) {
     invisible(list(aoi = aoi, status = status, dams = missing_dams,
                    wsgs_missing = wsgs_missing, wsgs_unloaded = unloaded,
+                   wsgs_unheld = unheld,
                    note = note, elapsed_s = elapsed, steps_s = steps))
   }
+  tag <- .lnk_guard_tag(unloaded, unheld, nrow(missing_dams) > 0L)
 
   if (!is.na(override)) {
     note <- sprintf("%s guard(override): %s \u2014 %s",
-                    .lnk_guard_tag(unloaded), brief("", ""), trimws(override))
+                    tag, brief("", ""), trimws(override))
     message(msg)
     message("[guard] OVERRIDE accepted, recorded in the run log: ", trimws(override))
     return(out("override", note))
   }
 
   note <- sprintf("%s guard(%s): %s",
-                  .lnk_guard_tag(unloaded), on_fail, brief(" at open", " at open"))
+                  tag, on_fail, brief(" at open", " at open"))
 
   if (identical(on_fail, "warn")) {
     message(msg)
@@ -638,8 +680,56 @@ lnk_wsg_downstream_check <- function(conn, aoi, cfg, loaded,
 
 #' The tag a guard note opens with: the issue whose condition it records.
 #' @noRd
-.lnk_guard_tag <- function(unloaded) {
-  if (length(unloaded)) "link#464" else "link#227"
+.lnk_guard_tag <- function(unloaded, unheld = character(0), dams = TRUE) {
+  if (length(unloaded)) "link#464" else if (dams || !length(unheld)) "link#227" else "link#386"
+}
+
+
+#' The modelled groups touching a line on a group's downstream paths
+#'
+#' The line rule (`.lnk_wsg_deps_line()`) for one group: every other group
+#' with a segment on a blue line carrying a code that is an ancestor of, or
+#' equal to, one of the group's own codes. FWA only; under a second a group.
+#' The sets go through `= ANY (ARRAY(...))` so each lookup uses its index: as
+#' joins the planner guessed millions of ancestor codes (there are about ten
+#' thousand) and scanned the table, 8 s a group.
+#' FWA's unassigned `999` codes are left out, as the province-wide rule does.
+#' @return Character vector of group codes.
+#' @noRd
+.lnk_wsg_line_deps <- function(conn, aoi) {
+  DBI::dbGetQuery(conn, sprintf(
+    "WITH codes AS (
+       SELECT DISTINCT wscode_ltree AS ws
+         FROM whse_basemapping.fwa_stream_networks_sp
+        WHERE watershed_group_code = %1$s AND wscode_ltree IS NOT NULL
+          AND NOT wscode_ltree ~ '999.*'::lquery),
+     anc AS (SELECT DISTINCT subpath(ws, 0, i) AS a
+               FROM codes, generate_series(1, nlevel(ws)) i)
+     SELECT DISTINCT s.watershed_group_code::text AS w
+       FROM whse_basemapping.fwa_stream_networks_sp s
+      WHERE s.blue_line_key = ANY (ARRAY(
+              SELECT DISTINCT s2.blue_line_key
+                FROM whse_basemapping.fwa_stream_networks_sp s2
+               WHERE s2.wscode_ltree = ANY (ARRAY(SELECT a FROM anc))))
+        AND s.watershed_group_code <> %1$s
+      ORDER BY 1", DBI::dbQuoteString(conn, aoi)))$w
+}
+
+
+#' The groups among `wsgs` holding no rows in the persist schema's barriers
+#'
+#' A schema without the table holds none for any of them.
+#' @noRd
+.lnk_wsg_unheld <- function(conn, cfg, wsgs) {
+  if (length(wsgs) == 0L) return(character(0))
+  tbl <- paste0(.lnk_table_names(cfg)$schema, ".barriers")
+  if (!.lnk_table_exists(conn, tbl)) return(sort(wsgs))
+  have <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT g.w FROM unnest(%s::text[]) AS g(w)
+      WHERE EXISTS (SELECT 1 FROM %s b WHERE b.watershed_group_code = g.w)",
+    DBI::dbQuoteLiteral(conn, paste0("{", paste(wsgs, collapse = ","), "}")),
+    tbl))$w
+  sort(setdiff(wsgs, have))
 }
 
 
@@ -650,8 +740,14 @@ lnk_wsg_downstream_check <- function(conn, aoi, cfg, loaded,
 #' of earlier run logs read new ones the same way.
 #' @noRd
 .lnk_guard_brief <- function(dams, wsgs_missing, unloaded,
-                             at_dams = "", at_groups = "") {
+                             at_dams = "", at_groups = "",
+                             unheld = character(0)) {
   parts <- character(0)
+  if (length(unheld)) {
+    parts <- c(parts, sprintf(
+      "%d group(s) on its lines holding no barrier rows%s \u2014 %s",
+      length(unheld), at_groups, paste(unheld, collapse = ", ")))
+  }
   if (length(unloaded)) {
     parts <- c(parts, sprintf("%d downstream group(s) with no FWA streams loaded%s \u2014 %s",
                               length(unloaded), at_groups,
@@ -671,7 +767,25 @@ lnk_wsg_downstream_check <- function(conn, aoi, cfg, loaded,
 #' Build the operator-facing guard message.
 #' @noRd
 .lnk_guard_message <- function(aoi, dams, wsgs_missing, cfg, closure,
-                               unloaded = character(0)) {
+                               unloaded = character(0),
+                               unheld = character(0)) {
+  if (length(unheld)) {
+    held <- paste0(
+      sprintf(paste0("%s BLOCKED (link#386) \u2014 %d modelled group(s) touching a line on ",
+                     "%s's downstream paths hold no barrier rows in this schema, or ",
+                     "have no FWA streams in this database so the lines they touch ",
+                     "cannot be read: %s.\n\n"),
+              aoi, length(unheld), aoi, paste(unheld, collapse = ", ")),
+      "From link 0.93.0 a gradient barrier is persisted only by the group owning its\n",
+      "segment, so the walk would read those groups' barriers as open.\n",
+      "Model them (or load their persisted barriers from a build at 0.93.0 or later:\n",
+      "lnk_downstream_files() / lnk_downstream_load()), then run again.\n",
+      "Or override with a written reason (LNK_GUARD_DOWNSTREAM_NOTE=\"...\").\n")
+    if (nrow(dams) == 0L && length(unloaded) == 0L) return(held)
+    return(paste0(held, "\nAlso:\n",
+                  .lnk_guard_message(aoi, dams, wsgs_missing, cfg, closure,
+                                     unloaded = unloaded)))
+  }
   if (length(unloaded)) {
     load <- paste0(
       sprintf(paste0("%s BLOCKED (link#464) \u2014 %d watershed group(s) on %s's ",

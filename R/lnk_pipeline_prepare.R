@@ -135,7 +135,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
                                   cfg = cfg)
   .lnk_pipeline_prep_gradient(conn, aoi, loaded, schema, classes)
   .lnk_pipeline_prep_natural(conn, aoi, cfg, loaded, schema)
-  .lnk_pipeline_prep_overrides(conn, loaded, schema)
+  .lnk_pipeline_prep_overrides(conn, cfg, loaded, schema)
   .lnk_pipeline_prep_minimal(conn, aoi, cfg, loaded, schema, classes)
   .lnk_pipeline_prep_network(conn, aoi, schema,
                              fill = .lnk_discharge_fill_applied(cfg, aoi),
@@ -214,15 +214,20 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
          downstream_route_measure double precision)", schema))
   }
 
-  # --- Barriers-definite control (per-WSG, used to prune gradient barriers
-  # AND to lock positions against observation-based overrides). Mirror the
-  # barriers_definite pattern above — whenever the manifest declares the
-  # key, ensure a schema-valid table exists even if this AOI has zero rows,
-  # so downstream steps can gate on the manifest field rather than probing
-  # the DB.
+  # --- Barriers-definite control: prunes gradient barriers and subsurface
+  # flow (barrier_ind FALSE) and locks a position against observation lifts
+  # (TRUE). Every row, whatever group it is filed under (link#386): the
+  # gradient scan covers the whole of every line the group touches, and every
+  # reader matches a control by position, so a row filed under a neighbour (7
+  # in `default`) or a neighbour's copy of a position the owner controls (LSAL's
+  # Salmon River row) applies wherever the position is scanned. bcfishpass
+  # joins its control table the same way, with no group filter
+  # (`barriers_gradient.sql`, smnorris/bcfishpass@3bd2824). Whenever the
+  # manifest declares the key a schema-valid table exists, so downstream steps
+  # gate on the manifest field rather than probing the DB.
   ctrl_all <- loaded$user_barriers_definite_control
   if (!is.null(ctrl_all)) {
-    ctrl <- ctrl_all[ctrl_all$watershed_group_code == aoi, ]
+    ctrl <- ctrl_all
     if (nrow(ctrl) > 0) {
       DBI::dbWriteTable(conn,
         DBI::Id(schema = schema, table = "barriers_definite_control"),
@@ -481,17 +486,43 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
        ADD COLUMN IF NOT EXISTS wscode_ltree ltree,
        ADD COLUMN IF NOT EXISTS localcode_ltree ltree",
     schema))
-  # A point in the ~1 mm overlap of two FWA segments matches both, and an
-  # UPDATE ... FROM keeps whichever join row it meets first. Pick the lower
-  # segment by name (link#367): 3,513 gradient positions province-wide match
-  # two, 1,530 of them with different localcodes, and the lower one is what
-  # every build so far happened to take.
+  .lnk_pipeline_prep_locate(conn, schema)
+
+  invisible(NULL)
+}
+
+
+#' Give each gradient barrier its segment's codes and its owner
+#'
+#' Adds `wscode_ltree`, `localcode_ltree` and `watershed_group_code` to
+#' `<schema>.gradient_barriers_raw` from the FWA segment each position sits on.
+#' `watershed_group_code` is the position's OWNER, the one group that persists
+#' it (link#386; `lnk_barriers_unify()`).
+#'
+#' A point in the ~1 mm overlap of two FWA segments matches both, and an
+#' `UPDATE ... FROM` keeps whichever join row it meets first, so the lower
+#' segment is picked by name (link#367): 3,513 gradient positions province-wide
+#' match two, 1,530 of them with different localcodes. A point in the gap where
+#' a segment's upstream measure misses the next one's start matches none: it
+#' keeps NULL codes, as before, and takes the group of the line's segment
+#' nearest the measure, in `.lnk_sql_locate()`'s order, so every position has
+#' exactly one owner and every group scanning the line computes the same one.
+#' @noRd
+.lnk_pipeline_prep_locate <- function(conn, schema) {
+  .lnk_db_execute(conn, sprintf(
+    "ALTER TABLE %s.gradient_barriers_raw
+       ADD COLUMN IF NOT EXISTS wscode_ltree ltree,
+       ADD COLUMN IF NOT EXISTS localcode_ltree ltree,
+       ADD COLUMN IF NOT EXISTS watershed_group_code text",
+    schema))
   .lnk_db_execute(conn, sprintf(
     "UPDATE %s.gradient_barriers_raw g
-     SET wscode_ltree = m.wscode_ltree, localcode_ltree = m.localcode_ltree
+     SET wscode_ltree = m.wscode_ltree, localcode_ltree = m.localcode_ltree,
+         watershed_group_code = m.watershed_group_code
      FROM (
        SELECT DISTINCT ON (g2.ctid) g2.ctid AS row_ctid,
-              s.wscode_ltree, s.localcode_ltree
+              s.wscode_ltree, s.localcode_ltree,
+              s.watershed_group_code::text AS watershed_group_code
        FROM %s.gradient_barriers_raw g2
        JOIN whse_basemapping.fwa_stream_networks_sp s
          ON g2.blue_line_key = s.blue_line_key
@@ -501,7 +532,18 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
      ) m
      WHERE g.ctid = m.row_ctid",
     schema, schema))
-
+  .lnk_db_execute(conn, sprintf(
+    "UPDATE %s.gradient_barriers_raw g
+     SET watershed_group_code = (
+       SELECT n.watershed_group_code::text
+         FROM whse_basemapping.fwa_stream_networks_sp n
+        WHERE n.blue_line_key = g.blue_line_key
+        ORDER BY least(abs(g.downstream_route_measure - n.downstream_route_measure),
+                       abs(g.downstream_route_measure - n.upstream_route_measure)),
+                 n.linear_feature_id
+        LIMIT 1)
+     WHERE g.watershed_group_code IS NULL",
+    schema))
   invisible(NULL)
 }
 
@@ -611,8 +653,12 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
 
 
 #' Compute barrier overrides via lnk_barrier_overrides
+#'
+#' Every lift rule the bundle applies (`.lnk_lift_rules()`, link#236): each
+#' species' `parameters_fresh` row and any further rules from
+#' `parameters_barrier_lifts.csv`.
 #' @noRd
-.lnk_pipeline_prep_overrides <- function(conn, loaded, schema) {
+.lnk_pipeline_prep_overrides <- function(conn, cfg, loaded, schema) {
   # Manifest-driven gate. `.lnk_pipeline_prep_load_aux` writes
   # `<schema>.user_habitat_classification` exactly when the manifest
   # declares `user_habitat_classification`, so the loaded entry is the
@@ -645,7 +691,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
     observations = paste0(schema, ".observations_province"),
     habitat = habitat_arg,
     control = control_arg,
-    params = loaded$parameters_fresh,
+    params = .lnk_lift_rules(cfg, loaded),
     to = paste0(schema, ".barrier_overrides"),
     evidence = paste0(schema, ".barrier_override_evidence"),
     verbose = FALSE)
@@ -738,14 +784,16 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
     ""
   }
 
-  # Lift by this group's own barrier_overrides only, never by the persisted
-  # province-wide table the access view reads: what that table holds at
-  # prepare time depends on the host and on which groups have persisted so
+  # Lift by this group's own working barrier_overrides only, never by the
+  # persisted province-wide table the access view reads: what that table holds
+  # at prepare time depends on the host and on which groups have persisted so
   # far, so reading it would make segmentation depend on run order, and this
   # group's stale rows there would lift positions the current build does not
-  # (#326 review round 2). The cost is named: where another group lifts its
-  # copy of a shared barrier and this group does not (group-filtered
-  # controls), that position still prunes the frontier above it here.
+  # (#326 review round 2). The working table covers the whole of every line
+  # the group touches, and since controls apply by position whatever group a
+  # row is filed under (link#386), its lift at a position another group owns
+  # equals the owner's: the same barriers, every group's records, the same
+  # controls. Only the owner persists it.
   minimal_tbls <- character(0)
   for (model_name in names(models)) {
     m <- models[[model_name]]

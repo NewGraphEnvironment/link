@@ -184,6 +184,9 @@ cols_barrier_overrides <- c(
 #' `species_code_recorded` the code it is filed under, `evidence_wsg` its own
 #' group, which can be another group upstream); a habitat lift lists each
 #' confirming habitat row. Every observation row carries the rule as applied.
+#' `lift_rule` names the rule the row counted under (link#236): a species'
+#' `own` rule, a further rule's name, or `habitat`. One record can count under
+#' two rules of one lift, so it is part of the key.
 #' Its (barrier, species) set equals the group's `barrier_overrides` rows,
 #' which `study_area_verify.sql` checks. One named vector drives the DDL and
 #' the INSERT projection.
@@ -201,6 +204,7 @@ cols_barrier_override_evidence <- c(
   observation_date_min     = "date",
   observation_species      = "text",
   observation_buffer_m     = "double precision",
+  lift_rule                = "text NOT NULL",
   watershed_group_code     = "varchar(4) NOT NULL"
 )
 
@@ -507,7 +511,9 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
                               table = "streams_near_river",
                               force_recreate = force_recreate)
   for (tbl in c("log", "log_input", "log_parameters_fresh",
-                "log_parameters_habitat_thresholds", "log_dimensions")) {
+                "log_parameters_habitat_thresholds", "log_dimensions",
+                "log_parameters_barrier_lifts",
+                "log_parameters_barrier_rules")) {
     .lnk_validate_persist_table(conn, schema = schema, table = tbl,
                                 force_recreate = force_recreate)
   }
@@ -609,12 +615,12 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
     sprintf("%s.barrier_overrides (blue_line_key, downstream_route_measure)", schema))
 
   # What each lift rests on (link#434): keyed as barrier_overrides is, plus
-  # the evidence record.
-  evidence_pk <- c("blue_line_key", "downstream_route_measure", "species_code",
-                   "watershed_group_code", "evidence", "evidence_key")
+  # the evidence record and the rule it counted under (link#236).
   .lnk_db_execute(conn, sprintf(
     "CREATE TABLE IF NOT EXISTS %s.barrier_override_evidence (\n  %s\n)",
-    schema, .lnk_cols_clause(cols_barrier_override_evidence, evidence_pk)))
+    schema, .lnk_cols_clause(cols_barrier_override_evidence,
+                             .lnk_evidence_pk)))
+  .lnk_evidence_rule_migrate(conn, schema)
   .lnk_index_create(conn, have_idx, "barrier_override_evidence_wsg_idx",
     sprintf("%s.barrier_override_evidence (watershed_group_code)", schema))
 
@@ -682,6 +688,73 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
   invisible(conn)
 }
 
+
+#' The evidence table's primary key (link#434, link#236)
+#' @noRd
+.lnk_evidence_pk <- c("blue_line_key", "downstream_route_measure",
+                      "species_code", "watershed_group_code", "evidence",
+                      "evidence_key", "lift_rule")
+
+#' Give an existing evidence table its `lift_rule` column and key (link#236)
+#'
+#' `CREATE TABLE IF NOT EXISTS` leaves a table built before 0.93.0 as it is,
+#' so this adds `lift_rule`, fills it from `evidence` (`habitat` for a habitat
+#' row, `own` for an observation row: before 0.93.0 a species had one rule),
+#' sets it not null and replaces the primary key with one that includes it,
+#' in one transaction. Each step is skipped when the catalog shows it done, so
+#' an up-to-date table takes no lock (#369). The first call on a large schema
+#' takes an ACCESS EXCLUSIVE lock, so it is run on its own at a quiet time.
+#' A catalog naming none of the table's columns leaves it alone.
+#' @return Invisibly, TRUE when anything was changed.
+#' @noRd
+.lnk_evidence_rule_migrate <- function(conn, schema) {
+  have <- .lnk_schema_columns(conn, schema)
+  have <- have$column_name[have$table_name == "barrier_override_evidence"]
+  if (length(have) == 0L) return(invisible(FALSE))
+  pk <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT c.conname, a.attname
+       FROM pg_constraint c
+       JOIN pg_class t ON t.oid = c.conrelid
+       JOIN pg_namespace n ON n.oid = t.relnamespace
+       JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = ANY (c.conkey)
+      WHERE n.nspname = %s AND t.relname = 'barrier_override_evidence'
+        AND c.contype = 'p'",
+    .lnk_quote_literal(schema)))
+  nullable <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT is_nullable FROM information_schema.columns
+      WHERE table_schema = %s AND table_name = 'barrier_override_evidence'
+        AND column_name = 'lift_rule'", .lnk_quote_literal(schema)))$is_nullable
+  need_col <- !"lift_rule" %in% have
+  need_null <- need_col || identical(nullable, "YES")
+  need_pk <- !"lift_rule" %in% pk$attname
+  if (!need_col && !need_null && !need_pk) return(invisible(FALSE))
+  tbl <- paste0(schema, ".barrier_override_evidence")
+  .lnk_db_transaction(conn, {
+    if (need_col) {
+      .lnk_db_execute(conn, sprintf(
+        "ALTER TABLE %s ADD COLUMN lift_rule text", tbl))
+    }
+    if (need_null) {
+      .lnk_db_execute(conn, sprintf(
+        "UPDATE %s SET lift_rule = CASE WHEN evidence = 'habitat'
+                                        THEN 'habitat' ELSE 'own' END
+          WHERE lift_rule IS NULL", tbl))
+      .lnk_db_execute(conn, sprintf(
+        "ALTER TABLE %s ALTER COLUMN lift_rule SET NOT NULL", tbl))
+    }
+    if (need_pk) {
+      if (nrow(pk) > 0L) {
+        .lnk_db_execute(conn, sprintf(
+          "ALTER TABLE %s DROP CONSTRAINT %s", tbl,
+          DBI::dbQuoteIdentifier(conn, pk$conname[1])))
+      }
+      .lnk_db_execute(conn, sprintf(
+        "ALTER TABLE %s ADD PRIMARY KEY (%s)", tbl,
+        paste(.lnk_evidence_pk, collapse = ", ")))
+    }
+  })
+  invisible(TRUE)
+}
 
 #' Give a near-river table built before fresh 0.54.0 its `linear_feature_id`
 #'

@@ -1,0 +1,8 @@
+blue_line_key,downstream_route_measure,barrier_type,barrier_ind,filed_under,owner,natural_rows_within_1m,overrides_within_1m,notes
+354155148,34041,FALLS,f,FRCN,COWN,,,Fish ladder in place around Hells gate falls
+356264650,171,FALLS,f,BULK,LNIC,,,Falls seems to an error - no white water at this location
+356342228,2700,FALLS,f,LNIC,HORS,,,Does not exist
+356363343,5922,FALLS,f,HORS,LNIC,,,Does not exist
+356364114,212049,FALLS,f,THOM,FRCN,,,non-barrier FWA falls on Thompson River
+356364690,47306,FALLS,f,LNIC,THOM,,,non-barrier FWA falls on Nicola River (note that these features are also present in CANVEC source)
+360873822,242072,FALLS,f,BABL,BULK,,,Two falls with same ID number. Reference doc places falls at 9U 690318 6068411. Referenc e document for Sockeye point upstream makes no mention of where Sockeye are found in stream. This point should be removed.

@@ -116,7 +116,14 @@ lnk_pipeline_crossings <- function(conn, aoi, cfg, loaded, schema,
   #    from staging tables created by lnk_pipeline_load().
   .lnk_crossings_apply_overrides(conn, schema) # nolint: object_usage_linter
 
-  # 5. Emit slim crossings_lookup + four barriers_* tables.
+  # 5. Which crossings are human-made barriers: the bundle's barrier rules
+  #    (link#341), evaluated once into crossings.barrier_rule_id, which the
+  #    four barrier sets below and lnk_barriers_unify() read. Nothing rebuilds
+  #    crossings after this.
+  .lnk_barrier_rules_apply(conn, schema, .lnk_barrier_rules(cfg, loaded),
+                           pscis_table = pscis_table)
+
+  # 6. Emit slim crossings_lookup + four barriers_* tables.
   lnk_barriers_emit(conn, schema) # nolint: object_usage_linter
 
   invisible(conn)

@@ -2,7 +2,9 @@ test_that(".lnk_pipeline_pscis_build emits the five-step SQL chain", {
   conn <- structure(list(), class = "DBIConnection")
   m_exec <- mockery::mock(1L, cycle = TRUE)
   # Probe for xref staging returns "present" so Step 5 runs too.
-  m_query <- mockery::mock(data.frame(present = TRUE), cycle = TRUE)
+  m_query <- mockery::mock(data.frame(present = TRUE,
+                                      column_name = "stream_crossing_id"),
+                           cycle = TRUE)
   m_quote_id <- mockery::mock(DBI::SQL("\"x\""), cycle = TRUE)
   m_quote_str <- mockery::mock(DBI::SQL("'x'"), cycle = TRUE)
   m_pick <- mockery::mock(invisible(NULL))
@@ -16,6 +18,7 @@ test_that(".lnk_pipeline_pscis_build emits the five-step SQL chain", {
     {
       with_mocked_bindings(
         frs_candidates_pick = m_pick,
+        frs_point_snap = mockery::mock(invisible(NULL), cycle = TRUE),
         .package = "fresh",
         {
           link:::.lnk_pipeline_pscis_build(
@@ -100,7 +103,9 @@ test_that(".lnk_pipeline_pscis_build skips Step 5 when xref staging table absent
   conn <- structure(list(), class = "DBIConnection")
   m_exec <- mockery::mock(1L, cycle = TRUE)
   # Probe returns zero rows → no xref staging table.
-  m_query <- mockery::mock(data.frame(present = FALSE), cycle = TRUE)
+  m_query <- mockery::mock(data.frame(present = FALSE,
+                                      column_name = "stream_crossing_id"),
+                           cycle = TRUE)
   m_quote_id <- mockery::mock(DBI::SQL("\"x\""), cycle = TRUE)
   m_quote_str <- mockery::mock(DBI::SQL("'x'"), cycle = TRUE)
 
@@ -113,6 +118,7 @@ test_that(".lnk_pipeline_pscis_build skips Step 5 when xref staging table absent
     {
       with_mocked_bindings(
         frs_candidates_pick = mockery::mock(invisible(NULL)),
+        frs_point_snap = mockery::mock(invisible(NULL), cycle = TRUE),
         .package = "fresh",
         {
           link:::.lnk_pipeline_pscis_build(
@@ -142,7 +148,9 @@ test_that(".lnk_pipeline_pscis_build stages xref from `loaded` when provided", {
     stringsAsFactors = FALSE
   )
   m_exec <- mockery::mock(1L, cycle = TRUE)
-  m_query <- mockery::mock(data.frame(present = TRUE), cycle = TRUE)
+  m_query <- mockery::mock(data.frame(present = TRUE,
+                                      column_name = "stream_crossing_id"),
+                           cycle = TRUE)
   m_quote_id <- mockery::mock(DBI::SQL("\"x\""), cycle = TRUE)
   m_quote_str <- mockery::mock(DBI::SQL("'x'"), cycle = TRUE)
   m_write <- mockery::mock(invisible(NULL))
@@ -157,6 +165,7 @@ test_that(".lnk_pipeline_pscis_build stages xref from `loaded` when provided", {
     {
       with_mocked_bindings(
         frs_candidates_pick = mockery::mock(invisible(NULL)),
+        frs_point_snap = mockery::mock(invisible(NULL), cycle = TRUE),
         .package = "fresh",
         {
           link:::.lnk_pipeline_pscis_build(
@@ -187,7 +196,10 @@ test_that("the PSCIS pick ends on a key that breaks every output-changing tie", 
   ob <- link:::.lnk_pscis_pick_order
   # bcfp's two terms first, then the tie-breaks, in order (link#277).
   expect_identical(ob[[1]], "name_score DESC")
-  expect_identical(utils::tail(ob, 3), c(
+  expect_identical(utils::tail(ob, 5), c(
+    # a tie at a shared vertex goes to the segment starting there (link#478)
+    "snap_at_segment_end ASC",
+    "segment_downstream_route_measure DESC",
     "linear_feature_id ASC",
     "modelled_xing_dist ASC",
     "modelled_crossing_id ASC NULLS LAST"
@@ -206,6 +218,8 @@ test_that("the PSCIS pick gives one answer whatever the row order (link#277)", {
   cand <- data.frame(
     stream_crossing_id = 1L,
     linear_feature_id = 700276704,
+    snap_at_segment_end = FALSE,
+    segment_downstream_route_measure = 0,
     distance_to_stream = 12,
     name_score = 0L,
     width_order_score = 0L,
@@ -230,4 +244,42 @@ test_that("the PSCIS pick gives one answer whatever the row order (link#277)", {
   }, integer(1))
   # The closest modelled crossing wins in both row orders.
   expect_identical(picks, c(100122L, 100122L))
+})
+
+test_that("a tie at a shared vertex goes to the segment starting there (link#478)", {
+  conn <- skip_if_no_db()
+  withr::defer(DBI::dbExecute(conn, "DROP SCHEMA IF EXISTS zz_test_pick478 CASCADE"))
+  DBI::dbExecute(conn, "DROP SCHEMA IF EXISTS zz_test_pick478 CASCADE")
+  DBI::dbExecute(conn, "CREATE SCHEMA zz_test_pick478")
+  pick <- function(d) {
+    DBI::dbWriteTable(conn, DBI::Id(schema = "zz_test_pick478", table = "cand"),
+                      d, overwrite = TRUE)
+    fresh::frs_candidates_pick(
+      conn, table_in = "zz_test_pick478.cand", table_to = "zz_test_pick478.picked",
+      col_key = "stream_crossing_id",
+      exp_filter = "name_score != -100 AND width_order_score != -100 AND multiple_match_ind IS NULL",
+      order_by = link:::.lnk_pscis_pick_order)
+    DBI::dbGetQuery(conn, "SELECT linear_feature_id FROM zz_test_pick478.picked")$linear_feature_id
+  }
+  base <- data.frame(stream_crossing_id = 1L, name_score = 0L,
+                     width_order_score = 0L, multiple_match_ind = NA,
+                     distance_to_stream = 30, modelled_xing_dist = 0,
+                     modelled_xing_dist_instream = NA_real_,
+                     modelled_crossing_id = NA_integer_)
+  # One stream: the lower id ends at the vertex, the higher id starts
+  # there. bcfp's order took the lower id; the segment starting at the
+  # vertex wins, in both row orders.
+  one <- cbind(base[c(1, 1), ], linear_feature_id = c(10, 20),
+               snap_at_segment_end = c(TRUE, FALSE),
+               segment_downstream_route_measure = c(500, 812.4))
+  expect_identical(pick(one), 20)
+  expect_identical(pick(one[2:1, ]), 20)
+  # Two streams: a tributary's mouth (start 0) against the top end of the
+  # line it meets (higher start). "Higher measure" would take the line's
+  # top; the tributary starting at the vertex wins.
+  two <- cbind(base[c(1, 1), ], linear_feature_id = c(30, 40),
+               snap_at_segment_end = c(FALSE, TRUE),
+               segment_downstream_route_measure = c(0, 1021))
+  expect_identical(pick(two), 30)
+  expect_identical(pick(two[2:1, ]), 30)
 })

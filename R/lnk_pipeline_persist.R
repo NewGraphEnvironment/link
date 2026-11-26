@@ -119,6 +119,14 @@ lnk_pipeline_persist <- function(conn, aoi, cfg, species,
       LIMIT 1;",
     DBI::dbQuoteString(conn, schema)
   ))) > 0L
+  # An override or evidence row persists only beside a natural barrier row this
+  # group holds (link#386): the working tables cover the whole of every line
+  # the group touches, and a gradient barrier on a segment another group owns
+  # is held by that group alone (lnk_barriers_unify()), so its lift is too.
+  # Matched by line and within 1 m, because overrides sit at a barrier's
+  # rounded measure: never by the owner of the rounded position, which can fall
+  # on the neighbour's side of a group boundary.
+  held_filter <- if (barriers_present) .lnk_sql_override_held(schema, "o")
   if (overrides_present) {
     overrides_table <- paste0(tn$schema, ".barrier_overrides")
     overrides_cols <- paste(names(cols_barrier_overrides), collapse = ", ")
@@ -132,9 +140,9 @@ lnk_pipeline_persist <- function(conn, aoi, cfg, species,
       "DELETE FROM %s WHERE watershed_group_code = %s",
       overrides_table, aoi_lit))
     .lnk_db_execute(conn, sprintf(
-      "INSERT INTO %s (%s) SELECT %s FROM %s.barrier_overrides",
+      "INSERT INTO %s (%s) SELECT %s FROM %s.barrier_overrides o %s",
       overrides_table, overrides_cols,
-      paste(overrides_select, collapse = ", "), schema))
+      paste(overrides_select, collapse = ", "), schema, held_filter %||% ""))
   }
 
   # ----- barrier_override_evidence (link#434) -----
@@ -157,9 +165,9 @@ lnk_pipeline_persist <- function(conn, aoi, cfg, species,
       "DELETE FROM %s WHERE watershed_group_code = %s",
       evidence_table, aoi_lit))
     .lnk_db_execute(conn, sprintf(
-      "INSERT INTO %s (%s) SELECT %s FROM %s.barrier_override_evidence",
+      "INSERT INTO %s (%s) SELECT %s FROM %s.barrier_override_evidence o %s",
       evidence_table, paste(evidence_cols, collapse = ", "),
-      paste(evidence_select, collapse = ", "), schema))
+      paste(evidence_select, collapse = ", "), schema, held_filter %||% ""))
   }
 
   # ----- streams_access (link#187) -----
@@ -283,6 +291,26 @@ lnk_pipeline_persist <- function(conn, aoi, cfg, species,
   }
 
   invisible(conn)
+}
+
+#' SQL: keep an override or evidence row only beside a natural barrier held
+#'
+#' A `WHERE EXISTS` on `<schema>.barriers` (the rows the group holds, from
+#' [lnk_barriers_unify()]): a GRADIENT, FALLS or SUBSURFACE_FLOW row on the same
+#' line within 1 m (link#386). User-definite barriers are never lifted.
+#' @param schema Working schema holding `barriers`.
+#' @param alias Alias of the override or evidence table in the calling query.
+#' @noRd
+.lnk_sql_override_held <- function(schema, alias) {
+  .lnk_validate_identifier(schema, "schema")
+  .lnk_validate_identifier(alias, "alias")
+  sprintf(
+    "WHERE EXISTS (
+       SELECT 1 FROM %1$s.barriers hb
+        WHERE hb.blue_line_key = %2$s.blue_line_key
+          AND abs(hb.downstream_route_measure - %2$s.downstream_route_measure) < 1
+          AND hb.barrier_source IN ('GRADIENT', 'FALLS', 'SUBSURFACE_FLOW'))",
+    schema, alias)
 }
 
 #' The near_river pairs a build owns, as SQL row sets

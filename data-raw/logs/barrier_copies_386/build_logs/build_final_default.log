@@ -1,0 +1,54 @@
+[build] default 20261124_386-final-default -> fresh_386_final_default at 8da6815d (2026-11-24 20:33:16 UTC)
+[1] 0
+Override validation: w386fd_tabr.pscis_fixes vs w386fd_tabr.crossings
+  Total overrides:  3
+  Valid (matched):  3
+  Orphans:          0
+  Duplicates:       0
+Updated 3 of 2880 rows (barrier_status)
+[build] TABR model done in 3.4 min
+[build] LSAL attempt 1 failed: Failed to fetch row : ERROR:  canceling statement due to statement timeout
+[build] LSAL model done in 1.6 min
+[build] SALR model done in 1.7 min
+[build] ADMS model done in 2.3 min
+Override validation: w386fd_elkr.pscis_fixes vs w386fd_elkr.crossings
+  Total overrides:  329
+  Valid (matched):  293
+  Orphans:          36  <-- not found in crossings
+  Duplicates:       0
+Updated 293 of 7306 rows (barrier_status)
+[build] ELKR model done in 5.7 min
+Override validation: w386fd_bulk.pscis_fixes vs w386fd_bulk.crossings
+  Total overrides:  589
+  Valid (matched):  521
+  Orphans:          68  <-- not found in crossings
+  Duplicates:       0
+Updated 521 of 5568 rows (barrier_status)
+[build] BULK model done in 8.9 min
+[build] UPCE model done in 3.0 min
+[build] PCEA model done in 4.1 min
+[build] LPCE model done in 1.8 min
+[build] FINA model done in 3.8 min
+Override validation: w386fd_pars.pscis_fixes vs w386fd_pars.crossings
+  Total overrides:  3
+  Valid (matched):  3
+  Orphans:          0
+  Duplicates:       0
+Updated 3 of 3961 rows (barrier_status)
+[build] PARS model done in 6.3 min
+There were 50 or more warnings (use warnings() to see the first 50)
+[build] TABR recompute done
+[build] LSAL recompute done
+[build] SALR recompute done
+[build] ADMS recompute done
+[build] ELKR recompute done (downstream post-condition failed: groups outside the set)
+[build] BULK recompute done
+[build] UPCE recompute done
+[build] PCEA recompute done
+[build] LPCE recompute done
+[build] FINA recompute done
+[build] PARS recompute done
+Warning message:
+In system2("Rscript", c(rc, w, config), env = c("LNK_LOAD=loadall",  :
+  running command 'LNK_LOAD=loadall LNK_SCHEMA=fresh_386_final_default LNK_RUN_UID=20261124_386-final-default LNK_RUN_LABEL=link479-proof 'Rscript' <scratch>/wt_final/data-raw/wsg_recompute_one.R ELKR default 2>&1' had status 1
+[build] all done 2026-11-24 21:40:09 UTC

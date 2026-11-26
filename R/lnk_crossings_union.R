@@ -13,8 +13,8 @@
 #'
 #' @param conn A DBI connection.
 #' @param schema Working schema. Receives `<schema>.crossings` and reads
-#'   `<schema>.pscis_assessment_snapped` (output of [lnk_points_snap()])
-#'   plus optional `<schema>.pscis_modelledcrossings_streams_xref` (from
+#'   `<schema>.pscis` (built by the PSCIS snap, score and pick, which
+#'   snaps through [lnk_points_snap()]) plus optional `<schema>.pscis_modelledcrossings_streams_xref` (from
 #'   [lnk_pipeline_load()] — treated as empty when absent).
 #' @param aoi Watershed group code.
 #' @param modelled_table Fully-qualified `<schema>.<table>` of the

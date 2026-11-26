@@ -419,3 +419,172 @@ test_that("a species with no date floor lifts only on dated records (#501)", {
   expect_match(joined, "WHERE o.species_code IN ('RB')", fixed = TRUE)
   expect_match(joined, "AND o.observation_date >= '1900-01-01'", fixed = TRUE)
 })
+
+test_that("two rules for one species lift the union, never their records together (DB, #236)", {
+  skip_if_no_db()
+  conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
+                      user = "postgres", password = "postgres")
+  on.exit(DBI::dbDisconnect(conn), add = TRUE)
+  ex <- function(sql) DBI::dbExecute(conn, sql)
+  s <- paste0("zz_lnk_bo_rules_", Sys.getpid())
+  ex(sprintf("DROP SCHEMA IF EXISTS %s CASCADE", s))
+  ex(sprintf("CREATE SCHEMA %s", s))
+  on.exit(ex(sprintf("DROP SCHEMA IF EXISTS %s CASCADE", s)), add = TRUE,
+          after = FALSE)
+  # A (line 10 at 100): two XX records above, so rule own (2 XX) is met.
+  # B (line 10 at 900): one XX and two YY above, so only rule r2 (2 YY) is.
+  # C (line 20 at 100): one XX and one YY: two records, but neither rule's.
+  ex(sprintf("CREATE TABLE %s.nb (blue_line_key int,
+                downstream_route_measure float8, wscode_ltree ltree,
+                localcode_ltree ltree, label text)", s))
+  ex(sprintf("INSERT INTO %s.nb VALUES
+                (10, 100, '100.200', '100.200', 'x'),
+                (10, 900, '100.200', '100.200', 'x'),
+                (20, 100, '100.300', '100.300', 'x')", s))
+  ex(sprintf("CREATE TABLE %s.obs (observation_key text,
+                watershed_group_code text, species_code text,
+                species_code_recorded text, observation_date date,
+                blue_line_key int, downstream_route_measure float8,
+                wscode ltree, localcode ltree)", s))
+  ex(sprintf("INSERT INTO %s.obs VALUES
+    ('k1', 'AAAA', 'XX', 'XX', '2001-01-01', 10, 500, '100.200', '100.200'),
+    ('k2', 'AAAA', 'XX', 'XX', '2002-01-01', 10, 950, '100.200', '100.200'),
+    ('k4', 'AAAA', 'YY', 'YY', '2003-01-01', 10, 960, '100.200', '100.200'),
+    ('k7', 'AAAA', 'YY', 'YY', '2004-01-01', 10, 970, '100.200', '100.200'),
+    ('k5', 'AAAA', 'XX', 'XX', '2005-01-01', 20, 200, '100.300', '100.300'),
+    ('k8', 'AAAA', 'YY', 'YY', '2006-01-01', 20, 300, '100.300', '100.300')",
+    s))
+  rules <- data.frame(species_code = c("XX", "XX"), rule = c("own", "r2"),
+                      observation_threshold = c(2L, 2L),
+                      observation_date_min = c("1990-01-01", "1990-01-01"),
+                      observation_buffer_m = c(20, 20),
+                      observation_species = c("XX", "YY"),
+                      observation_control_apply = c(FALSE, FALSE),
+                      stringsAsFactors = FALSE)
+  lnk_barrier_overrides(conn, barriers = paste0(s, ".nb"),
+                        observations = paste0(s, ".obs"), params = rules,
+                        to = paste0(s, ".bo"), evidence = paste0(s, ".ev"),
+                        verbose = FALSE)
+  bo <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT blue_line_key, downstream_route_measure FROM %s.bo
+      ORDER BY 1, 2", s))
+  expect_equal(paste(bo$blue_line_key, bo$downstream_route_measure),
+               c("10 100", "10 900"))
+  ev <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT downstream_route_measure AS m, evidence_key AS k, lift_rule,
+            observation_species
+       FROM %s.ev ORDER BY 1, 2, 3", s))
+  # A rests on both rules (k4 and k7 sit above it too), each listed under its
+  # rule; B on rule r2's alone. k2 sits above B but counts toward no rule met
+  # there.
+  expect_equal(paste(ev$m, ev$k, ev$lift_rule),
+               c("100 k1 own", "100 k2 own", "100 k4 r2", "100 k7 r2",
+                 "900 k4 r2", "900 k7 r2"))
+  expect_equal(ev$observation_species, c("XX", "XX", "YY", "YY", "YY", "YY"))
+  # A parameters_fresh-shaped table (no rule column) is rule own.
+  lnk_barrier_overrides(conn, barriers = paste0(s, ".nb"),
+                        observations = paste0(s, ".obs"),
+                        params = rules[1, setdiff(names(rules), "rule")],
+                        to = paste0(s, ".bo1"), evidence = paste0(s, ".ev1"),
+                        verbose = FALSE)
+  ev1 <- DBI::dbGetQuery(conn, sprintf(
+    "SELECT DISTINCT lift_rule FROM %s.ev1", s))
+  expect_equal(ev1$lift_rule, "own")
+  expect_equal(DBI::dbGetQuery(conn, sprintf(
+    "SELECT count(*)::int AS n FROM %s.bo1", s))$n, 1L)
+})
+
+test_that("habitat lifts run once per species, on rule own (#236)", {
+  captured <- character(0)
+  local_mocked_bindings(
+    dbExecute = function(conn, sql, ...) {
+      captured <<- c(captured, sql)
+      1L
+    },
+    dbGetQuery = function(conn, sql, ...) {
+      if (grepl("SELECT count", sql, ignore.case = TRUE)) {
+        return(data.frame(count = 0L))
+      }
+      data.frame(column_name = character(0))
+    },
+    .package = "DBI"
+  )
+  rules <- data.frame(species_code = c("BT", "BT"), rule = c("own", "salmon"),
+                      observation_threshold = c(1L, 2L),
+                      observation_date_min = c(NA, "1990-01-01"),
+                      observation_buffer_m = c(20, 20),
+                      observation_species = c("BT", "CH;CO"),
+                      observation_control_apply = c(FALSE, TRUE),
+                      stringsAsFactors = FALSE)
+  lnk_barrier_overrides("mock", barriers = "w.nb", observations = "w.obs",
+                        habitat = "w.uhc", params = rules, to = "w.bo",
+                        evidence = "w.ev", verbose = FALSE)
+  hab <- grep("INNER JOIN w.uhc h", captured, value = TRUE)
+  # one lift insert and one evidence insert, both on BT's own list
+  expect_length(hab, 2L)
+  expect_true(all(grepl("h.species_code IN ('BT')", hab, fixed = TRUE)))
+  expect_match(paste(captured, collapse = "\n"), "o.species_code IN ('CH', 'CO')",
+               fixed = TRUE)
+})
+
+test_that("params$rule must be a plain name (#236)", {
+  p <- .stub_params()
+  p$rule <- "bad name;"
+  expect_error(lnk_barrier_overrides("mock", barriers = "w.nb", params = p,
+                                     to = "w.bo", verbose = FALSE),
+               "must name each rule")
+})
+
+test_that("a blank observation_species reads as the row's own species (round 1)", {
+  captured <- character(0)
+  local_mocked_bindings(
+    dbExecute = function(conn, sql, ...) { captured <<- c(captured, sql); 1L },
+    dbGetQuery = function(conn, sql, ...) {
+      if (grepl("SELECT count", sql, ignore.case = TRUE)) return(data.frame(count = 0L))
+      data.frame(column_name = character(0))
+    },
+    .package = "DBI")
+  p <- .stub_params(); p$observation_species <- ""
+  lnk_barrier_overrides("mock", barriers = "w.nb", observations = "w.obs",
+                        params = p, to = "w.bo", verbose = FALSE)
+  joined <- paste(captured, collapse = "\n")
+  expect_match(joined, "o.species_code IN ('BT')", fixed = TRUE)
+  expect_no_match(joined, "IN ('')", fixed = TRUE)
+})
+
+test_that("a blank date is no floor, a yes control applies, a bad date refuses (round 3)", {
+  captured <- character(0)
+  local_mocked_bindings(
+    dbExecute = function(conn, sql, ...) { captured <<- c(captured, sql); 1L },
+    dbGetQuery = function(conn, sql, ...) {
+      if (grepl("SELECT count", sql, ignore.case = TRUE)) return(data.frame(count = 0L))
+      data.frame(column_name = character(0))
+    },
+    .package = "DBI")
+  p <- .stub_params(control_apply = "yes"); p$observation_date_min <- ""
+  lnk_barrier_overrides("mock", barriers = "w.nb", observations = "w.obs",
+                        control = "w.ctrl", params = p, to = "w.bo", verbose = FALSE)
+  joined <- paste(captured, collapse = "\n")
+  expect_match(joined, "o.observation_date >= '1900-01-01'", fixed = TRUE)
+  expect_match(joined, "c.barrier_ind::boolean = true", fixed = TRUE)
+  p$observation_date_min <- "1990'; DROP TABLE x; --"
+  expect_error(lnk_barrier_overrides("mock", barriers = "w.nb", observations = "w.obs",
+                                     params = p, to = "w.bo", verbose = FALSE),
+               "is not a date")
+})
+
+test_that("a lower-case species list counts the upper-case records (enumeration)", {
+  captured <- character(0)
+  local_mocked_bindings(
+    dbExecute = function(conn, sql, ...) { captured <<- c(captured, sql); 1L },
+    dbGetQuery = function(conn, sql, ...) {
+      if (grepl("SELECT count", sql, ignore.case = TRUE)) return(data.frame(count = 0L))
+      data.frame(column_name = character(0))
+    },
+    .package = "DBI")
+  p <- .stub_params(); p$observation_species <- "bt; ch"
+  lnk_barrier_overrides("mock", barriers = "w.nb", observations = "w.obs",
+                        params = p, to = "w.bo", verbose = FALSE)
+  expect_match(paste(captured, collapse = "\n"), "o.species_code IN ('BT', 'CH')",
+               fixed = TRUE)
+})

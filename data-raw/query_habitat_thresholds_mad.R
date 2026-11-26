@@ -287,14 +287,17 @@ avail <- bind_rows(lapply(species, function(sp) {
   if (length(w) == 0L) return(NULL)
   dbGetQuery(conn, sprintf("
     SELECT '%1$s' AS species_code, %4$s AS pred_set,
-           d.mad_m3s, sum(s.length_metre) / 1000 AS km
+           -- exact: a double sum takes its last bits from the plan (#356)
+           d.mad_m3s, sum(s.length_metre::numeric) / 1000 AS km
       FROM %2$s.streams s
       JOIN %2$s.streams_access a USING (id_segment, watershed_group_code)
       LEFT JOIN %5$s d
         ON d.linear_feature_id = s.linear_feature_id
      WHERE a.access_%3$s IN (1, 2)
        AND s.watershed_group_code = ANY($1)
-     GROUP BY 1, 2, 3", sp, schema, tolower(sp), seg_class_sql(sp), rel),
+     GROUP BY 1, 2, 3
+     -- the R sums below add in row order, so fix it
+     ORDER BY 2, 3 NULLS LAST, 4", sp, schema, tolower(sp), seg_class_sql(sp), rel),
     params = list(paste0("{", paste(w, collapse = ","), "}")))
 }))
 
