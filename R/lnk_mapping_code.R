@@ -219,20 +219,24 @@ lnk_mapping_code <- function(
 #' Reading persist, not the working tables, is what puts SPAWN / REAR tokens on
 #' the settled flags.
 #'
-#' Species with no bcfishpass residence class (GR, KO, RB in `default`) are
-#' coded as residents until link#189 data-drives residence.
+#' Which species read the resident or the anadromous barrier token, and which
+#' spawn only, comes from the bundle's `dimensions.csv` (`residence`,
+#' `rear_no_fw`) through [.lnk_species_residence()] (link#189). With
+#' `cfg = NULL` the sets are the ones coded before that: CH, CM, CO, PK, SK and
+#' ST anadromous, CM and PK spawn-only, every other species resident.
 #'
 #' @param schema Persist schema.
 #' @param species Active species for `aoi`.
 #' @param presence An `lnk_presence` object for `aoi`.
+#' @param cfg The run's `lnk_config()` object, or `NULL`.
 #' @noRd
-.lnk_mapping_code_persist <- function(conn, schema, aoi, species, presence) {
+.lnk_mapping_code_persist <- function(conn, schema, aoi, species, presence,
+                                      cfg = NULL) {
   sp_set <- tolower(species)
-  sp_resident   <- union(intersect(sp_set, c("bt", "wct")),
-                         setdiff(sp_set, c("bt", "wct", "ch", "cm", "co", "pk",
-                                           "sk", "st")))
-  sp_anadromous <- intersect(sp_set, c("ch", "cm", "co", "pk", "sk", "st"))
-  sp_spawn_only <- intersect(sp_set, c("cm", "pk"))
+  res <- .lnk_species_residence(cfg, sp_set)
+  sp_resident   <- res$resident
+  sp_anadromous <- res$anadromous
+  sp_spawn_only <- res$spawn_only
 
   aoi_lit <- DBI::dbQuoteLiteral(conn, aoi)
   # No species classified here (only paused species present, #432): the group
@@ -288,4 +292,54 @@ lnk_mapping_code <- function(
       schema, ins_cols, sel_cols, mc_scratch, schema, aoi_lit))
   })
   invisible(conn)
+}
+
+
+#' Residence and spawn-only sets for a bundle's species
+#'
+#' Reads the `residence` column (`resident` or `anadromous`) and `rear_no_fw`
+#' (`yes` spawns only) of the bundle's `dimensions.csv` (link#189). A bundle
+#' whose `dimensions.csv` has no `residence` column, or `cfg = NULL`, gets the
+#' sets coded before link#189: CH, CM, CO, PK, SK and ST anadromous, CM and PK
+#' spawn-only, every other species resident.
+#'
+#' @param cfg An `lnk_config()` object, or `NULL`.
+#' @param species Species codes, any case.
+#' @return A list of lower-case character vectors `resident`, `anadromous`
+#'   and `spawn_only`, each in the order of `species`.
+#' @noRd
+.lnk_species_residence <- function(cfg, species) {
+  sp <- unique(tolower(species))
+  anad_coded <- c("ch", "cm", "co", "pk", "sk", "st")
+  fallback <- list(resident = setdiff(sp, anad_coded),
+                   anadromous = intersect(sp, anad_coded),
+                   spawn_only = intersect(sp, c("cm", "pk")))
+  if (is.null(cfg) || is.null(cfg$dimensions)) return(fallback)
+  dims <- utils::read.csv(cfg$dimensions, stringsAsFactors = FALSE,
+                          check.names = FALSE, colClasses = "character",
+                          na.strings = character())
+  if (!"residence" %in% names(dims)) return(fallback)
+  if (length(sp) == 0L) {
+    return(list(resident = character(0), anadromous = character(0),
+                spawn_only = character(0)))
+  }
+  key <- tolower(trimws(dims$species))
+  i <- match(sp, key)
+  if (anyNA(i)) {
+    stop("species with no row in ", cfg$dimensions, ": ",
+         paste(toupper(sp[is.na(i)]), collapse = ", "), call. = FALSE)
+  }
+  r <- tolower(trimws(dims$residence[i]))
+  bad <- !r %in% c("resident", "anadromous")
+  if (any(bad)) {
+    stop("residence must be resident or anadromous in ", cfg$dimensions,
+         "; not for: ", paste(toupper(sp[bad]), collapse = ", "), call. = FALSE)
+  }
+  no_fw <- if ("rear_no_fw" %in% names(dims)) {
+    tolower(trimws(dims$rear_no_fw[i])) == "yes"
+  } else {
+    rep(FALSE, length(sp))
+  }
+  list(resident = sp[r == "resident"], anadromous = sp[r == "anadromous"],
+       spawn_only = sp[no_fw])
 }

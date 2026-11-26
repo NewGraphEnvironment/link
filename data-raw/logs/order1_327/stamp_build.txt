@@ -1,0 +1,12 @@
+---
+date: 2026-11-23 19:52 MST
+step: all; focal: ADMS,BULK,CHWK,FINA,PCEA,SQAM,PARS,CLWR; variants: default,bt_order1,ch_order1,st_order1,ch_pair_both
+link: 0.88.0 @ 9306e581 (at launch)
+base: default
+variants: data-raw/habitat_score/variants_327.csv (md5 dcd8dae621e30292dd63d858980ee66f); roles: data-raw/habitat_score/wsg_roles_327.csv (md5 b10bff7f23561a7bd1dc8206a43b12f7)
+fresh: 0.55.1 @ 29e7aa13c50af8a7e35f664aadaadecfda1bdee1
+db: docker fwapg localhost:5432
+base run_uid(s) in score327_default.log: none
+bcfishobs.observations rows: 375962
+thresholds sha256 (12): default=29afa9c2d7f3, bt_order1=29afa9c2d7f3, ch_order1=29afa9c2d7f3, st_order1=29afa9c2d7f3, ch_pair_both=29afa9c2d7f3
+

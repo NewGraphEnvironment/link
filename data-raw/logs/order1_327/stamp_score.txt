@@ -1,0 +1,17 @@
+date: 2026-11-23 19:56 MST
+link: 0.88.0 @ 9306e581 (at launch)
+fresh: 0.55.1 @ 29e7aa13c50af8a7e35f664aadaadecfda1bdee1
+db: docker fwapg localhost:5432
+base: default
+variants: data-raw/habitat_score/variants_327.csv (md5 dcd8dae621e30292dd63d858980ee66f): default,bt_order1,ch_order1,st_order1,ch_pair_both
+roles: data-raw/habitat_score/wsg_roles_327.csv (md5 b10bff7f23561a7bd1dc8206a43b12f7)
+built default: thresholds sha256 29afa9c2d7f3; link 9306e581; 8 WSGs, 2026-11-23 19:40:46 MST to 2026-11-23 19:45:40 MST
+built bt_order1: thresholds sha256 29afa9c2d7f3; link 9306e581; 7 WSGs, 2026-11-23 19:46:20 MST to 2026-11-23 19:48:04 MST
+built ch_order1: thresholds sha256 29afa9c2d7f3; link 9306e581; 5 WSGs, 2026-11-23 19:48:33 MST to 2026-11-23 19:49:43 MST
+built st_order1: thresholds sha256 29afa9c2d7f3; link 9306e581; 3 WSGs, 2026-11-23 19:49:49 MST to 2026-11-23 19:51:01 MST
+built ch_pair_both: thresholds sha256 29afa9c2d7f3; link 9306e581; 5 WSGs, 2026-11-23 19:51:30 MST to 2026-11-23 19:52:47 MST
+focal: ADMS,BULK,CHWK,FINA,PCEA,SQAM,PARS,CLWR; species: BT,CH,ST; buffers: 0,100 m
+rule: n_band >= 10 and density_ratio >= 0.5 on held-out WSGs; floor of record: expected
+pooling: default species_pooling.csv (sha256 1f6dbb905d5d): 10 WSG x species pairs pooled (BT<-ABT, BT<-BT/DV, BT<-DV, BT<-DV/BT, ST<-SST, ST<-WST)
+bcfishobs.observations rows: 375962
+absences: none (LNK_KNOWLEDGE_DIR unset)

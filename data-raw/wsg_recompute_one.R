@@ -218,7 +218,8 @@ if (length(active) > 0L) {
 
 # 3. Rebuild mapping_code from the updated access and settled habitat ->
 # scratch -> persist (one transaction; lnk_pipeline_run builds it the same way).
-.mc_persist(conn, schema = sch, aoi = wsg, species = active, presence = pres)
+.mc_persist(conn, schema = sch, aoi = wsg, species = active, presence = pres,
+            cfg = cfg)
 
 # Post-condition (link#227). study_area_run.sh runs the per-WSG guard in
 # `warn` mode, because on a multi-host run a downstream group can legitimately

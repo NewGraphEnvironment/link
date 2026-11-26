@@ -21,7 +21,7 @@ Not in this config:
 |------|------|
 | `config.yaml` | Manifest — points at everything below, plus pipeline parameters |
 | `rules.yaml` | Built rules YAML (consumed by `frs_habitat_classify()`). Regenerate from `dimensions.csv` via `lnk_rules_build()` |
-| `dimensions.csv` | Source of `rules.yaml` — species × habitat biology encoded for NewGraph defaults. Source of truth is `inst/extdata/parameters_habitat_dimensions.csv` (copied in here on bundle assembly) |
+| `dimensions.csv` | Source of `rules.yaml` — species × habitat biology encoded for NewGraph defaults: an April 2026 copy of `default`'s, never synced since. |
 | `parameters_fresh.csv` | Per-species fresh overrides (spawn_gradient_min, observation_threshold, etc.) |
 | `parameters_habitat_method.csv` | Per-watershed-group habitat size model, `cw` (channel width) or `mad` (mean annual discharge), handed to fresh by classify. All `cw`; a frozen copy of bcfishpass `parameters/example_newgraph`, not csv-synced, so moving a group to `mad` is a reviewed edit (update its `checksum` in `config.yaml`). Columns in `configs/dictionary_parameters_habitat_method.csv`. |
 | `overrides/` | Shared jurisdiction data — same barrier corrections, PSCIS status overrides, observation exclusions, habitat confirmations as the bcfishpass variant. These are BC-specific facts, not method choices. Redistributed under `LICENSE-bcfishpass` at the repo root. |

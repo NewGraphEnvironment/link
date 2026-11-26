@@ -113,6 +113,8 @@ A second scoring run gets its own `--prefix`; its working networks are then
 
 The inputs for #302 are `variants_302.csv` and `wsg_roles_302.csv`.
 
+The inputs for #327 (the order-1 exception in `default`, and CH's near-river pair at `both` beside it) are `variants_327.csv` and `wsg_roles_327.csv`; evidence in `data-raw/logs/order1_327/`. A variant pass writes its group's row into the variant schema's `log` (link#476): the validator reads the near-river pairs, fill and source a group was classified on from it.
+
 ## `wsg_roles.csv`
 
 One row per WSG × species: `held_out` WSGs decide the rule; `in_sample` WSGs (among the

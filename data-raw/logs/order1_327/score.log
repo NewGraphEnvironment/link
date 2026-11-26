@@ -1,0 +1,14 @@
+19:55:10 validating default (score327_default), buffer 0 m
+19:55:23 validating default (score327_default), buffer 100 m
+19:55:37 validating bt_order1 (score327_bt_order1), buffer 0 m
+19:55:44 validating bt_order1 (score327_bt_order1), buffer 100 m
+19:55:51 validating ch_order1 (score327_ch_order1), buffer 0 m
+19:55:55 validating ch_order1 (score327_ch_order1), buffer 100 m
+19:55:59 validating st_order1 (score327_st_order1), buffer 0 m
+19:56:04 validating st_order1 (score327_st_order1), buffer 100 m
+19:56:09 validating ch_pair_both (score327_ch_pair_both), buffer 0 m
+19:56:13 validating ch_pair_both (score327_ch_pair_both), buffer 100 m
+19:56:24 ch_order1 spawning: user_habitat_classification reaches in ADMS,BULK,CHWK,SQAM,CLWR would sit in the core, not compared
+19:56:26 st_order1 spawning: user_habitat_classification reaches in BULK,CHWK,SQAM would sit in the core, not compared
+19:56:27 ch_pair_both spawning: user_habitat_classification reaches in ADMS,BULK,CHWK,SQAM,CLWR would sit in the core, not compared
+19:56:29 wrote data-raw/logs/order1_327

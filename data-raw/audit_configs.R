@@ -398,9 +398,9 @@ for (b in bundles) {
 }
 
 # ---------------------------------------------------------------------------
-# 6. Top-level (legacy) parameters_habitat_*  — check for staleness
+# 6. Top-level parameters_habitat_* — copies of the default bundle's
 # ---------------------------------------------------------------------------
-cat("\n--- 6. Legacy top-level parameters_habitat_* files ---\n")
+cat("\n--- 6. Top-level parameters_habitat_* files (default's copies) ---\n")
 for (f in c("inst/extdata/parameters_habitat_dimensions.csv",
             "inst/extdata/parameters_habitat_rules.yaml")) {
   # Resolve against the repo root, but report the repo-relative name.
@@ -410,9 +410,9 @@ for (f in c("inst/extdata/parameters_habitat_dimensions.csv",
                 format(file.info(full)$mtime, "%Y-%m-%d")))
   }
 }
-cat("  Note: these were the pre-bundle predecessors. Per CLAUDE.md they map to\n")
-cat("  the default bundle's dimensions.csv. If they have drifted from the\n")
-cat("  default bundle, they're stale and should be either removed or pinned.\n")
+cat("  Note: data-raw/build_rules.R writes these from the default bundle (a\n")
+cat("  byte copy of its dimensions.csv and the rules built from it, link#129),\n")
+cat("  and test-lnk_rules_build.R holds them equal to it.\n")
 
 # ---------------------------------------------------------------------------
 # Rollup — aggregate every `!!` finding so nothing scrolls past, exit non-zero

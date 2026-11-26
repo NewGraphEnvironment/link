@@ -1,8 +1,8 @@
 Package: link
 Title: Develop, Test and Communicate Intrinsic Habitat and Connectivity
     Models for the BC Freshwater Atlas Stream Network
-Version: 0.93.0
-Date: 2026-11-24
+Version: 0.94.0
+Date: 2026-11-26
 Authors@R: c(
     person("Allan", "Irvine", , "al@newgraphenvironment.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-3495-2128",
@@ -48,6 +48,7 @@ Remotes:
 Suggests:
     bcdata,
     bookdown,
+    commonmark,
     curl,
     dplyr,
     duckdb,
@@ -61,7 +62,8 @@ Suggests:
     targets,
     testthat (>= 3.0.0),
     wet (>= 0.4.7),
-    withr
+    withr,
+    xml2
 VignetteBuilder: knitr
 Config/DOI: 10.5281/zenodo.23264990
 Config/testthat/edition: 3

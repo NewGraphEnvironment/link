@@ -34,40 +34,68 @@
 #' @param edge_types Character. How to express stream edge types in rules:
 #'   `"categories"` (default) uses fresh categories (`stream`, `canal`).
 #'   `"explicit"` uses integer FWA edge_type codes (`1000, 1100, 2000, 2300`).
+#' @param strict Logical. Every column of `csv` is checked against the
+#'   column dictionary, `configs/dictionary_dimensions.csv`, whose rendered
+#'   form is `configs/README.md`. A column the dictionary does not list is
+#'   a warning by default and an error when `strict = TRUE`; either way it
+#'   reaches no rule.
 #'
 #' @return Invisible path to the written YAML file.
 #'
 #' @examples
-#' \dontrun{
-#' # NGE defaults
+#' # The default bundle's rules, built with its own thresholds
+#' cfg <- system.file("extdata", "configs", "default", package = "link")
+#' out <- tempfile(fileext = ".yaml")
 #' lnk_rules_build(
-#'   csv = system.file("extdata", "parameters_habitat_dimensions.csv", package = "link"),
-#'   to = "inst/extdata/parameters_habitat_rules.yaml"
-#' )
-#'
-#' # bcfishpass comparison variant
-#' lnk_rules_build(
-#'   csv = system.file("extdata", "configs", "bcfishpass", "dimensions.csv",
-#'                     package = "link"),
-#'   to = "inst/extdata/configs/bcfishpass/rules.yaml",
+#'   csv = file.path(cfg, "dimensions.csv"),
+#'   to = out,
+#'   thresholds = file.path(cfg, "parameters_habitat_thresholds.csv"),
 #'   edge_types = "explicit"
 #' )
-#' }
+#' # Bull trout's rear rules: an edge-type rule or a waterbody polygon each
+#' vapply(yaml::read_yaml(out)$BT$rear, function(r) {
+#'   if (is.null(r$waterbody_type)) {
+#'     paste("edges", paste(r$edge_types_explicit, collapse = "/"))
+#'   } else {
+#'     paste("waterbody", r$waterbody_type)
+#'   }
+#' }, character(1))
+#'
+#' # A column the dictionary does not list is refused under strict = TRUE
+#' bad <- tempfile(fileext = ".csv")
+#' d <- utils::read.csv(file.path(cfg, "dimensions.csv"))
+#' d$rear_strem <- "yes"
+#' utils::write.csv(d, bad, row.names = FALSE)
+#' try(lnk_rules_build(bad, out, strict = TRUE))
 #'
 #' @export
 lnk_rules_build <- function(csv,
-                             to,
-                             thresholds = system.file("extdata",
-                               "parameters_habitat_thresholds.csv",
-                               package = "fresh"),
-                             edge_types = c("categories", "explicit")) {
+                            to,
+                            thresholds = system.file("extdata",
+                                                     "parameters_habitat_thresholds.csv",
+                                                     package = "fresh"),
+                            edge_types = c("categories", "explicit"),
+                            strict = FALSE) {
   stopifnot(requireNamespace("yaml", quietly = TRUE))
   edge_types <- match.arg(edge_types)
+  if (!is.logical(strict) || length(strict) != 1L || is.na(strict)) {
+    stop("`strict` must be TRUE or FALSE", call. = FALSE)
+  }
 
   if (!file.exists(csv)) stop("Dimensions CSV not found: ", csv)
   if (thresholds == "") stop("fresh package not installed or thresholds CSV missing")
 
-  dimensions <- utils::read.csv(csv, stringsAsFactors = FALSE)
+  dimensions <- utils::read.csv(csv, stringsAsFactors = FALSE,
+                                check.names = FALSE)
+
+  # Every column is one the dictionary documents (link#75).
+  unknown <- setdiff(names(dimensions), .lnk_dictionary_columns("dimensions"))
+  if (length(unknown) > 0L) {
+    msg <- paste0("Dimensions CSV column(s) not in dictionary_dimensions.csv ",
+                  "(they reach no rule): ", paste(unknown, collapse = ", "))
+    if (strict) stop(msg, call. = FALSE)
+    warning(msg, call. = FALSE)
+  }
   thresh_df <- utils::read.csv(thresholds, stringsAsFactors = FALSE)
 
   # --- Validate ---

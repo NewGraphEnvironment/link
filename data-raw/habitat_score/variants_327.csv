@@ -1,0 +1,6 @@
+variant,species_code,column,value,flag,obs_stage,step_from,equals_bundle,model,set,discharge_source,discharge_fill,dims
+default,,,,,,,default,cw,,,,
+bt_order1,BT,,,,,default,,cw,,,,rear_stream_order_bypass=yes
+ch_order1,CH,,,,,default,,cw,,,,rear_stream_order_bypass=yes
+st_order1,ST,,,,,default,,cw,,,,rear_stream_order_bypass=yes
+ch_pair_both,CH,,,,,default,,cw,,,,rear_near_river=both

@@ -1,0 +1,16 @@
+watershed_group_code,species_code,role
+ADMS,BT,held_out
+BULK,BT,held_out
+CHWK,BT,held_out
+FINA,BT,held_out
+PCEA,BT,held_out
+SQAM,BT,held_out
+PARS,BT,in_sample
+ADMS,CH,held_out
+BULK,CH,held_out
+CHWK,CH,held_out
+CLWR,CH,held_out
+SQAM,CH,held_out
+BULK,ST,held_out
+CHWK,ST,held_out
+SQAM,ST,held_out

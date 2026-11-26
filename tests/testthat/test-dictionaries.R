@@ -327,6 +327,84 @@ test_that("the tracker's rows are unique and their decisions known", {
   expect_true(all(tracker$flag %in% c("present_unsupported", "absent_recorded")))
 })
 
+# -- The rendered README (link#75) ----------------------------------------------
+
+test_that("configs/README.md is the render of every dictionary", {
+  readme <- file.path(cfg_dir(), "README.md")
+  expect_true(file.exists(readme))
+  shipped <- paste(readLines(readme, warn = FALSE, encoding = "UTF-8"),
+                   collapse = "\n")
+  rendered <- sub("\n$", "", .lnk_dictionary_readme(cfg_dir()))
+  # A stale README fails here; rebuild with data-raw/dictionary_readme_build.R.
+  expect_identical(shipped, rendered)
+  n_dict <- length(list.files(cfg_dir(), pattern = "^dictionary_[a-z_]+\\.csv$"))
+  expect_gt(n_dict, 0L)
+  expect_identical(length(gregexpr("\n## `", rendered)[[1]]), n_dict)
+})
+
+test_that("the README renderer escapes pipes and newlines in a cell", {
+  d <- withr::local_tempdir()
+  utils::write.csv(data.frame(column = "a", description = "x | y\nz"),
+                   file.path(d, "dictionary_toy.csv"), row.names = FALSE)
+  out <- .lnk_dictionary_readme(d)
+  expect_match(out, "| a | x \\| y z |", fixed = TRUE)
+  utils::write.csv(data.frame(column = "b",
+                              description = "(<stage>_x, `a<b`) and `c`"),
+                   file.path(d, "dictionary_toy.csv"), row.names = FALSE)
+  expect_match(.lnk_dictionary_readme(d),
+               "| b | (\\<stage\\>\\_x, `a<b`) and `c` |", fixed = TRUE)
+  expect_error(.lnk_dictionary_readme(withr::local_tempdir()), "no dictionary")
+})
+
+test_that("every README cell displays as its dictionary cell (cmark-gfm)", {
+  # The staleness test compares the README with the renderer's own output, so
+  # it cannot see a cell markdown displays differently. This reads the README
+  # through cmark-gfm (the parser GitHub uses) and compares each table cell's
+  # text with its CSV cell, code-span backticks removed.
+  skip_if_not_installed("commonmark")
+  skip_if_not_installed("xml2")
+  check <- function(dir) {
+    md <- .lnk_dictionary_readme(dir)
+    doc <- xml2::read_html(commonmark::markdown_html(md, extensions = "table"))
+    tabs <- xml2::xml_find_all(doc, "//table")
+    files <- sort(list.files(dir, pattern = "^dictionary_[a-z_]+\\.csv$",
+                             full.names = TRUE), method = "radix")
+    expect_length(tabs, length(files))
+    n_cells <- 0L
+    for (k in seq_along(files)) {
+      d <- utils::read.csv(files[k], check.names = FALSE,
+                           colClasses = "character", na.strings = character(),
+                           encoding = "UTF-8")
+      rows <- xml2::xml_find_all(tabs[[k]], ".//tbody/tr")
+      expect_length(rows, nrow(d))
+      for (i in seq_len(nrow(d))) {
+        shown <- trimws(xml2::xml_text(xml2::xml_find_all(rows[[i]], "./td")))
+        src <- gsub("\r?\n", " ", unname(unlist(d[i, ])))
+        ticks <- nchar(src) - nchar(gsub("`", "", src, fixed = TRUE))
+        src <- ifelse(ticks %% 2L == 0L, gsub("`", "", src, fixed = TRUE), src)
+        expect_identical(shown, trimws(src),
+                         info = paste(basename(files[k]), "row", i))
+        n_cells <- n_cells + length(src)
+      }
+    }
+    n_cells
+  }
+  csvs <- list.files(cfg_dir(), pattern = "^dictionary_[a-z_]+\\.csv$",
+                     full.names = TRUE)
+  size <- function(f) {
+    d <- utils::read.csv(f, check.names = FALSE, colClasses = "character")
+    nrow(d) * ncol(d)
+  }
+  n_csv <- sum(vapply(csvs, size, numeric(1)))
+  expect_identical(check(cfg_dir()), as.integer(n_csv))
+  d <- withr::local_tempdir()
+  desc <- c("(<stage>_river_*, x) & [l](u) ~s~ \\", "a `x|y` b | c",
+            "odd ` tick_x_", "")
+  toy <- data.frame(column = c("a", "b", "c", "d"), description = desc)
+  utils::write.csv(toy, file.path(d, "dictionary_toy.csv"), row.names = FALSE)
+  expect_identical(check(d), 8L)
+})
+
 # -- dictionary_parameters_barrier_lifts (#236) -------------------------------
 # No shipped bundle declares the lifts table (a header-only file would move
 # config_hash for nothing), so the dictionary is held to the reader's column

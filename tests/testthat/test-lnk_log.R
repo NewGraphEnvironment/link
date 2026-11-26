@@ -1365,6 +1365,13 @@ test_that("no log table's primary key includes watershed_group_code", {
   }
 })
 
+test_that("an existing log_dimensions gains residence by ADD COLUMN (#189)", {
+  expect_true("residence" %in% names(.lnk_cols_log_dimensions()))
+  sql <- capture_ddl(.lnk_log_create_tables(NULL, "s"))
+  pat <- "ALTER TABLE s\\.log_dimensions ADD COLUMN IF NOT EXISTS residence text"
+  expect_gt(length(grep(pat, sql)), 0L)
+})
+
 test_that("no column a log snapshot table is built from is a reserved word (#341, DB)", {
   # The DDL writes column names unquoted: a dictionary row named `column`
   # failed lnk_persist_init() on a new schema.

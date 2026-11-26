@@ -9,7 +9,8 @@ lnk_rules_build(
   to,
   thresholds = system.file("extdata", "parameters_habitat_thresholds.csv", package =
     "fresh"),
-  edge_types = c("categories", "explicit")
+  edge_types = c("categories", "explicit"),
+  strict = FALSE
 )
 }
 \arguments{
@@ -46,6 +47,12 @@ Default uses the copy shipped with fresh.}
 \item{edge_types}{Character. How to express stream edge types in rules:
 \code{"categories"} (default) uses fresh categories (\code{stream}, \code{canal}).
 \code{"explicit"} uses integer FWA edge_type codes (\verb{1000, 1100, 2000, 2300}).}
+
+\item{strict}{Logical. Every column of \code{csv} is checked against the
+column dictionary, \code{configs/dictionary_dimensions.csv}, whose rendered
+form is \code{configs/README.md}. A column the dictionary does not list is
+a warning by default and an error when \code{strict = TRUE}; either way it
+reaches no rule.}
 }
 \value{
 Invisible path to the written YAML file.
@@ -56,20 +63,29 @@ consumed by \code{\link[fresh:frs_habitat]{fresh::frs_habitat()}}. The CSV is th
 of truth; the YAML is the derived artifact.
 }
 \examples{
-\dontrun{
-# NGE defaults
+# The default bundle's rules, built with its own thresholds
+cfg <- system.file("extdata", "configs", "default", package = "link")
+out <- tempfile(fileext = ".yaml")
 lnk_rules_build(
-  csv = system.file("extdata", "parameters_habitat_dimensions.csv", package = "link"),
-  to = "inst/extdata/parameters_habitat_rules.yaml"
-)
-
-# bcfishpass comparison variant
-lnk_rules_build(
-  csv = system.file("extdata", "configs", "bcfishpass", "dimensions.csv",
-                    package = "link"),
-  to = "inst/extdata/configs/bcfishpass/rules.yaml",
+  csv = file.path(cfg, "dimensions.csv"),
+  to = out,
+  thresholds = file.path(cfg, "parameters_habitat_thresholds.csv"),
   edge_types = "explicit"
 )
-}
+# Bull trout's rear rules: an edge-type rule or a waterbody polygon each
+vapply(yaml::read_yaml(out)$BT$rear, function(r) {
+  if (is.null(r$waterbody_type)) {
+    paste("edges", paste(r$edge_types_explicit, collapse = "/"))
+  } else {
+    paste("waterbody", r$waterbody_type)
+  }
+}, character(1))
+
+# A column the dictionary does not list is refused under strict = TRUE
+bad <- tempfile(fileext = ".csv")
+d <- utils::read.csv(file.path(cfg, "dimensions.csv"))
+d$rear_strem <- "yes"
+utils::write.csv(d, bad, row.names = FALSE)
+try(lnk_rules_build(bad, out, strict = TRUE))
 
 }
