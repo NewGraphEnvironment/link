@@ -441,7 +441,7 @@ test_that("lnk_compare_run composes mapping_code branch when mapping_code=TRUE",
                  "n_diffs", "top_pattern", "top_pattern_count"))
 })
 
-# Pre-#187 there was a `.lnk_compare_rollup_mapping_code` helper that
+# Pre-#187 there was a `.lnk_compare_wsg_mapping_code` helper that
 # inlined the build and gated reference dispatch. The helper is deleted
 # (build moved to `lnk_pipeline_run`, gate moved upstream to
 # `lnk_compare_run` reference dispatch around line ~141). The
