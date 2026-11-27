@@ -147,7 +147,7 @@ initialized by
 and populated by
 [`lnk_barriers_unify()`](https://newgraphenvironment.github.io/link/reference/lnk_barriers_unify.md)
 
-- [`lnk_pipeline_persist()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.md)
+- [`lnk_persist_write()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_write.md)
   for all WSGs in the regional scope.
 
 ## See also
@@ -169,7 +169,7 @@ cfg <- lnk_config("bcfishpass")
 loaded <- lnk_load_overrides(cfg)
 
 # ... lnk_persist_init + lnk_pipeline_* + lnk_barriers_unify +
-#     lnk_pipeline_persist all already run for all WSGs ...
+#     lnk_persist_write all already run for all WSGs ...
 
 lnk_barriers_views(conn, schema = "working_pars", cfg = cfg)
 

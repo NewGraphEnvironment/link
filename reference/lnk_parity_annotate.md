@@ -1,7 +1,7 @@
 # Annotate a parity rollup against the bcfp divergence taxonomy
 
 Joins each row of a parity rollup (from
-[`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md)
+[`lnk_compare_run()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_run.md)
 or the `data-raw/compare_bcfishpass_wsg.R` wrapper) to the first
 taxonomy entry whose `wsg`, `species`, `metric`, `pattern`, and
 (optional) `diff_range` all match. Unmatched rows with
@@ -56,13 +56,13 @@ appear in the YAML file. Put the most specific entries first.
 
 ## See also
 
-[`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md)
+[`lnk_compare_run()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_run.md)
 
 Other compare:
 [`lnk_access()`](https://newgraphenvironment.github.io/link/reference/lnk_access.md),
 [`lnk_compare_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_mapping_code.md),
 [`lnk_compare_rollup()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_rollup.md),
-[`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md),
+[`lnk_compare_run()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_run.md),
 [`lnk_habitat_validate()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_validate.md),
 [`lnk_habitat_validate_band()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_validate_band.md),
 [`lnk_log_read()`](https://newgraphenvironment.github.io/link/reference/lnk_log_read.md),

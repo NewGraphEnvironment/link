@@ -17,7 +17,7 @@ species integer access_&amp;lt;sp&amp;gt; codes derived via CASE on
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.94.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.95.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -204,7 +204,7 @@ when <code>crossings_table</code> is set (<code>remediated_dnstr_ind</code>), an
 upstream observation walk (species codes). A table given in several
 roles is walked once, as an array if any role reads its elements.</p>
 <p>This phase runs after <code><a href="lnk_pipeline_classify.html">lnk_pipeline_classify()</a></code> returns and before
-<code><a href="lnk_pipeline_persist.html">lnk_pipeline_persist()</a></code> cleanup_working drops the working schema —
+<code><a href="lnk_persist_write.html">lnk_persist_write()</a></code> cleanup_working drops the working schema —
 it needs the per-species <code>barriers_&lt;sp&gt;</code> tables that prepare/break
 built. Output goes to <code>&lt;schema&gt;.streams_access</code> (working schema,
 picked up by persist on the next commit).</p>

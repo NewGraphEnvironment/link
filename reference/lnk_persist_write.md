@@ -1,16 +1,14 @@
 # Persist per-WSG output into the province-wide habitat tables
 
-Copies the per-WSG staging tables (`<schema>.streams`,
-`<schema>.streams_habitat`) from the working schema into the persistent
-province-wide tables (`<persist_schema>.streams`,
-`<persist_schema>.streams_habitat_<sp>`, one per species). Wide-per-
-species pivot — fresh's long-format `streams_habitat` (one row per
-segment-species) becomes one row per segment in each per-species table.
+The write half of the persist family, beside
+[`lnk_persist_init()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_init.md),
+which creates the tables (named `lnk_pipeline_persist()` before 0.95.0,
+link#177).
 
 ## Usage
 
 ``` r
-lnk_pipeline_persist(
+lnk_persist_write(
   conn,
   aoi,
   cfg,
@@ -53,6 +51,13 @@ lnk_pipeline_persist(
 `conn` invisibly.
 
 ## Details
+
+Copies the per-WSG staging tables (`<schema>.streams`,
+`<schema>.streams_habitat`) from the working schema into the persistent
+province-wide tables (`<persist_schema>.streams`,
+`<persist_schema>.streams_habitat_<sp>`, one per species). Wide-per-
+species pivot — fresh's long-format `streams_habitat` (one row per
+segment-species) becomes one row per segment in each per-species table.
 
 Idempotent: each call DELETEs all rows for the given AOI before
 INSERTing the fresh ones, so re-running a WSG cleanly replaces its data

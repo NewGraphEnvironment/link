@@ -63,7 +63,7 @@ lnk_barriers_unify(
 ## Details
 
 Per-WSG output is persisted to the province-wide table by
-[`lnk_pipeline_persist()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.md)
+[`lnk_persist_write()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_write.md)
 using the same idempotent DELETE-WHERE-WSG + INSERT pattern already used
 for `streams` and `streams_habitat_<sp>`. Cross-WSG `dam_dnstr_ind`
 resolves correctly because
@@ -137,7 +137,7 @@ Optional:
 ## See also
 
 [`lnk_persist_init()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_init.md),
-[`lnk_pipeline_persist()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.md),
+[`lnk_persist_write()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_write.md),
 [`lnk_pipeline_access()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_access.md)
 
 Other barriers:

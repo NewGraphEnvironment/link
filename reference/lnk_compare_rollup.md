@@ -59,7 +59,7 @@ species (the 8 habitat km/ha types plus `accessible` km, link#221).
 `rearing_lake_connection` is lake connection lines (FWA edge 1450 in a
 lake polygon), reported apart and left out of `rearing` and
 `rearing_lake` km on both sides (#317); see
-[`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md).
+[`lnk_compare_run()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_run.md).
 Columns: `wsg`, `species`, `habitat_type`, `unit` (`km` \| `ha`),
 `link_value`, `ref_value`, `diff_pct`. `accessible`'s `ref_value` is
 sourced tunnel-free from `fresh.streams_vw_bcfp` for the salmon group
@@ -93,13 +93,13 @@ PG-discovered set (caller-passed species absent from PG simply drop out
 ## See also
 
 [`lnk_pipeline_run()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_run.md),
-[`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md),
+[`lnk_compare_run()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_run.md),
 [`lnk_parity_annotate()`](https://newgraphenvironment.github.io/link/reference/lnk_parity_annotate.md)
 
 Other compare:
 [`lnk_access()`](https://newgraphenvironment.github.io/link/reference/lnk_access.md),
 [`lnk_compare_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_mapping_code.md),
-[`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md),
+[`lnk_compare_run()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_run.md),
 [`lnk_habitat_validate()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_validate.md),
 [`lnk_habitat_validate_band()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_validate_band.md),
 [`lnk_log_read()`](https://newgraphenvironment.github.io/link/reference/lnk_log_read.md),

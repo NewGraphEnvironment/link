@@ -17,7 +17,7 @@ consumer code paths run unchanged."><meta property="og:image" content="https://n
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.94.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.95.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -169,7 +169,7 @@ automatic fallback — silently reverting to DROP + CREATE would reintroduce
 the window at the worst moment, part-way through a parallel recompute
 (link#250).</p>
 <p>The underlying <code>&lt;persist_schema&gt;.barriers</code> table must exist — typically
-initialized by <code><a href="lnk_persist_init.html">lnk_persist_init()</a></code> and populated by <code><a href="lnk_barriers_unify.html">lnk_barriers_unify()</a></code></p><ul><li><p><code><a href="lnk_pipeline_persist.html">lnk_pipeline_persist()</a></code> for all WSGs in the regional scope.</p></li>
+initialized by <code><a href="lnk_persist_init.html">lnk_persist_init()</a></code> and populated by <code><a href="lnk_barriers_unify.html">lnk_barriers_unify()</a></code></p><ul><li><p><code><a href="lnk_persist_write.html">lnk_persist_write()</a></code> for all WSGs in the regional scope.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -188,7 +188,7 @@ initialized by <code><a href="lnk_persist_init.html">lnk_persist_init()</a></cod
 <span class="r-in"><span><span class="va">loaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="lnk_load_overrides.html">lnk_load_overrides</a></span><span class="op">(</span><span class="va">cfg</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># ... lnk_persist_init + lnk_pipeline_* + lnk_barriers_unify +</span></span></span>
-<span class="r-in"><span><span class="co">#     lnk_pipeline_persist all already run for all WSGs ...</span></span></span>
+<span class="r-in"><span><span class="co">#     lnk_persist_write all already run for all WSGs ...</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu">lnk_barriers_views</span><span class="op">(</span><span class="va">conn</span>, schema <span class="op">=</span> <span class="st">"working_pars"</span>, cfg <span class="op">=</span> <span class="va">cfg</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>

@@ -13,7 +13,7 @@ every per-WSG run, and safe under concurrent first-time provisioning
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.94.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.95.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -93,13 +93,13 @@ persist schema). See link#162 Phase 7 hardening.</p></dd>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>Per-WSG data accumulates into these tables via <code><a href="lnk_pipeline_persist.html">lnk_pipeline_persist()</a></code>
+    <p>Per-WSG data accumulates into these tables via <code><a href="lnk_persist_write.html">lnk_persist_write()</a></code>
 after each run. Queryable cross-WSG for cartography, intrinsic
 potential maps, and per-crossing upstream rollups.</p>
 <p>Column shape mirrors bcfp's <code>bcfishpass.streams</code> +
 <code>bcfishpass.habitat_linear_&lt;sp&gt;</code> for familiarity. Driven by the
 <code>cols_streams</code> / <code>cols_habitat</code> vectors at the top of this file —
-single source of truth shared with <code><a href="lnk_pipeline_persist.html">lnk_pipeline_persist()</a></code>.</p>
+single source of truth shared with <code><a href="lnk_persist_write.html">lnk_persist_write()</a></code>.</p>
     </div>
 
     <div class="section level2">

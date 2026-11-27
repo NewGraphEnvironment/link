@@ -171,7 +171,7 @@ walked once, as an array if any role reads its elements.
 This phase runs after
 [`lnk_pipeline_classify()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_classify.md)
 returns and before
-[`lnk_pipeline_persist()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.md)
+[`lnk_persist_write()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_write.md)
 cleanup_working drops the working schema — it needs the per-species
 `barriers_<sp>` tables that prepare/break built. Output goes to
 `<schema>.streams_access` (working schema, picked up by persist on the

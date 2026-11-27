@@ -13,7 +13,7 @@ streams_habitat_&amp;lt;sp&amp;gt; per species, barriers)."><meta property="og:i
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.94.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.95.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -104,8 +104,10 @@ runs from local <code>cabd.dams</code>. Pass <code>FALSE</code> to skip dams ent
 
 <dt id="arg-cleanup-working">cleanup_working<a class="anchor" aria-label="anchor" href="#arg-cleanup-working"></a></dt>
 <dd><p>Logical. When <code>TRUE</code> (default), drop the
-<code>&lt;schema&gt;</code> working schema at the end. Pass <code>FALSE</code> for interactive
-debug / manual inspection.</p></dd>
+<code>&lt;schema&gt;</code> working schema at the end, and on an error after the schema
+is set up too (link#159), so a failed group leaves no working tables.
+Pass <code>FALSE</code> for interactive debug / manual inspection, or to keep the
+schema after a failure (<code>data-raw/wsg_run_one.R</code> does).</p></dd>
 
 
 <dt id="arg-mapping-code">mapping_code<a class="anchor" aria-label="anchor" href="#arg-mapping-code"></a></dt>
@@ -209,7 +211,7 @@ species is present is an error.</p></li>
 <li><p><code><a href="lnk_persist_init.html">lnk_persist_init()</a></code> — create persistent target tables if absent.</p></li>
 <li><p><code><a href="lnk_barriers_unify.html">lnk_barriers_unify()</a></code> — unify per-source barriers into a single
 working-schema table (always; promotes the mapping_code-only
-flag in <code><a href="lnk_compare_wsg.html">lnk_compare_wsg()</a></code> to canonical PG state).
+flag in <code><a href="lnk_compare_run.html">lnk_compare_run()</a></code> to canonical PG state).
 10a. <strong>Access phase (always-on, link#218).</strong> Runs between barriers_unify
 and persist: a pre-persist of the current WSG (so the next two steps
 see cross-WSG barriers), <code><a href="lnk_barriers_views.html">lnk_barriers_views()</a></code> (tunnel-free,
@@ -217,7 +219,7 @@ link-canonical per-species views over <code>&lt;persist_schema&gt;.barriers</cod
 and <code><a href="lnk_pipeline_access.html">lnk_pipeline_access()</a></code> (writes working <code>streams_access</code>). Access
 is foundational — mapping_code depends on it — so it builds regardless
 of <code>mapping_code</code>. See link#187, #196.</p></li>
-<li><p><code><a href="lnk_pipeline_persist.html">lnk_pipeline_persist()</a></code> — copy per-WSG streams + per-species
+<li><p><code><a href="lnk_persist_write.html">lnk_persist_write()</a></code> — copy per-WSG streams + per-species
 habitat + barriers + streams_access into <code>&lt;persist_schema&gt;</code>
 (idempotent DELETE-WHERE-WSG + INSERT). The group's rows in the habitat
 tables of species not classified here (paused, or no longer present)
@@ -233,8 +235,8 @@ settled habitat, and writes <code>&lt;persist_schema&gt;.streams_mapping_code</c
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
-    <div class="dont-index"><p><code><a href="lnk_compare_rollup.html">lnk_compare_rollup()</a></code>, <code><a href="lnk_compare_wsg.html">lnk_compare_wsg()</a></code>,
-<code><a href="lnk_pipeline_setup.html">lnk_pipeline_setup()</a></code>, <code><a href="lnk_pipeline_persist.html">lnk_pipeline_persist()</a></code></p>
+    <div class="dont-index"><p><code><a href="lnk_compare_rollup.html">lnk_compare_rollup()</a></code>, <code><a href="lnk_compare_run.html">lnk_compare_run()</a></code>,
+<code><a href="lnk_pipeline_setup.html">lnk_pipeline_setup()</a></code>, <code><a href="lnk_persist_write.html">lnk_persist_write()</a></code></p>
 <p>Other pipeline:
 <code><a href="lnk_habitat_gate.html">lnk_habitat_gate()</a></code>,
 <code><a href="lnk_pipeline_access.html">lnk_pipeline_access()</a></code>,

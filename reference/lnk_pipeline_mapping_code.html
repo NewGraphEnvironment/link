@@ -13,7 +13,7 @@ applicable. Pure derivation over the bcfp-shape inputs (no SQL)."><meta property
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.94.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.95.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -58,14 +58,13 @@ applicable. Pure derivation over the bcfp-shape inputs (no SQL).</p>
 <span>  to <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  conn <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  presence <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  species_resident <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"bt"</span>, <span class="st">"wct"</span><span class="op">)</span>,</span>
-<span>  species_anadromous <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ch"</span>, <span class="st">"cm"</span>, <span class="st">"co"</span>, <span class="st">"pk"</span>, <span class="st">"sk"</span>, <span class="st">"st"</span><span class="op">)</span>,</span>
-<span>  species_spawn_only <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cm"</span>, <span class="st">"pk"</span><span class="op">)</span>,</span>
+<span>  species_resident <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  species_anadromous <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  species_spawn_only <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  segment_id_col <span class="op">=</span> <span class="st">"id_segment"</span>,</span>
 <span>  intermittent_feature_code <span class="op">=</span> <span class="st">"GA24850150"</span>,</span>
-<span>  <span class="va">resident_species</span>,</span>
-<span>  <span class="va">anadromous_species</span>,</span>
-<span>  <span class="va">spawn_only_species</span></span>
+<span>  cfg <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  rules_mapping_code <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -85,7 +84,10 @@ sources <code>has_barriers_anthropogenic_dnstr</code>,
 <dt id="arg-habitat">habitat<a class="anchor" aria-label="anchor" href="#arg-habitat"></a></dt>
 <dd><p>A tibble keyed by <code>segment_id_col</code> with
 <code>spawning_&lt;sp&gt;</code> and <code>rearing_&lt;sp&gt;</code> numeric columns per species.
-Mirrors bcfp's <code>streams_habitat_linear</code> shape.</p></dd>
+Mirrors bcfp's <code>streams_habitat_linear</code> shape. A species with no
+<code>spawning_&lt;sp&gt;</code> or <code>rearing_&lt;sp&gt;</code> column reads 0 there, as bcfishpass
+pre-allocates every species' columns (link#153); a segment with no
+habitat row at all still reads <code>NA</code>.</p></dd>
 
 
 <dt id="arg-feature-code">feature_code<a class="anchor" aria-label="anchor" href="#arg-feature-code"></a></dt>
@@ -99,7 +101,7 @@ Used for the <code>INTERMITTENT</code> flag.</p></dd>
 <dd><p>Character or <code>NULL</code>. Optional schema-qualified destination
 table. When supplied, the result tibble is written via
 <code>dbWriteTable(overwrite = TRUE)</code> and the tibble is also returned
-(so callers can chain into <code>lnk_pipeline_persist</code> / <code>build_species_views.R</code>).
+(so callers can chain into <code>lnk_persist_write</code> / <code>build_species_views.R</code>).
 Default <code>NULL</code> returns-only.</p></dd>
 
 
@@ -109,28 +111,32 @@ supplied; ignored otherwise.</p></dd>
 
 
 <dt id="arg-presence">presence<a class="anchor" aria-label="anchor" href="#arg-presence"></a></dt>
-<dd><p><code>NULL</code> (the default) or an <code>lnk_presence</code> object. A species
-it marks absent emits <code>""</code> in its token column.</p></dd>
+<dd><p><code>NULL</code> (the default), an <code>lnk_presence</code> object, or a named
+logical vector keyed by lower-case species code (link#351). A species it
+marks absent, or does not name, emits <code>""</code> in its token column; with
+<code>NULL</code> every species is coded.</p></dd>
 
 
 <dt id="arg-species-resident">species_resident<a class="anchor" aria-label="anchor" href="#arg-species-resident"></a></dt>
-<dd><p>Character. Species using the resident flavor
-of <code>mapping_code_barrier</code>. Default <code>c("bt", "wct")</code>. (Renamed from
-<code>resident_species</code> in v0.40.0; old name accepted with deprecation
-warning until v0.41.0.)</p></dd>
+<dd><p>Character or <code>NULL</code>. Species using the resident
+flavor of <code>mapping_code_barrier</code>. <code>NULL</code> (the default) takes the
+bundle's resident species from <code>cfg</code> (its <code>dimensions.csv</code> <code>residence</code>
+column, link#512), or <code>c("bt", "wct")</code> with no <code>cfg</code>. With <code>cfg</code>, the sets
+cover every species the bundle models (<code>cfg$species</code>); a persisted build
+codes only the group's active ones.</p></dd>
 
 
 <dt id="arg-species-anadromous">species_anadromous<a class="anchor" aria-label="anchor" href="#arg-species-anadromous"></a></dt>
-<dd><p>Character. Species using the anadromous
-flavor. Default <code>c("ch", "cm", "co", "pk", "sk", "st")</code>. (Renamed
-from <code>anadromous_species</code> in v0.40.0.)</p></dd>
+<dd><p>Character or <code>NULL</code>. Species using the
+anadromous flavor: from <code>cfg</code> as above, or
+<code>c("ch", "cm", "co", "pk", "sk", "st")</code> with no <code>cfg</code>. A species in both
+sets is refused.</p></dd>
 
 
 <dt id="arg-species-spawn-only">species_spawn_only<a class="anchor" aria-label="anchor" href="#arg-species-spawn-only"></a></dt>
-<dd><p>Character. Species without rearing
-semantics (token 1 only emits SPAWN, never REAR). Default
-<code>c("cm", "pk")</code>. Mirrors bcfp. (Renamed from <code>spawn_only_species</code>
-in v0.40.0.)</p></dd>
+<dd><p>Character or <code>NULL</code>. Species without rearing
+semantics (token 1 only emits SPAWN, never REAR): from <code>cfg</code>
+(<code>rear_no_fw = yes</code>), or <code>c("cm", "pk")</code> with no <code>cfg</code>. Mirrors bcfp.</p></dd>
 
 
 <dt id="arg-segment-id-col">segment_id_col<a class="anchor" aria-label="anchor" href="#arg-segment-id-col"></a></dt>
@@ -142,19 +148,16 @@ in v0.40.0.)</p></dd>
 that flags an intermittent stream. Default <code>"GA24850150"</code> (bcfp).</p></dd>
 
 
-<dt id="arg-resident-species">resident_species<a class="anchor" aria-label="anchor" href="#arg-resident-species"></a></dt>
-<dd><p><strong>Deprecated</strong> alias for <code>species_resident</code>.
-Kept for one release (v0.40.0); removal in v0.41.0.</p></dd>
+<dt id="arg-cfg">cfg<a class="anchor" aria-label="anchor" href="#arg-cfg"></a></dt>
+<dd><p>An <code><a href="lnk_config.html">lnk_config()</a></code> object, or <code>NULL</code>. Supplies the residence sets
+not passed and the mapping-code rules (<code>parameters_mapping_code_rules</code>
+under <code>files:</code>).</p></dd>
 
 
-<dt id="arg-anadromous-species">anadromous_species<a class="anchor" aria-label="anchor" href="#arg-anadromous-species"></a></dt>
-<dd><p><strong>Deprecated</strong> alias for <code>species_anadromous</code>.
-Kept for one release (v0.40.0); removal in v0.41.0.</p></dd>
-
-
-<dt id="arg-spawn-only-species">spawn_only_species<a class="anchor" aria-label="anchor" href="#arg-spawn-only-species"></a></dt>
-<dd><p><strong>Deprecated</strong> alias for <code>species_spawn_only</code>.
-Kept for one release (v0.40.0); removal in v0.41.0.</p></dd>
+<dt id="arg-rules-mapping-code">rules_mapping_code<a class="anchor" aria-label="anchor" href="#arg-rules-mapping-code"></a></dt>
+<dd><p>A data frame of mapping-code rules (<code>residence</code>,
+<code>precedence</code>, <code>token</code>, <code>when</code>), or <code>NULL</code> to read them from <code>cfg</code>, else
+the package copy.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -181,10 +184,14 @@ it (so habitat label is suppressed – inaccessible).</p></li>
 conditions drop out – only <code>ACCESS</code> (no spawn, no barriers) and
 <code>SPAWN</code> (spawning &gt; 0) emit.</p></li>
 </ul><p>Token 2 (barrier source) only emits when the species' barriers
-downstream is empty (i.e. accessible). Resident-flavor (BT, WCT) and
-anadromous-flavor (CH/CM/CO/PK/SK/ST) differ in their CASE order:</p><ul><li><p>Resident:    REMEDIATED &gt; DAM &gt; ASSESSED (anthropogenic + pscis +
-no dam) &gt; MODELLED (anthropogenic + no pscis + no
-dam) &gt; NONE (no anthropogenic).</p></li>
+downstream is empty (i.e. accessible). It comes from the bundle's
+<code>parameters_mapping_code_rules.csv</code> (link#197): per residence, rows in
+<code>precedence</code> order, first matching <code>when</code> wins, so a bundle adds or reorders
+a token with no code change. A bundle that declares no file, or a call with
+no <code>cfg</code>, reads the package copy, bcfishpass's order. Resident and
+anadromous species differ there in their CASE order:</p><ul><li><p>Resident:    REMEDIATED &gt; DAM (the next barrier down is a dam) &gt;
+ASSESSED (anthropogenic + pscis + no dam) &gt; MODELLED
+(anthropogenic + no pscis + no dam) &gt; NONE.</p></li>
 <li><p>Anadromous:  REMEDIATED &gt; DAM (any dam) &gt; ASSESSED (any pscis) &gt;
 MODELLED (any anthropogenic) &gt; NONE.</p></li>
 </ul><p>Token 3 emits <code>INTERMITTENT</code> when the segment's <code>feature_code</code> matches

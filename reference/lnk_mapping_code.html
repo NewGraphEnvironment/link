@@ -17,7 +17,7 @@ optionally writes the result to table_to."><meta property="og:image" content="ht
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.94.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.95.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -65,9 +65,11 @@ optionally writes the result to <code>table_to</code>.</p>
 <span>  <span class="va">aoi</span>,</span>
 <span>  table_to <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  presence <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  species_resident <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"bt"</span>, <span class="st">"wct"</span><span class="op">)</span>,</span>
-<span>  species_anadromous <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ch"</span>, <span class="st">"cm"</span>, <span class="st">"co"</span>, <span class="st">"pk"</span>, <span class="st">"sk"</span>, <span class="st">"st"</span><span class="op">)</span>,</span>
-<span>  species_spawn_only <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cm"</span>, <span class="st">"pk"</span><span class="op">)</span></span>
+<span>  species_resident <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  species_anadromous <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  species_spawn_only <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cfg <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  rules_mapping_code <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -111,31 +113,31 @@ destination table for the result. When non-NULL,
 
 
 <dt id="arg-presence">presence<a class="anchor" aria-label="anchor" href="#arg-presence"></a></dt>
-<dd><p>Named logical vector or <code>NULL</code>. Per-species presence
-flag for <code>aoi</code>. When <code>NULL</code> the function derives presence from
+<dd><p>An <code>lnk_presence</code> object, a named logical vector, or
+<code>NULL</code>. Per-species presence for <code>aoi</code>. When <code>NULL</code> the function derives presence from
 the data: a species is present iff it has at least one habitat row
 with <code>spawning = TRUE</code> or <code>rearing = TRUE</code>. Pass explicit values
 to override (e.g. force-include a species for QGIS symbology even
 when no segments are accessible).</p></dd>
 
 
-<dt id="arg-species-resident">species_resident<a class="anchor" aria-label="anchor" href="#arg-species-resident"></a></dt>
-<dd><p>Character. Species using the resident flavor
-of <code>mapping_code_barrier</code>. Default <code>c("bt", "wct")</code>. Pass-through
-to <code><a href="lnk_pipeline_mapping_code.html">lnk_pipeline_mapping_code()</a></code>'s <code>resident_species</code> arg.</p></dd>
+<dt id="arg-species-resident-species-anadromous-species-spawn-only">species_resident, species_anadromous, species_spawn_only<a class="anchor" aria-label="anchor" href="#arg-species-resident-species-anadromous-species-spawn-only"></a></dt>
+<dd><p>Character
+or <code>NULL</code>: the residence sets, resolved as in
+<code><a href="lnk_pipeline_mapping_code.html">lnk_pipeline_mapping_code()</a></code> (from <code>cfg</code>, else bcfishpass's sets).</p></dd>
 
 
-<dt id="arg-species-anadromous">species_anadromous<a class="anchor" aria-label="anchor" href="#arg-species-anadromous"></a></dt>
-<dd><p>Character. Species using the anadromous
-flavor. Default <code>c("ch", "cm", "co", "pk", "sk", "st")</code>.
-Pass-through to <code><a href="lnk_pipeline_mapping_code.html">lnk_pipeline_mapping_code()</a></code>'s
-<code>anadromous_species</code> arg.</p></dd>
+<dt id="arg-cfg">cfg<a class="anchor" aria-label="anchor" href="#arg-cfg"></a></dt>
+<dd><p>An <code><a href="lnk_config.html">lnk_config()</a></code> object, or <code>NULL</code>. Supplies the residence sets
+not passed (link#512) and the mapping-code rules (link#197).</p></dd>
 
 
-<dt id="arg-species-spawn-only">species_spawn_only<a class="anchor" aria-label="anchor" href="#arg-species-spawn-only"></a></dt>
-<dd><p>Character. Species without rearing
-semantics. Default <code>c("cm", "pk")</code>. Pass-through to
-<code><a href="lnk_pipeline_mapping_code.html">lnk_pipeline_mapping_code()</a></code>'s <code>spawn_only_species</code> arg.</p></dd>
+<dt id="arg-rules-mapping-code">rules_mapping_code<a class="anchor" aria-label="anchor" href="#arg-rules-mapping-code"></a></dt>
+<dd><p>A data frame of mapping-code rules, or <code>NULL</code> to
+read them from <code>cfg</code>, else the package copy.</p>
+<p>With <code>cfg</code> and no species arguments every species the bundle models is
+coded; the persisted build (<code>.lnk_mapping_code_persist()</code>) passes the
+group's active species instead.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -154,7 +156,7 @@ working-schema tables (mid-pipeline) or persist-schema tables
 <code><a href="lnk_persist_init.html">lnk_persist_init()</a></code>) presents the per-species split as a long-form
 shape so <code>table_habitat</code> can point at either layout.</p>
 <p>This function replaces the inline assembly previously buried inside
-<code><a href="lnk_compare_wsg.html">lnk_compare_wsg()</a></code>. The compare wrapper now goes through this
+<code><a href="lnk_compare_run.html">lnk_compare_run()</a></code>. The compare wrapper now goes through this
 function via <code>lnk_pipeline_run(..., mapping_code = TRUE)</code>. Operators
 can also call this directly against persist schema with the tunnel
 down — the build is tunnel-independent (the diff vs reference is
@@ -167,7 +169,7 @@ separate, see <code><a href="lnk_compare_mapping_code.html">lnk_compare_mapping_
 <code><a href="lnk_access.html">lnk_access()</a></code>,
 <code><a href="lnk_compare_mapping_code.html">lnk_compare_mapping_code()</a></code>,
 <code><a href="lnk_compare_rollup.html">lnk_compare_rollup()</a></code>,
-<code><a href="lnk_compare_wsg.html">lnk_compare_wsg()</a></code>,
+<code><a href="lnk_compare_run.html">lnk_compare_run()</a></code>,
 <code><a href="lnk_habitat_validate.html">lnk_habitat_validate()</a></code>,
 <code><a href="lnk_habitat_validate_band.html">lnk_habitat_validate_band()</a></code>,
 <code><a href="lnk_log_read.html">lnk_log_read()</a></code>,

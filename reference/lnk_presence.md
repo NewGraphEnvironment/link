@@ -76,7 +76,11 @@ Coexists with
 [`lnk_pipeline_species()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_species.md),
 which returns the intersection of `cfg$species` with AOI-present species
 as a plain vector. `lnk_presence()` is the structured / group-aware
-sibling.
+sibling. The two answer different questions (link#153):
+[`lnk_pipeline_species()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_species.md)
+which species a build classifies in the group, `lnk_presence()` which
+species count as present there, so a mapping code is built for each of
+the latter and an absent one reads `""`.
 
 ## See also
 

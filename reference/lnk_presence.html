@@ -19,7 +19,7 @@ loops that should skip absent species."><meta property="og:image" content="https
 
     <a class="navbar-brand me-2" href="../index.html">link</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.94.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.95.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -112,7 +112,11 @@ species in <code>present</code>.</p></li>
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Coexists with <code><a href="lnk_pipeline_species.html">lnk_pipeline_species()</a></code>, which returns the
 intersection of <code>cfg$species</code> with AOI-present species as a plain
-vector. <code>lnk_presence()</code> is the structured / group-aware sibling.</p>
+vector. <code>lnk_presence()</code> is the structured / group-aware sibling. The two
+answer different questions (link#153): <code><a href="lnk_pipeline_species.html">lnk_pipeline_species()</a></code> which
+species a build classifies in the group, <code>lnk_presence()</code> which species
+count as present there, so a mapping code is built for each of the latter
+and an absent one reads <code>""</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

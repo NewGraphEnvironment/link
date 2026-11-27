@@ -1,5 +1,88 @@
 # Changelog
 
+## link 0.95.0
+
+**The mapping code’s barrier token is a bundle’s rules, the exported
+mapping-code functions read a bundle, the persist and compare families
+are renamed, a failed run drops its working schema, and wide tables gain
+a new species’ columns**
+([\#477](https://github.com/NewGraphEnvironment/link/issues/477),
+backlog move 9). No persisted mapping code moves: eight groups’ codes
+rebuilt before and after digest identical
+(`data-raw/logs/mapping_code_rules_477/`). No output token moves.
+`config_hash` moves for `default`, `bcfishpass` and the bundles
+extending them (a new declared file).
+
+- **Breaking: `lnk_pipeline_persist()` is
+  [`lnk_persist_write()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_write.md)**
+  ([\#177](https://github.com/NewGraphEnvironment/link/issues/177)),
+  beside
+  [`lnk_persist_init()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_init.md),
+  and **`lnk_compare_wsg()` is
+  [`lnk_compare_run()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_run.md)**
+  ([\#176](https://github.com/NewGraphEnvironment/link/issues/176)), the
+  compare family’s umbrella as
+  [`lnk_pipeline_run()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_run.md)
+  is the pipeline’s. Hard renames, no shims. **The expired v0.41.0
+  argument aliases are removed:** `resident_species`,
+  `anadromous_species` and `spawn_only_species`
+  ([`lnk_pipeline_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_mapping_code.md))
+  and `with_mapping_code`
+  ([`lnk_compare_run()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_run.md)).
+- **The barrier token from a rules file**
+  ([\#197](https://github.com/NewGraphEnvironment/link/issues/197)).
+  `parameters_mapping_code_rules.csv` (`residence`, `precedence`,
+  `token`, `when`) sets the second token of `mapping_code_<sp>`, first
+  matching rule wins per residence; `default` and `bcfishpass` declare
+  it, and a bundle declaring none reads the package copy. `when` is
+  limited to five aliases of the access columns, `&`, `|`, `!` and
+  `TRUE`, and each residence ends on `TRUE`. The shipped rules reproduce
+  the old chains on every combination of flags. RUNBOOK §4.
+- **The exported functions read residence from a bundle**
+  ([\#512](https://github.com/NewGraphEnvironment/link/issues/512), the
+  rest of
+  [\#189](https://github.com/NewGraphEnvironment/link/issues/189)).
+  [`lnk_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_mapping_code.md)
+  and
+  [`lnk_pipeline_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_mapping_code.md)
+  gain `cfg` and `rules_mapping_code` (appended last); the species sets
+  now default to `NULL` and come from `cfg`’s `dimensions.csv`, or
+  bcfishpass’s sets with no `cfg`. A species in both the resident and
+  anadromous sets is refused.
+- **Absent species and derived presence**
+  ([\#351](https://github.com/NewGraphEnvironment/link/issues/351),
+  [\#153](https://github.com/NewGraphEnvironment/link/issues/153)).
+  `lnk_access(merge = TRUE)` keeps an absent species’ `-9` (it became
+  `1`, accessible); no persisted row was affected.
+  `lnk_mapping_code(presence = NULL)` runs (it errored):
+  [`lnk_pipeline_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_mapping_code.md)
+  accepts a named logical presence. A species with no habitat column
+  reads 0, as bcfishpass’s do.
+- **A failed run drops its working schema**
+  ([\#159](https://github.com/NewGraphEnvironment/link/issues/159)) when
+  `cleanup_working = TRUE`, on an error after setup.
+  `data-raw/wsg_run_one.R` passes `cleanup_working = FALSE`, so a failed
+  provincial group still keeps its schema.
+- **Wide tables gain a missing species’ columns**
+  ([\#204](https://github.com/NewGraphEnvironment/link/issues/204)).
+  [`lnk_persist_init()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_init.md)
+  adds each missing `streams_access` / `streams_mapping_code` species
+  column (an ACCESS EXCLUSIVE lock, waiting at most 30 s) and names
+  extra ones once per session, keeping them.
+- **Tests**
+  ([\#191](https://github.com/NewGraphEnvironment/link/issues/191)) for
+  the token build,
+  [`lnk_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_mapping_code.md)’s
+  reads, the wide persist tables and their writes, the rules, and each
+  fix above.
+- **Owed after merge:** the pre-run gate before the next provincial run
+  (`R/`, `inst/extdata/` and `pretest_inputs.csv` changed); the re-model
+  [\#479](https://github.com/NewGraphEnvironment/link/issues/479) owes
+  settles the moved `config_hash` only if it starts after this release;
+  [`lnk_persist_init()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_init.md)
+  once per host at a quiet time before a run that adds a species; hosts
+  and jobs calling the old names move to the new ones.
+
 ## link 0.94.0
 
 **The column dictionaries are documented and checked, residence comes
@@ -94,16 +177,16 @@ out to its own issue.
   [`lnk_barriers_unify()`](https://newgraphenvironment.github.io/link/reference/lnk_barriers_unify.md)
   keeps the group’s own gradient rows (falling back to the lowest-coded
   modelled scanner where the owner would never hold one), and
-  [`lnk_pipeline_persist()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.md)
-  writes an override or evidence row only beside a natural barrier the
-  group holds. Before, 1,224 positions on the 259 lines touching more
-  than one group were held by up to 13 groups, and LSAL’s Salmon River
-  control row was defeated by SALR’s and TABR’s copies
-  (`data-raw/logs/barrier_copies_386/`). On eleven groups built before
-  and after under both bundles, the only changes are the removed copies:
-  no segment, access or habitat value moved and no lift was lost. A
-  group built alone, or a closure run leaving out a tributary group that
-  owns a stretch of its line, no longer holds those copies:
+  `lnk_pipeline_persist()` writes an override or evidence row only
+  beside a natural barrier the group holds. Before, 1,224 positions on
+  the 259 lines touching more than one group were held by up to 13
+  groups, and LSAL’s Salmon River control row was defeated by SALR’s and
+  TABR’s copies (`data-raw/logs/barrier_copies_386/`). On eleven groups
+  built before and after under both bundles, the only changes are the
+  removed copies: no segment, access or habitat value moved and no lift
+  was lost. A group built alone, or a closure run leaving out a
+  tributary group that owns a stretch of its line, no longer holds those
+  copies:
   [`lnk_wsg_downstream_check()`](https://newgraphenvironment.github.io/link/reference/lnk_wsg_downstream_check.md)
   now also refuses where a modelled group touching a line on the group’s
   downstream paths holds no barrier rows in the schema, or a modelled
@@ -2446,9 +2529,8 @@ count.
 
 - **Rollups.**
   - [`lnk_compare_rollup()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_rollup.md)
-    /
-    [`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md)
-    gain a 9th habitat type, `rearing_lake_connection` (km).
+    / `lnk_compare_wsg()` gain a 9th habitat type,
+    `rearing_lake_connection` (km).
   - `rearing` and `rearing_lake` km leave 1450 lines in lake and
     reservoir polygons out, on the link side and the bcfishpass side
     alike. bcfishpass counts these lines too, in BT and SK rearing.
@@ -3877,13 +3959,12 @@ block to run unconditionally; only the `mapping_code` **token assembly**
 (`lnk_mapping_code`) stays gated. Habitat-only callers
 (`mapping_code = FALSE` — `data-raw/wsg_pipeline_run.R`,
 `lnk_compare_wsg(mapping_code = FALSE)`) now also emit `streams_access`.
-No persist change required:
-[`lnk_pipeline_persist()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.md)
-already probes for `streams_access` and `streams_mapping_code`
-independently and copies whichever working tables exist. The
-`mapping_code = TRUE` execution order (pre-persist → barriers_views →
-access → mapping_code → final persist) is byte-identical to v0.42.0, so
-the cached vignette parity (99.04% BT) is unchanged.
+No persist change required: `lnk_pipeline_persist()` already probes for
+`streams_access` and `streams_mapping_code` independently and copies
+whichever working tables exist. The `mapping_code = TRUE` execution
+order (pre-persist → barriers_views → access → mapping_code → final
+persist) is byte-identical to v0.42.0, so the cached vignette parity
+(99.04% BT) is unchanged.
 
 ## link 0.42.0
 
@@ -4205,8 +4286,7 @@ release; removal v0.41.0).**
   that prefers it). Per-species column generators
   (`.lnk_cols_streams_access_per_sp()`,
   `.lnk_cols_streams_mapping_code_per_sp()`) are species-driven — pass a
-  different species set, get matching columns.
-  [`lnk_pipeline_persist()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.md)
+  different species set, get matching columns. `lnk_pipeline_persist()`
   extended with `streams_access` + `streams_mapping_code` write blocks,
   gated by presence of the working-side tables (skip cleanly when the
   mapping_code path didn’t run).
@@ -4241,8 +4321,7 @@ release; removal v0.41.0).**
   Expect non-trivial parity-number deltas on the next provincial run vs
   pre-#187 baselines.
 
-- **[`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md)
-  refactored.** Build delegated to
+- **`lnk_compare_wsg()` refactored.** Build delegated to
   `lnk_pipeline_run(mapping_code = TRUE)`; only the diff stays in
   compare. `.lnk_compare_wsg_mapping_code_diff()` rewritten to read from
   `<persist_schema>.streams_mapping_code` instead of working schema. The
@@ -4251,8 +4330,7 @@ release; removal v0.41.0).**
   simpler.
 
 - **BC: parameter rename `with_mapping_code` → `mapping_code`** in
-  [`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md)
-  and
+  `lnk_compare_wsg()` and
   [`lnk_pipeline_run()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_run.md).
   Old name accepted with
   [`.Deprecated()`](https://rdrr.io/r/base/Deprecated.html) warning for
@@ -4463,13 +4541,12 @@ reads the persisted state and never gates whether the model itself ran.
   tibble. Reference-agnostic via the `reference` arg (`"bcfishpass"`
   today). Species auto-discovered from PG via `information_schema`
   probe.
-- [`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md)
-  refactored as a thin wrapper over both new functions. Bundled behavior
-  preserved for `with_mapping_code = TRUE` (mapping_code decoupling
-  deferred — follow-up). Active-species set is now PG-state-derived
-  (post-persist) rather than `cfg$species ∩ wsg_species_presence`
-  (pre-persist); equivalent on a fresh single-call run, future-proofs
-  callers against config drift.
+- `lnk_compare_wsg()` refactored as a thin wrapper over both new
+  functions. Bundled behavior preserved for `with_mapping_code = TRUE`
+  (mapping_code decoupling deferred — follow-up). Active-species set is
+  now PG-state-derived (post-persist) rather than
+  `cfg$species ∩ wsg_species_presence` (pre-persist); equivalent on a
+  fresh single-call run, future-proofs callers against config drift.
 - `data-raw/compare_bcfishpass_wsg.R` split into
   `data-raw/wsg_pipeline_run.R` (modelling) + `data-raw/wsg_compare.R`
   (compare). 4 callers updated to the explicit two-call pattern
@@ -4559,8 +4636,7 @@ investigation queue for next session).
 Closes [\#162](https://github.com/NewGraphEnvironment/link/issues/162).
 Lifts two scattered `data-raw/` scripts (linear rollup parity +
 per-segment mapping_code parity) into one package-level
-[`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md),
-adds an annotated CSV pipeline
+`lnk_compare_wsg()`, adds an annotated CSV pipeline
 ([`lnk_parity_annotate()`](https://newgraphenvironment.github.io/link/reference/lnk_parity_annotate.md)
 against a YAML divergence taxonomy), modernizes the multi-host
 orchestrator to 5-host (M4 + M1 + N cyphers via tofu workspaces), and
@@ -4701,11 +4777,10 @@ maintained ≥99% across all species (full 6-WSG matrix in
   `(id_barrier, watershed_group_code)`, GIN index on `blocks_species`,
   btree indexes on `(watershed_group_code, barrier_source)` and
   `(blue_line_key, downstream_route_measure)`, GIST on `geom`.
-- [`lnk_pipeline_persist()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.md)
-  extended with a `<schema>.barriers` → `<persist_schema>.barriers`
-  DELETE-WHERE-WSG + INSERT branch (gated on staging-table presence so
-  older orchestrators that don’t yet call `lnk_barriers_unify` keep
-  working without behaviour change).
+- `lnk_pipeline_persist()` extended with a `<schema>.barriers` →
+  `<persist_schema>.barriers` DELETE-WHERE-WSG + INSERT branch (gated on
+  staging-table presence so older orchestrators that don’t yet call
+  `lnk_barriers_unify` keep working without behaviour change).
 - `data-raw/compare_bcfp_mapping_code.R`:
   `barrier_sources$anthropogenic` + `barrier_sources$dams` now point at
   the unified views. `barriers_per_sp` keeps the bcfp-tunnel staging

@@ -20,9 +20,11 @@ lnk_mapping_code(
   aoi,
   table_to = NULL,
   presence = NULL,
-  species_resident = c("bt", "wct"),
-  species_anadromous = c("ch", "cm", "co", "pk", "sk", "st"),
-  species_spawn_only = c("cm", "pk")
+  species_resident = NULL,
+  species_anadromous = NULL,
+  species_spawn_only = NULL,
+  cfg = NULL,
+  rules_mapping_code = NULL
 )
 ```
 
@@ -66,32 +68,34 @@ lnk_mapping_code(
 
 - presence:
 
-  Named logical vector or `NULL`. Per-species presence flag for `aoi`.
-  When `NULL` the function derives presence from the data: a species is
-  present iff it has at least one habitat row with `spawning = TRUE` or
-  `rearing = TRUE`. Pass explicit values to override (e.g. force-include
-  a species for QGIS symbology even when no segments are accessible).
+  An `lnk_presence` object, a named logical vector, or `NULL`.
+  Per-species presence for `aoi`. When `NULL` the function derives
+  presence from the data: a species is present iff it has at least one
+  habitat row with `spawning = TRUE` or `rearing = TRUE`. Pass explicit
+  values to override (e.g. force-include a species for QGIS symbology
+  even when no segments are accessible).
 
-- species_resident:
+- species_resident, species_anadromous, species_spawn_only:
 
-  Character. Species using the resident flavor of
-  `mapping_code_barrier`. Default `c("bt", "wct")`. Pass-through to
-  [`lnk_pipeline_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_mapping_code.md)'s
-  `resident_species` arg.
+  Character or `NULL`: the residence sets, resolved as in
+  [`lnk_pipeline_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_mapping_code.md)
+  (from `cfg`, else bcfishpass's sets).
 
-- species_anadromous:
+- cfg:
 
-  Character. Species using the anadromous flavor. Default
-  `c("ch", "cm", "co", "pk", "sk", "st")`. Pass-through to
-  [`lnk_pipeline_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_mapping_code.md)'s
-  `anadromous_species` arg.
+  An
+  [`lnk_config()`](https://newgraphenvironment.github.io/link/reference/lnk_config.md)
+  object, or `NULL`. Supplies the residence sets not passed (link#512)
+  and the mapping-code rules (link#197).
 
-- species_spawn_only:
+- rules_mapping_code:
 
-  Character. Species without rearing semantics. Default `c("cm", "pk")`.
-  Pass-through to
-  [`lnk_pipeline_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_mapping_code.md)'s
-  `spawn_only_species` arg.
+  A data frame of mapping-code rules, or `NULL` to read them from `cfg`,
+  else the package copy.
+
+  With `cfg` and no species arguments every species the bundle models is
+  coded; the persisted build (`.lnk_mapping_code_persist()`) passes the
+  group's active species instead.
 
 ## Value
 
@@ -111,7 +115,7 @@ presents the per-species split as a long-form shape so `table_habitat`
 can point at either layout.
 
 This function replaces the inline assembly previously buried inside
-[`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md).
+[`lnk_compare_run()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_run.md).
 The compare wrapper now goes through this function via
 `lnk_pipeline_run(..., mapping_code = TRUE)`. Operators can also call
 this directly against persist schema with the tunnel down — the build is
@@ -126,7 +130,7 @@ Other compare:
 [`lnk_access()`](https://newgraphenvironment.github.io/link/reference/lnk_access.md),
 [`lnk_compare_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_mapping_code.md),
 [`lnk_compare_rollup()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_rollup.md),
-[`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md),
+[`lnk_compare_run()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_run.md),
 [`lnk_habitat_validate()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_validate.md),
 [`lnk_habitat_validate_band()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_validate_band.md),
 [`lnk_log_read()`](https://newgraphenvironment.github.io/link/reference/lnk_log_read.md),

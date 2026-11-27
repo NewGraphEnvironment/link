@@ -61,7 +61,7 @@
 - [`lnk_compare_rollup()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_rollup.md)
   : Compare one watershed group's persisted state against a reference
 
-- [`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md)
+- [`lnk_compare_run()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_run.md)
   : Compare one watershed group against a reference dataset
 
 - [`lnk_config()`](https://newgraphenvironment.github.io/link/reference/lnk_config.md)
@@ -122,6 +122,9 @@
 - [`lnk_persist_init()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_init.md)
   : Initialize persistent province-wide habitat tables
 
+- [`lnk_persist_write()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_write.md)
+  : Persist per-WSG output into the province-wide habitat tables
+
 - [`lnk_pipeline_access()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_access.md)
   : Build per-segment access codes + downstream-barrier indicators
 
@@ -142,9 +145,6 @@
 
 - [`lnk_pipeline_mapping_code()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_mapping_code.md)
   : Build per-segment per-species mapping_code strings (bcfp parity)
-
-- [`lnk_pipeline_persist()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.md)
-  : Persist per-WSG output into the province-wide habitat tables
 
 - [`lnk_pipeline_prepare()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_prepare.md)
   : Prepare the Network and Barrier Inputs for a Pipeline Run

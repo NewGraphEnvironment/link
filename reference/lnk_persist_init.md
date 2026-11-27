@@ -50,7 +50,7 @@ lnk_persist_init(conn, cfg, species, force_recreate = FALSE)
 ## Details
 
 Per-WSG data accumulates into these tables via
-[`lnk_pipeline_persist()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.md)
+[`lnk_persist_write()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_write.md)
 after each run. Queryable cross-WSG for cartography, intrinsic potential
 maps, and per-crossing upstream rollups.
 
@@ -58,7 +58,7 @@ Column shape mirrors bcfp's `bcfishpass.streams` +
 `bcfishpass.habitat_linear_<sp>` for familiarity. Driven by the
 `cols_streams` / `cols_habitat` vectors at the top of this file — single
 source of truth shared with
-[`lnk_pipeline_persist()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.md).
+[`lnk_persist_write()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_write.md).
 
 ## Examples
 

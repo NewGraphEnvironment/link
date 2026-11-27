@@ -1,14 +1,13 @@
 # Compare one watershed group against a reference dataset
 
-Per-WSG convenience wrapper around the existing `lnk_pipeline_*` helpers
-that produces a long-format rollup tibble suitable for provincial parity
-comparisons. Optionally adds a per-segment `mapping_code` lens when
-`mapping_code = TRUE`.
+The compare family's umbrella, as
+[`lnk_pipeline_run()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_run.md)
+is the pipeline's (named `lnk_compare_wsg()` before 0.95.0, link#176).
 
 ## Usage
 
 ``` r
-lnk_compare_wsg(
+lnk_compare_run(
   conn,
   aoi,
   cfg,
@@ -19,8 +18,7 @@ lnk_compare_wsg(
   species = NULL,
   schema = paste0("working_", tolower(aoi)),
   dams = TRUE,
-  cleanup_working = TRUE,
-  with_mapping_code
+  cleanup_working = TRUE
 )
 ```
 
@@ -54,9 +52,7 @@ lnk_compare_wsg(
 
   Logical. When `TRUE`, run the additional `barriers_unify` →
   `barriers_views` → `access` → `mapping_code` phases and emit
-  per-species segment-match stats. Default `FALSE`. (Renamed from
-  `with_mapping_code` in v0.40.0; old name still accepted with
-  deprecation warning until v0.41.0.)
+  per-species segment-match stats. Default `FALSE`.
 
 - conn_ref:
 
@@ -88,12 +84,6 @@ lnk_compare_wsg(
   Logical. When `TRUE` (default), drop the `<schema>` working schema at
   the end. Pass `FALSE` for interactive debug / manual inspection.
 
-- with_mapping_code:
-
-  **Deprecated** alias for `mapping_code`. Kept for one release
-  (v0.40.0); removal in v0.41.0. Emits a deprecation warning when
-  supplied.
-
 ## Value
 
 A list with two elements:
@@ -120,6 +110,11 @@ A list with two elements:
 
 ## Details
 
+Per-WSG convenience wrapper around the existing `lnk_pipeline_*` helpers
+that produces a long-format rollup tibble suitable for provincial parity
+comparisons. Optionally adds a per-segment `mapping_code` lens when
+`mapping_code = TRUE`.
+
 `reference` is a string identifying the comparison source. Today only
 `"bcfishpass"` is supported (queries `bcfishpass.habitat_linear_<sp>` on
 `conn_ref`). The arg is future-proofed for default-bundle parity,
@@ -136,7 +131,7 @@ diff. The rollup tibble is unchanged between the two modes.
 
 Side effects: writes per-WSG segment-level data to the persistent
 `<persist_schema>.streams` + `streams_habitat_<sp>` tables via
-[`lnk_pipeline_persist()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.md).
+[`lnk_persist_write()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_write.md).
 Drops the `<schema>` working schema at end unless
 `cleanup_working = FALSE`.
 
@@ -157,7 +152,7 @@ only one depending on species rule).
 [`lnk_pipeline_setup()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_setup.md),
 [`lnk_pipeline_load()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_load.md),
 [`lnk_pipeline_prepare()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_prepare.md),
-[`lnk_pipeline_persist()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.md),
+[`lnk_persist_write()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_write.md),
 [`lnk_parity_annotate()`](https://newgraphenvironment.github.io/link/reference/lnk_parity_annotate.md)
 
 Other compare:
@@ -183,7 +178,7 @@ cfg <- lnk_config("bcfishpass")
 loaded <- lnk_load_overrides(cfg)
 
 # Rollup-only (~70s per WSG)
-result <- lnk_compare_wsg(
+result <- lnk_compare_run(
   conn = conn, aoi = "ADMS",
   cfg = cfg, loaded = loaded,
   reference = "bcfishpass", conn_ref = conn_ref
@@ -191,7 +186,7 @@ result <- lnk_compare_wsg(
 print(result$rollup)
 
 # Add mapping_code lens (~100s per WSG)
-result_mc <- lnk_compare_wsg(
+result_mc <- lnk_compare_run(
   conn = conn, aoi = "ADMS",
   cfg = cfg, loaded = loaded,
   reference = "bcfishpass", conn_ref = conn_ref,

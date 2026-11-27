@@ -63,7 +63,10 @@ lnk_pipeline_run(
 - cleanup_working:
 
   Logical. When `TRUE` (default), drop the `<schema>` working schema at
-  the end. Pass `FALSE` for interactive debug / manual inspection.
+  the end, and on an error after the schema is set up too (link#159), so
+  a failed group leaves no working tables. Pass `FALSE` for interactive
+  debug / manual inspection, or to keep the schema after a failure
+  (`data-raw/wsg_run_one.R` does).
 
 - mapping_code:
 
@@ -193,7 +196,7 @@ is written, and the tokens go in the run's `<persist_schema>.log` row.
 10. [`lnk_barriers_unify()`](https://newgraphenvironment.github.io/link/reference/lnk_barriers_unify.md)
     — unify per-source barriers into a single working-schema table
     (always; promotes the mapping_code-only flag in
-    [`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md)
+    [`lnk_compare_run()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_run.md)
     to canonical PG state). 10a. **Access phase (always-on, link#218).**
     Runs between barriers_unify and persist: a pre-persist of the
     current WSG (so the next two steps see cross-WSG barriers),
@@ -205,7 +208,7 @@ is written, and the tokens go in the run's `<persist_schema>.log` row.
     mapping_code depends on it — so it builds regardless of
     `mapping_code`. See link#187, \#196.
 
-11. [`lnk_pipeline_persist()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.md)
+11. [`lnk_persist_write()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_write.md)
     — copy per-WSG streams + per-species habitat + barriers +
     streams_access into `<persist_schema>` (idempotent
     DELETE-WHERE-WSG + INSERT). The group's rows in the habitat tables
@@ -226,9 +229,9 @@ is written, and the tokens go in the run's `<persist_schema>.log` row.
 ## See also
 
 [`lnk_compare_rollup()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_rollup.md),
-[`lnk_compare_wsg()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_wsg.md),
+[`lnk_compare_run()`](https://newgraphenvironment.github.io/link/reference/lnk_compare_run.md),
 [`lnk_pipeline_setup()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_setup.md),
-[`lnk_pipeline_persist()`](https://newgraphenvironment.github.io/link/reference/lnk_pipeline_persist.md)
+[`lnk_persist_write()`](https://newgraphenvironment.github.io/link/reference/lnk_persist_write.md)
 
 Other pipeline:
 [`lnk_habitat_gate()`](https://newgraphenvironment.github.io/link/reference/lnk_habitat_gate.md),

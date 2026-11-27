@@ -15,14 +15,13 @@ lnk_pipeline_mapping_code(
   to = NULL,
   conn = NULL,
   presence = NULL,
-  species_resident = c("bt", "wct"),
-  species_anadromous = c("ch", "cm", "co", "pk", "sk", "st"),
-  species_spawn_only = c("cm", "pk"),
+  species_resident = NULL,
+  species_anadromous = NULL,
+  species_spawn_only = NULL,
   segment_id_col = "id_segment",
   intermittent_feature_code = "GA24850150",
-  resident_species,
-  anadromous_species,
-  spawn_only_species
+  cfg = NULL,
+  rules_mapping_code = NULL
 )
 ```
 
@@ -42,7 +41,10 @@ lnk_pipeline_mapping_code(
 
   A tibble keyed by `segment_id_col` with `spawning_<sp>` and
   `rearing_<sp>` numeric columns per species. Mirrors bcfp's
-  `streams_habitat_linear` shape.
+  `streams_habitat_linear` shape. A species with no `spawning_<sp>` or
+  `rearing_<sp>` column reads 0 there, as bcfishpass pre-allocates every
+  species' columns (link#153); a segment with no habitat row at all
+  still reads `NA`.
 
 - feature_code:
 
@@ -55,8 +57,8 @@ lnk_pipeline_mapping_code(
   Character or `NULL`. Optional schema-qualified destination table. When
   supplied, the result tibble is written via
   `dbWriteTable(overwrite = TRUE)` and the tibble is also returned (so
-  callers can chain into `lnk_pipeline_persist` /
-  `build_species_views.R`). Default `NULL` returns-only.
+  callers can chain into `lnk_persist_write` / `build_species_views.R`).
+  Default `NULL` returns-only.
 
 - conn:
 
@@ -66,27 +68,31 @@ lnk_pipeline_mapping_code(
 
 - presence:
 
-  `NULL` (the default) or an `lnk_presence` object. A species it marks
-  absent emits `""` in its token column.
+  `NULL` (the default), an `lnk_presence` object, or a named logical
+  vector keyed by lower-case species code (link#351). A species it marks
+  absent, or does not name, emits `""` in its token column; with `NULL`
+  every species is coded.
 
 - species_resident:
 
-  Character. Species using the resident flavor of
-  `mapping_code_barrier`. Default `c("bt", "wct")`. (Renamed from
-  `resident_species` in v0.40.0; old name accepted with deprecation
-  warning until v0.41.0.)
+  Character or `NULL`. Species using the resident flavor of
+  `mapping_code_barrier`. `NULL` (the default) takes the bundle's
+  resident species from `cfg` (its `dimensions.csv` `residence` column,
+  link#512), or `c("bt", "wct")` with no `cfg`. With `cfg`, the sets
+  cover every species the bundle models (`cfg$species`); a persisted
+  build codes only the group's active ones.
 
 - species_anadromous:
 
-  Character. Species using the anadromous flavor. Default
-  `c("ch", "cm", "co", "pk", "sk", "st")`. (Renamed from
-  `anadromous_species` in v0.40.0.)
+  Character or `NULL`. Species using the anadromous flavor: from `cfg`
+  as above, or `c("ch", "cm", "co", "pk", "sk", "st")` with no `cfg`. A
+  species in both sets is refused.
 
 - species_spawn_only:
 
-  Character. Species without rearing semantics (token 1 only emits
-  SPAWN, never REAR). Default `c("cm", "pk")`. Mirrors bcfp. (Renamed
-  from `spawn_only_species` in v0.40.0.)
+  Character or `NULL`. Species without rearing semantics (token 1 only
+  emits SPAWN, never REAR): from `cfg` (`rear_no_fw = yes`), or
+  `c("cm", "pk")` with no `cfg`. Mirrors bcfp.
 
 - segment_id_col:
 
@@ -97,20 +103,18 @@ lnk_pipeline_mapping_code(
   Character. The `feature_code` value that flags an intermittent stream.
   Default `"GA24850150"` (bcfp).
 
-- resident_species:
+- cfg:
 
-  **Deprecated** alias for `species_resident`. Kept for one release
-  (v0.40.0); removal in v0.41.0.
+  An
+  [`lnk_config()`](https://newgraphenvironment.github.io/link/reference/lnk_config.md)
+  object, or `NULL`. Supplies the residence sets not passed and the
+  mapping-code rules (`parameters_mapping_code_rules` under `files:`).
 
-- anadromous_species:
+- rules_mapping_code:
 
-  **Deprecated** alias for `species_anadromous`. Kept for one release
-  (v0.40.0); removal in v0.41.0.
-
-- spawn_only_species:
-
-  **Deprecated** alias for `species_spawn_only`. Kept for one release
-  (v0.40.0); removal in v0.41.0.
+  A data frame of mapping-code rules (`residence`, `precedence`,
+  `token`, `when`), or `NULL` to read them from `cfg`, else the package
+  copy.
 
 ## Value
 
@@ -142,12 +146,16 @@ Token 1 (habitat) per bcfp:
   \> 0) emit.
 
 Token 2 (barrier source) only emits when the species' barriers
-downstream is empty (i.e. accessible). Resident-flavor (BT, WCT) and
-anadromous-flavor (CH/CM/CO/PK/SK/ST) differ in their CASE order:
+downstream is empty (i.e. accessible). It comes from the bundle's
+`parameters_mapping_code_rules.csv` (link#197): per residence, rows in
+`precedence` order, first matching `when` wins, so a bundle adds or
+reorders a token with no code change. A bundle that declares no file, or
+a call with no `cfg`, reads the package copy, bcfishpass's order.
+Resident and anadromous species differ there in their CASE order:
 
-- Resident: REMEDIATED \> DAM \> ASSESSED (anthropogenic + pscis + no
-  dam) \> MODELLED (anthropogenic + no pscis + no dam) \> NONE (no
-  anthropogenic).
+- Resident: REMEDIATED \> DAM (the next barrier down is a dam) \>
+  ASSESSED (anthropogenic + pscis + no dam) \> MODELLED (anthropogenic +
+  no pscis + no dam) \> NONE.
 
 - Anadromous: REMEDIATED \> DAM (any dam) \> ASSESSED (any pscis) \>
   MODELLED (any anthropogenic) \> NONE.
