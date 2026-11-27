@@ -12,9 +12,11 @@ lnk_mapping_code(
   aoi,
   table_to = NULL,
   presence = NULL,
-  species_resident = c("bt", "wct"),
-  species_anadromous = c("ch", "cm", "co", "pk", "sk", "st"),
-  species_spawn_only = c("cm", "pk")
+  species_resident = NULL,
+  species_anadromous = NULL,
+  species_spawn_only = NULL,
+  cfg = NULL,
+  rules_mapping_code = NULL
 )
 }
 \arguments{
@@ -41,25 +43,26 @@ destination table for the result. When non-NULL,
 \code{lnk_pipeline_mapping_code()} writes the tibble via
 \code{dbWriteTable(overwrite = TRUE)}. Default \code{NULL} — returns-only.}
 
-\item{presence}{Named logical vector or \code{NULL}. Per-species presence
-flag for \code{aoi}. When \code{NULL} the function derives presence from
+\item{presence}{An \code{lnk_presence} object, a named logical vector, or
+\code{NULL}. Per-species presence for \code{aoi}. When \code{NULL} the function derives presence from
 the data: a species is present iff it has at least one habitat row
 with \code{spawning = TRUE} or \code{rearing = TRUE}. Pass explicit values
 to override (e.g. force-include a species for QGIS symbology even
 when no segments are accessible).}
 
-\item{species_resident}{Character. Species using the resident flavor
-of \code{mapping_code_barrier}. Default \code{c("bt", "wct")}. Pass-through
-to \code{\link[=lnk_pipeline_mapping_code]{lnk_pipeline_mapping_code()}}'s \code{resident_species} arg.}
+\item{species_resident, species_anadromous, species_spawn_only}{Character
+or \code{NULL}: the residence sets, resolved as in
+\code{\link[=lnk_pipeline_mapping_code]{lnk_pipeline_mapping_code()}} (from \code{cfg}, else bcfishpass's sets).}
 
-\item{species_anadromous}{Character. Species using the anadromous
-flavor. Default \code{c("ch", "cm", "co", "pk", "sk", "st")}.
-Pass-through to \code{lnk_pipeline_mapping_code()}'s
-\code{anadromous_species} arg.}
+\item{cfg}{An \code{\link[=lnk_config]{lnk_config()}} object, or \code{NULL}. Supplies the residence sets
+not passed (link#512) and the mapping-code rules (link#197).}
 
-\item{species_spawn_only}{Character. Species without rearing
-semantics. Default \code{c("cm", "pk")}. Pass-through to
-\code{lnk_pipeline_mapping_code()}'s \code{spawn_only_species} arg.}
+\item{rules_mapping_code}{A data frame of mapping-code rules, or \code{NULL} to
+read them from \code{cfg}, else the package copy.
+
+With \code{cfg} and no species arguments every species the bundle models is
+coded; the persisted build (\code{.lnk_mapping_code_persist()}) passes the
+group's active species instead.}
 }
 \value{
 Invisibly, the per-segment per-species mapping_code tibble
@@ -84,7 +87,7 @@ working-schema tables (mid-pipeline) or persist-schema tables
 shape so \code{table_habitat} can point at either layout.
 
 This function replaces the inline assembly previously buried inside
-\code{lnk_compare_wsg()}. The compare wrapper now goes through this
+\code{lnk_compare_run()}. The compare wrapper now goes through this
 function via \code{lnk_pipeline_run(..., mapping_code = TRUE)}. Operators
 can also call this directly against persist schema with the tunnel
 down — the build is tunnel-independent (the diff vs reference is
@@ -124,7 +127,7 @@ Other compare:
 \code{\link{lnk_access}()},
 \code{\link{lnk_compare_mapping_code}()},
 \code{\link{lnk_compare_rollup}()},
-\code{\link{lnk_compare_wsg}()},
+\code{\link{lnk_compare_run}()},
 \code{\link{lnk_habitat_validate}()},
 \code{\link{lnk_habitat_validate_band}()},
 \code{\link{lnk_log_read}()},

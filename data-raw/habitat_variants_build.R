@@ -950,8 +950,8 @@ variant_pass <- function(w, v, cfg, sp, want, is_mad, sch_base) {
     }
     if (!is.null(sp)) {
       t1 <- Sys.time()
-      lnk_pipeline_persist(conn, aoi = w, cfg = cfg, species = sp,
-                           schema = working_of(w))
+      lnk_persist_write(conn, aoi = w, cfg = cfg, species = sp,
+                        schema = working_of(w))
       tm["persist"] <- secs_since(t1)
       # The persisted access is the working copy, for this species only, and
       # from before the base's recompute. Access reads no habitat threshold

@@ -38,14 +38,14 @@ every per-WSG run, and safe under concurrent first-time provisioning
 (multiple workers can race; only one CREATE wins).
 }
 \details{
-Per-WSG data accumulates into these tables via \code{\link[=lnk_pipeline_persist]{lnk_pipeline_persist()}}
+Per-WSG data accumulates into these tables via \code{\link[=lnk_persist_write]{lnk_persist_write()}}
 after each run. Queryable cross-WSG for cartography, intrinsic
 potential maps, and per-crossing upstream rollups.
 
 Column shape mirrors bcfp's \code{bcfishpass.streams} +
 \verb{bcfishpass.habitat_linear_<sp>} for familiarity. Driven by the
 \code{cols_streams} / \code{cols_habitat} vectors at the top of this file —
-single source of truth shared with \code{\link[=lnk_pipeline_persist]{lnk_pipeline_persist()}}.
+single source of truth shared with \code{\link[=lnk_persist_write]{lnk_persist_write()}}.
 }
 \examples{
 \dontrun{

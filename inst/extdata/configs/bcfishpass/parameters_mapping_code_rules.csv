@@ -1,0 +1,11 @@
+residence,precedence,token,when
+resident,1,REMEDIATED,any_remed
+resident,2,DAM,any_dam_resident
+resident,3,ASSESSED,any_anth & any_pscis & !any_dam_resident
+resident,4,MODELLED,any_anth & !any_pscis & !any_dam_resident
+resident,5,NONE,TRUE
+anadromous,1,REMEDIATED,any_remed
+anadromous,2,DAM,any_dam_anadr
+anadromous,3,ASSESSED,any_pscis
+anadromous,4,MODELLED,any_anth
+anadromous,5,NONE,TRUE

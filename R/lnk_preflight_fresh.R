@@ -212,7 +212,7 @@ lnk_preflight_fresh <- function(required = .lnk_fresh_required(),
 # - .frs_near_river_specs in .lnk_near_river_pairs() (R/lnk_discharge.R,
 #   #364): fresh's own resolver of which near_river pairs a bundle's rules
 #   read, so link never re-derives it; positionally.
-# - .frs_sql_num in .lnk_near_river_pair_sets() (R/lnk_pipeline_persist.R),
+# - .frs_sql_num in .lnk_near_river_pair_sets() (R/lnk_persist_write.R),
 #   the formatter fresh stores a pair's numbers with (#364); positionally,
 #   through vapply().
 # Positional calls make the order load-bearing, so the order is pinned.

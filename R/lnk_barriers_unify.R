@@ -9,7 +9,7 @@
 #' [lnk_pipeline_access()] queries via `WHERE 'BT' = ANY(blocks_species)`.
 #'
 #' Per-WSG output is persisted to the province-wide table by
-#' [lnk_pipeline_persist()] using the same idempotent DELETE-WHERE-WSG +
+#' [lnk_persist_write()] using the same idempotent DELETE-WHERE-WSG +
 #' INSERT pattern already used for `streams` and
 #' `streams_habitat_<sp>`. Cross-WSG `dam_dnstr_ind` resolves correctly
 #' because [fresh::frs_network_features()] walks FWA topology and
@@ -99,7 +99,7 @@
 #' }
 #'
 #' @family barriers
-#' @seealso [lnk_persist_init()], [lnk_pipeline_persist()],
+#' @seealso [lnk_persist_init()], [lnk_persist_write()],
 #'   [lnk_pipeline_access()]
 #' @export
 lnk_barriers_unify <- function(conn, aoi, cfg, loaded,

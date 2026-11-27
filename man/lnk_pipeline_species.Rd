@@ -51,6 +51,14 @@ A species the bundle pauses (\code{cfg$species_paused}, from its
 group where only paused species are present is still built for its
 segments and barriers, which other groups' access reads, and gets no
 habitat.
+
+It answers "which species does this build classify here", so it reads the
+presence cells as written. \code{\link[=lnk_presence]{lnk_presence()}} answers a wider question,
+"which species count as present here", and promotes a whole species group
+when any member is present (link#153): for ADMS under \code{bcfishpass} this
+function gives BT, CH, CO and SK, and \code{lnk_presence()} also CM, CT, DV, PK
+and RB. Mapping codes read \code{lnk_presence()}, and a species it holds that is
+not classified reads 0 spawning and rearing, as bcfishpass's are.
 }
 \examples{
 cfg    <- lnk_config("bcfishpass")

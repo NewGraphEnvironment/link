@@ -95,7 +95,7 @@
 #'
 #' The underlying `<persist_schema>.barriers` table must exist — typically
 #' initialized by [lnk_persist_init()] and populated by [lnk_barriers_unify()]
-#' + [lnk_pipeline_persist()] for all WSGs in the regional scope.
+#' + [lnk_persist_write()] for all WSGs in the regional scope.
 #'
 #' @examples
 #' \dontrun{
@@ -104,7 +104,7 @@
 #' loaded <- lnk_load_overrides(cfg)
 #'
 #' # ... lnk_persist_init + lnk_pipeline_* + lnk_barriers_unify +
-#' #     lnk_pipeline_persist all already run for all WSGs ...
+#' #     lnk_persist_write all already run for all WSGs ...
 #'
 #' lnk_barriers_views(conn, schema = "working_pars", cfg = cfg)
 #'

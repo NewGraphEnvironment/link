@@ -25,12 +25,13 @@ link,^R/lnk_species_pooling\.R$,obs_upstream,"resolves the record rule's codes a
 link,^R/lnk_preflight_discharge\.R$,any,"runs once per group whatever the group holds (config, logging, provenance, orchestration)"
 link,^R/lnk_stall\.R$,any,"the stall sampler (#487): watches every group's backend from a second connection, whatever the group holds"
 link,^R/lnk_pipeline_break\.R$,segments,cost scales with the group's segments
-link,^R/lnk_pipeline_persist\.R$,segments,cost scales with the group's segments
+link,^R/lnk_persist_write\.R$,segments,cost scales with the group's segments
 link,^R/lnk_persist_init\.R$,segments,cost scales with the group's segments
 link,^R/lnk_pipeline_access\.R$,segments,cost scales with the group's segments
 link,^R/lnk_pipeline_access\.R$,obs_upstream,"the observation walk reads every group's records upstream of the group (#401)"
 link,^R/lnk_pipeline_mapping_code\.R$,segments,cost scales with the group's segments
 link,^R/lnk_mapping_code\.R$,segments,cost scales with the group's segments
+link,^R/lnk_mapping_code_rules\.R$,segments,"the mapping code's barrier token, as rules; cost scales with the group's segments (#197)"
 link,^R/lnk_habitat_gate\.R$,segments,cost scales with the group's segments
 link,^R/lnk_barriers_views\.R$,segments,cost scales with the group's segments
 link,^R/lnk_discharge\.R$,segments,cost scales with the group's segments
@@ -73,7 +74,7 @@ link,^R/lnk_bucket_log\.R$,none,not reached from wsg_run_one.R's entry points (t
 link,^R/lnk_catalog\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^R/lnk_compare_mapping_code\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^R/lnk_compare_rollup\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
-link,^R/lnk_compare_wsg\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
+link,^R/lnk_compare_run\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^R/lnk_db_load\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^R/lnk_fanout_judge\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
 link,^R/lnk_habitat_validate_band\.R$,none,not reached from wsg_run_one.R's entry points (test-pretest.R checks); lnk_rules_build's output reaches a run as the bundle's rules.yaml
@@ -107,6 +108,7 @@ link,^inst/extdata/configs/{config}/parameters_fresh\.csv$,obs_upstream,"lift da
 link,^inst/extdata/configs/{config}/parameters_barrier_lifts\.csv$,observations,"further observation-lift rules per species (#236)"
 link,^inst/extdata/configs/{config}/parameters_barrier_rules\.csv$,crossings,"which crossings are human-made barriers (#341)"
 link,^inst/extdata/configs/{config}/parameters_barrier_rules\.csv$,dams,"which dams are human-made barriers (#341)"
+link,^inst/extdata/configs/{config}/parameters_mapping_code_rules\.csv$,segments,"the mapping code's barrier token for each segment, as rules (#197)"
 link,^inst/extdata/configs/{config}/config\.yaml$,any,"pipeline knobs (break sources, observation breaks, dams, discharge)"
 link,^inst/extdata/configs/{config}/config\.yaml$,segments,"pipeline knobs (break sources, observation breaks, dams, discharge)"
 link,^inst/extdata/configs/{config}/config\.yaml$,observations,"pipeline knobs (break sources, observation breaks, dams, discharge)"
@@ -190,6 +192,7 @@ link,^inst/extdata/vocabulary\.csv$,any,"output vocabulary; every run resolves i
 link,^inst/extdata/configs/dictionary_[a-z_]+\.csv$,none,data dictionaries; no run reads them
 link,^inst/extdata/(crossings_example|overrides_example|parameters_habitat_dimensions)\.csv$,none,"package examples, off the modelling path"
 link,^inst/extdata/parameters_habitat_rules\.yaml$,none,sample rules for fresh's fallback; a run reads its bundle's rules.yaml
+link,^inst/extdata/parameters_mapping_code_rules\.csv$,none,"fallback for a call without a bundle; a run reads its bundle's own (#197)"
 link,^inst/extdata/schemas/,none,"the export's column contract (lnk_scenario_export); moved to crate in 0.85.0 (#333), kept so a range that spans its removal stays mapped"
 fresh,^inst/extdata/falls\.csv$,gradient,the falls link reads as natural barriers (lnk_pipeline_prepare)
 fresh,^inst/extdata/falls\.csv$,dams,the falls link reads as natural barriers (lnk_pipeline_prepare)

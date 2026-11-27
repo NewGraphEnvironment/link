@@ -61,7 +61,11 @@ loops that should skip absent species.
 \details{
 Coexists with \code{\link[=lnk_pipeline_species]{lnk_pipeline_species()}}, which returns the
 intersection of \code{cfg$species} with AOI-present species as a plain
-vector. \code{lnk_presence()} is the structured / group-aware sibling.
+vector. \code{lnk_presence()} is the structured / group-aware sibling. The two
+answer different questions (link#153): \code{lnk_pipeline_species()} which
+species a build classifies in the group, \code{lnk_presence()} which species
+count as present there, so a mapping code is built for each of the latter
+and an absent one reads \code{""}.
 }
 \examples{
 \dontrun{

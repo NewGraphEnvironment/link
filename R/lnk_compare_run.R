@@ -1,5 +1,8 @@
 #' Compare one watershed group against a reference dataset
 #'
+#' The compare family's umbrella, as [lnk_pipeline_run()] is the pipeline's
+#' (named `lnk_compare_wsg()` before 0.95.0, link#176).
+#'
 #' Per-WSG convenience wrapper around the existing `lnk_pipeline_*`
 #' helpers that produces a long-format rollup tibble suitable for
 #' provincial parity comparisons. Optionally adds a per-segment
@@ -29,8 +32,6 @@
 #' @param mapping_code Logical. When `TRUE`, run the additional
 #'   `barriers_unify` → `barriers_views` → `access` → `mapping_code`
 #'   phases and emit per-species segment-match stats. Default `FALSE`.
-#'   (Renamed from `with_mapping_code` in v0.40.0; old name still
-#'   accepted with deprecation warning until v0.41.0.)
 #' @param conn_ref DBI connection to the reference database. Required
 #'   when `reference = "bcfishpass"` (the bcfp tunnel at
 #'   `localhost:63333`). Caller manages this connection.
@@ -46,9 +47,6 @@
 #' @param cleanup_working Logical. When `TRUE` (default), drop the
 #'   `<schema>` working schema at the end. Pass `FALSE` for interactive
 #'   debug / manual inspection.
-#' @param with_mapping_code **Deprecated** alias for `mapping_code`.
-#'   Kept for one release (v0.40.0); removal in v0.41.0. Emits a
-#'   deprecation warning when supplied.
 #'
 #' @return A list with two elements:
 #'   - `rollup`: tibble with one row per (species, habitat_type) — 9
@@ -75,7 +73,7 @@
 #' @details
 #' Side effects: writes per-WSG segment-level data to the persistent
 #' `<persist_schema>.streams` + `streams_habitat_<sp>` tables via
-#' [lnk_pipeline_persist()]. Drops the `<schema>` working schema at end
+#' [lnk_persist_write()]. Drops the `<schema>` working schema at end
 #' unless `cleanup_working = FALSE`.
 #'
 #' Rollup methodology mirrors what bcfp's `habitat_linear_<sp>` measures:
@@ -101,7 +99,7 @@
 #' loaded <- lnk_load_overrides(cfg)
 #'
 #' # Rollup-only (~70s per WSG)
-#' result <- lnk_compare_wsg(
+#' result <- lnk_compare_run(
 #'   conn = conn, aoi = "ADMS",
 #'   cfg = cfg, loaded = loaded,
 #'   reference = "bcfishpass", conn_ref = conn_ref
@@ -109,7 +107,7 @@
 #' print(result$rollup)
 #'
 #' # Add mapping_code lens (~100s per WSG)
-#' result_mc <- lnk_compare_wsg(
+#' result_mc <- lnk_compare_run(
 #'   conn = conn, aoi = "ADMS",
 #'   cfg = cfg, loaded = loaded,
 #'   reference = "bcfishpass", conn_ref = conn_ref,
@@ -120,26 +118,17 @@
 #'
 #' @family compare
 #' @seealso [lnk_pipeline_setup()], [lnk_pipeline_load()],
-#'   [lnk_pipeline_prepare()], [lnk_pipeline_persist()],
+#'   [lnk_pipeline_prepare()], [lnk_persist_write()],
 #'   [lnk_parity_annotate()]
 #' @export
-lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
+lnk_compare_run <- function(conn, aoi, cfg, loaded,
                             reference = "bcfishpass",
                             mapping_code = FALSE,
                             conn_ref = NULL,
                             species = NULL,
                             schema = paste0("working_", tolower(aoi)),
                             dams = TRUE,
-                            cleanup_working = TRUE,
-                            with_mapping_code) {
-  # Deprecation shim (link#187, removal in v0.41.0): accept the old
-  # `with_mapping_code` arg name; warn + remap to `mapping_code`.
-  if (!missing(with_mapping_code)) {
-    .Deprecated(msg = paste(
-      "`with_mapping_code` is deprecated; use `mapping_code` instead.",
-      "The old name will be removed in v0.41.0."))
-    mapping_code <- with_mapping_code
-  }
+                            cleanup_working = TRUE) {
   stopifnot(
     inherits(conn, "DBIConnection"),
     is.character(aoi), length(aoi) == 1L, nzchar(aoi),
@@ -233,7 +222,7 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
 #' `lake_rearing` / `wetland_rearing` flags (fresh >= 0.17.1).
 #'
 #' @noRd
-.lnk_compare_wsg_rollup_link <- function(conn, aoi, schema, species) {
+.lnk_compare_rollup_working <- function(conn, aoi, schema, species) {
   species_sql <- paste(
     vapply(species,
            function(s) as.character(DBI::dbQuoteLiteral(conn, s)),
@@ -331,16 +320,16 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
 #' the tunnel), joined to the same `fwa_lakes_poly` / `fwa_wetlands_poly`
 #' for the ha columns bcfp doesn't materialize natively. The `accessible_km`
 #' reference is sourced separately + tunnel-free from `fresh.streams_vw_bcfp`
-#' on the local `conn` (see [.lnk_compare_wsg_accessible_ref()]); the two
+#' on the local `conn` (see [.lnk_compare_rollup_accessible_ref()]); the two
 #' reference sources stay intentionally decoupled (link#221).
 #'
 #' @noRd
-.lnk_compare_wsg_rollup_reference <- function(reference, conn_ref,
-                                              aoi, species, conn) {
+.lnk_compare_rollup_reference <- function(reference, conn_ref,
+                                          aoi, species, conn) {
   if (reference == "bcfishpass") {
-    ref <- .lnk_compare_wsg_rollup_bcfishpass(
+    ref <- .lnk_compare_rollup_bcfishpass(
       conn_ref = conn_ref, aoi = aoi, species = species) # nolint: indentation_linter
-    ref$accessible_km <- .lnk_compare_wsg_accessible_ref(
+    ref$accessible_km <- .lnk_compare_rollup_accessible_ref(
       conn = conn, aoi = aoi, species = ref$species_code) # nolint: indentation_linter
     return(ref)
   }
@@ -361,7 +350,7 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
 #' to interpolate.
 #'
 #' @noRd
-.lnk_compare_wsg_accessible_ref <- function(conn, aoi, species) {
+.lnk_compare_rollup_accessible_ref <- function(conn, aoi, species) {
   barrier_group <- c(
     CH = "barriers_ch_cm_co_pk_sk_dnstr",
     CM = "barriers_ch_cm_co_pk_sk_dnstr",
@@ -392,7 +381,7 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
 #' resolves to NA distinguishing "not modelled" from "real zero".
 #'
 #' @noRd
-.lnk_compare_wsg_rollup_bcfishpass <- function(conn_ref, aoi, species) {
+.lnk_compare_rollup_bcfishpass <- function(conn_ref, aoi, species) {
   wb_class <- .lnk_sql_waterbody_class() # nolint: object_usage_linter
   wb_join <- .lnk_sql_waterbody_join() # nolint: object_usage_linter
   lake_polys <- .lnk_sql_lake_polys() # nolint: object_usage_linter
@@ -507,8 +496,8 @@ lnk_compare_wsg <- function(conn, aoi, cfg, loaded,
 #' (avoid div-by-zero even when the measurement is real).
 #'
 #' @noRd
-.lnk_compare_wsg_assemble_rollup <- function(aoi, species,
-                                             rollup_link, rollup_ref) {
+.lnk_compare_rollup_assemble <- function(aoi, species,
+                                         rollup_link, rollup_ref) {
   habitat_types <- c(
     "spawning", "rearing", "lake_rearing", "wetland_rearing",
     "rearing_stream", "rearing_lake", "rearing_wetland",

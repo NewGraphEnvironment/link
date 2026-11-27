@@ -121,7 +121,7 @@ the window at the worst moment, part-way through a parallel recompute
 The underlying \verb{<persist_schema>.barriers} table must exist — typically
 initialized by \code{\link[=lnk_persist_init]{lnk_persist_init()}} and populated by \code{\link[=lnk_barriers_unify]{lnk_barriers_unify()}}
 \itemize{
-\item \code{\link[=lnk_pipeline_persist]{lnk_pipeline_persist()}} for all WSGs in the regional scope.
+\item \code{\link[=lnk_persist_write]{lnk_persist_write()}} for all WSGs in the regional scope.
 }
 }
 \examples{
@@ -131,7 +131,7 @@ cfg <- lnk_config("bcfishpass")
 loaded <- lnk_load_overrides(cfg)
 
 # ... lnk_persist_init + lnk_pipeline_* + lnk_barriers_unify +
-#     lnk_pipeline_persist all already run for all WSGs ...
+#     lnk_persist_write all already run for all WSGs ...
 
 lnk_barriers_views(conn, schema = "working_pars", cfg = cfg)
 

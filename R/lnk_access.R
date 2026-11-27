@@ -230,11 +230,9 @@ lnk_access <- function(conn, cfg, aoi, table_streams, table_barriers,
     scratch_cols)
   set_flags <- sprintf("%s = sc.%s", flag_cols, flag_cols)
 
-  # access_<sp>: 0 if newly blocked, else keep prior 2 (observed), else 1.
   access_cols <- intersect(paste0("access_", sp_set), scratch_cols)
-  set_access <- sprintf(
-    "%s = CASE WHEN sc.%s = 0 THEN 0 WHEN t.%s = 2 THEN 2 ELSE 1 END",
-    access_cols, access_cols, access_cols)
+  set_access <- sprintf("%s = %s", access_cols,
+                        vapply(access_cols, .lnk_access_merge_case, character(1)))
 
   set_clause <- paste(c(set_flags, set_access), collapse = ",\n    ")
   if (!nzchar(set_clause)) {
@@ -250,4 +248,21 @@ lnk_access <- function(conn, cfg, aoi, table_streams, table_barriers,
     table_to, set_clause, scratch, DBI::dbQuoteLiteral(conn, aoi)))
 
   invisible(conn)
+}
+
+
+#' The merge rule for one `access_<sp>` column
+#'
+#' A recomputed `-9` (the species is absent from the group) stays `-9`; a
+#' recomputed `0` (newly blocked) is `0`; otherwise a prior `2` (recorded
+#' upstream) is kept, and anything else is `1`. Before link#351 the `-9` fell
+#' through to `1`, accessible. `sc` is the recomputed scratch row, `t` the
+#' persisted one.
+#'
+#' @param col An `access_<sp>` column name.
+#' @return The SQL `CASE` expression.
+#' @noRd
+.lnk_access_merge_case <- function(col) {
+  sprintf(paste("CASE WHEN sc.%1$s = -9 THEN -9 WHEN sc.%1$s = 0 THEN 0",
+                "WHEN t.%1$s = 2 THEN 2 ELSE 1 END"), col)
 }

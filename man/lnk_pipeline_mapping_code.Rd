@@ -11,14 +11,13 @@ lnk_pipeline_mapping_code(
   to = NULL,
   conn = NULL,
   presence = NULL,
-  species_resident = c("bt", "wct"),
-  species_anadromous = c("ch", "cm", "co", "pk", "sk", "st"),
-  species_spawn_only = c("cm", "pk"),
+  species_resident = NULL,
+  species_anadromous = NULL,
+  species_spawn_only = NULL,
   segment_id_col = "id_segment",
   intermittent_feature_code = "GA24850150",
-  resident_species,
-  anadromous_species,
-  spawn_only_species
+  cfg = NULL,
+  rules_mapping_code = NULL
 )
 }
 \arguments{
@@ -31,7 +30,10 @@ sources \code{has_barriers_anthropogenic_dnstr},
 
 \item{habitat}{A tibble keyed by \code{segment_id_col} with
 \verb{spawning_<sp>} and \verb{rearing_<sp>} numeric columns per species.
-Mirrors bcfp's \code{streams_habitat_linear} shape.}
+Mirrors bcfp's \code{streams_habitat_linear} shape. A species with no
+\verb{spawning_<sp>} or \verb{rearing_<sp>} column reads 0 there, as bcfishpass
+pre-allocates every species' columns (link#153); a segment with no
+habitat row at all still reads \code{NA}.}
 
 \item{feature_code}{Named character or data.frame. Either a named
 character vector mapping \code{segment_id} -> \code{feature_code}, or a
@@ -41,42 +43,45 @@ Used for the \code{INTERMITTENT} flag.}
 \item{to}{Character or \code{NULL}. Optional schema-qualified destination
 table. When supplied, the result tibble is written via
 \code{dbWriteTable(overwrite = TRUE)} and the tibble is also returned
-(so callers can chain into \code{lnk_pipeline_persist} / \code{build_species_views.R}).
+(so callers can chain into \code{lnk_persist_write} / \code{build_species_views.R}).
 Default \code{NULL} returns-only.}
 
 \item{conn}{A \link[DBI:DBIConnection-class]{DBI::DBIConnection}. Required only when \code{to} is
 supplied; ignored otherwise.}
 
-\item{presence}{\code{NULL} (the default) or an \code{lnk_presence} object. A species
-it marks absent emits \code{""} in its token column.}
+\item{presence}{\code{NULL} (the default), an \code{lnk_presence} object, or a named
+logical vector keyed by lower-case species code (link#351). A species it
+marks absent, or does not name, emits \code{""} in its token column; with
+\code{NULL} every species is coded.}
 
-\item{species_resident}{Character. Species using the resident flavor
-of \code{mapping_code_barrier}. Default \code{c("bt", "wct")}. (Renamed from
-\code{resident_species} in v0.40.0; old name accepted with deprecation
-warning until v0.41.0.)}
+\item{species_resident}{Character or \code{NULL}. Species using the resident
+flavor of \code{mapping_code_barrier}. \code{NULL} (the default) takes the
+bundle's resident species from \code{cfg} (its \code{dimensions.csv} \code{residence}
+column, link#512), or \code{c("bt", "wct")} with no \code{cfg}. With \code{cfg}, the sets
+cover every species the bundle models (\code{cfg$species}); a persisted build
+codes only the group's active ones.}
 
-\item{species_anadromous}{Character. Species using the anadromous
-flavor. Default \code{c("ch", "cm", "co", "pk", "sk", "st")}. (Renamed
-from \code{anadromous_species} in v0.40.0.)}
+\item{species_anadromous}{Character or \code{NULL}. Species using the
+anadromous flavor: from \code{cfg} as above, or
+\code{c("ch", "cm", "co", "pk", "sk", "st")} with no \code{cfg}. A species in both
+sets is refused.}
 
-\item{species_spawn_only}{Character. Species without rearing
-semantics (token 1 only emits SPAWN, never REAR). Default
-\code{c("cm", "pk")}. Mirrors bcfp. (Renamed from \code{spawn_only_species}
-in v0.40.0.)}
+\item{species_spawn_only}{Character or \code{NULL}. Species without rearing
+semantics (token 1 only emits SPAWN, never REAR): from \code{cfg}
+(\code{rear_no_fw = yes}), or \code{c("cm", "pk")} with no \code{cfg}. Mirrors bcfp.}
 
 \item{segment_id_col}{Character. Default \code{"id_segment"}.}
 
 \item{intermittent_feature_code}{Character. The \code{feature_code} value
 that flags an intermittent stream. Default \code{"GA24850150"} (bcfp).}
 
-\item{resident_species}{\strong{Deprecated} alias for \code{species_resident}.
-Kept for one release (v0.40.0); removal in v0.41.0.}
+\item{cfg}{An \code{\link[=lnk_config]{lnk_config()}} object, or \code{NULL}. Supplies the residence sets
+not passed and the mapping-code rules (\code{parameters_mapping_code_rules}
+under \verb{files:}).}
 
-\item{anadromous_species}{\strong{Deprecated} alias for \code{species_anadromous}.
-Kept for one release (v0.40.0); removal in v0.41.0.}
-
-\item{spawn_only_species}{\strong{Deprecated} alias for \code{species_spawn_only}.
-Kept for one release (v0.40.0); removal in v0.41.0.}
+\item{rules_mapping_code}{A data frame of mapping-code rules (\code{residence},
+\code{precedence}, \code{token}, \code{when}), or \code{NULL} to read them from \code{cfg}, else
+the package copy.}
 }
 \value{
 A tibble keyed by \code{segment_id_col} with one
@@ -111,12 +116,16 @@ conditions drop out -- only \code{ACCESS} (no spawn, no barriers) and
 }
 
 Token 2 (barrier source) only emits when the species' barriers
-downstream is empty (i.e. accessible). Resident-flavor (BT, WCT) and
-anadromous-flavor (CH/CM/CO/PK/SK/ST) differ in their CASE order:
+downstream is empty (i.e. accessible). It comes from the bundle's
+\code{parameters_mapping_code_rules.csv} (link#197): per residence, rows in
+\code{precedence} order, first matching \code{when} wins, so a bundle adds or reorders
+a token with no code change. A bundle that declares no file, or a call with
+no \code{cfg}, reads the package copy, bcfishpass's order. Resident and
+anadromous species differ there in their CASE order:
 \itemize{
-\item Resident:    REMEDIATED > DAM > ASSESSED (anthropogenic + pscis +
-no dam) > MODELLED (anthropogenic + no pscis + no
-dam) > NONE (no anthropogenic).
+\item Resident:    REMEDIATED > DAM (the next barrier down is a dam) >
+ASSESSED (anthropogenic + pscis + no dam) > MODELLED
+(anthropogenic + no pscis + no dam) > NONE.
 \item Anadromous:  REMEDIATED > DAM (any dam) > ASSESSED (any pscis) >
 MODELLED (any anthropogenic) > NONE.
 }

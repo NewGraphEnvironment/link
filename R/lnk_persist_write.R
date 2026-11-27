@@ -1,5 +1,9 @@
 #' Persist per-WSG output into the province-wide habitat tables
 #'
+#' The write half of the persist family, beside [lnk_persist_init()], which
+#' creates the tables (named `lnk_pipeline_persist()` before 0.95.0,
+#' link#177).
+#'
 #' Copies the per-WSG staging tables (`<schema>.streams`,
 #' `<schema>.streams_habitat`) from the working schema into the
 #' persistent province-wide tables (`<persist_schema>.streams`,
@@ -33,8 +37,8 @@
 #'
 #' @return `conn` invisibly.
 #' @export
-lnk_pipeline_persist <- function(conn, aoi, cfg, species,
-                                 schema = paste0("working_", tolower(aoi))) {
+lnk_persist_write <- function(conn, aoi, cfg, species,
+                              schema = paste0("working_", tolower(aoi))) {
   if (!is.character(aoi) || length(aoi) != 1L || !nzchar(aoi)) {
     stop("aoi must be a single non-empty WSG code", call. = FALSE)
   }
@@ -341,7 +345,7 @@ lnk_pipeline_persist <- function(conn, aoi, cfg, species,
 
 #' Clear a group's rows that no species classified here owns
 #'
-#' `lnk_pipeline_persist()` replaces a group's rows only in the habitat tables
+#' `lnk_persist_write()` replaces a group's rows only in the habitat tables
 #' of the species it writes, and only for the near_river pairs those species'
 #' rules read. After a full build, every other
 #' `<persist_schema>.streams_habitat_<sp>` table holding rows for the group,

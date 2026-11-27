@@ -1,4 +1,4 @@
-# Tests for lnk_pipeline_persist — SQL emission shape (mocked DB)
+# Tests for lnk_persist_write — SQL emission shape (mocked DB)
 
 # Mock DBI helpers shared across tests — barriers staging-table probe
 # returns "absent" by default so legacy tests don't see the new
@@ -12,7 +12,7 @@ mock_dbi_no_barriers <- function() {
   })
 }
 
-test_that("lnk_pipeline_persist emits DELETE+INSERT for streams + each species", {
+test_that("lnk_persist_write emits DELETE+INSERT for streams + each species", {
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
@@ -25,7 +25,7 @@ test_that("lnk_pipeline_persist emits DELETE+INSERT for streams + each species",
     .package = "DBI",
     {
       cfg <- lnk_config("bcfishpass")
-      lnk_pipeline_persist(
+      lnk_persist_write(
         structure(list(), class = "DBIConnection"),
         aoi = "LRDO", cfg = cfg, species = c("BT", "SK"))
     }
@@ -50,7 +50,7 @@ test_that("lnk_pipeline_persist emits DELETE+INSERT for streams + each species",
     "INSERT INTO fresh\\.streams_habitat_bt \\(id_segment, watershed_group_code, accessible, spawning, rearing, lake_rearing, wetland_rearing\\)\\s+SELECT id_segment, watershed_group_code, accessible, spawning, rearing, lake_rearing, wetland_rearing FROM working_lrdo\\.streams_habitat WHERE species_code = 'BT'")
 })
 
-test_that("lnk_pipeline_persist counts: 2 streams ops + 2 ops per species", {
+test_that("lnk_persist_write counts: 2 streams ops + 2 ops per species", {
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
@@ -63,7 +63,7 @@ test_that("lnk_pipeline_persist counts: 2 streams ops + 2 ops per species", {
     .package = "DBI",
     {
       cfg <- lnk_config("bcfishpass")
-      lnk_pipeline_persist(
+      lnk_persist_write(
         structure(list(), class = "DBIConnection"),
         aoi = "ADMS", cfg = cfg, species = c("BT", "CH", "SK"))
     }
@@ -77,13 +77,13 @@ test_that("lnk_pipeline_persist counts: 2 streams ops + 2 ops per species", {
   expect_false(any(grepl("streams_near_river", captured, fixed = TRUE)))
 })
 
-test_that("lnk_pipeline_persist input validation", {
+test_that("lnk_persist_write input validation", {
   cfg <- lnk_config("bcfishpass")
-  expect_error(lnk_pipeline_persist("c", aoi = "", cfg = cfg, species = "BT"),
+  expect_error(lnk_persist_write("c", aoi = "", cfg = cfg, species = "BT"),
                "aoi must be a single non-empty WSG code")
-  expect_error(lnk_pipeline_persist("c", aoi = "LRDO", cfg = list(), species = "BT"),
+  expect_error(lnk_persist_write("c", aoi = "LRDO", cfg = list(), species = "BT"),
                "cfg must be an lnk_config object")
-  expect_error(lnk_pipeline_persist("c", aoi = "LRDO", cfg = cfg, species = 1L),
+  expect_error(lnk_persist_write("c", aoi = "LRDO", cfg = cfg, species = 1L),
                "species must be a character vector")
 })
 
@@ -99,7 +99,7 @@ test_that("persist with no species writes no habitat table (#432)", {
   with_mocked_bindings(
     dbGetQuery = m$dbGetQuery, dbQuoteString = m$dbQuoteString,
     .package = "DBI",
-    lnk_pipeline_persist("c", aoi = "MURT", cfg = lnk_config("default"),
+    lnk_persist_write("c", aoi = "MURT", cfg = lnk_config("default"),
                          species = character(0))
   )
   expect_true(any(grepl("INSERT INTO fresh\\.streams ", captured)))
@@ -164,7 +164,7 @@ test_that(".lnk_persist_clear_unmodelled keeps only the near-river pairs the bui
   expect_match(sql, "NOT IN \\(SELECT \\* FROM \\(VALUES")
 })
 
-test_that("lnk_pipeline_persist accepts non-default schema", {
+test_that("lnk_persist_write accepts non-default schema", {
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
@@ -178,7 +178,7 @@ test_that("lnk_pipeline_persist accepts non-default schema", {
     .package = "DBI",
     {
       cfg <- lnk_config("bcfishpass")
-      lnk_pipeline_persist(
+      lnk_persist_write(
         structure(list(), class = "DBIConnection"),
         aoi = "LRDO", cfg = cfg, species = "BT", schema = "working_custom")
     }
@@ -189,7 +189,7 @@ test_that("lnk_pipeline_persist accepts non-default schema", {
   expect_match(joined, "FROM working_custom\\.streams_habitat WHERE species_code = 'BT'")
 })
 
-test_that("lnk_pipeline_persist persists barriers when staging table present", {
+test_that("lnk_persist_write persists barriers when staging table present", {
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
@@ -204,7 +204,7 @@ test_that("lnk_pipeline_persist persists barriers when staging table present", {
     .package = "DBI",
     {
       cfg <- lnk_config("bcfishpass")
-      lnk_pipeline_persist(
+      lnk_persist_write(
         structure(list(), class = "DBIConnection"),
         aoi = "PARS", cfg = cfg, species = "BT")
     }
@@ -217,7 +217,7 @@ test_that("lnk_pipeline_persist persists barriers when staging table present", {
                "INSERT INTO fresh\\.barriers \\(id_barrier, watershed_group_code,.*blocks_species.*geom\\)\\s+SELECT id_barrier, watershed_group_code,.*\\s+FROM working_pars\\.barriers")
 })
 
-test_that("lnk_pipeline_persist persists barrier_overrides when staging table present", {
+test_that("lnk_persist_write persists barrier_overrides when staging table present", {
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
@@ -232,7 +232,7 @@ test_that("lnk_pipeline_persist persists barrier_overrides when staging table pr
     .package = "DBI",
     {
       cfg <- lnk_config("bcfishpass")
-      lnk_pipeline_persist(
+      lnk_persist_write(
         structure(list(), class = "DBIConnection"),
         aoi = "PARS", cfg = cfg, species = "BT")
     }
@@ -247,7 +247,7 @@ test_that("lnk_pipeline_persist persists barrier_overrides when staging table pr
                "INSERT INTO fresh\\.barrier_overrides \\(blue_line_key, downstream_route_measure, species_code, watershed_group_code\\)\\s+SELECT blue_line_key, downstream_route_measure, species_code, 'PARS'::varchar\\(4\\) FROM working_pars\\.barrier_overrides")
 })
 
-test_that("lnk_pipeline_persist skips barrier_overrides branch when staging table absent", {
+test_that("lnk_persist_write skips barrier_overrides branch when staging table absent", {
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
@@ -261,7 +261,7 @@ test_that("lnk_pipeline_persist skips barrier_overrides branch when staging tabl
     .package = "DBI",
     {
       cfg <- lnk_config("bcfishpass")
-      lnk_pipeline_persist(
+      lnk_persist_write(
         structure(list(), class = "DBIConnection"),
         aoi = "PARS", cfg = cfg, species = "BT")
     }
@@ -270,7 +270,7 @@ test_that("lnk_pipeline_persist skips barrier_overrides branch when staging tabl
   expect_no_match(joined, "fresh\\.barrier_overrides")
 })
 
-test_that("lnk_pipeline_persist skips barriers branch when staging table absent", {
+test_that("lnk_persist_write skips barriers branch when staging table absent", {
   captured <- character(0)
   local_mocked_bindings(
     .lnk_db_execute = function(conn, sql) {
@@ -284,7 +284,7 @@ test_that("lnk_pipeline_persist skips barriers branch when staging table absent"
     .package = "DBI",
     {
       cfg <- lnk_config("bcfishpass")
-      lnk_pipeline_persist(
+      lnk_persist_write(
         structure(list(), class = "DBIConnection"),
         aoi = "PARS", cfg = cfg, species = "BT")
     }
@@ -294,7 +294,7 @@ test_that("lnk_pipeline_persist skips barriers branch when staging table absent"
   expect_no_match(joined, "INSERT INTO fresh\\.barriers")
 })
 
-test_that("lnk_pipeline_persist never deletes from a log table (link#354)", {
+test_that("lnk_persist_write never deletes from a log table (link#354)", {
   # The log tables are history: a group's earlier builds must survive its next
   # build. Every staging table reported present, so every DELETE branch runs.
   captured <- character(0)
@@ -310,7 +310,7 @@ test_that("lnk_pipeline_persist never deletes from a log table (link#354)", {
     .package = "DBI",
     {
       cfg <- lnk_config("bcfishpass")
-      lnk_pipeline_persist(
+      lnk_persist_write(
         structure(list(), class = "DBIConnection"),
         aoi = "PARS", cfg = cfg, species = c("BT", "SK"))
     }
@@ -354,7 +354,7 @@ test_that("a pair that found no river still clears the group's earlier rows (#36
     dbGetQuery = m$dbGetQuery, dbQuoteString = m$dbQuoteString,
     .package = "DBI",
     {
-      lnk_pipeline_persist(structure(list(), class = "DBIConnection"),
+      lnk_persist_write(structure(list(), class = "DBIConnection"),
                            aoi = "ADMS", cfg = lnk_config("default"),
                            species = c("CH", "BT"))
     }
@@ -372,7 +372,7 @@ test_that("a pair that found no river still clears the group's earlier rows (#36
     dbGetQuery = m$dbGetQuery, dbQuoteString = m$dbQuoteString,
     .package = "DBI",
     {
-      lnk_pipeline_persist(structure(list(), class = "DBIConnection"),
+      lnk_persist_write(structure(list(), class = "DBIConnection"),
                            aoi = "ADMS", cfg = lnk_config("default"),
                            species = "BT")
     }
@@ -399,7 +399,7 @@ test_that("the delete writes a pair's numbers as fresh stores them (round 3)", {
   with_mocked_bindings(
     dbGetQuery = m$dbGetQuery, dbQuoteString = m$dbQuoteString,
     .package = "DBI",
-    lnk_pipeline_persist(structure(list(), class = "DBIConnection"),
+    lnk_persist_write(structure(list(), class = "DBIConnection"),
                          aoi = "ADMS", cfg = cfg, species = "CH"))
   del <- grep("DELETE FROM fresh.streams_near_river", captured, value = TRUE,
               fixed = TRUE)
@@ -458,7 +458,7 @@ test_that("an override or evidence row persists only beside a natural barrier th
      SELECT blue_line_key, downstream_route_measure, species_code, 'observation', 'k1',
             'own'
        FROM %s.barrier_overrides", w, w))
-  lnk_pipeline_persist(conn, aoi = "LSAL", cfg = cfg, species = character(0),
+  lnk_persist_write(conn, aoi = "LSAL", cfg = cfg, species = character(0),
                        schema = w)
   got <- function(t) DBI::dbGetQuery(conn, sprintf(
     "SELECT downstream_route_measure AS m, watershed_group_code AS g
@@ -466,4 +466,38 @@ test_that("an override or evidence row persists only beside a natural barrier th
   expect_equal(got("barrier_overrides")$m, c(50000, 124907))
   expect_equal(got("barrier_overrides")$g, c("LSAL", "LSAL"))
   expect_equal(got("barrier_override_evidence")$m, c(50000, 124907))
+})
+
+test_that("the wide access and mapping-code writes fire only beside their working tables (#191)", {
+  run <- function(present) {
+    captured <- character(0)
+    local_mocked_bindings(
+      .lnk_db_execute = function(conn, sql) {
+        captured <<- c(captured, sql); invisible(NULL)
+      }
+    )
+    with_mocked_bindings(
+      dbGetQuery = function(conn, sql, ...) {
+        hit <- any(vapply(present, function(t) grepl(sprintf("'%s'", t), sql,
+                                                     fixed = TRUE), logical(1)))
+        if (hit) data.frame(x = 1L) else data.frame(x = integer(0))
+      },
+      dbQuoteString = function(conn, x, ...) DBI::SQL(paste0("'", x, "'")),
+      .package = "DBI",
+      lnk_persist_write(structure(list(), class = "DBIConnection"),
+                           aoi = "LRDO", cfg = lnk_config("bcfishpass"),
+                           species = c("BT", "SK"))
+    )
+    paste(captured, collapse = "\n")
+  }
+  none <- run(character(0))
+  expect_false(grepl("fresh\\.streams_access", none))
+  expect_false(grepl("fresh\\.streams_mapping_code", none))
+
+  both <- run(c("streams_access", "streams_mapping_code"))
+  expect_match(both, "DELETE FROM fresh\\.streams_access WHERE watershed_group_code = 'LRDO'")
+  expect_match(both, "INSERT INTO fresh\\.streams_access \\(.*access_bt.*access_sk.*\\)")
+  expect_match(both, "FROM working_lrdo\\.streams_access a\\s+JOIN working_lrdo\\.streams s USING \\(id_segment\\)")
+  expect_match(both, "s\\.watershed_group_code")
+  expect_match(both, "INSERT INTO fresh\\.streams_mapping_code \\(.*mapping_code_bt.*mapping_code_sk.*\\)")
 })

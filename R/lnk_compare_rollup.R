@@ -46,7 +46,7 @@
 #'   `accessible` km, link#221). `rearing_lake_connection` is lake
 #'   connection lines (FWA edge 1450 in a lake polygon), reported
 #'   apart and left out of `rearing` and `rearing_lake` km on both sides
-#'   (#317); see [lnk_compare_wsg()]. Columns: `wsg`, `species`,
+#'   (#317); see [lnk_compare_run()]. Columns: `wsg`, `species`,
 #'   `habitat_type`, `unit` (`km` | `ha`), `link_value`, `ref_value`,
 #'   `diff_pct`. `accessible`'s `ref_value` is sourced tunnel-free from
 #'   `fresh.streams_vw_bcfp` for the salmon group (CH/CM/CO/PK/SK); other
@@ -69,7 +69,7 @@
 #' }
 #'
 #' @family compare
-#' @seealso [lnk_pipeline_run()], [lnk_compare_wsg()],
+#' @seealso [lnk_pipeline_run()], [lnk_compare_run()],
 #'   [lnk_parity_annotate()]
 #' @export
 # nolint start: indentation_linter
@@ -124,11 +124,11 @@ lnk_compare_rollup <- function(conn, aoi, cfg,
 
   rollup_link <- .lnk_compare_rollup_link( # nolint
     conn = conn, cfg = cfg, aoi = aoi, species = species)
-  rollup_ref <- .lnk_compare_wsg_rollup_reference( # nolint
+  rollup_ref <- .lnk_compare_rollup_reference( # nolint
     reference = reference, conn_ref = conn_ref,
     aoi = aoi, species = species, conn = conn)
 
-  .lnk_compare_wsg_assemble_rollup( # nolint
+  .lnk_compare_rollup_assemble( # nolint
     aoi = aoi, species = species,
     rollup_link = rollup_link, rollup_ref = rollup_ref)
 }
@@ -182,7 +182,7 @@ lnk_compare_rollup <- function(conn, aoi, cfg,
 #' Compute link-side rollup queries from `<persist_schema>` (persisted
 #' state).
 #'
-#' Counterpart to `.lnk_compare_wsg_rollup_link` (which reads working
+#' Counterpart to `.lnk_compare_rollup_working` (which reads working
 #' schema). Same output shape: `list(km, lake_ha, wetland_ha)` with
 #' `species_code` keying each data.frame.
 #'

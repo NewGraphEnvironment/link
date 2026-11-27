@@ -16,7 +16,7 @@
 #' shape so `table_habitat` can point at either layout.
 #'
 #' This function replaces the inline assembly previously buried inside
-#' `lnk_compare_wsg()`. The compare wrapper now goes through this
+#' `lnk_compare_run()`. The compare wrapper now goes through this
 #' function via `lnk_pipeline_run(..., mapping_code = TRUE)`. Operators
 #' can also call this directly against persist schema with the tunnel
 #' down — the build is tunnel-independent (the diff vs reference is
@@ -41,22 +41,23 @@
 #'   destination table for the result. When non-NULL,
 #'   `lnk_pipeline_mapping_code()` writes the tibble via
 #'   `dbWriteTable(overwrite = TRUE)`. Default `NULL` — returns-only.
-#' @param presence Named logical vector or `NULL`. Per-species presence
-#'   flag for `aoi`. When `NULL` the function derives presence from
+#' @param presence An `lnk_presence` object, a named logical vector, or
+#'   `NULL`. Per-species presence for `aoi`. When `NULL` the function derives presence from
 #'   the data: a species is present iff it has at least one habitat row
 #'   with `spawning = TRUE` or `rearing = TRUE`. Pass explicit values
 #'   to override (e.g. force-include a species for QGIS symbology even
 #'   when no segments are accessible).
-#' @param species_resident Character. Species using the resident flavor
-#'   of `mapping_code_barrier`. Default `c("bt", "wct")`. Pass-through
-#'   to [lnk_pipeline_mapping_code()]'s `resident_species` arg.
-#' @param species_anadromous Character. Species using the anadromous
-#'   flavor. Default `c("ch", "cm", "co", "pk", "sk", "st")`.
-#'   Pass-through to `lnk_pipeline_mapping_code()`'s
-#'   `anadromous_species` arg.
-#' @param species_spawn_only Character. Species without rearing
-#'   semantics. Default `c("cm", "pk")`. Pass-through to
-#'   `lnk_pipeline_mapping_code()`'s `spawn_only_species` arg.
+#' @param species_resident,species_anadromous,species_spawn_only Character
+#'   or `NULL`: the residence sets, resolved as in
+#'   [lnk_pipeline_mapping_code()] (from `cfg`, else bcfishpass's sets).
+#' @param cfg An [lnk_config()] object, or `NULL`. Supplies the residence sets
+#'   not passed (link#512) and the mapping-code rules (link#197).
+#' @param rules_mapping_code A data frame of mapping-code rules, or `NULL` to
+#'   read them from `cfg`, else the package copy.
+#'
+#' With `cfg` and no species arguments every species the bundle models is
+#' coded; the persisted build (`.lnk_mapping_code_persist()`) passes the
+#' group's active species instead.
 #'
 #' @return Invisibly, the per-segment per-species mapping_code tibble
 #'   keyed by `id_segment` with one `mapping_code_<sp>` text column per
@@ -99,9 +100,11 @@ lnk_mapping_code <- function(
     aoi,
     table_to = NULL,
     presence = NULL,
-    species_resident   = c("bt", "wct"),
-    species_anadromous = c("ch", "cm", "co", "pk", "sk", "st"),
-    species_spawn_only = c("cm", "pk")) {
+    species_resident   = NULL,
+    species_anadromous = NULL,
+    species_spawn_only = NULL,
+    cfg = NULL,
+    rules_mapping_code = NULL) {
 
   stopifnot(
     inherits(conn, "DBIConnection"),
@@ -109,11 +112,13 @@ lnk_mapping_code <- function(
     is.character(table_habitat), length(table_habitat) == 1L, nzchar(table_habitat),
     is.character(table_streams), length(table_streams) == 1L, nzchar(table_streams),
     is.character(aoi), length(aoi) == 1L, nzchar(aoi),
-    is.null(table_to) || (is.character(table_to) && length(table_to) == 1L),
-    is.character(species_resident),
-    is.character(species_anadromous),
-    is.character(species_spawn_only)
+    is.null(table_to) || (is.character(table_to) && length(table_to) == 1L)
   )
+  sets <- .lnk_mc_species(cfg, species_resident, species_anadromous,
+                          species_spawn_only)
+  species_resident   <- sets$resident
+  species_anadromous <- sets$anadromous
+  species_spawn_only <- sets$spawn_only
 
   aoi_lit <- DBI::dbQuoteLiteral(conn, aoi)
   species_union <- tolower(union(species_resident, species_anadromous))
@@ -204,7 +209,9 @@ lnk_mapping_code <- function(
     presence           = presence,
     species_resident   = species_resident,
     species_anadromous = species_anadromous,
-    species_spawn_only = species_spawn_only)
+    species_spawn_only = species_spawn_only,
+    cfg                = cfg,
+    rules_mapping_code = rules_mapping_code)
 }
 
 
@@ -269,7 +276,8 @@ lnk_mapping_code <- function(
     presence      = presence,
     species_resident   = sp_resident,
     species_anadromous = sp_anadromous,
-    species_spawn_only = sp_spawn_only)
+    species_spawn_only = sp_spawn_only,
+    cfg                = cfg)
 
   mc_cols <- DBI::dbGetQuery(conn, sprintf(
     "SELECT column_name FROM information_schema.columns

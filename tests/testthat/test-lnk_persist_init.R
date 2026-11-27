@@ -486,3 +486,127 @@ test_that("an evidence table with the old key is migrated to lift_rule (#236, DB
   # A second init finds it done and changes nothing.
   expect_false(.lnk_evidence_rule_migrate(conn, s))
 })
+
+test_that("the wide access and mapping-code tables carry one column set per species (#191)", {
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql); invisible(NULL)
+    }
+  )
+  cfg <- lnk_config("bcfishpass")
+  with_mocked_bindings(
+    dbGetQuery = function(conn, sql) data.frame(),
+    .package = "DBI",
+    lnk_persist_init("mock-conn", cfg, species = c("BT", "CH"))
+  )
+  acc <- grep("CREATE TABLE IF NOT EXISTS fresh\\.streams_access", captured,
+              value = TRUE)
+  mc <- grep("CREATE TABLE IF NOT EXISTS fresh\\.streams_mapping_code", captured,
+             value = TRUE)
+  expect_length(acc, 1L)
+  expect_length(mc, 1L)
+  for (sp in c("bt", "ch")) {
+    expect_match(acc, paste0("access_", sp, "\\s"))
+    expect_match(acc, paste0("has_barriers_", sp, "_dnstr\\s"))
+    expect_match(mc, paste0("mapping_code_", sp, "\\s"))
+  }
+  expect_false(grepl("access_sk\\s", acc))
+  expect_match(acc, "has_barriers_anthropogenic_dnstr")
+  expect_match(paste(captured, collapse = "\n"), "streams_habitat_long_vw")
+})
+
+# -- Species-column drift in the wide tables (#204) ----------------------------
+
+wide_catalog <- function(access_cols, mc_cols) {
+  rbind(data.frame(table_name = "streams_access",
+                   column_name = c("id_segment", "watershed_group_code",
+                                   names(link:::.lnk_cols_streams_access_source_flags()),
+                                   access_cols)),
+        data.frame(table_name = "streams_mapping_code",
+                   column_name = c("id_segment", "watershed_group_code", mc_cols)))
+}
+run_align <- function(catalog, species, schema = "zz") {
+  sql <- character(0)
+  local_mocked_bindings(
+    .lnk_schema_columns = function(conn, schema) catalog,
+    .lnk_db_execute = function(conn, s) { sql <<- c(sql, s); invisible(0L) },
+    .lnk_db_transaction = function(conn, code) force(code))
+  msgs <- testthat::capture_messages(
+    link:::.lnk_wide_species_align("conn", schema, species))
+  list(sql = sql, msgs = msgs)
+}
+
+test_that("a wide table built for fewer species gains their columns, under a lock timeout", {
+  r <- run_align(wide_catalog(c("access_bt", "has_barriers_bt_dnstr"),
+                              "mapping_code_bt"), c("BT", "CH"))
+  expect_identical(r$sql[1], "SET LOCAL lock_timeout = '30s'")
+  expect_true(any(grepl("ALTER TABLE zz.streams_access ADD COLUMN IF NOT EXISTS access_ch integer",
+                        r$sql, fixed = TRUE)))
+  expect_true(any(grepl("ADD COLUMN IF NOT EXISTS has_barriers_ch_dnstr boolean",
+                        r$sql, fixed = TRUE)))
+  expect_true(any(grepl("ALTER TABLE zz.streams_mapping_code ADD COLUMN IF NOT EXISTS mapping_code_ch text",
+                        r$sql, fixed = TRUE)))
+  expect_false(any(grepl("access_bt", r$sql)))
+})
+
+test_that("an up-to-date table, or one the catalog does not list, is not touched", {
+  ok <- run_align(wide_catalog(c("access_bt", "has_barriers_bt_dnstr"),
+                               "mapping_code_bt"), "BT")
+  expect_length(ok$sql, 0L)
+  expect_length(ok$msgs, 0L)
+  none <- run_align(data.frame(table_name = character(0),
+                               column_name = character(0)), c("BT", "CH"))
+  expect_length(none$sql, 0L)
+})
+
+test_that("species columns the set lacks are kept and named once per session", {
+  cat <- wide_catalog(c("access_bt", "has_barriers_bt_dnstr", "access_sk",
+                        "has_barriers_sk_dnstr"), c("mapping_code_bt", "mapping_code_sk"))
+  first <- run_align(cat, "BT", schema = "zz_once")
+  expect_length(first$sql, 0L)
+  expect_true(any(grepl("streams_access holds species columns.*access_sk, has_barriers_sk_dnstr",
+                        first$msgs)))
+  expect_true(any(grepl("streams_mapping_code holds.*mapping_code_sk", first$msgs)))
+  expect_length(run_align(cat, "BT", schema = "zz_once")$msgs, 0L)
+})
+
+test_that("a lock that does not come names the quiet-time remedy", {
+  local_mocked_bindings(
+    .lnk_schema_columns = function(conn, schema) {
+      wide_catalog(character(0), character(0))
+    },
+    .lnk_db_execute = function(conn, s) {
+      if (grepl("ALTER", s)) stop("canceling statement due to lock timeout")
+      invisible(0L)
+    },
+    .lnk_db_transaction = function(conn, code) force(code))
+  expect_error(link:::.lnk_wide_species_align("conn", "zz", "BT"),
+               "lock timeout.*quiet time")
+})
+
+test_that("a wide table missing a species column gains it and keeps its rows (#204, DB)", {
+  skip_if_no_db()
+  conn <- lnk_db_conn(dbname = "fwapg", host = "localhost", port = 5432L,
+                      user = "postgres", password = "postgres")
+  withr::defer(DBI::dbDisconnect(conn))
+  s <- "zz_lnk_wide_probe"
+  DBI::dbExecute(conn, sprintf("DROP SCHEMA IF EXISTS %s CASCADE", s))
+  DBI::dbExecute(conn, sprintf("CREATE SCHEMA %s", s))
+  withr::defer(try(DBI::dbExecute(conn, sprintf("DROP SCHEMA %s CASCADE", s)),
+                   silent = TRUE))
+  DBI::dbExecute(conn, sprintf(
+    "CREATE TABLE %s.streams_access (id_segment integer, watershed_group_code text,
+       access_bt integer, has_barriers_bt_dnstr boolean)", s))
+  DBI::dbExecute(conn, sprintf(
+    "INSERT INTO %s.streams_access VALUES (1, 'ADMS', 1, false)", s))
+  added <- suppressMessages(link:::.lnk_wide_species_align(conn, s, c("BT", "CH")))
+  expect_setequal(added, c("streams_access.access_ch",
+                           "streams_access.has_barriers_ch_dnstr"))
+  row <- DBI::dbGetQuery(conn, sprintf("SELECT * FROM %s.streams_access", s))
+  expect_identical(nrow(row), 1L)
+  expect_identical(row$access_bt, 1L)
+  expect_true(is.na(row$access_ch))
+  # A second call finds nothing to do.
+  expect_length(suppressMessages(link:::.lnk_wide_species_align(conn, s, c("BT", "CH"))), 0L)
+})

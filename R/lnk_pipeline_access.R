@@ -18,7 +18,7 @@
 #' roles is walked once, as an array if any role reads its elements.
 #'
 #' This phase runs after [lnk_pipeline_classify()] returns and before
-#' [lnk_pipeline_persist()] cleanup_working drops the working schema —
+#' [lnk_persist_write()] cleanup_working drops the working schema —
 #' it needs the per-species `barriers_<sp>` tables that prepare/break
 #' built. Output goes to `<schema>.streams_access` (working schema,
 #' picked up by persist on the next commit).

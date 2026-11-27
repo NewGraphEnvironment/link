@@ -48,7 +48,7 @@ pre-computed \verb{blocks_species text[]} predicate that
 }
 \details{
 Per-WSG output is persisted to the province-wide table by
-\code{\link[=lnk_pipeline_persist]{lnk_pipeline_persist()}} using the same idempotent DELETE-WHERE-WSG +
+\code{\link[=lnk_persist_write]{lnk_persist_write()}} using the same idempotent DELETE-WHERE-WSG +
 INSERT pattern already used for \code{streams} and
 \verb{streams_habitat_<sp>}. Cross-WSG \code{dam_dnstr_ind} resolves correctly
 because \code{\link[fresh:frs_network_features]{fresh::frs_network_features()}} walks FWA topology and
@@ -126,7 +126,7 @@ DBI::dbReadTable(conn, c("working_pars", "barriers"))
 
 }
 \seealso{
-\code{\link[=lnk_persist_init]{lnk_persist_init()}}, \code{\link[=lnk_pipeline_persist]{lnk_pipeline_persist()}},
+\code{\link[=lnk_persist_init]{lnk_persist_init()}}, \code{\link[=lnk_persist_write]{lnk_persist_write()}},
 \code{\link[=lnk_pipeline_access]{lnk_pipeline_access()}}
 
 Other barriers: 

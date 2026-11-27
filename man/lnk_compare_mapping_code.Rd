@@ -96,12 +96,12 @@ lnk_compare_mapping_code(conn, "PARS", cfg, conn_ref = conn_ref)
 
 }
 \seealso{
-\code{\link[=lnk_compare_rollup]{lnk_compare_rollup()}}, \code{\link[=lnk_compare_wsg]{lnk_compare_wsg()}}, \code{\link[=lnk_pipeline_run]{lnk_pipeline_run()}}
+\code{\link[=lnk_compare_rollup]{lnk_compare_rollup()}}, \code{\link[=lnk_compare_run]{lnk_compare_run()}}, \code{\link[=lnk_pipeline_run]{lnk_pipeline_run()}}
 
 Other compare: 
 \code{\link{lnk_access}()},
 \code{\link{lnk_compare_rollup}()},
-\code{\link{lnk_compare_wsg}()},
+\code{\link{lnk_compare_run}()},
 \code{\link{lnk_habitat_validate}()},
 \code{\link{lnk_habitat_validate_band}()},
 \code{\link{lnk_log_read}()},

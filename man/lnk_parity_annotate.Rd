@@ -30,7 +30,7 @@ A tibble extending \code{rollup} with annotation columns
 semicolon-collapsed string for CSV-friendliness.
 }
 \description{
-Joins each row of a parity rollup (from \code{\link[=lnk_compare_wsg]{lnk_compare_wsg()}} or the
+Joins each row of a parity rollup (from \code{\link[=lnk_compare_run]{lnk_compare_run()}} or the
 \code{data-raw/compare_bcfishpass_wsg.R} wrapper) to the first taxonomy
 entry whose \code{wsg}, \code{species}, \code{metric}, \code{pattern}, and (optional)
 \code{diff_range} all match. Unmatched rows with \verb{|diff_pct| >= tolerance} are tagged \verb{class = UNEXPLAINED, status = NEEDS_INVESTIGATION}; smaller residuals become \verb{class = WITHIN_TOLERANCE, status = CLOSED}. Rows with \code{NA} diff_pct (NA ref
@@ -57,13 +57,13 @@ stopifnot(nrow(unexplained) == 0L)
 
 }
 \seealso{
-\code{\link[=lnk_compare_wsg]{lnk_compare_wsg()}}
+\code{\link[=lnk_compare_run]{lnk_compare_run()}}
 
 Other compare: 
 \code{\link{lnk_access}()},
 \code{\link{lnk_compare_mapping_code}()},
 \code{\link{lnk_compare_rollup}()},
-\code{\link{lnk_compare_wsg}()},
+\code{\link{lnk_compare_run}()},
 \code{\link{lnk_habitat_validate}()},
 \code{\link{lnk_habitat_validate_band}()},
 \code{\link{lnk_log_read}()},

@@ -133,7 +133,7 @@ upstream observation walk (species codes). A table given in several
 roles is walked once, as an array if any role reads its elements.
 
 This phase runs after \code{\link[=lnk_pipeline_classify]{lnk_pipeline_classify()}} returns and before
-\code{\link[=lnk_pipeline_persist]{lnk_pipeline_persist()}} cleanup_working drops the working schema —
+\code{\link[=lnk_persist_write]{lnk_persist_write()}} cleanup_working drops the working schema —
 it needs the per-species \verb{barriers_<sp>} tables that prepare/break
 built. Output goes to \verb{<schema>.streams_access} (working schema,
 picked up by persist on the next commit).
