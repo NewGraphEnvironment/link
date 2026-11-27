@@ -10,7 +10,11 @@
 #'
 #' Coexists with [lnk_pipeline_species()], which returns the
 #' intersection of `cfg$species` with AOI-present species as a plain
-#' vector. `lnk_presence()` is the structured / group-aware sibling.
+#' vector. `lnk_presence()` is the structured / group-aware sibling. The two
+#' answer different questions (link#153): `lnk_pipeline_species()` which
+#' species a build classifies in the group, `lnk_presence()` which species
+#' count as present there, so a mapping code is built for each of the latter
+#' and an absent one reads `""`.
 #'
 #' @param wsg_species_presence Data frame or tibble matching the
 #'   `loaded$wsg_species_presence` shape (per [lnk_load_overrides()]):

@@ -467,3 +467,37 @@ test_that("an override or evidence row persists only beside a natural barrier th
   expect_equal(got("barrier_overrides")$g, c("LSAL", "LSAL"))
   expect_equal(got("barrier_override_evidence")$m, c(50000, 124907))
 })
+
+test_that("the wide access and mapping-code writes fire only beside their working tables (#191)", {
+  run <- function(present) {
+    captured <- character(0)
+    local_mocked_bindings(
+      .lnk_db_execute = function(conn, sql) {
+        captured <<- c(captured, sql); invisible(NULL)
+      }
+    )
+    with_mocked_bindings(
+      dbGetQuery = function(conn, sql, ...) {
+        hit <- any(vapply(present, function(t) grepl(sprintf("'%s'", t), sql,
+                                                     fixed = TRUE), logical(1)))
+        if (hit) data.frame(x = 1L) else data.frame(x = integer(0))
+      },
+      dbQuoteString = function(conn, x, ...) DBI::SQL(paste0("'", x, "'")),
+      .package = "DBI",
+      lnk_pipeline_persist(structure(list(), class = "DBIConnection"),
+                           aoi = "LRDO", cfg = lnk_config("bcfishpass"),
+                           species = c("BT", "SK"))
+    )
+    paste(captured, collapse = "\n")
+  }
+  none <- run(character(0))
+  expect_false(grepl("fresh\\.streams_access", none))
+  expect_false(grepl("fresh\\.streams_mapping_code", none))
+
+  both <- run(c("streams_access", "streams_mapping_code"))
+  expect_match(both, "DELETE FROM fresh\\.streams_access WHERE watershed_group_code = 'LRDO'")
+  expect_match(both, "INSERT INTO fresh\\.streams_access \\(.*access_bt.*access_sk.*\\)")
+  expect_match(both, "FROM working_lrdo\\.streams_access a\\s+JOIN working_lrdo\\.streams s USING \\(id_segment\\)")
+  expect_match(both, "s\\.watershed_group_code")
+  expect_match(both, "INSERT INTO fresh\\.streams_mapping_code \\(.*mapping_code_bt.*mapping_code_sk.*\\)")
+})

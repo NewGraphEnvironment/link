@@ -486,3 +486,32 @@ test_that("an evidence table with the old key is migrated to lift_rule (#236, DB
   # A second init finds it done and changes nothing.
   expect_false(.lnk_evidence_rule_migrate(conn, s))
 })
+
+test_that("the wide access and mapping-code tables carry one column set per species (#191)", {
+  captured <- character(0)
+  local_mocked_bindings(
+    .lnk_db_execute = function(conn, sql) {
+      captured <<- c(captured, sql); invisible(NULL)
+    }
+  )
+  cfg <- lnk_config("bcfishpass")
+  with_mocked_bindings(
+    dbGetQuery = function(conn, sql) data.frame(),
+    .package = "DBI",
+    lnk_persist_init("mock-conn", cfg, species = c("BT", "CH"))
+  )
+  acc <- grep("CREATE TABLE IF NOT EXISTS fresh\\.streams_access", captured,
+              value = TRUE)
+  mc <- grep("CREATE TABLE IF NOT EXISTS fresh\\.streams_mapping_code", captured,
+             value = TRUE)
+  expect_length(acc, 1L)
+  expect_length(mc, 1L)
+  for (sp in c("bt", "ch")) {
+    expect_match(acc, paste0("access_", sp, "\\s"))
+    expect_match(acc, paste0("has_barriers_", sp, "_dnstr\\s"))
+    expect_match(mc, paste0("mapping_code_", sp, "\\s"))
+  }
+  expect_false(grepl("access_sk\\s", acc))
+  expect_match(acc, "has_barriers_anthropogenic_dnstr")
+  expect_match(paste(captured, collapse = "\n"), "streams_habitat_long_vw")
+})

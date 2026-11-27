@@ -41,25 +41,22 @@ destination table for the result. When non-NULL,
 \code{lnk_pipeline_mapping_code()} writes the tibble via
 \code{dbWriteTable(overwrite = TRUE)}. Default \code{NULL} — returns-only.}
 
-\item{presence}{Named logical vector or \code{NULL}. Per-species presence
-flag for \code{aoi}. When \code{NULL} the function derives presence from
+\item{presence}{An \code{lnk_presence} object, a named logical vector, or
+\code{NULL}. Per-species presence for \code{aoi}. When \code{NULL} the function derives presence from
 the data: a species is present iff it has at least one habitat row
 with \code{spawning = TRUE} or \code{rearing = TRUE}. Pass explicit values
 to override (e.g. force-include a species for QGIS symbology even
 when no segments are accessible).}
 
 \item{species_resident}{Character. Species using the resident flavor
-of \code{mapping_code_barrier}. Default \code{c("bt", "wct")}. Pass-through
-to \code{\link[=lnk_pipeline_mapping_code]{lnk_pipeline_mapping_code()}}'s \code{resident_species} arg.}
+of \code{mapping_code_barrier}. Default \code{c("bt", "wct")}. Passed to
+\code{\link[=lnk_pipeline_mapping_code]{lnk_pipeline_mapping_code()}}.}
 
 \item{species_anadromous}{Character. Species using the anadromous
-flavor. Default \code{c("ch", "cm", "co", "pk", "sk", "st")}.
-Pass-through to \code{lnk_pipeline_mapping_code()}'s
-\code{anadromous_species} arg.}
+flavor. Default \code{c("ch", "cm", "co", "pk", "sk", "st")}.}
 
 \item{species_spawn_only}{Character. Species without rearing
-semantics. Default \code{c("cm", "pk")}. Pass-through to
-\code{lnk_pipeline_mapping_code()}'s \code{spawn_only_species} arg.}
+semantics. Default \code{c("cm", "pk")}.}
 }
 \value{
 Invisibly, the per-segment per-species mapping_code tibble

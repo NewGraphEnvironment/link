@@ -156,8 +156,8 @@ From `dictionary_presence_groups.csv`: 2 columns.
 
 | column | type | group | owner | consumed_by | default_when_absent | description | related |
 |---|---|---|---|---|---|---|---|
-| group\_code | character | key | link | R/lnk\_presence.R:153 | lnk\_presence()'s default groups (salmon: ch cm co pk sk; ct\_dv\_rb: ct dv rb) | Name of a set of species that share presence: where any member is present in a watershed group, every member is (lnk\_presence()). Rows of one group keep their file order, which reaches the acc spec. Not the species\_groups.csv groups, which pool fish records (#290). | species\_code |
-| species\_code | character | key | link | R/lnk\_presence.R:154 | lnk\_presence()'s default groups | One member species, one row each, as a wsg\_species\_presence column (matched lower case). A species may belong to one group only. | group\_code |
+| group\_code | character | key | link | R/lnk\_presence.R:157 | lnk\_presence()'s default groups (salmon: ch cm co pk sk; ct\_dv\_rb: ct dv rb) | Name of a set of species that share presence: where any member is present in a watershed group, every member is (lnk\_presence()). Rows of one group keep their file order, which reaches the acc spec. Not the species\_groups.csv groups, which pool fish records (#290). | species\_code |
+| species\_code | character | key | link | R/lnk\_presence.R:158 | lnk\_presence()'s default groups | One member species, one row each, as a wsg\_species\_presence column (matched lower case). A species may belong to one group only. | group\_code |
 
 ## `species_groups`
 

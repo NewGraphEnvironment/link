@@ -48,7 +48,10 @@
 #'   [lnk_pipeline_access()] called with `barrier_sources` populated.
 #' @param habitat A tibble keyed by `segment_id_col` with
 #'   `spawning_<sp>` and `rearing_<sp>` numeric columns per species.
-#'   Mirrors bcfp's `streams_habitat_linear` shape.
+#'   Mirrors bcfp's `streams_habitat_linear` shape. A species with no
+#'   `spawning_<sp>` or `rearing_<sp>` column reads 0 there, as bcfishpass
+#'   pre-allocates every species' columns (link#153); a segment with no
+#'   habitat row at all still reads `NA`.
 #' @param feature_code Named character or data.frame. Either a named
 #'   character vector mapping `segment_id` -> `feature_code`, or a
 #'   data.frame with `segment_id_col` and `"feature_code"` columns.
@@ -61,27 +64,19 @@
 #' @param conn A [DBI::DBIConnection-class]. Required only when `to` is
 #'   supplied; ignored otherwise.
 #' @param species_resident Character. Species using the resident flavor
-#'   of `mapping_code_barrier`. Default `c("bt", "wct")`. (Renamed from
-#'   `resident_species` in v0.40.0; old name accepted with deprecation
-#'   warning until v0.41.0.)
+#'   of `mapping_code_barrier`. Default `c("bt", "wct")`.
 #' @param species_anadromous Character. Species using the anadromous
-#'   flavor. Default `c("ch", "cm", "co", "pk", "sk", "st")`. (Renamed
-#'   from `anadromous_species` in v0.40.0.)
+#'   flavor. Default `c("ch", "cm", "co", "pk", "sk", "st")`.
 #' @param species_spawn_only Character. Species without rearing
 #'   semantics (token 1 only emits SPAWN, never REAR). Default
-#'   `c("cm", "pk")`. Mirrors bcfp. (Renamed from `spawn_only_species`
-#'   in v0.40.0.)
-#' @param presence `NULL` (the default) or an `lnk_presence` object. A species
-#'   it marks absent emits `""` in its token column.
+#'   `c("cm", "pk")`. Mirrors bcfp.
+#' @param presence `NULL` (the default), an `lnk_presence` object, or a named
+#'   logical vector keyed by lower-case species code (link#351). A species it
+#'   marks absent, or does not name, emits `""` in its token column; with
+#'   `NULL` every species is coded.
 #' @param segment_id_col Character. Default `"id_segment"`.
 #' @param intermittent_feature_code Character. The `feature_code` value
 #'   that flags an intermittent stream. Default `"GA24850150"` (bcfp).
-#' @param resident_species **Deprecated** alias for `species_resident`.
-#'   Kept for one release (v0.40.0); removal in v0.41.0.
-#' @param anadromous_species **Deprecated** alias for `species_anadromous`.
-#'   Kept for one release (v0.40.0); removal in v0.41.0.
-#' @param spawn_only_species **Deprecated** alias for `species_spawn_only`.
-#'   Kept for one release (v0.40.0); removal in v0.41.0.
 #'
 #' @return A tibble keyed by `segment_id_col` with one
 #'   `mapping_code_<sp>` character column per species in
@@ -101,32 +96,7 @@ lnk_pipeline_mapping_code <- function(
     species_anadromous = c("ch", "cm", "co", "pk", "sk", "st"),
     species_spawn_only = c("cm", "pk"),
     segment_id_col = "id_segment",
-    intermittent_feature_code = "GA24850150",
-    resident_species,
-    anadromous_species,
-    spawn_only_species) {
-
-  # Deprecation shims (link#187, removal in v0.41.0). Old names accepted
-  # for one release; remap to species_<role> per the NGE <type>_<role>
-  # convention (CLAUDE.md "Style").
-  if (!missing(resident_species)) {
-    .Deprecated(msg = paste(
-      "`resident_species` is deprecated; use `species_resident` instead.",
-      "Removal in v0.41.0."))
-    species_resident <- resident_species
-  }
-  if (!missing(anadromous_species)) {
-    .Deprecated(msg = paste(
-      "`anadromous_species` is deprecated; use `species_anadromous` instead.",
-      "Removal in v0.41.0."))
-    species_anadromous <- anadromous_species
-  }
-  if (!missing(spawn_only_species)) {
-    .Deprecated(msg = paste(
-      "`spawn_only_species` is deprecated; use `species_spawn_only` instead.",
-      "Removal in v0.41.0."))
-    species_spawn_only <- spawn_only_species
-  }
+    intermittent_feature_code = "GA24850150") {
 
   stopifnot(
     is.data.frame(access),
@@ -163,6 +133,9 @@ lnk_pipeline_mapping_code <- function(
   fc <- fc_lookup[ids]
 
   is_intermittent <- !is.na(fc) & fc == intermittent_feature_code
+
+  present_fn <- .lnk_presence_fn(presence)
+  has_row <- !is.na(match(ids, as.character(habitat[[segment_id_col]])))
 
   # Generic mapping_code_barrier helpers (resident vs anadromous flavors).
   na_to_false <- function(x) !is.na(x) & as.logical(x)
@@ -223,7 +196,7 @@ lnk_pipeline_mapping_code <- function(
     # caught in ELKR + HORS (we'd otherwise emit ACCESS;X for segments
     # with no barriers downstream, even though the species isn't in
     # the WSG).
-    if (!is.null(presence) && !isTRUE(presence$is_present(sp))) {
+    if (!is.null(present_fn) && !isTRUE(present_fn(sp))) {
       out[[paste0("mapping_code_", sp)]] <- rep("", length(ids))
       next
     }
@@ -237,16 +210,14 @@ lnk_pipeline_mapping_code <- function(
     has_barriers_sp <- !is.na(has_barriers_raw) & as.logical(has_barriers_raw)
     accessible <- !has_barriers_sp & !no_data
 
-    spawning <- if (paste0("spawning_", sp) %in% names(habitat_aligned)) {
-      habitat_aligned[[paste0("spawning_", sp)]]
-    } else {
-      rep(NA_real_, length(ids))
+    # A species with no habitat column reads 0 (bcfishpass pre-allocates every
+    # species' columns, link#153); a segment with no habitat row stays NA.
+    hab_col <- function(col) {
+      if (col %in% names(habitat_aligned)) habitat_aligned[[col]]
+      else ifelse(has_row, 0, NA_real_)
     }
-    rearing <- if (paste0("rearing_", sp) %in% names(habitat_aligned)) {
-      habitat_aligned[[paste0("rearing_", sp)]]
-    } else {
-      rep(NA_real_, length(ids))
-    }
+    spawning <- hab_col(paste0("spawning_", sp))
+    rearing  <- hab_col(paste0("rearing_", sp))
 
     # bcfp's `spawning < 1` evaluates to NULL when spawning is NULL,
     # which makes any AND-chain involving it short-circuit to NULL --
@@ -304,4 +275,25 @@ lnk_pipeline_mapping_code <- function(
   }
 
   tibble::as_tibble(out)
+}
+
+
+#' A presence test from what `presence` was given
+#'
+#' `NULL` stays `NULL` (every species coded); an `lnk_presence` object gives its
+#' `is_present`; a named logical vector gives a test of its `TRUE` names
+#' (link#351: [lnk_mapping_code()] derives one when it is given none).
+#'
+#' @noRd
+.lnk_presence_fn <- function(presence) {
+  if (is.null(presence)) return(NULL)
+  if (is.list(presence) && is.function(presence$is_present)) {
+    return(presence$is_present)
+  }
+  if (is.logical(presence) && !is.null(names(presence))) {
+    present <- tolower(names(presence))[!is.na(presence) & presence]
+    return(function(sp) tolower(sp) %in% present)
+  }
+  stop("`presence` must be NULL, an lnk_presence object, or a named logical ",
+       "vector", call. = FALSE)
 }

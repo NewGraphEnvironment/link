@@ -26,6 +26,14 @@
 #' segments and barriers, which other groups' access reads, and gets no
 #' habitat.
 #'
+#' It answers "which species does this build classify here", so it reads the
+#' presence cells as written. [lnk_presence()] answers a wider question,
+#' "which species count as present here", and promotes a whole species group
+#' when any member is present (link#153): for ADMS under `bcfishpass` this
+#' function gives BT, CH, CO and SK, and `lnk_presence()` also CM, CT, DV, PK
+#' and RB. Mapping codes read `lnk_presence()`, and a species it holds that is
+#' not classified reads 0 spawning and rearing, as bcfishpass's are.
+#'
 #' @param cfg An `lnk_config` object from [lnk_config()].
 #' @param loaded Named list of tibbles from [lnk_load_overrides()].
 #'   Carries `parameters_fresh` and `wsg_species_presence`.

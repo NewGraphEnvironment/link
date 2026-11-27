@@ -41,22 +41,19 @@
 #'   destination table for the result. When non-NULL,
 #'   `lnk_pipeline_mapping_code()` writes the tibble via
 #'   `dbWriteTable(overwrite = TRUE)`. Default `NULL` — returns-only.
-#' @param presence Named logical vector or `NULL`. Per-species presence
-#'   flag for `aoi`. When `NULL` the function derives presence from
+#' @param presence An `lnk_presence` object, a named logical vector, or
+#'   `NULL`. Per-species presence for `aoi`. When `NULL` the function derives presence from
 #'   the data: a species is present iff it has at least one habitat row
 #'   with `spawning = TRUE` or `rearing = TRUE`. Pass explicit values
 #'   to override (e.g. force-include a species for QGIS symbology even
 #'   when no segments are accessible).
 #' @param species_resident Character. Species using the resident flavor
-#'   of `mapping_code_barrier`. Default `c("bt", "wct")`. Pass-through
-#'   to [lnk_pipeline_mapping_code()]'s `resident_species` arg.
+#'   of `mapping_code_barrier`. Default `c("bt", "wct")`. Passed to
+#'   [lnk_pipeline_mapping_code()].
 #' @param species_anadromous Character. Species using the anadromous
 #'   flavor. Default `c("ch", "cm", "co", "pk", "sk", "st")`.
-#'   Pass-through to `lnk_pipeline_mapping_code()`'s
-#'   `anadromous_species` arg.
 #' @param species_spawn_only Character. Species without rearing
-#'   semantics. Default `c("cm", "pk")`. Pass-through to
-#'   `lnk_pipeline_mapping_code()`'s `spawn_only_species` arg.
+#'   semantics. Default `c("cm", "pk")`.
 #'
 #' @return Invisibly, the per-segment per-species mapping_code tibble
 #'   keyed by `id_segment` with one `mapping_code_<sp>` text column per

@@ -15,10 +15,7 @@ lnk_pipeline_mapping_code(
   species_anadromous = c("ch", "cm", "co", "pk", "sk", "st"),
   species_spawn_only = c("cm", "pk"),
   segment_id_col = "id_segment",
-  intermittent_feature_code = "GA24850150",
-  resident_species,
-  anadromous_species,
-  spawn_only_species
+  intermittent_feature_code = "GA24850150"
 )
 }
 \arguments{
@@ -31,7 +28,10 @@ sources \code{has_barriers_anthropogenic_dnstr},
 
 \item{habitat}{A tibble keyed by \code{segment_id_col} with
 \verb{spawning_<sp>} and \verb{rearing_<sp>} numeric columns per species.
-Mirrors bcfp's \code{streams_habitat_linear} shape.}
+Mirrors bcfp's \code{streams_habitat_linear} shape. A species with no
+\verb{spawning_<sp>} or \verb{rearing_<sp>} column reads 0 there, as bcfishpass
+pre-allocates every species' columns (link#153); a segment with no
+habitat row at all still reads \code{NA}.}
 
 \item{feature_code}{Named character or data.frame. Either a named
 character vector mapping \code{segment_id} -> \code{feature_code}, or a
@@ -47,36 +47,25 @@ Default \code{NULL} returns-only.}
 \item{conn}{A \link[DBI:DBIConnection-class]{DBI::DBIConnection}. Required only when \code{to} is
 supplied; ignored otherwise.}
 
-\item{presence}{\code{NULL} (the default) or an \code{lnk_presence} object. A species
-it marks absent emits \code{""} in its token column.}
+\item{presence}{\code{NULL} (the default), an \code{lnk_presence} object, or a named
+logical vector keyed by lower-case species code (link#351). A species it
+marks absent, or does not name, emits \code{""} in its token column; with
+\code{NULL} every species is coded.}
 
 \item{species_resident}{Character. Species using the resident flavor
-of \code{mapping_code_barrier}. Default \code{c("bt", "wct")}. (Renamed from
-\code{resident_species} in v0.40.0; old name accepted with deprecation
-warning until v0.41.0.)}
+of \code{mapping_code_barrier}. Default \code{c("bt", "wct")}.}
 
 \item{species_anadromous}{Character. Species using the anadromous
-flavor. Default \code{c("ch", "cm", "co", "pk", "sk", "st")}. (Renamed
-from \code{anadromous_species} in v0.40.0.)}
+flavor. Default \code{c("ch", "cm", "co", "pk", "sk", "st")}.}
 
 \item{species_spawn_only}{Character. Species without rearing
 semantics (token 1 only emits SPAWN, never REAR). Default
-\code{c("cm", "pk")}. Mirrors bcfp. (Renamed from \code{spawn_only_species}
-in v0.40.0.)}
+\code{c("cm", "pk")}. Mirrors bcfp.}
 
 \item{segment_id_col}{Character. Default \code{"id_segment"}.}
 
 \item{intermittent_feature_code}{Character. The \code{feature_code} value
 that flags an intermittent stream. Default \code{"GA24850150"} (bcfp).}
-
-\item{resident_species}{\strong{Deprecated} alias for \code{species_resident}.
-Kept for one release (v0.40.0); removal in v0.41.0.}
-
-\item{anadromous_species}{\strong{Deprecated} alias for \code{species_anadromous}.
-Kept for one release (v0.40.0); removal in v0.41.0.}
-
-\item{spawn_only_species}{\strong{Deprecated} alias for \code{species_spawn_only}.
-Kept for one release (v0.40.0); removal in v0.41.0.}
 }
 \value{
 A tibble keyed by \code{segment_id_col} with one
