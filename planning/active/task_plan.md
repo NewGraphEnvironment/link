@@ -91,7 +91,7 @@ Persisted output must not move: one parity check (a persist rebuild before and a
 ## Validation
 
 - [x] Tests pass
-- [ ] `/code-check` clean (once over the branch with `/code-check branch`)
+- [x] `/code-check` clean (once over the branch with `/code-check branch`)
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 

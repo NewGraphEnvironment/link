@@ -47,3 +47,8 @@
 - `devtools::check()`: 0 errors, 0 warnings, 3 notes, all on main (top-level files, `setNames` / `getFromNamespace` imports, `lnk_rollup_wsg.Rd` widths). Its tests pass.
 - lintr against a worktree of `82cf1d08` (renamed files mapped): the new lints are indentation, semicolon and brace style in the patterns the tests and SQL builders already carry; the rename's misaligned continuations and the doubled `.lnk_compare_rollup_rollup_*` names were fixed. That fix found the rename had merged `.lnk_compare_wsg_rollup_link` into the existing `.lnk_compare_rollup_link`; the working-schema one is now `.lnk_compare_rollup_working`.
 - Next: `/code-check branch`, archive, PR.
+
+## Code check, 2026-11-27
+
+- `/code-check branch` over `82cf1d08...HEAD`, three rounds: round 1 Clean; round 2 one stale name (CLAUDE.md's `lnk_pipeline_run()` line still naming `lnk_compare_wsg`), fixed in `238504a9`; round 3 Clean, with every occurrence of the removed names classified and the `.lnk_compare_rollup_*` definitions checked for collisions. No round found a defect inside a fix. Verdict: `review-verdict.md` (clean, 3 rounds, reviewed `6fe9f656`).
+- Round 3's side note, outside this diff: 0.93.0 deleted `R/lnk_score.R`, `R/lnk_source.R`, `R/lnk_thresholds.R` and `inst/extdata/thresholds_default.csv` and dropped their `pretest_inputs.csv` rows, so a gate range from `fresh_default`'s builds (`4dfbfa49`) to HEAD reports them unmapped and refuses (loudly). Reported to the owner; not changed here.
