@@ -69,7 +69,7 @@
 #' }
 #'
 #' @family compare
-#' @seealso [lnk_compare_rollup()], [lnk_compare_wsg()], [lnk_pipeline_run()]
+#' @seealso [lnk_compare_rollup()], [lnk_compare_run()], [lnk_pipeline_run()]
 #' @export
 lnk_compare_mapping_code <- function(conn, aoi, cfg,
                                      reference = "bcfishpass",

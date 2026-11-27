@@ -912,7 +912,7 @@ lnk_pipeline_prepare <- function(conn, aoi, cfg, loaded, schema,
 
 #' Load base segments into <schema>.streams with joined + generated columns
 #'
-#' Per-WSG staging in the `working_<wsg>` schema — `lnk_pipeline_persist()`
+#' Per-WSG staging in the `working_<wsg>` schema — `lnk_persist_write()`
 #' upserts from here into the persistent `<persist_schema>.streams` after
 #' classify+connect.
 #' @noRd

@@ -14,7 +14,7 @@
 #                              written into <persist>.streams_mapping_code via
 #                              scratch + DELETE-WHERE-WSG + INSERT (JOIN streams
 #                              for watershed_group_code; mirrors
-#                              lnk_pipeline_persist).
+#                              lnk_persist_write).
 #
 # Usage: [LNK_LOAD=loadall] Rscript wsg_recompute_one.R <WSG> <config>
 

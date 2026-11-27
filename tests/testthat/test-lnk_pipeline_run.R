@@ -139,7 +139,7 @@ test_that("lnk_pipeline_run errors before persist when active_species is empty",
     lnk_pipeline_species = m_species,
     lnk_persist_init = m_persist_init,
     lnk_barriers_unify = m_unify,
-    lnk_pipeline_persist = m_persist,
+    lnk_persist_write = m_persist,
     .lnk_log_run_start = m_log_start,
     .lnk_log_run_finish = m_log_finish,
     .lnk_log_run_fail = m_log_fail,
@@ -262,7 +262,7 @@ test_that("lnk_pipeline_run composes phases in expected order", {
     lnk_pipeline_species = m_species,
     lnk_persist_init = m_persist_init,
     lnk_barriers_unify = m_unify,
-    lnk_pipeline_persist = m_persist,
+    lnk_persist_write = m_persist,
     lnk_presence = m_presence,
     lnk_barriers_views = m_views,
     lnk_pipeline_access = m_access,
@@ -336,7 +336,7 @@ test_that("a group with only paused species is built with no habitat (#432)", {
       if (paused) "RB" else character(0)
     },
     lnk_persist_init = m_noop, lnk_barriers_unify = m_noop,
-    lnk_pipeline_persist = function(conn, aoi, cfg, species, schema) {
+    lnk_persist_write = function(conn, aoi, cfg, species, schema) {
       persisted[[length(persisted) + 1L]] <<- species
       invisible(NULL)
     },
@@ -375,7 +375,7 @@ test_that("habitat_gate = FALSE skips the gate; it must be one TRUE or FALSE", {
       lnk_pipeline_connect = m_noop,
       lnk_pipeline_species = function(...) "BT",
       lnk_persist_init = m_noop, lnk_barriers_unify = m_noop,
-      lnk_pipeline_persist = m_noop, lnk_presence = m_noop,
+      lnk_persist_write = m_noop, lnk_presence = m_noop,
       lnk_barriers_views = m_noop, lnk_pipeline_access = m_noop,
       lnk_habitat_gate = function(...) { gated <<- gated + 1L; NULL },
       with_mocked_bindings(dbExecute = function(...) 1L, .package = "DBI",
@@ -414,7 +414,7 @@ test_that("lnk_pipeline_run passes NULL conn_tunnel when dams = FALSE", {
     lnk_pipeline_species = m_species,
     lnk_persist_init = m_noop,
     lnk_barriers_unify = m_noop,
-    lnk_pipeline_persist = m_noop,
+    lnk_persist_write = m_noop,
     lnk_presence = m_noop,
     lnk_barriers_views = m_noop,
     lnk_pipeline_access = m_noop,
@@ -459,7 +459,7 @@ test_that("lnk_pipeline_run drops working schema when cleanup_working = TRUE", {
     lnk_pipeline_species = m_species,
     lnk_persist_init = m_noop,
     lnk_barriers_unify = m_noop,
-    lnk_pipeline_persist = m_noop,
+    lnk_persist_write = m_noop,
     lnk_presence = m_noop,
     lnk_barriers_views = m_noop,
     lnk_pipeline_access = m_noop,
@@ -512,7 +512,7 @@ test_that("lnk_pipeline_run builds access for both mapping_code values, gates ln
       lnk_pipeline_species = m_species,
       lnk_persist_init = m_noop,
       lnk_barriers_unify = m_noop,
-      lnk_pipeline_persist = m_noop,
+      lnk_persist_write = m_noop,
       lnk_presence = m_noop,
       lnk_barriers_views = m_noop,
       lnk_pipeline_access = m_access,
@@ -565,4 +565,55 @@ test_that("a config with no vocabulary token is refused before anything runs", {
   )
   expect_false(started)
   expect_false(set_up)
+})
+
+# ---------------------------------------------------------------------------
+# A failed run drops its working schema when cleanup_working = TRUE (#159)
+# ---------------------------------------------------------------------------
+
+run_failing <- function(cleanup_working, fail_in = "classify", log = FALSE) {
+  local_mocked_bindings(lnk_vocabulary_resolve = function(...) mock_tokens(),
+                        .lnk_persist_clear_unmodelled = function(...) invisible(character(0)),
+                        .env = parent.frame())
+  sql <- character(0)
+  m_noop <- function(...) invisible(NULL)
+  m_fail <- function(...) stop("phase failed")
+  m_exec <- function(conn, s) { sql <<- c(sql, s); 1L }
+  phases <- list(
+    lnk_pipeline_setup = m_noop, lnk_pipeline_load = m_noop,
+    lnk_pipeline_prepare = m_noop, lnk_pipeline_crossings = m_noop,
+    lnk_pipeline_break = m_noop, lnk_pipeline_classify = m_noop,
+    lnk_pipeline_connect = m_noop, lnk_pipeline_species = function(...) "BT",
+    lnk_persist_init = m_noop, lnk_barriers_unify = m_noop,
+    lnk_persist_write = m_noop, lnk_presence = m_noop,
+    lnk_barriers_views = m_noop, lnk_pipeline_access = m_noop,
+    lnk_habitat_gate = m_noop)
+  phases[[paste0("lnk_pipeline_", fail_in)]] <- m_fail
+  do.call(local_mocked_bindings, c(phases, list(.env = environment())))
+  local_mocked_bindings(dbExecute = m_exec, .package = "DBI")
+  err <- tryCatch(
+    lnk_pipeline_run(conn = mock_conn(), aoi = "ADMS", cfg = mock_cfg(),
+                     loaded = mock_loaded(),
+                     cleanup_working = cleanup_working, log = log),
+    error = function(e) conditionMessage(e))
+  list(err = err, sql = sql)
+}
+
+test_that("an error after setup drops the working schema under cleanup_working (#159)", {
+  r <- run_failing(TRUE)
+  expect_match(r$err, "phase failed")
+  expect_true(any(grepl("DROP SCHEMA IF EXISTS working_adms CASCADE", r$sql,
+                        fixed = TRUE)))
+})
+
+test_that("cleanup_working = FALSE keeps the schema after an error (#159)", {
+  r <- run_failing(FALSE)
+  expect_match(r$err, "phase failed")
+  expect_false(any(grepl("DROP SCHEMA", r$sql)))
+})
+
+test_that("an error before setup drops no schema this call did not build (#159)", {
+  r <- run_failing(TRUE, fail_in = "setup")
+  expect_match(r$err, "phase failed")
+  expect_false(any(grepl("DROP SCHEMA", r$sql)))
 })

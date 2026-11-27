@@ -308,7 +308,7 @@ fi
 # DDL fix: lnk_persist_init detects unexpected GENERATED ALWAYS columns
 # in fresh.streams (cypher snapshot artifact) and DROPs the offending
 # tables when force_recreate=TRUE. After this, the subsequent
-# lnk_pipeline_persist INSERTs succeed because the recreated tables
+# lnk_persist_write INSERTs succeed because the recreated tables
 # have the expected (non-generated) DDL. Without this fix, all WSGs on
 # the cypher fail with `cannot insert a non-DEFAULT value into column gradient`
 # (the bug that wasted 93 WSGs on the 2026-05-12 provincial run).

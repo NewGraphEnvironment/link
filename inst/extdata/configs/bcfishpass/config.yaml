@@ -77,7 +77,7 @@ files:
 extends: ~
 
 pipeline:
-  # `schema` is the persistent target where lnk_pipeline_persist accumulates
+  # `schema` is the persistent target where lnk_persist_write accumulates
   # per-WSG output. Per-WSG staging always goes to working_<wsg> regardless.
   # Required (no default fallback). For side-by-side bundle compares, set
   # this to per-bundle values (e.g. fresh_bcfp + fresh_default).

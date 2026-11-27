@@ -39,7 +39,7 @@ habitat types per species (the 8 habitat km/ha types plus
 \code{accessible} km, link#221). \code{rearing_lake_connection} is lake
 connection lines (FWA edge 1450 in a lake polygon), reported
 apart and left out of \code{rearing} and \code{rearing_lake} km on both sides
-(#317); see \code{\link[=lnk_compare_wsg]{lnk_compare_wsg()}}. Columns: \code{wsg}, \code{species},
+(#317); see \code{\link[=lnk_compare_run]{lnk_compare_run()}}. Columns: \code{wsg}, \code{species},
 \code{habitat_type}, \code{unit} (\code{km} | \code{ha}), \code{link_value}, \code{ref_value},
 \code{diff_pct}. \code{accessible}'s \code{ref_value} is sourced tunnel-free from
 \code{fresh.streams_vw_bcfp} for the salmon group (CH/CM/CO/PK/SK); other
@@ -92,13 +92,13 @@ print(rollup)
 
 }
 \seealso{
-\code{\link[=lnk_pipeline_run]{lnk_pipeline_run()}}, \code{\link[=lnk_compare_wsg]{lnk_compare_wsg()}},
+\code{\link[=lnk_pipeline_run]{lnk_pipeline_run()}}, \code{\link[=lnk_compare_run]{lnk_compare_run()}},
 \code{\link[=lnk_parity_annotate]{lnk_parity_annotate()}}
 
 Other compare: 
 \code{\link{lnk_access}()},
 \code{\link{lnk_compare_mapping_code}()},
-\code{\link{lnk_compare_wsg}()},
+\code{\link{lnk_compare_run}()},
 \code{\link{lnk_habitat_validate}()},
 \code{\link{lnk_habitat_validate_band}()},
 \code{\link{lnk_log_read}()},

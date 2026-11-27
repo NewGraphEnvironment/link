@@ -40,8 +40,10 @@ here; dropped on exit when \code{cleanup_working = TRUE}.}
 runs from local \code{cabd.dams}. Pass \code{FALSE} to skip dams entirely.}
 
 \item{cleanup_working}{Logical. When \code{TRUE} (default), drop the
-\verb{<schema>} working schema at the end. Pass \code{FALSE} for interactive
-debug / manual inspection.}
+\verb{<schema>} working schema at the end, and on an error after the schema
+is set up too (link#159), so a failed group leaves no working tables.
+Pass \code{FALSE} for interactive debug / manual inspection, or to keep the
+schema after a failure (\code{data-raw/wsg_run_one.R} does).}
 
 \item{mapping_code}{Logical. Gates only the mapping_code \strong{token
 assembly} (phase 13) — when \code{TRUE}, \code{\link[=lnk_mapping_code]{lnk_mapping_code()}} runs and
@@ -137,7 +139,7 @@ species is present is an error.
 \item \code{\link[=lnk_persist_init]{lnk_persist_init()}} — create persistent target tables if absent.
 \item \code{\link[=lnk_barriers_unify]{lnk_barriers_unify()}} — unify per-source barriers into a single
 working-schema table (always; promotes the mapping_code-only
-flag in \code{lnk_compare_wsg()} to canonical PG state).
+flag in \code{lnk_compare_run()} to canonical PG state).
 10a. \strong{Access phase (always-on, link#218).} Runs between barriers_unify
 and persist: a pre-persist of the current WSG (so the next two steps
 see cross-WSG barriers), \code{\link[=lnk_barriers_views]{lnk_barriers_views()}} (tunnel-free,
@@ -145,7 +147,7 @@ link-canonical per-species views over \verb{<persist_schema>.barriers}),
 and \code{\link[=lnk_pipeline_access]{lnk_pipeline_access()}} (writes working \code{streams_access}). Access
 is foundational — mapping_code depends on it — so it builds regardless
 of \code{mapping_code}. See link#187, #196.
-\item \code{\link[=lnk_pipeline_persist]{lnk_pipeline_persist()}} — copy per-WSG streams + per-species
+\item \code{\link[=lnk_persist_write]{lnk_persist_write()}} — copy per-WSG streams + per-species
 habitat + barriers + streams_access into \verb{<persist_schema>}
 (idempotent DELETE-WHERE-WSG + INSERT). The group's rows in the habitat
 tables of species not classified here (paused, or no longer present)
@@ -176,8 +178,8 @@ DBI::dbGetQuery(conn,
 
 }
 \seealso{
-\code{\link[=lnk_compare_rollup]{lnk_compare_rollup()}}, \code{\link[=lnk_compare_wsg]{lnk_compare_wsg()}},
-\code{\link[=lnk_pipeline_setup]{lnk_pipeline_setup()}}, \code{\link[=lnk_pipeline_persist]{lnk_pipeline_persist()}}
+\code{\link[=lnk_compare_rollup]{lnk_compare_rollup()}}, \code{\link[=lnk_compare_run]{lnk_compare_run()}},
+\code{\link[=lnk_pipeline_setup]{lnk_pipeline_setup()}}, \code{\link[=lnk_persist_write]{lnk_persist_write()}}
 
 Other pipeline: 
 \code{\link{lnk_habitat_gate}()},

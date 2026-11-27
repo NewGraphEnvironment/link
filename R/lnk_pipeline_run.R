@@ -49,7 +49,7 @@
 #' 9. [lnk_persist_init()] — create persistent target tables if absent.
 #' 10. [lnk_barriers_unify()] — unify per-source barriers into a single
 #'     working-schema table (always; promotes the mapping_code-only
-#'     flag in `lnk_compare_wsg()` to canonical PG state).
+#'     flag in `lnk_compare_run()` to canonical PG state).
 #' 10a. **Access phase (always-on, link#218).** Runs between barriers_unify
 #'      and persist: a pre-persist of the current WSG (so the next two steps
 #'      see cross-WSG barriers), [lnk_barriers_views()] (tunnel-free,
@@ -57,7 +57,7 @@
 #'      and [lnk_pipeline_access()] (writes working `streams_access`). Access
 #'      is foundational — mapping_code depends on it — so it builds regardless
 #'      of `mapping_code`. See link#187, #196.
-#' 11. [lnk_pipeline_persist()] — copy per-WSG streams + per-species
+#' 11. [lnk_persist_write()] — copy per-WSG streams + per-species
 #'     habitat + barriers + streams_access into `<persist_schema>`
 #'     (idempotent DELETE-WHERE-WSG + INSERT). The group's rows in the habitat
 #'     tables of species not classified here (paused, or no longer present)
@@ -82,8 +82,10 @@
 #'   `conn_tunnel` to [lnk_pipeline_prepare()] so the CABD dams step
 #'   runs from local `cabd.dams`. Pass `FALSE` to skip dams entirely.
 #' @param cleanup_working Logical. When `TRUE` (default), drop the
-#'   `<schema>` working schema at the end. Pass `FALSE` for interactive
-#'   debug / manual inspection.
+#'   `<schema>` working schema at the end, and on an error after the schema
+#'   is set up too (link#159), so a failed group leaves no working tables.
+#'   Pass `FALSE` for interactive debug / manual inspection, or to keep the
+#'   schema after a failure (`data-raw/wsg_run_one.R` does).
 #' @param mapping_code Logical. Gates only the mapping_code **token
 #'   assembly** (phase 13) — when `TRUE`, [lnk_mapping_code()] runs and
 #'   `<persist_schema>.streams_mapping_code` is produced for the WSG,
@@ -138,8 +140,8 @@
 #' }
 #'
 #' @family pipeline
-#' @seealso [lnk_compare_rollup()], [lnk_compare_wsg()],
-#'   [lnk_pipeline_setup()], [lnk_pipeline_persist()]
+#' @seealso [lnk_compare_rollup()], [lnk_compare_run()],
+#'   [lnk_pipeline_setup()], [lnk_persist_write()]
 #' @export
 lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
                              schema = paste0("working_", tolower(aoi)),
@@ -231,6 +233,16 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
     "DROP TABLE IF EXISTS %s.observations_province", schema)
   on.exit(try(DBI::dbExecute(conn, drop_obs_province), silent = TRUE),
           add = TRUE)
+  # An error from here on drops the working schema too (link#159), unless the
+  # caller keeps it. Registered after setup, so an error before it (the
+  # vocabulary refusal, the parent judge) drops nothing this call did not
+  # build; independent of `log`, so it holds with `log = FALSE` too.
+  finished <- FALSE
+  if (isTRUE(cleanup_working)) {
+    drop_working <- sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schema)
+    on.exit(if (!finished) try(DBI::dbExecute(conn, drop_working), silent = TRUE),
+            add = TRUE)
+  }
   lnk_pipeline_load(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
                     loaded = loaded, schema = schema)
   lnk_pipeline_prepare(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
@@ -275,7 +287,7 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
   # streams_mapping_code) have one column per species — first WSG would
   # lock the column set if we passed active_species, then subsequent WSGs
   # with different active sets would fail INSERT. Per-WSG INSERTs still
-  # use active_species (in lnk_pipeline_persist below) so unused species'
+  # use active_species (in lnk_persist_write below) so unused species'
   # columns get NULL for WSGs that don't model them. Per-species habitat
   # tables (streams_habitat_<sp>) get created for the full bundle too —
   # empty tables for species no WSG populates are cheap.
@@ -308,7 +320,7 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
   # so persist holds current + all previously-persisted WSGs by the
   # time the views are built. Second persist call below re-runs
   # idempotently and adds streams_access. link#196.
-  lnk_pipeline_persist(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
+  lnk_persist_write(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
                        species = active_species, schema = schema)
   # That persist replaced this group's streams, and its habitat rows only for
   # the species classified here. A species no longer classified (paused in the
@@ -379,7 +391,7 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
       remediations  = paste0(schema, ".barriers_remediations")),
     crossings_table = paste0(schema, ".crossings"))
 
-  lnk_pipeline_persist(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
+  lnk_persist_write(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
                        species = active_species, schema = schema)
 
   # 3. Settle the persisted habitat flags on link's access (link#349): where
@@ -408,6 +420,9 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
                               cfg = cfg)
   }
 
+  # Past here a failure is not the run's: the success-path drop below stays
+  # loud if it fails, rather than retried by the handler above.
+  finished <- TRUE
   if (isTRUE(cleanup_working)) {
     DBI::dbExecute(conn, sprintf("DROP SCHEMA %s CASCADE", schema))
   }

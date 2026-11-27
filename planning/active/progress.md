@@ -26,3 +26,10 @@
 - Parity probe at this code: 0 of 36 digests differ from BEFORE.
 - Dictionary, README, `pretest_inputs.csv` rows; dictionary, pretest, config and vocabulary tests pass.
 - Next: Phase 3.
+
+## Phase 3, 2026-11-27
+
+- `lnk_pipeline_persist()` → `lnk_persist_write()` and `lnk_compare_wsg()` → `lnk_compare_run()` by `git mv`, no shims; `.lnk_compare_wsg_*` → `.lnk_compare_rollup_*`; `with_mapping_code` removed. Callers swept in `R/`, tests and mocks, live `data-raw/` scripts, `pretest_inputs.csv`, RUNBOOK, and the `default` / `bcfishpass` config comments. `default_rearbreaks` / `default_extrabreaks` config.yaml and `data-raw/logs/` left as written.
+- #159: `lnk_pipeline_run()` drops `working_<aoi>` on an error after setup when `cleanup_working = TRUE`, through its own handler (with `log = FALSE` too). Three tests (error drops, `FALSE` keeps, an error at setup drops nothing); disabling the handler fails one.
+- `pkgdown::check_pkgdown()` clean.
+- Next: Phase 4.

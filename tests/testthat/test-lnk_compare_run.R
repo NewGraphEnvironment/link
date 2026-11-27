@@ -1,4 +1,4 @@
-# Tests for lnk_compare_wsg — argument validation + pipeline composition
+# Tests for lnk_compare_run — argument validation + pipeline composition
 
 mock_conn <- function() structure(list(), class = "DBIConnection")
 mock_cfg <- function() lnk_config("bcfishpass")
@@ -20,35 +20,35 @@ mock_loaded <- function() list(
 # Argument validation
 # ---------------------------------------------------------------------------
 
-test_that("lnk_compare_wsg rejects invalid aoi", {
+test_that("lnk_compare_run rejects invalid aoi", {
   expect_error(
-    lnk_compare_wsg(mock_conn(), aoi = "", cfg = mock_cfg(),
+    lnk_compare_run(mock_conn(), aoi = "", cfg = mock_cfg(),
                     loaded = mock_loaded()),
     "aoi"
   )
   expect_error(
-    lnk_compare_wsg(mock_conn(), aoi = c("ADMS","BULK"), cfg = mock_cfg(),
+    lnk_compare_run(mock_conn(), aoi = c("ADMS","BULK"), cfg = mock_cfg(),
                     loaded = mock_loaded()),
     "aoi"
   )
   expect_error(
-    lnk_compare_wsg(mock_conn(), aoi = "ab", cfg = mock_cfg(),
+    lnk_compare_run(mock_conn(), aoi = "ab", cfg = mock_cfg(),
                     loaded = mock_loaded()),
     "aoi"
   )
 })
 
-test_that("lnk_compare_wsg rejects non-lnk_config cfg", {
+test_that("lnk_compare_run rejects non-lnk_config cfg", {
   expect_error(
-    lnk_compare_wsg(mock_conn(), aoi = "ADMS", cfg = list(name = "x"),
+    lnk_compare_run(mock_conn(), aoi = "ADMS", cfg = list(name = "x"),
                     loaded = mock_loaded()),
     "cfg"
   )
 })
 
-test_that("lnk_compare_wsg rejects non-DBI conn", {
+test_that("lnk_compare_run rejects non-DBI conn", {
   expect_error(
-    lnk_compare_wsg(conn = "not-a-conn", aoi = "ADMS",
+    lnk_compare_run(conn = "not-a-conn", aoi = "ADMS",
                     cfg = mock_cfg(), loaded = mock_loaded()),
     "DBI"
   )
@@ -58,24 +58,24 @@ test_that("lnk_compare_wsg rejects non-DBI conn", {
 # Reference dispatch
 # ---------------------------------------------------------------------------
 
-test_that("lnk_compare_wsg rejects unsupported reference", {
+test_that("lnk_compare_run rejects unsupported reference", {
   expect_error(
-    lnk_compare_wsg(mock_conn(), aoi = "ADMS",
+    lnk_compare_run(mock_conn(), aoi = "ADMS",
                     cfg = mock_cfg(), loaded = mock_loaded(),
                     reference = "unknown"),
     "Unsupported reference"
   )
 })
 
-test_that("lnk_compare_wsg requires conn_ref for reference='bcfishpass'", {
+test_that("lnk_compare_run requires conn_ref for reference='bcfishpass'", {
   expect_error(
-    lnk_compare_wsg(mock_conn(), aoi = "ADMS",
+    lnk_compare_run(mock_conn(), aoi = "ADMS",
                     cfg = mock_cfg(), loaded = mock_loaded(),
                     reference = "bcfishpass", conn_ref = NULL),
     "conn_ref"
   )
   expect_error(
-    lnk_compare_wsg(mock_conn(), aoi = "ADMS",
+    lnk_compare_run(mock_conn(), aoi = "ADMS",
                     cfg = mock_cfg(), loaded = mock_loaded(),
                     reference = "bcfishpass", conn_ref = "not-a-conn"),
     "conn_ref"
@@ -83,31 +83,31 @@ test_that("lnk_compare_wsg requires conn_ref for reference='bcfishpass'", {
 })
 
 # ---------------------------------------------------------------------------
-# with_mapping_code = TRUE not yet implemented (Phase 2)
+# mapping_code = TRUE not yet implemented (Phase 2)
 # ---------------------------------------------------------------------------
 
-# with_mapping_code = TRUE is now implemented; its composition is
+# mapping_code = TRUE is now implemented; its composition is
 # covered by the "composes mapping_code phases" test below.
 
 # ---------------------------------------------------------------------------
 # Schema injection guard
 # ---------------------------------------------------------------------------
 
-test_that("lnk_compare_wsg rejects schema with characters outside the SQL identifier whitelist", {
+test_that("lnk_compare_run rejects schema with characters outside the SQL identifier whitelist", {
   expect_error(
-    lnk_compare_wsg(mock_conn(), aoi = "ADMS",
+    lnk_compare_run(mock_conn(), aoi = "ADMS",
                     cfg = mock_cfg(), loaded = mock_loaded(),
                     schema = "x; DROP SCHEMA public CASCADE; --"),
     "schema"
   )
   expect_error(
-    lnk_compare_wsg(mock_conn(), aoi = "ADMS",
+    lnk_compare_run(mock_conn(), aoi = "ADMS",
                     cfg = mock_cfg(), loaded = mock_loaded(),
                     schema = "Working_ADMS"),    # mixed case
     "schema"
   )
   expect_error(
-    lnk_compare_wsg(mock_conn(), aoi = "ADMS",
+    lnk_compare_run(mock_conn(), aoi = "ADMS",
                     cfg = mock_cfg(), loaded = mock_loaded(),
                     schema = "1invalid"),        # leading digit
     "schema"
@@ -118,7 +118,7 @@ test_that("lnk_compare_wsg rejects schema with characters outside the SQL identi
 # Composition: rollup-only path calls pipeline phases in order
 # ---------------------------------------------------------------------------
 
-test_that("lnk_compare_wsg propagates lnk_pipeline_run's empty-species error", {
+test_that("lnk_compare_run propagates lnk_pipeline_run's empty-species error", {
   # After #168 decoupling, the "no active species" error originates inside
   # lnk_pipeline_run. Wrapper just propagates.
   m_pipeline_run <- function(...) {
@@ -134,7 +134,7 @@ test_that("lnk_compare_wsg propagates lnk_pipeline_run's empty-species error", {
     lnk_compare_rollup = m_rollup,
     {
       expect_error(
-        lnk_compare_wsg(
+        lnk_compare_run(
           conn = mock_conn(), aoi = "ADMS",
           cfg = mock_cfg(), loaded = mock_loaded(),
           reference = "bcfishpass", conn_ref = mock_conn()
@@ -148,7 +148,7 @@ test_that("lnk_compare_wsg propagates lnk_pipeline_run's empty-species error", {
   expect_false(m_rollup_called)
 })
 
-test_that("lnk_compare_wsg composes lnk_pipeline_run then lnk_compare_rollup (rollup-only path)", {
+test_that("lnk_compare_run composes lnk_pipeline_run then lnk_compare_rollup (rollup-only path)", {
   calls <- character()
   pipeline_args <- list()
   rollup_args <- list()
@@ -179,7 +179,7 @@ test_that("lnk_compare_wsg composes lnk_pipeline_run then lnk_compare_rollup (ro
     lnk_pipeline_run = m_pipeline_run,
     lnk_compare_rollup = m_rollup,
     {
-      result <- lnk_compare_wsg(
+      result <- lnk_compare_run(
         conn = mock_conn(), aoi = "ADMS",
         cfg = mock_cfg(), loaded = mock_loaded(),
         reference = "bcfishpass", conn_ref = mock_conn(),
@@ -190,7 +190,7 @@ test_that("lnk_compare_wsg composes lnk_pipeline_run then lnk_compare_rollup (ro
 
   # Wrapper invokes pipeline_run first, then compare_rollup.
   expect_equal(calls, c("pipeline_run", "rollup"))
-  # cleanup_working passes through verbatim when with_mapping_code = FALSE.
+  # cleanup_working passes through verbatim when mapping_code = FALSE.
   expect_false(pipeline_args$cleanup_working)
   expect_true(pipeline_args$dams)
   # Caller-passed species threaded through.
@@ -208,7 +208,7 @@ test_that("lnk_compare_wsg composes lnk_pipeline_run then lnk_compare_rollup (ro
 # Rollup tibble shape + diff_pct computation
 # ---------------------------------------------------------------------------
 
-test_that(".lnk_compare_wsg_assemble_rollup produces 9 rows per species + correct diff_pct", {
+test_that(".lnk_compare_rollup_assemble_rollup produces 9 rows per species + correct diff_pct", {
   link_data <- list(
     km = data.frame(
       species_code = c("BT","CH"),
@@ -241,7 +241,7 @@ test_that(".lnk_compare_wsg_assemble_rollup produces 9 rows per species + correc
     stringsAsFactors = FALSE
   )
 
-  out <- link:::.lnk_compare_wsg_assemble_rollup(
+  out <- link:::.lnk_compare_rollup_assemble_rollup(
     aoi = "TEST", species = c("BT","CH"),
     rollup_link = link_data, rollup_ref = ref_data
   )
@@ -291,7 +291,7 @@ test_that("link-side rollup SQL leaves lake connection lines out of rearing km",
       stop("captured")
     },
     .package = "DBI",
-    expect_error(link:::.lnk_compare_wsg_rollup_link(
+    expect_error(link:::.lnk_compare_rollup_rollup_link(
       DBI::ANSI(), "ADMS", "working_adms", "CO"), "captured")
   )
   lc <- link:::.lnk_sql_lake_connection()
@@ -322,7 +322,7 @@ test_that("bcfishpass-side rollup SQL applies the same lake-connection rule", {
       stop("captured")
     },
     .package = "DBI",
-    expect_error(link:::.lnk_compare_wsg_rollup_bcfishpass(
+    expect_error(link:::.lnk_compare_rollup_rollup_bcfishpass(
       DBI::ANSI(), "ADMS", "BT"), "captured")
   )
   lc <- link:::.lnk_sql_lake_connection()
@@ -339,7 +339,7 @@ test_that("bcfishpass-side rollup SQL applies the same lake-connection rule", {
   expect_match(flat, "FROM bcfishpass.streams s", fixed = TRUE)
 })
 
-test_that(".lnk_compare_wsg_assemble_rollup handles NA ref values (not modelled)", {
+test_that(".lnk_compare_rollup_assemble_rollup handles NA ref values (not modelled)", {
   link_data <- list(
     km = data.frame(species_code = "RB", spawning_km = 100, rearing_km = 200,
                     rearing_stream_km = 180,
@@ -366,7 +366,7 @@ test_that(".lnk_compare_wsg_assemble_rollup handles NA ref values (not modelled)
     stringsAsFactors = FALSE
   )
 
-  out <- link:::.lnk_compare_wsg_assemble_rollup(
+  out <- link:::.lnk_compare_rollup_assemble_rollup(
     aoi = "TEST", species = "RB",
     rollup_link = link_data, rollup_ref = ref_data
   )
@@ -377,7 +377,7 @@ test_that(".lnk_compare_wsg_assemble_rollup handles NA ref values (not modelled)
   expect_true(all(is.na(out$ref_value)))
 })
 
-test_that("lnk_compare_wsg composes mapping_code branch when mapping_code=TRUE", {
+test_that("lnk_compare_run composes mapping_code branch when mapping_code=TRUE", {
   calls <- character()
   pipeline_args <- list()
 
@@ -413,7 +413,7 @@ test_that("lnk_compare_wsg composes mapping_code branch when mapping_code=TRUE",
         dbExecute = m_exec,
         .package = "DBI",
         {
-          result <- lnk_compare_wsg(
+          result <- lnk_compare_run(
             conn = mock_conn(), aoi = "ADMS",
             cfg = mock_cfg(), loaded = mock_loaded(),
             reference = "bcfishpass", conn_ref = mock_conn(),
@@ -441,12 +441,12 @@ test_that("lnk_compare_wsg composes mapping_code branch when mapping_code=TRUE",
                  "n_diffs", "top_pattern", "top_pattern_count"))
 })
 
-# Pre-#187 there was a `.lnk_compare_wsg_mapping_code` helper that
+# Pre-#187 there was a `.lnk_compare_rollup_mapping_code` helper that
 # inlined the build and gated reference dispatch. The helper is deleted
 # (build moved to `lnk_pipeline_run`, gate moved upstream to
-# `lnk_compare_wsg` reference dispatch around line ~141). The
+# `lnk_compare_run` reference dispatch around line ~141). The
 # corresponding reference-gate assertion happens in the
-# "lnk_compare_wsg validates reference" test elsewhere in this file.
+# "lnk_compare_run validates reference" test elsewhere in this file.
 
 test_that(".lnk_mc_diff computes per-species stats with top_pattern (merge logic)", {
   # Merge/match logic moved to .lnk_mc_diff (link#175); test it directly —
@@ -490,7 +490,7 @@ test_that(".lnk_mc_diff computes per-species stats with top_pattern (merge logic
   expect_equal(cm$match_pct, 50)
 })
 
-test_that(".lnk_compare_wsg_assemble_rollup handles zero ref values (avoid div-by-zero)", {
+test_that(".lnk_compare_rollup_assemble_rollup handles zero ref values (avoid div-by-zero)", {
   link_data <- list(
     km = data.frame(species_code = "BT", spawning_km = 100, rearing_km = 200,
                     rearing_stream_km = 180,
@@ -514,7 +514,7 @@ test_that(".lnk_compare_wsg_assemble_rollup handles zero ref values (avoid div-b
     stringsAsFactors = FALSE
   )
 
-  out <- link:::.lnk_compare_wsg_assemble_rollup(
+  out <- link:::.lnk_compare_rollup_assemble_rollup(
     aoi = "TEST", species = "BT",
     rollup_link = link_data, rollup_ref = ref_data
   )
@@ -527,7 +527,7 @@ test_that(".lnk_compare_wsg_assemble_rollup handles zero ref values (avoid div-b
 # Tunnel-free accessible_km reference (link#221 Phase 2 4/4)
 # ---------------------------------------------------------------------------
 
-test_that(".lnk_compare_wsg_accessible_ref queries salmon group, short-circuits others", {
+test_that(".lnk_compare_rollup_accessible_ref queries salmon group, short-circuits others", {
   queries <- character()
   m_get <- function(conn, statement, ...) {
     queries <<- c(queries, statement)
@@ -539,7 +539,7 @@ test_that(".lnk_compare_wsg_accessible_ref queries salmon group, short-circuits 
     dbQuoteLiteral = function(conn, x, ...) paste0("'", x, "'"),
     .package = "DBI",
     {
-      out <- link:::.lnk_compare_wsg_accessible_ref(
+      out <- link:::.lnk_compare_rollup_accessible_ref(
         conn = mock_conn(), aoi = "MORR",
         species = c("CO", "BT", "SK"))
     }
@@ -553,7 +553,7 @@ test_that(".lnk_compare_wsg_accessible_ref queries salmon group, short-circuits 
   expect_true(all(grepl("watershed_group_code = 'MORR'", queries)))
 })
 
-test_that(".lnk_compare_wsg_accessible_ref returns all-NA when no salmon species", {
+test_that(".lnk_compare_rollup_accessible_ref returns all-NA when no salmon species", {
   m_get <- function(conn, statement, ...) {
     stop("dbGetQuery should not be called for non-salmon species")
   }
@@ -563,7 +563,7 @@ test_that(".lnk_compare_wsg_accessible_ref returns all-NA when no salmon species
     dbQuoteLiteral = function(conn, x, ...) paste0("'", x, "'"),
     .package = "DBI",
     {
-      out <- link:::.lnk_compare_wsg_accessible_ref(
+      out <- link:::.lnk_compare_rollup_accessible_ref(
         conn = mock_conn(), aoi = "MORR",
         species = c("BT", "ST", "WCT"))
     }

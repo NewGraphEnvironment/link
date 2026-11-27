@@ -1,7 +1,7 @@
 #' Column shape for the persistent province-wide tables.
 #'
 #' Single source of truth referenced by both `lnk_persist_init()` (DDL)
-#' and `lnk_pipeline_persist()` (INSERT projection). Mirrors bcfp's
+#' and `lnk_persist_write()` (INSERT projection). Mirrors bcfp's
 #' `bcfishpass.streams` + `bcfishpass.habitat_linear_<sp>` for query
 #' familiarity, with link's `id_segment` joining `watershed_group_code`
 #' as primary-key partner.
@@ -166,7 +166,7 @@ cols_barriers <- c(
 #' anti-join it for natural barriers in ANY WSG a downstream walk crosses —
 #' the cross-WSG twin of the link#152 barriers fix. One named vector drives
 #' both the DDL ([lnk_persist_init()]) and the INSERT projection
-#' ([lnk_pipeline_persist()]). link#200.
+#' ([lnk_persist_write()]). link#200.
 #' @noRd
 cols_barrier_overrides <- c(
   blue_line_key            = "integer NOT NULL",
@@ -217,7 +217,7 @@ cols_barrier_override_evidence <- c(
 #' validator re-tests the near_river predicates against the distances the
 #' build used, rather than walking again. One named vector drives the DDL
 #' ([lnk_persist_init()]) and the INSERT projection
-#' ([lnk_pipeline_persist()]).
+#' ([lnk_persist_write()]).
 #'
 #' `linear_feature_id` is the segment's parent FWA line, which fresh 0.54.0
 #' (fresh#293) adds to its table and keys the predicate's match on (#452).
@@ -243,7 +243,7 @@ cols_streams_near_river <- c(
 #' table whose schema differs from what we expect (e.g. cypher snapshots
 #' baked when `fresh::frs_col_generate()` had been run on `fresh.streams`,
 #' leaving `gradient` as `GENERATED ALWAYS`), the CREATE is a no-op,
-#' the stale DDL survives, and `lnk_pipeline_persist`'s INSERT fails
+#' the stale DDL survives, and `lnk_persist_write`'s INSERT fails
 #' downstream with `cannot insert a non-DEFAULT value into column ...`.
 #'
 #' This helper detects that case at init time:
@@ -286,7 +286,7 @@ cols_streams_near_river <- c(
   stop(sprintf(
     "DDL drift in %s.%s: %d GENERATED ALWAYS column(s) found (%s) that lnk_persist_init does not expect.\n",
     schema, table, length(unexpected), paste(unexpected, collapse = ", ")),
-    "Subsequent lnk_pipeline_persist INSERTs would fail with ",
+    "Subsequent lnk_persist_write INSERTs would fail with ",
     "'cannot insert a non-DEFAULT value into column ...'.\n",
     "This commonly affects droplets spun from snapshots whose ",
     "`fresh.streams` was baked after `fresh::frs_col_generate()` ran on ",
@@ -417,14 +417,14 @@ cols_streams_near_river <- c(
 #' every per-WSG run, and safe under concurrent first-time provisioning
 #' (multiple workers can race; only one CREATE wins).
 #'
-#' Per-WSG data accumulates into these tables via [lnk_pipeline_persist()]
+#' Per-WSG data accumulates into these tables via [lnk_persist_write()]
 #' after each run. Queryable cross-WSG for cartography, intrinsic
 #' potential maps, and per-crossing upstream rollups.
 #'
 #' Column shape mirrors bcfp's `bcfishpass.streams` +
 #' `bcfishpass.habitat_linear_<sp>` for familiarity. Driven by the
 #' `cols_streams` / `cols_habitat` vectors at the top of this file —
-#' single source of truth shared with [lnk_pipeline_persist()].
+#' single source of truth shared with [lnk_persist_write()].
 #'
 #' @param conn DBI connection.
 #' @param cfg An `lnk_config` object with `cfg$pipeline$schema` set.

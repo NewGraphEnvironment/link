@@ -141,7 +141,7 @@ test_that("lnk_compare_rollup composes resolve → link-rollup → ref-rollup �
   with_mocked_bindings(
     .lnk_compare_rollup_resolve_species = m_resolve,
     .lnk_compare_rollup_link = m_link,
-    .lnk_compare_wsg_rollup_reference = m_ref,
+    .lnk_compare_rollup_rollup_reference = m_ref,
     {
       result <- lnk_compare_rollup(
         conn = mock_conn(), aoi = "ADMS", cfg = mock_cfg(),

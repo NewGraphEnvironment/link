@@ -577,7 +577,7 @@ both now fixed:
   (persist `barriers`), ltree-resolved via the same FWA join the FALLS branch
   uses (mirrors bcfp `barriers_user_definite.sql`).
 - `barrier_overrides` is now persisted province-wide
-  (`<persist>.barrier_overrides`, `lnk_persist_init` + `lnk_pipeline_persist`).
+  (`<persist>.barrier_overrides`, `lnk_persist_init` + `lnk_persist_write`).
   Because the access view reads persist (cross-WSG) barriers, the override must
   also be province-wide so a natural barrier in *any* WSG a downstream walk
   crosses is lifted correctly. Persist PK is
@@ -725,7 +725,7 @@ once, in `.lnk_pipeline_prep_locate()`: the group of the segment the position si
 (lowest downstream measure, then `linear_feature_id`, for the ~1 mm overlap; the nearest segment
 for a measure in the gap). `lnk_barriers_unify()` keeps a gradient row only in its owner, or,
 where the owner would never hold it (no modelled species there, or it does not scan the line),
-in the lowest-coded modelled scanner (`.lnk_sql_gradient_held()`). `lnk_pipeline_persist()`
+in the lowest-coded modelled scanner (`.lnk_sql_gradient_held()`). `lnk_persist_write()`
 writes an override or evidence row only beside a natural barrier the group holds within 1 m
 (`.lnk_sql_override_held()`), never by the owner of the override's rounded position, which can
 fall on the neighbour's side of a boundary. Falls and user-definite rows were already filed by
@@ -780,7 +780,7 @@ of a: the record goes first. The rules that would fail a record are the operator
 - **Persist column changes are a matched pair.** Adding a column to
   `streams_access` / `streams_mapping_code` means editing **two independently
   constructed sites**: the CREATE TABLE DDL in `lnk_persist_init.R` *and* the
-  INSERT projection in `lnk_pipeline_persist.R`. The DDL having the column does
+  INSERT projection in `lnk_persist_write.R`. The DDL having the column does
   NOT make the INSERT populate it — they don't share a projection. Missing the
   source-flag generator in the INSERT was the v0.40.3 `NONE`-token bug. Verify
   DDL + INSERT together against live data.
@@ -805,7 +805,7 @@ of a: the record goes first. The rules that would fail a record are the operator
   download the zip with `curl` first, `unzip`, then `ogr2ogr` from the local
   `.fgb`; and verify a row count post-load rather than trusting the exit code.
   Until then, `streams_vw_bcfp` parity needs the ~1.6 GB download or the tunnel.
-- **Don't persist from a half-built working schema.** `lnk_pipeline_persist`
+- **Don't persist from a half-built working schema.** `lnk_persist_write`
   DELETE-WHERE-WSGs the persist tables before INSERT — running it against an
   incomplete working schema wipes good province-wide data for that WSG.
 - **Double-persist wall time.** `mapping_code = TRUE` currently pre-persists
@@ -2003,7 +2003,7 @@ next dispatch.**
     construction flow line like 1200 / 1300 and stays in the km.
   - **The flag keeps them.** The L rule still admits 1450, so `cluster_rearing`
     still joins inlet rearing to the lake. Nothing re-classifies.
-  - **The compare rollups leave them out.** `lnk_compare_rollup()` / `lnk_compare_wsg()` report
+  - **The compare rollups leave them out.** `lnk_compare_rollup()` / `lnk_compare_run()` report
     them as `rearing_lake_connection` (km), out of `rearing` and `rearing_lake` km, on the link
     side and the bcfishpass side alike. bcfishpass counts them too, in BT and SK rearing, so
     SK parity stays 0.0 %. One predicate: `.lnk_sql_lake_connection()`

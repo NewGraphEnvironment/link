@@ -63,7 +63,7 @@
 #' @param to Character or `NULL`. Optional schema-qualified destination
 #'   table. When supplied, the result tibble is written via
 #'   `dbWriteTable(overwrite = TRUE)` and the tibble is also returned
-#'   (so callers can chain into `lnk_pipeline_persist` / `build_species_views.R`).
+#'   (so callers can chain into `lnk_persist_write` / `build_species_views.R`).
 #'   Default `NULL` returns-only.
 #' @param conn A [DBI::DBIConnection-class]. Required only when `to` is
 #'   supplied; ignored otherwise.

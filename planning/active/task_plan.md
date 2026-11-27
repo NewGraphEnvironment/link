@@ -63,10 +63,10 @@ Persisted output must not move: one parity check (a persist rebuild before and a
 
 ## Phase 3: Persist family and run API (#177, #176, #159)
 
-- [ ] `git mv R/lnk_pipeline_persist.R R/lnk_persist_write.R`, rename the function; callers in `R/lnk_pipeline_run.R`, `data-raw/habitat_variants_build.R`, `data-raw/exp_gradient_extra_breaks.R`, comments in `wsg_recompute_one.R`, `cypher_prep.sh`, `query_schema_delta.R`, the `R/` roxygen and comments (`lnk_parity_annotate.R`, `lnk_compare_rollup.R`, `lnk_pipeline_prepare.R`, `lnk_preflight_fresh.R`, `lnk_mapping_code.R`, `lnk_persist_init.R`, `lnk_barriers_views.R`, `lnk_barriers_unify.R`), the mocks in `test-lnk_pipeline_run.R`; tests renamed; `pretest_inputs.csv:28` renamed.
-- [ ] `git mv R/lnk_compare_wsg.R R/lnk_compare_run.R`, rename the function; the rollup helpers move to `.lnk_compare_rollup_*` (callers in `R/lnk_compare_rollup.R`, the mock in `test-lnk_compare_rollup.R`); drop `with_mapping_code`; tests renamed; `pretest_inputs.csv:76` renamed. No live `data-raw/` script calls it.
-- [ ] #159: working schema dropped on error when `cleanup_working = TRUE`, by its own handler registered after setup (with `log = FALSE` too); tests with a phase mocked to error, one that `FALSE` keeps it, and one that an error before setup drops nothing. NEWS and the close comment say `wsg_run_one.R` keeps its schema (`cleanup_working = FALSE`).
-- [ ] `devtools::document()`; `pkgdown::check_pkgdown()`; NAMESPACE.
+- [x] `git mv R/lnk_pipeline_persist.R R/lnk_persist_write.R`, rename the function; callers in `R/lnk_pipeline_run.R`, `data-raw/habitat_variants_build.R`, `data-raw/exp_gradient_extra_breaks.R`, comments in `wsg_recompute_one.R`, `cypher_prep.sh`, `query_schema_delta.R`, the `R/` roxygen and comments (`lnk_parity_annotate.R`, `lnk_compare_rollup.R`, `lnk_pipeline_prepare.R`, `lnk_preflight_fresh.R`, `lnk_mapping_code.R`, `lnk_persist_init.R`, `lnk_barriers_views.R`, `lnk_barriers_unify.R`), the mocks in `test-lnk_pipeline_run.R`; tests renamed; `pretest_inputs.csv:28` renamed.
+- [x] `git mv R/lnk_compare_wsg.R R/lnk_compare_run.R`, rename the function; the rollup helpers move to `.lnk_compare_rollup_*` (callers in `R/lnk_compare_rollup.R`, the mock in `test-lnk_compare_rollup.R`); drop `with_mapping_code`; tests renamed; `pretest_inputs.csv:76` renamed. No live `data-raw/` script calls it.
+- [x] #159: working schema dropped on error when `cleanup_working = TRUE`, by its own handler registered after setup (with `log = FALSE` too); tests with a phase mocked to error, one that `FALSE` keeps it, and one that an error before setup drops nothing. NEWS and the close comment say `wsg_run_one.R` keeps its schema (`cleanup_working = FALSE`).
+- [x] `devtools::document()`; `pkgdown::check_pkgdown()`; NAMESPACE.
 
 ## Phase 4: Species-column drift in `lnk_persist_init()` (#204)
 

@@ -1,6 +1,6 @@
 #' Annotate a parity rollup against the bcfp divergence taxonomy
 #'
-#' Joins each row of a parity rollup (from [lnk_compare_wsg()] or the
+#' Joins each row of a parity rollup (from [lnk_compare_run()] or the
 #' `data-raw/compare_bcfishpass_wsg.R` wrapper) to the first taxonomy
 #' entry whose `wsg`, `species`, `metric`, `pattern`, and (optional)
 #' `diff_range` all match. Unmatched rows with `|diff_pct| >=
@@ -46,7 +46,7 @@
 #' }
 #'
 #' @family compare
-#' @seealso [lnk_compare_wsg()]
+#' @seealso [lnk_compare_run()]
 #' @export
 lnk_parity_annotate <- function(rollup, taxonomy, to = NULL,
                                 tolerance = 2) {

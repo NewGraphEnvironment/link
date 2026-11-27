@@ -112,7 +112,7 @@ link::lnk_pipeline_connect(conn, aoi = WSG, cfg = cfg, loaded = loaded,
 
 active <- link::lnk_pipeline_species(cfg, loaded, WSG)
 link::lnk_persist_init(conn, cfg, species = active)
-link::lnk_pipeline_persist(conn, aoi = WSG, cfg = cfg,
+link::lnk_persist_write(conn, aoi = WSG, cfg = cfg,
                            species = active, schema = schema)
 
 # --- Rollup (link-side only — same shape as compare_bcfishpass_wsg) --------

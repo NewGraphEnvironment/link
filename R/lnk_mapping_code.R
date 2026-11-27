@@ -16,7 +16,7 @@
 #' shape so `table_habitat` can point at either layout.
 #'
 #' This function replaces the inline assembly previously buried inside
-#' `lnk_compare_wsg()`. The compare wrapper now goes through this
+#' `lnk_compare_run()`. The compare wrapper now goes through this
 #' function via `lnk_pipeline_run(..., mapping_code = TRUE)`. Operators
 #' can also call this directly against persist schema with the tunnel
 #' down — the build is tunnel-independent (the diff vs reference is

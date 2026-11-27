@@ -87,7 +87,7 @@ working-schema tables (mid-pipeline) or persist-schema tables
 shape so \code{table_habitat} can point at either layout.
 
 This function replaces the inline assembly previously buried inside
-\code{lnk_compare_wsg()}. The compare wrapper now goes through this
+\code{lnk_compare_run()}. The compare wrapper now goes through this
 function via \code{lnk_pipeline_run(..., mapping_code = TRUE)}. Operators
 can also call this directly against persist schema with the tunnel
 down — the build is tunnel-independent (the diff vs reference is
@@ -127,7 +127,7 @@ Other compare:
 \code{\link{lnk_access}()},
 \code{\link{lnk_compare_mapping_code}()},
 \code{\link{lnk_compare_rollup}()},
-\code{\link{lnk_compare_wsg}()},
+\code{\link{lnk_compare_run}()},
 \code{\link{lnk_habitat_validate}()},
 \code{\link{lnk_habitat_validate_band}()},
 \code{\link{lnk_log_read}()},

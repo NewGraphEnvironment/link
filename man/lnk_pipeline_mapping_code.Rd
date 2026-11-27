@@ -43,7 +43,7 @@ Used for the \code{INTERMITTENT} flag.}
 \item{to}{Character or \code{NULL}. Optional schema-qualified destination
 table. When supplied, the result tibble is written via
 \code{dbWriteTable(overwrite = TRUE)} and the tibble is also returned
-(so callers can chain into \code{lnk_pipeline_persist} / \code{build_species_views.R}).
+(so callers can chain into \code{lnk_persist_write} / \code{build_species_views.R}).
 Default \code{NULL} returns-only.}
 
 \item{conn}{A \link[DBI:DBIConnection-class]{DBI::DBIConnection}. Required only when \code{to} is
