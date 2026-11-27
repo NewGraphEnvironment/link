@@ -79,7 +79,7 @@ Persisted output must not move: one parity check (a persist rebuild before and a
 - [x] RUNBOOK (mapping-code mechanics: the rules file; persist family names), CLAUDE.md Exported Functions (persist family heading, `lnk_compare_run`, the rules), NEWS 0.95.0 with each break, a status block in CLAUDE.md.
 - [x] Add #512 to #477's member table.
 - [x] `devtools::test()`, `devtools::check()`, `lintr` per-file baseline compare against `origin/main` (renamed files mapped old to new).
-- [ ] The PR body says which acceptance items were moot or met differently (#153's ADMS re-run; #197's fallback; #204's additive form, source flags still a code list).
+- [x] The PR body says which acceptance items were moot or met differently (#153's ADMS re-run; #197's fallback; #204's additive form, source flags still a code list).
 
 ## Owed at the end (reported, done after merge)
 
@@ -92,8 +92,8 @@ Persisted output must not move: one parity check (a persist rebuild before and a
 
 - [x] Tests pass
 - [x] `/code-check` clean (once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
 
 
 Verification: the parity digests (Phase 5) prove persisted output unchanged; the 32-row grid proves the rules reproduce the chains; each guard (grammar, fallthrough, `-9` CASE, drift ADD COLUMN, error-path cleanup) gets a test that fails with the defect restored.
