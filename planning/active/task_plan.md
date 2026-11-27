@@ -70,8 +70,8 @@ Persisted output must not move: one parity check (a persist rebuild before and a
 
 ## Phase 4: Species-column drift in `lnk_persist_init()` (#204)
 
-- [ ] A check of its own, after the tables' CREATE, skipping a table the catalog does not list and leaving all alone on an unreadable catalog: expected per-species columns of `streams_access` and `streams_mapping_code` from `species` plus `cfg$species_paused`, read from the catalog; missing ones added with `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` under `SET LOCAL lock_timeout` (types from `.lnk_cols_streams_access_per_sp()` / `.lnk_cols_streams_mapping_code_per_sp()`); extra ones named in a message once per session.
-- [ ] Tests: mocked catalog (missing adds, extra messages, up-to-date issues nothing); one DB test that a table built for fewer species gains the column and keeps its rows.
+- [x] A check of its own, after the tables' CREATE, skipping a table the catalog does not list and leaving all alone on an unreadable catalog: expected per-species columns of `streams_access` and `streams_mapping_code` from `species` plus `cfg$species_paused`, read from the catalog; missing ones added with `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` under `SET LOCAL lock_timeout` (types from `.lnk_cols_streams_access_per_sp()` / `.lnk_cols_streams_mapping_code_per_sp()`); extra ones named in a message once per session.
+- [x] Tests: mocked catalog (missing adds, extra messages, up-to-date issues nothing); one DB test that a table built for fewer species gains the column and keeps its rows.
 
 ## Phase 5: Parity, docs, release
 

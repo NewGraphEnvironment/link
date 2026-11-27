@@ -647,6 +647,9 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
     schema, .lnk_cols_clause(cols_streams_mapping_code, pk)))
   .lnk_index_create(conn, have_idx, "streams_mapping_code_wsg_idx",
     sprintf("%s.streams_mapping_code (watershed_group_code)", schema))
+  # A wide table built for another species set keeps its shape under CREATE
+  # TABLE IF NOT EXISTS; bring its species columns up to this set (#204).
+  .lnk_wide_species_align(conn, schema, species)
 
   # Near-river distances (#364), for every schema: a build with no
   # near_river pair persists no rows, which the validator reads as "no
@@ -795,4 +798,75 @@ lnk_persist_init <- function(conn, cfg, species, force_recreate = FALSE) {
           AND nr.linear_feature_id IS NULL", schema))
   })
   invisible(as.integer(n))
+}
+
+
+# Extra species columns already named this session, so a provincial run's
+# per-group init names them once (#204).
+.lnk_wide_species_seen <- new.env(parent = emptyenv())
+
+#' Bring the wide tables' species columns up to the species set
+#'
+#' `streams_access` and `streams_mapping_code` carry one column set per
+#' species, fixed when the table was created, and `CREATE TABLE IF NOT EXISTS`
+#' leaves an existing table's shape as it is (#204). This adds each missing
+#' `has_barriers_<sp>_dnstr`, `access_<sp>` or `mapping_code_<sp>` column
+#' (`ADD COLUMN IF NOT EXISTS`, NULL in every existing row) and names, once
+#' per session, the species columns the set does not hold, which are kept:
+#' they hold other builds' values, and consolidate copies by column name.
+#'
+#' The columns are read from the catalog first, so an up-to-date table takes
+#' no lock (#369), and a table the catalog does not list (absent, or an
+#' unreadable read) is left alone. An add takes an ACCESS EXCLUSIVE lock; it
+#' waits at most 30 s (`lock_timeout`) and then stops, naming the remedy: run
+#' `lnk_persist_init()` once at a quiet time. Independent of the GENERATED
+#' check ([.lnk_validate_persist_table()]), which #169 may remove.
+#'
+#' @param species The species set, paused species included.
+#' @return Invisibly, the names of the columns added.
+#' @noRd
+.lnk_wide_species_align <- function(conn, schema, species) {
+  have <- .lnk_schema_columns(conn, schema)
+  want <- list(
+    streams_access = .lnk_cols_streams_access_per_sp(species),
+    streams_mapping_code = .lnk_cols_streams_mapping_code_per_sp(species))
+  per_sp <- list(
+    streams_access = "^(access_[a-z]+|has_barriers_[a-z]+_dnstr)$",
+    streams_mapping_code = "^mapping_code_[a-z]+$")
+  flags <- names(.lnk_cols_streams_access_source_flags())
+  added <- character(0)
+  for (tbl in names(want)) {
+    cols <- have$column_name[have$table_name == tbl]
+    if (length(cols) == 0L) next
+    miss <- want[[tbl]][setdiff(names(want[[tbl]]), cols)]
+    if (length(miss)) {
+      tryCatch(.lnk_db_transaction(conn, {
+        .lnk_db_execute(conn, "SET LOCAL lock_timeout = '30s'")
+        for (col in names(miss)) {
+          .lnk_db_execute(conn, sprintf(
+            "ALTER TABLE %s.%s ADD COLUMN IF NOT EXISTS %s %s",
+            schema, tbl, col, miss[[col]]))
+        }
+      }), error = function(e) {
+        stop(sprintf(paste0(
+          "lnk_persist_init: could not add %s to %s.%s (%s). Another session ",
+          "holds the table; run lnk_persist_init() once at a quiet time."),
+          paste(names(miss), collapse = ", "), schema, tbl,
+          conditionMessage(e)), call. = FALSE)
+      })
+      message(sprintf("[lnk_persist_init] %s.%s: added %s", schema, tbl,
+                      paste(names(miss), collapse = ", ")))
+      added <- c(added, paste0(tbl, ".", names(miss)))
+    }
+    extra <- setdiff(grep(per_sp[[tbl]], cols, value = TRUE),
+                     c(names(want[[tbl]]), flags))
+    key <- paste(schema, tbl, paste(sort(extra), collapse = ","))
+    if (length(extra) && is.null(.lnk_wide_species_seen[[key]])) {
+      assign(key, TRUE, envir = .lnk_wide_species_seen)
+      message(sprintf(paste(
+        "[lnk_persist_init] %s.%s holds species columns this set does not:",
+        "%s (kept)"), schema, tbl, paste(sort(extra), collapse = ", ")))
+    }
+  }
+  invisible(added)
 }

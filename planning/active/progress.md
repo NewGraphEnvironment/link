@@ -33,3 +33,9 @@
 - #159: `lnk_pipeline_run()` drops `working_<aoi>` on an error after setup when `cleanup_working = TRUE`, through its own handler (with `log = FALSE` too). Three tests (error drops, `FALSE` keeps, an error at setup drops nothing); disabling the handler fails one.
 - `pkgdown::check_pkgdown()` clean.
 - Next: Phase 4.
+
+## Phase 4, 2026-11-27
+
+- #204: `.lnk_wide_species_align()` runs in `lnk_persist_init()` after the wide tables' CREATE: it reads the catalog, skips a table it does not list, adds missing species columns (`ADD COLUMN IF NOT EXISTS` under `SET LOCAL lock_timeout = '30s'`, a timeout naming the quiet-time remedy), and names extra species columns once per session, keeping them. Separate from the GENERATED check, which #169 may remove.
+- Five tests (four mocked, one DB on a probe schema that keeps its row); disabling the add fails seven.
+- Next: Phase 5.
