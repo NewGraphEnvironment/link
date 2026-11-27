@@ -208,7 +208,7 @@ test_that("lnk_compare_run composes lnk_pipeline_run then lnk_compare_rollup (ro
 # Rollup tibble shape + diff_pct computation
 # ---------------------------------------------------------------------------
 
-test_that(".lnk_compare_rollup_assemble_rollup produces 9 rows per species + correct diff_pct", {
+test_that(".lnk_compare_rollup_assemble produces 9 rows per species + correct diff_pct", {
   link_data <- list(
     km = data.frame(
       species_code = c("BT","CH"),
@@ -241,7 +241,7 @@ test_that(".lnk_compare_rollup_assemble_rollup produces 9 rows per species + cor
     stringsAsFactors = FALSE
   )
 
-  out <- link:::.lnk_compare_rollup_assemble_rollup(
+  out <- link:::.lnk_compare_rollup_assemble(
     aoi = "TEST", species = c("BT","CH"),
     rollup_link = link_data, rollup_ref = ref_data
   )
@@ -291,7 +291,7 @@ test_that("link-side rollup SQL leaves lake connection lines out of rearing km",
       stop("captured")
     },
     .package = "DBI",
-    expect_error(link:::.lnk_compare_rollup_rollup_link(
+    expect_error(link:::.lnk_compare_rollup_working(
       DBI::ANSI(), "ADMS", "working_adms", "CO"), "captured")
   )
   lc <- link:::.lnk_sql_lake_connection()
@@ -322,7 +322,7 @@ test_that("bcfishpass-side rollup SQL applies the same lake-connection rule", {
       stop("captured")
     },
     .package = "DBI",
-    expect_error(link:::.lnk_compare_rollup_rollup_bcfishpass(
+    expect_error(link:::.lnk_compare_rollup_bcfishpass(
       DBI::ANSI(), "ADMS", "BT"), "captured")
   )
   lc <- link:::.lnk_sql_lake_connection()
@@ -339,7 +339,7 @@ test_that("bcfishpass-side rollup SQL applies the same lake-connection rule", {
   expect_match(flat, "FROM bcfishpass.streams s", fixed = TRUE)
 })
 
-test_that(".lnk_compare_rollup_assemble_rollup handles NA ref values (not modelled)", {
+test_that(".lnk_compare_rollup_assemble handles NA ref values (not modelled)", {
   link_data <- list(
     km = data.frame(species_code = "RB", spawning_km = 100, rearing_km = 200,
                     rearing_stream_km = 180,
@@ -366,7 +366,7 @@ test_that(".lnk_compare_rollup_assemble_rollup handles NA ref values (not modell
     stringsAsFactors = FALSE
   )
 
-  out <- link:::.lnk_compare_rollup_assemble_rollup(
+  out <- link:::.lnk_compare_rollup_assemble(
     aoi = "TEST", species = "RB",
     rollup_link = link_data, rollup_ref = ref_data
   )
@@ -490,7 +490,7 @@ test_that(".lnk_mc_diff computes per-species stats with top_pattern (merge logic
   expect_equal(cm$match_pct, 50)
 })
 
-test_that(".lnk_compare_rollup_assemble_rollup handles zero ref values (avoid div-by-zero)", {
+test_that(".lnk_compare_rollup_assemble handles zero ref values (avoid div-by-zero)", {
   link_data <- list(
     km = data.frame(species_code = "BT", spawning_km = 100, rearing_km = 200,
                     rearing_stream_km = 180,
@@ -514,7 +514,7 @@ test_that(".lnk_compare_rollup_assemble_rollup handles zero ref values (avoid di
     stringsAsFactors = FALSE
   )
 
-  out <- link:::.lnk_compare_rollup_assemble_rollup(
+  out <- link:::.lnk_compare_rollup_assemble(
     aoi = "TEST", species = "BT",
     rollup_link = link_data, rollup_ref = ref_data
   )

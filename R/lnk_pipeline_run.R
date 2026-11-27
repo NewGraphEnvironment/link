@@ -321,7 +321,7 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
   # time the views are built. Second persist call below re-runs
   # idempotently and adds streams_access. link#196.
   lnk_persist_write(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
-                       species = active_species, schema = schema)
+                    species = active_species, schema = schema)
   # That persist replaced this group's streams, and its habitat rows only for
   # the species classified here. A species no longer classified (paused in the
   # bundle, #432, or no longer present) keeps rows from an earlier build, cut
@@ -392,7 +392,7 @@ lnk_pipeline_run <- function(conn, aoi, cfg, loaded,
     crossings_table = paste0(schema, ".crossings"))
 
   lnk_persist_write(conn, aoi = aoi, cfg = cfg, # nolint: object_usage_linter
-                       species = active_species, schema = schema)
+                    species = active_species, schema = schema)
 
   # 3. Settle the persisted habitat flags on link's access (link#349): where
   # access_<sp> = 0, accessible / spawning / rearing / lake_rearing /

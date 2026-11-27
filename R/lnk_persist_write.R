@@ -38,7 +38,7 @@
 #' @return `conn` invisibly.
 #' @export
 lnk_persist_write <- function(conn, aoi, cfg, species,
-                                 schema = paste0("working_", tolower(aoi))) {
+                              schema = paste0("working_", tolower(aoi))) {
   if (!is.character(aoi) || length(aoi) != 1L || !nzchar(aoi)) {
     stop("aoi must be a single non-empty WSG code", call. = FALSE)
   }

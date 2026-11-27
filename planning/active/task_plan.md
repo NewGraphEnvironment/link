@@ -75,11 +75,11 @@ Persisted output must not move: one parity check (a persist rebuild before and a
 
 ## Phase 5: Parity, docs, release
 
-- [ ] Parity: `data-raw/logs/mapping_code_rules_477/parity.R` rebuilds mapping codes from persist (`lnk_mapping_code()`, nothing written) for ADMS, BULK, ELKR, HORS, PARS in `fresh_default` and BULK, ELKR, PARS in `fresh` (it holds no ADMS or HORS), at the base commit (a `git worktree`) and at the branch, run back to back, and compares digests per group and species. Expect all identical. A count of `access_<sp> = -9` in both schemas shows the #351 merge change persisted nothing. A README records the stamp and result.
-- [ ] RUNBOOK (mapping-code mechanics: the rules file; persist family names), CLAUDE.md Exported Functions (persist family heading, `lnk_compare_run`, the rules), NEWS 0.95.0 with each break, a status block in CLAUDE.md.
-- [ ] Add #512 to #477's member table.
-- [ ] `devtools::test()`, `devtools::check()`, `lintr` per-file baseline compare against `origin/main` (renamed files mapped old to new).
-- [ ] Close comments say which acceptance items were moot or met differently (#153's ADMS re-run; #197's fallback; #204's additive form, source flags still a code list).
+- [x] Parity: `data-raw/logs/mapping_code_rules_477/parity.R` rebuilds mapping codes from persist (`lnk_mapping_code()`, nothing written) for ADMS, BULK, ELKR, HORS, PARS in `fresh_default` and BULK, ELKR, PARS in `fresh` (it holds no ADMS or HORS), at the base commit (a `git worktree`) and at the branch, run back to back, and compares digests per group and species. Expect all identical. A count of `access_<sp> = -9` in both schemas shows the #351 merge change persisted nothing. A README records the stamp and result.
+- [x] RUNBOOK (mapping-code mechanics: the rules file; persist family names), CLAUDE.md Exported Functions (persist family heading, `lnk_compare_run`, the rules), NEWS 0.95.0 with each break, a status block in CLAUDE.md.
+- [x] Add #512 to #477's member table.
+- [x] `devtools::test()`, `devtools::check()`, `lintr` per-file baseline compare against `origin/main` (renamed files mapped old to new).
+- [ ] The PR body says which acceptance items were moot or met differently (#153's ADMS re-run; #197's fallback; #204's additive form, source flags still a code list).
 
 ## Owed at the end (reported, done after merge)
 
@@ -90,7 +90,7 @@ Persisted output must not move: one parity check (a persist rebuild before and a
 
 ## Validation
 
-- [ ] Tests pass
+- [x] Tests pass
 - [ ] `/code-check` clean (once over the branch with `/code-check branch`)
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion

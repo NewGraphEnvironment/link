@@ -39,3 +39,11 @@
 - #204: `.lnk_wide_species_align()` runs in `lnk_persist_init()` after the wide tables' CREATE: it reads the catalog, skips a table it does not list, adds missing species columns (`ADD COLUMN IF NOT EXISTS` under `SET LOCAL lock_timeout = '30s'`, a timeout naming the quiet-time remedy), and names extra species columns once per session, keeping them. Separate from the GENERATED check, which #169 may remove.
 - Five tests (four mocked, one DB on a probe schema that keeps its row); disabling the add fails seven.
 - Next: Phase 5.
+
+## Phase 5, 2026-11-27
+
+- Parity run back to back (15:38:51 to 15:39:09 UTC): 36 of 36 digests identical, `82cf1d08` against `e0ebb024`; no persisted `access_<sp> = -9` in `fresh_default` or `fresh` (19 columns). `data-raw/logs/mapping_code_rules_477/` (README, `compare.csv`, `minus9.csv`).
+- RUNBOOK §4 (the rules), §6 (drift heals forward), §7 (config table rows); NEWS 0.95.0; DESCRIPTION 0.95.0; CLAUDE.md status block and Exported Functions (persist family heading). #512 added to #477's member table.
+- `devtools::check()`: 0 errors, 0 warnings, 3 notes, all on main (top-level files, `setNames` / `getFromNamespace` imports, `lnk_rollup_wsg.Rd` widths). Its tests pass.
+- lintr against a worktree of `82cf1d08` (renamed files mapped): the new lints are indentation, semicolon and brace style in the patterns the tests and SQL builders already carry; the rename's misaligned continuations and the doubled `.lnk_compare_rollup_rollup_*` names were fixed. That fix found the rename had merged `.lnk_compare_wsg_rollup_link` into the existing `.lnk_compare_rollup_link`; the working-schema one is now `.lnk_compare_rollup_working`.
+- Next: `/code-check branch`, archive, PR.

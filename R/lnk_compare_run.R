@@ -222,7 +222,7 @@ lnk_compare_run <- function(conn, aoi, cfg, loaded,
 #' `lake_rearing` / `wetland_rearing` flags (fresh >= 0.17.1).
 #'
 #' @noRd
-.lnk_compare_rollup_rollup_link <- function(conn, aoi, schema, species) {
+.lnk_compare_rollup_working <- function(conn, aoi, schema, species) {
   species_sql <- paste(
     vapply(species,
            function(s) as.character(DBI::dbQuoteLiteral(conn, s)),
@@ -324,10 +324,10 @@ lnk_compare_run <- function(conn, aoi, cfg, loaded,
 #' reference sources stay intentionally decoupled (link#221).
 #'
 #' @noRd
-.lnk_compare_rollup_rollup_reference <- function(reference, conn_ref,
-                                              aoi, species, conn) {
+.lnk_compare_rollup_reference <- function(reference, conn_ref,
+                                          aoi, species, conn) {
   if (reference == "bcfishpass") {
-    ref <- .lnk_compare_rollup_rollup_bcfishpass(
+    ref <- .lnk_compare_rollup_bcfishpass(
       conn_ref = conn_ref, aoi = aoi, species = species) # nolint: indentation_linter
     ref$accessible_km <- .lnk_compare_rollup_accessible_ref(
       conn = conn, aoi = aoi, species = ref$species_code) # nolint: indentation_linter
@@ -381,7 +381,7 @@ lnk_compare_run <- function(conn, aoi, cfg, loaded,
 #' resolves to NA distinguishing "not modelled" from "real zero".
 #'
 #' @noRd
-.lnk_compare_rollup_rollup_bcfishpass <- function(conn_ref, aoi, species) {
+.lnk_compare_rollup_bcfishpass <- function(conn_ref, aoi, species) {
   wb_class <- .lnk_sql_waterbody_class() # nolint: object_usage_linter
   wb_join <- .lnk_sql_waterbody_join() # nolint: object_usage_linter
   lake_polys <- .lnk_sql_lake_polys() # nolint: object_usage_linter
@@ -496,8 +496,8 @@ lnk_compare_run <- function(conn, aoi, cfg, loaded,
 #' (avoid div-by-zero even when the measurement is real).
 #'
 #' @noRd
-.lnk_compare_rollup_assemble_rollup <- function(aoi, species,
-                                             rollup_link, rollup_ref) {
+.lnk_compare_rollup_assemble <- function(aoi, species,
+                                         rollup_link, rollup_ref) {
   habitat_types <- c(
     "spawning", "rearing", "lake_rearing", "wetland_rearing",
     "rearing_stream", "rearing_lake", "rearing_wetland",

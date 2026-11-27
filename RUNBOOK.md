@@ -477,7 +477,8 @@ run group holds `accessible AND access_<sp> = 0`.
 
 Token format: `{ACCESS|SPAWN|REAR|""};{NONE|DAM|MODELLED|ASSESSED|REMEDIATED}[;INTERMITTENT]`
 
-For each species, per segment (`lnk_pipeline_mapping_code.R:~196-289`):
+For each species, per segment (`R/lnk_pipeline_mapping_code.R`; token 2 from
+`R/lnk_mapping_code_rules.R`):
 
 ```
 accessible = !has_barriers_<sp>_dnstr  &  has_data        # from barriers_per_sp
@@ -491,13 +492,37 @@ token1 (non-spawn-only):
 token2 = ifelse(accessible, mc_barrier, NA)                # ← GATED on accessible
 token3 = ifelse(accessible & intermittent, "INTERMITTENT", NA)
 
-mc_barrier (from barrier_sources flags, resident vs anadromous differ slightly):
-  REMEDIATED if remediated_dnstr
-  DAM        elif dam_dnstr
-  ASSESSED   elif anthropogenic & pscis        (resident) / elif pscis (anadr)
-  MODELLED   elif anthropogenic                (no pscis)
-  NONE       elif no anthropogenic
+mc_barrier: the bundle's parameters_mapping_code_rules.csv (link#197), per
+residence, rows in precedence order, first matching `when` wins:
+  REMEDIATED if any_remed
+  DAM        elif any_dam_resident (next barrier down is a dam) / any_dam_anadr (any dam)
+  ASSESSED   elif any_anth & any_pscis & !dam (resident) / elif any_pscis (anadr)
+  MODELLED   elif any_anth
+  NONE       TRUE
 ```
+
+**The barrier token is rules, not code (link#197).** `default` and `bcfishpass`
+declare `parameters_mapping_code_rules.csv` (`residence`, `precedence`, `token`,
+`when`); a bundle that declares none, or a call with no `cfg`, reads the package
+copy, `inst/extdata/parameters_mapping_code_rules.csv`. `when` uses five aliases
+of the access columns (`.lnk_mc_alias_values()`: `any_anth`, `any_pscis`,
+`any_dam_resident` = `dam_dnstr_ind` else `has_barriers_dams_dnstr`,
+`any_dam_anadr`, `any_remed` = `remediated_dnstr_ind` else `has_remediated_dnstr`;
+a missing column or NA cell is FALSE), `&`, `|`, `!`, parentheses and `TRUE`,
+and each residence ends on `TRUE`, so every accessible segment gets a token.
+Tokens are upper case and never ACCESS, SPAWN, REAR or INTERMITTENT. Adding a
+token is a row; the persisted source-flag columns stay a code list
+(`.lnk_cols_streams_access_source_flags()`). The shipped rules reproduce the
+0.94.0 chains on every alias and raw-column combination
+(`test-lnk_mapping_code_rules.R`) and the persisted codes of eight groups
+(`data-raw/logs/mapping_code_rules_477/`).
+
+**Which species read which chain** comes from `species_resident`,
+`species_anadromous`, `species_spawn_only`; each left `NULL` is taken from `cfg`'s
+`dimensions.csv` over `cfg$species` (`.lnk_mc_species()`, link#512), or with no
+`cfg` from bcfishpass's sets. A species in both sets is refused. A species with
+no `spawning_<sp>` / `rearing_<sp>` column reads 0 (link#153); `presence` may be
+an `lnk_presence` object or a named logical vector (link#351).
 
 Note the asymmetry: **SPAWN/REAR fire on habitat presence regardless of
 accessibility**, but **token2 (the barrier descriptor) is suppressed when the
@@ -777,6 +802,12 @@ of a: the record goes first. The rules that would fail a record are the operator
 
 ## 6. Gotchas that have cost real time
 
+- **A wide table built for another species set heals forward only.**
+  `lnk_persist_init()` adds a missing species' `streams_access` /
+  `streams_mapping_code` columns (`.lnk_wide_species_align()`, link#204: catalog
+  first, `ADD COLUMN IF NOT EXISTS` under a 30 s `lock_timeout`) and names extra
+  species columns once per session, keeping them. Run it once at a quiet time
+  before a run that adds a species: the add takes an ACCESS EXCLUSIVE lock.
 - **Persist column changes are a matched pair.** Adding a column to
   `streams_access` / `streams_mapping_code` means editing **two independently
   constructed sites**: the CREATE TABLE DDL in `lnk_persist_init.R` *and* the
@@ -1648,7 +1679,8 @@ anomaly alerts); discharge from wet's `discharge.fwa_v1_segment_monthly`
 | Habitat thresholds (per-species spawn/rear gradient max, channel-width min/max, lake-area floor) | `configs/<name>/parameters_habitat_thresholds.csv` (#282) → `.lnk_habitat_thresholds_csv()` → `fresh::frs_params()` | numbers the `rules.yaml` rules inherit when they set none of their own |
 | Through-wetland rearing (FWA 1050/1150) and the near-river scope | `dimensions.csv` → `rear_wetland_flow`, `rear_near_river` → `lnk_rules_build()` | the 1050/1150 rule's shape; `near_river: false` stamps (always on river-polygon rules) |
 | The near-river pair (a river of at least a size within a distance downstream) | `parameters_habitat_thresholds.csv` → `<stage>_river_*` (#364, fresh#263) → `fresh::frs_params()` | inherited by every rule with a size test that is not stamped out; walked into `streams_near_river` |
-| Species residence (resident/anadromous/spawn-only) | `configs/<name>/dimensions.csv` → `residence`, and `rear_no_fw = yes` for spawn-only (#189) → `.lnk_species_residence()` → `.lnk_mapping_code_persist(cfg =)`. A bundle with no `residence` column, and the exported `lnk_mapping_code()` / `lnk_pipeline_mapping_code()` called directly, keep the sets coded before (CH, CM, CO, PK, SK, ST anadromous; #512) | which mc_barrier flavor + spawn-only token1 of every persisted mapping code (model and recompute) |
+| Species residence (resident/anadromous/spawn-only) | `configs/<name>/dimensions.csv` → `residence`, and `rear_no_fw = yes` for spawn-only (#189) → `.lnk_species_residence()` → `.lnk_mapping_code_persist(cfg =)`. The exported `lnk_mapping_code()` / `lnk_pipeline_mapping_code()` read it through `cfg` (#512); a bundle with no `residence` column, or a call with no `cfg`, keeps the sets coded before (CH, CM, CO, PK, SK, ST anadromous) | which mc_barrier flavor + spawn-only token1 of every persisted mapping code (model and recompute) |
+| The mapping code's barrier token | `configs/<name>/parameters_mapping_code_rules.csv` (#197), else `inst/extdata/parameters_mapping_code_rules.csv` → `.lnk_mc_rules()` → `lnk_pipeline_mapping_code()` | token 2 of every mapping code (§4) |
 | Which crossings are human-made barriers | `configs/<name>/parameters_barrier_rules.csv` (#341) → `.lnk_barrier_rules_apply()` → `crossings.barrier_rule_id` | the anthropogenic, PSCIS and dam barrier sets and unify's anthropogenic rows (§2a); never access |
 | Further observation-lift rules per species | `configs/<name>/parameters_barrier_lifts.csv` (#236; no shipped bundle declares one) → `.lnk_lift_rules()` | lifts beside each species' own `parameters_fresh` rule (§5, "Several lift rules per species") |
 | Dam / anthropogenic blocking of a species | **nowhere** — a barrier rule's `outcome` accepts only `barrier` | `blocks_species` (§2a). The split piece of #479 adds `blocks` rows. |

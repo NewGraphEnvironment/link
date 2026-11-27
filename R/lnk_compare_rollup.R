@@ -124,11 +124,11 @@ lnk_compare_rollup <- function(conn, aoi, cfg,
 
   rollup_link <- .lnk_compare_rollup_link( # nolint
     conn = conn, cfg = cfg, aoi = aoi, species = species)
-  rollup_ref <- .lnk_compare_rollup_rollup_reference( # nolint
+  rollup_ref <- .lnk_compare_rollup_reference( # nolint
     reference = reference, conn_ref = conn_ref,
     aoi = aoi, species = species, conn = conn)
 
-  .lnk_compare_rollup_assemble_rollup( # nolint
+  .lnk_compare_rollup_assemble( # nolint
     aoi = aoi, species = species,
     rollup_link = rollup_link, rollup_ref = rollup_ref)
 }
@@ -182,7 +182,7 @@ lnk_compare_rollup <- function(conn, aoi, cfg,
 #' Compute link-side rollup queries from `<persist_schema>` (persisted
 #' state).
 #'
-#' Counterpart to `.lnk_compare_rollup_rollup_link` (which reads working
+#' Counterpart to `.lnk_compare_rollup_working` (which reads working
 #' schema). Same output shape: `list(km, lake_ha, wetland_ha)` with
 #' `species_code` keying each data.frame.
 #'
