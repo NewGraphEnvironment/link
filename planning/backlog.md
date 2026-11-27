@@ -48,7 +48,7 @@ counts them): run `/backlog-sweep` again, the backlog is not finished.
 | - [x] 6 | #474 | 8, 9: what a run stamps and checks before launch, how primitives load (10 issues) | done: https://github.com/NewGraphEnvironment/link/pull/485 | — | — | — |
 | - [x] 7 | #475 | 10: drivers (6 issues) | done: https://github.com/NewGraphEnvironment/link/pull/513 | B | 14 | opus then sonnet |
 | - [x] 8 | #476 | 11: the rules builder and `dimensions.csv` (7 issues) | done: https://github.com/NewGraphEnvironment/link/pull/519 | C | 3 | opus |
-| - [ ] 9 | #477 | 12, 13: mapping codes as rules, the persist and run API (8 issues) | open | A | 3, 7, 8, 13 | opus |
+| - [x] 9 | #477 | 12, 13: mapping codes as rules, the persist and run API (8 issues) | done: https://github.com/NewGraphEnvironment/link/pull/526 | A | 3, 7, 8, 13 | opus |
 | - [x] 10 | #478 | 14, 15: snapping, habitat upstream of each crossing (6 issues) | done: https://github.com/NewGraphEnvironment/link/pull/518 | C | 3 | opus |
 | - [x] 11 | #479 | 16: what blocks access at a barrier (5 issues) | done: https://github.com/NewGraphEnvironment/link/pull/521 | C | 3, 10, 16 | fable then opus |
 | - [ ] 12 | #480 | 17, 18, 19: thresholds from knowledge's table, MAD everywhere, the PARS vignette (7 issues) | **waiting** on knowledge#139's decision of which method sets link's flow numbers | C | 3, 11, 16 | opus |
@@ -270,7 +270,7 @@ row counts or closed. One rules regeneration and diff; a `default` re-model if #
 
 ### 12. Mapping codes as rules
 
-- [ ] Carried by move 9, #477
+- [x] Carried by move 9, #477 (merged in https://github.com/NewGraphEnvironment/link/pull/526)
 
 **Touches:** `R/lnk_pipeline_mapping_code.R`, `R/lnk_mapping_code.R`, `R/lnk_access.R`, and new tests
 
@@ -283,7 +283,7 @@ shows the output unchanged.
 
 ### 13. The persist and run API
 
-- [ ] Carried by move 9, #477
+- [x] Carried by move 9, #477 (merged in https://github.com/NewGraphEnvironment/link/pull/526)
 
 **Touches:** `R/lnk_pipeline_persist.R`, `R/lnk_pipeline_run.R`, `R/lnk_compare_wsg.R`, `R/lnk_persist_init.R`, `NAMESPACE`
 
