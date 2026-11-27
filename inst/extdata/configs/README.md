@@ -150,6 +150,17 @@ From `dictionary_parameters_habitat_thresholds.csv`: 24 columns.
 | rear\_river\_stream\_order\_min | numeric | near\_river | fresh | fresh/R/frs\_params.R .frs\_build\_near\_river(); fresh/R/utils.R .frs\_rule\_near\_river() | NA | River size (stream order) under the stream\_order measure, for the rearing near-river pair. Stream order is topological, not a flow. | rear\_river\_measure |
 | rear\_river\_distance\_max | numeric | near\_river | fresh | fresh/R/frs\_params.R .frs\_build\_near\_river(); fresh/R/utils.R .frs\_rule\_near\_river() | NA (no pair) | Farthest distance (m, along the network, downstream, to the river's bank) for the rearing near-river pair. NA means the stage has no pair. Set with no threshold for its measure, or a threshold with no distance, stops frs\_params(). | rear\_river\_measure |
 
+## `parameters_mapping_code_rules`
+
+From `dictionary_parameters_mapping_code_rules.csv`: 4 columns.
+
+| column | type | group | owner | consumed_by | default_when_absent | description | related |
+|---|---|---|---|---|---|---|---|
+| residence | character | key | link | R/lnk\_mapping\_code\_rules.R | required | Which species the row applies to: resident or anadromous, the residence column of the bundle's dimensions.csv. Both must have rows. | precedence |
+| precedence | integer | key | link | R/lnk\_mapping\_code\_rules.R | required | The row's place within its residence. Rows are tried in increasing precedence and the first whose when holds sets the token; precedence repeats within a residence are refused. | when |
+| token | character | output | link | R/lnk\_mapping\_code\_rules.R | required | The mapping code's second token for an accessible segment the row matches: upper-case letters and underscores, and not ACCESS, SPAWN, REAR or INTERMITTENT, which the code's other tokens use. | - |
+| when | character | condition | link | R/lnk\_mapping\_code\_rules.R | required | A condition over the barriers downstream of the segment: any\_anth (a human-made barrier), any\_pscis (an assessed crossing), any\_dam\_resident (the next barrier down is a dam), any\_dam\_anadr (any dam), any\_remed (a remediated crossing), joined with \&, \| and ! and parentheses, or TRUE. Each residence's last row is TRUE, so every accessible segment gets a token. | token |
+
 ## `presence_groups`
 
 From `dictionary_presence_groups.csv`: 2 columns.

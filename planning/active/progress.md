@@ -16,3 +16,13 @@
 - Plan review returned (4 blockers, folded into the plan; `review-plan.md`).
 - Full suite before the ref fix: 6851 pass, 4 fail, all `dictionary_presence_groups.csv` refs shifted by the roxygen added to `lnk_presence.R`; fixed, README regenerated.
 - Next: Phase 2.
+
+## Phase 2, 2026-11-27
+
+- `parameters_mapping_code_rules.csv` in `inst/extdata/` and in `default` and `bcfishpass` (declared under `files:`, `read_as: text`, provenance with checksums); each residence ends on `NONE,TRUE` (review B1).
+- `R/lnk_mapping_code_rules.R`: reader, validator (grammar walk, aliases, precedence, tokens, fallthrough), evaluator in an `emptyenv()`-parented environment, and `.lnk_mc_species()` shared by both exported functions (review B3, G2).
+- `lnk_pipeline_mapping_code()` and `lnk_mapping_code()` take `cfg` and `rules_mapping_code` (appended last); `.lnk_mapping_code_persist()` passes the run's `cfg`.
+- Tests: the 32-row alias grid and a 3^6 raw-column grid (every fallback subset) equal the 0.94.0 chains; validator refusals; a bundle adding a token; #512's BT + anadromous CT smoke test. Breaking the fallthrough check fails 1 test, the alias check 3.
+- Parity probe at this code: 0 of 36 digests differ from BEFORE.
+- Dictionary, README, `pretest_inputs.csv` rows; dictionary, pretest, config and vocabulary tests pass.
+- Next: Phase 3.

@@ -26,6 +26,9 @@ files:
   parameters_barrier_rules:
     path: parameters_barrier_rules.csv
     read_as: text
+  parameters_mapping_code_rules:
+    path: parameters_mapping_code_rules.csv
+    read_as: text
   parameters_habitat_thresholds:
     path: parameters_habitat_thresholds.csv
   parameters_habitat_method:
@@ -183,6 +186,11 @@ pipeline:
       gradient_max: 0.05
 
 provenance:
+  parameters_mapping_code_rules.csv:
+    source: link (hand-authored; link#197). The mapping code's barrier token, as rules per residence; not csv-synced
+    synced: '2026-11-27'
+    checksum: sha256:9c1c303eb76416335a8cbbbc8bd8a33f7cafc1eb7cb9743e0aa70d335bc40e9c
+    shape_checksum: sha256:98932e5b68bb9281373a4ea0654f17c561777e2712c45cee1e3b9be1d323e64f
   parameters_barrier_rules.csv:
     source: link (hand-authored; link#341). Which crossings are human-made barriers, as rules; not csv-synced
     synced: '2026-11-24'

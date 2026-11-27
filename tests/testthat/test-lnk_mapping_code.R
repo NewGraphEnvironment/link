@@ -154,3 +154,31 @@ test_that("an empty access or habitat read stops, naming the table", {
                  spawning = integer(0), rearing = integer(0)))),
                "s.streams_habitat_long_vw empty for WSG ADMS", fixed = TRUE)
 })
+
+test_that("a bundle's residence reaches the exported build with no set passed (#512)", {
+  # A bundle holding BT and a sea-run cutthroat row set anadromous: CT reads
+  # the anadromous barrier token (any dam downstream), BT the resident one
+  # (the next barrier down is not the dam).
+  cfg <- copy_bundle_dims("default", function(d) {
+    d$residence[d$species == "CT"] <- "anadromous"
+    d
+  })
+  cfg$species <- c("BT", "CT")
+  acc <- data.frame(id_segment = 1L, has_barriers_bt_dnstr = FALSE,
+                    has_barriers_ct_dnstr = FALSE,
+                    has_barriers_anthropogenic_dnstr = TRUE,
+                    has_barriers_dams_dnstr = TRUE, dam_dnstr_ind = FALSE)
+  hab <- data.frame(id_segment = 1L, spawning_bt = 0, rearing_bt = 0,
+                    spawning_ct = 0, rearing_ct = 0)
+  fc <- data.frame(id_segment = 1L, feature_code = "X")
+  out <- lnk_pipeline_mapping_code(acc, hab, fc, cfg = cfg)
+  expect_identical(out$mapping_code_ct, "ACCESS;DAM")
+  expect_identical(out$mapping_code_bt, "ACCESS;MODELLED")
+  # Without cfg, bcfishpass's sets: CT is in neither, so it is not coded.
+  expect_false("mapping_code_ct" %in% names(lnk_pipeline_mapping_code(acc, hab, fc)))
+  # A set passed by hand still wins over the bundle.
+  out2 <- lnk_pipeline_mapping_code(acc, hab, fc, cfg = cfg,
+                                    species_resident = c("bt", "ct"),
+                                    species_anadromous = character(0))
+  expect_identical(out2$mapping_code_ct, "ACCESS;MODELLED")
+})

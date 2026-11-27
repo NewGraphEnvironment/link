@@ -12,9 +12,11 @@ lnk_mapping_code(
   aoi,
   table_to = NULL,
   presence = NULL,
-  species_resident = c("bt", "wct"),
-  species_anadromous = c("ch", "cm", "co", "pk", "sk", "st"),
-  species_spawn_only = c("cm", "pk")
+  species_resident = NULL,
+  species_anadromous = NULL,
+  species_spawn_only = NULL,
+  cfg = NULL,
+  rules_mapping_code = NULL
 )
 }
 \arguments{
@@ -48,15 +50,19 @@ with \code{spawning = TRUE} or \code{rearing = TRUE}. Pass explicit values
 to override (e.g. force-include a species for QGIS symbology even
 when no segments are accessible).}
 
-\item{species_resident}{Character. Species using the resident flavor
-of \code{mapping_code_barrier}. Default \code{c("bt", "wct")}. Passed to
-\code{\link[=lnk_pipeline_mapping_code]{lnk_pipeline_mapping_code()}}.}
+\item{species_resident, species_anadromous, species_spawn_only}{Character
+or \code{NULL}: the residence sets, resolved as in
+\code{\link[=lnk_pipeline_mapping_code]{lnk_pipeline_mapping_code()}} (from \code{cfg}, else bcfishpass's sets).}
 
-\item{species_anadromous}{Character. Species using the anadromous
-flavor. Default \code{c("ch", "cm", "co", "pk", "sk", "st")}.}
+\item{cfg}{An \code{\link[=lnk_config]{lnk_config()}} object, or \code{NULL}. Supplies the residence sets
+not passed (link#512) and the mapping-code rules (link#197).}
 
-\item{species_spawn_only}{Character. Species without rearing
-semantics. Default \code{c("cm", "pk")}.}
+\item{rules_mapping_code}{A data frame of mapping-code rules, or \code{NULL} to
+read them from \code{cfg}, else the package copy.
+
+With \code{cfg} and no species arguments every species the bundle models is
+coded; the persisted build (\code{.lnk_mapping_code_persist()}) passes the
+group's active species instead.}
 }
 \value{
 Invisibly, the per-segment per-species mapping_code tibble

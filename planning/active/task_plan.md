@@ -52,14 +52,14 @@ Persisted output must not move: one parity check (a persist rebuild before and a
 
 ## Phase 2: Mapping-code tokens from a rules file (#197) and residence from a bundle (#512)
 
-- [ ] `inst/extdata/parameters_mapping_code_rules.csv` (package copy) holding today's two chains verbatim; the same file in `configs/default/` and `configs/bcfishpass/`, declared under `files:` with provenance (source: link).
-- [ ] `R/lnk_mapping_code_rules.R`: read, validate (grammar, aliases, unique precedence, a `TRUE` fallthrough per residence, residences present), evaluate first match wins. Validator tests, each restoring a defect to prove it fires.
-- [ ] `lnk_pipeline_mapping_code()` evaluates the rules in place of the two chains (`R/lnk_pipeline_mapping_code.R:198-212`); `rules =` argument and `cfg =` (#512); `lnk_mapping_code()` passes both; `.lnk_mapping_code_persist()` passes the run's `cfg`.
-- [ ] Dictionary in the owner/`consumed_by` shape, its stem added to `test-dictionaries.R`'s list, `configs/README.md` regenerated (`data-raw/dictionary_readme_build.R`).
-- [ ] `data-raw/pretest_inputs.csv` rows for the new R file, the bundle CSV and the package copy.
-- [ ] Tests: the package rules reproduce the old chains on an exhaustive grid of the five flags (32 rows, both residences) and on a raw-column grid (`dam_dnstr_ind` present or absent, `remediated_dnstr_ind` or `has_remediated_dnstr`, NA cells); a bundle that inserts `FALLS` after `DAM` emits it with no code change; #512's smoke test (BT plus a CT row set `anadromous` builds `mapping_code_ct` with the anadromous token, no argument overridden).
+- [x] `inst/extdata/parameters_mapping_code_rules.csv` (package copy) holding today's two chains verbatim; the same file in `configs/default/` and `configs/bcfishpass/`, declared under `files:` with provenance (source: link).
+- [x] `R/lnk_mapping_code_rules.R`: read, validate (grammar, aliases, unique precedence, a `TRUE` fallthrough per residence, residences present), evaluate first match wins. Validator tests, each restoring a defect to prove it fires.
+- [x] `lnk_pipeline_mapping_code()` evaluates the rules in place of the two chains (`R/lnk_pipeline_mapping_code.R:198-212`); `rules =` argument and `cfg =` (#512); `lnk_mapping_code()` passes both; `.lnk_mapping_code_persist()` passes the run's `cfg`.
+- [x] Dictionary in the owner/`consumed_by` shape, its stem added to `test-dictionaries.R`'s list, `configs/README.md` regenerated (`data-raw/dictionary_readme_build.R`).
+- [x] `data-raw/pretest_inputs.csv` rows for the new R file, the bundle CSV and the package copy.
+- [x] Tests: the package rules reproduce the old chains on an exhaustive grid of the five flags (32 rows, both residences) and on a raw-column grid (`dam_dnstr_ind` present or absent, `remediated_dnstr_ind` or `has_remediated_dnstr`, NA cells); a bundle that inserts `FALLS` after `DAM` emits it with no code change; #512's smoke test (BT plus a CT row set `anadromous` builds `mapping_code_ct` with the anadromous token, no argument overridden).
 - [x] Remove the three expired `*_species` aliases; update roxygen and the roxygen that still names them (`R/lnk_mapping_code.R:52-59`).
-- [ ] Roxygen: with `cfg` and no species arguments the exported functions code every modelled species of the bundle, where the persisted build codes the group's active ones.
+- [x] Roxygen: with `cfg` and no species arguments the exported functions code every modelled species of the bundle, where the persisted build codes the group's active ones.
 
 ## Phase 3: Persist family and run API (#177, #176, #159)
 
